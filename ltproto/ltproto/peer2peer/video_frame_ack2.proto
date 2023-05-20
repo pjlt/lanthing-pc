@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message VideoFrameAck2
+{
+    enum ErrCode
+    {
+        Success = 0;
+        DecodeFail = 1;
+        RenderFail = 2;
+    }
+    ErrCode err_code = 1;
+    int64 picture_id = 2;
+    bool is_keyframe = 3;
+}

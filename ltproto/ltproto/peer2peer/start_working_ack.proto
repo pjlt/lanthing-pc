@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message StartWorkingAck
+{
+	enum ErrCode
+    {
+        Success = 0;
+        VideoFailed = 1;
+        AudioFailed = 2;
+        InputFailed = 3;
+    }
+	ErrCode err_code = 1;
+    repeated uint32 msg_type = 2;
+}

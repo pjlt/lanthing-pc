@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message CaptureVideoFrame
+{
+    enum UnderlyingType
+    {
+        DxgiSharedHandle = 0;
+    }
+    bool is_keyframe = 1;
+    uint64 picture_id = 2;
+    uint32 width = 3;
+    uint32 height = 4;
+    int64 capture_timestamp_us = 5;
+    optional uint32 temporal_id = 6;
+    string name = 7;
+    UnderlyingType underlying_type = 8;
+}

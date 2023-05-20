@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message ControllerStatus
+{
+    uint32 gamepad_index = 1;
+    uint32 button_flags = 2;
+    uint32 left_trigger = 3;
+    uint32 right_trigger = 4;
+    int32 left_stick_x = 5;
+    int32 left_stick_y = 6;
+    int32 right_stick_x = 7;
+    int32 right_stick_y = 8;
+}

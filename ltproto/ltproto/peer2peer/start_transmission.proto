@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message StartTransmission
+{
+	enum ClientOS
+    {
+        Windows = 0;
+        Linux = 1;
+        macOS = 2;
+        Android = 3;
+        iOS = 4;
+    }
+	ClientOS client_os = 1;
+    string token = 2;
+}

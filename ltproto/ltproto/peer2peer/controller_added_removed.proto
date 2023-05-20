@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message ControllerAddedRemoved
+{
+    int32 index = 1;
+    bool is_added = 2;
+}

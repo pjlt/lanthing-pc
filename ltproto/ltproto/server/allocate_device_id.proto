@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package ltproto.server;
+option java_package = "cn.lanthing.ltproto.server";
+option java_outer_classname = "AllocateDeviceIDProto";
+
+message AllocateDeviceID
+{
+
+}

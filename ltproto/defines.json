@@ -1,0 +1,185 @@
+{
+	"peer2peer": [
+		{
+			"id": 1,
+			"message": "KeepAlive",
+			"proto": "keep_alive.proto"
+		},
+		{
+			"id": 14,
+			"message": "VideoFrame",
+			"proto": "video_frame.proto"
+		},
+		{
+			"id": 15,
+			"message": "VideoFrameAck1",
+			"proto": "video_frame_ack1.proto"
+		},
+		{
+			"id": 16,
+			"message": "VideoFrameAck2",
+			"proto": "video_frame_ack2.proto"
+		},
+		{
+			"id": 17,
+			"message": "StartTransmission",
+			"proto": "start_transmission.proto"
+		},
+		{
+			"id": 18,
+			"message": "StartTransmissionAck",
+			"proto": "start_transmission_ack.proto"
+		},
+		{
+			"id": 19,
+			"message": "StopTransmission",
+			"proto": "stop_transmission.proto"
+		},
+		{
+			"id": 20,
+			"message": "StreamingParams",
+			"proto": "streaming_params.proto"
+		},
+		{
+			"id": 21,
+			"message": "StartWorking",
+			"proto": "start_working.proto"
+		},
+		{
+			"id": 22,
+			"message": "StartWorkingAck",
+			"proto": "start_working_ack.proto"
+		},
+		{
+			"id": 23,
+			"message": "StopWorking",
+			"proto": "stop_working.proto"
+		},
+		{
+			"id": 101,
+			"message": "KeyboardEvent",
+			"proto": "keyboard_event.proto"
+		},
+		{
+			"id": 102,
+			"message": "MouseClick",
+			"proto": "mouse_click.proto"
+		},
+		{
+			"id": 103,
+			"message": "MouseMotion",
+			"proto": "mouse_motion.proto"
+		},
+		{
+			"id": 104,
+			"message": "MouseWheel",
+			"proto": "mouse_wheel.proto"
+		},
+		{
+			"id": 105,
+			"message": "ControllerAddedRemoved",
+			"proto": "controller_added_removed.proto"
+		},
+		{
+			"id": 106,
+			"message": "ControllerStatus",
+			"proto": "controller_status.proto"
+		},
+		{
+			"id": 107,
+			"message": "ControllerResponse",
+			"proto": "controller_response.proto"
+		},
+		{
+			"id": 108,
+			"message": "CaptureVideoFrame",
+			"proto": "capture_video_frame.proto"
+		}
+	],
+	"server": [
+		{
+			"id": 1001,
+			"message": "LoginDevice",
+			"proto": "login_device.proto"
+		},
+		{
+			"id": 1002,
+			"message": "LoginDeviceAck",
+			"proto": "login_device_ack.proto"
+		},
+		{
+			"id": 1003,
+			"message": "LoginUser",
+			"proto": "login_user.proto"
+		},
+		{
+			"id": 1004,
+			"message": "LoginUserAck",
+			"proto": "login_user_ack.proto"
+		},
+		{
+			"id": 1005,
+			"message": "AllocateDeviceID",
+			"proto": "allocate_device_id.proto"
+		},
+		{
+			"id": 1006,
+			"message": "AllocateDeviceIDAck",
+			"proto": "allocate_device_id_ack.proto"
+		},
+		{
+			"id": 3001,
+			"message": "RequestConnection",
+			"proto": "request_connection.proto"
+		},
+		{
+			"id": 3002,
+			"message": "RequestConnectionAck",
+			"proto": "request_connection_ack.proto"
+		},
+		{
+			"id": 3003,
+			"message": "OpenConnection",
+			"proto": "open_connection.proto"
+		},
+		{
+			"id": 3004,
+			"message": "OpenConnectionAck",
+			"proto": "open_connection_ack.proto"
+		},
+		{
+			"id": 3005,
+			"message": "CloseConnection",
+			"proto": "close_connection.proto"
+		}
+	],
+	"signaling": [
+		{
+			"id": 2001,
+			"message": "SignalingMessage",
+			"proto": "signaling_message.proto"
+		},
+		{
+			"id": 2002,
+			"message": "SignalingMessageAck",
+			"proto": "signaling_message_ack.proto"
+		},
+		{
+			"id": 2003,
+			"message": "JoinRoom",
+			"proto": "join_room.proto"
+		},
+		{
+			"id": 2004,
+			"message": "JoinRoomAck",
+			"proto": "join_room_ack.proto"
+		}
+	],
+	"ui": [
+		{
+			"id": 4001,
+			"message": "PushDeviceID",
+			"proto": "push_device_id.proto"
+		}
+	]
+}

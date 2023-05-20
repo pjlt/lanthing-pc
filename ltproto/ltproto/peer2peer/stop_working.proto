@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+option go_package = "ltproto/peer2peer";
+option java_package = "cn.lanthing.proto";
+
+message StopWorking
+{
+}

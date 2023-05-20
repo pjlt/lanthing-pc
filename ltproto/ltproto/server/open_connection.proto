@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "ltproto/server/connection_type.proto";
+import "ltproto/peer2peer/streaming_params.proto";
+
+package ltproto.server;
+option java_package = "cn.lanthing.ltproto.server";
+option java_outer_classname = "OpenConnectionProto";
+
+// 服务器发给被控端
+message OpenConnection
+{
+    ConnectionType conn_type = 1;
+    string signaling_addr = 2;
+    int32 signaling_port =3;
+    string room_id = 4;
+    string service_id = 5;
+    string auth_token = 6;
+    optional ltproto.peer2peer.StreamingParams streaming_params = 7;
+    string p2p_username = 8;
+    string p2p_password = 9;
+}

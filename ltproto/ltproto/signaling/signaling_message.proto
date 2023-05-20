@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package ltproto.signaling;
+option java_package = "cn.lanthing.ltproto.signaling";
+option java_outer_classname = "SignalingMessageProto";
+
+message SignalingMessage
+{
+    enum Level
+    {
+        Core = 0;
+        Rtc = 1;
+    }
+    message CoreMessage
+    {
+        string key = 1;
+        //oneof
+    }
+    message RtcMessage
+    {
+        string key = 1;
+        bytes value = 2;
+    }
+    Level level = 1;
+    optional CoreMessage core_message = 2;
+    optional RtcMessage rtc_message = 3;
+}

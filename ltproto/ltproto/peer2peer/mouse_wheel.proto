@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message MouseWheel
+{
+    int32 amount = 1;
+}

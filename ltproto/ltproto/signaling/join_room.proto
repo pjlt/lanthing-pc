@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ltproto.signaling;
+option java_package = "cn.lanthing.ltproto.signaling";
+option java_outer_classname = "JoinRoomProto";
+
+message JoinRoom
+{
+	string room_id = 1;
+	string session_id = 2;
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "ltproto/peer2peer/streaming_params.proto";
+import "ltproto/server/connection_type.proto";
+
+package ltproto.server;
+option java_package = "cn.lanthing.ltproto.server";
+option java_outer_classname = "RequestConnectionProto";
+
+
+// 主控端发给服务器
+message RequestConnection
+{
+    ConnectionType conn_type = 1;
+    int64 device_id = 2;
+    optional ltproto.peer2peer.StreamingParams streaming_params = 3;
+}

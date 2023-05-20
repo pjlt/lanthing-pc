@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message VideoFrameAck1
+{
+    int64 picture_id = 1;
+    int64 recv_time = 2;
+    int32 undecoded_num = 3;
+}

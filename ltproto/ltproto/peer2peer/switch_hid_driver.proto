@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package ltproto.peer2peer;
+
+message SwitchHidDriver
+{
+    enum HidDriverType
+    {
+        Win = 0;
+        Vmulti = 1;
+    }
+    HidDriverType driver_type = 1;
+}
