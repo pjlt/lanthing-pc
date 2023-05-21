@@ -287,6 +287,16 @@ void Worker::check_timeout()
     }
 }
 
+void Worker::on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> _frame)
+{
+    if (ioloop_->is_not_current_thread()) {
+        ioloop_->post(std::bind(&Worker::on_captured_video_frame, this, _frame));
+        return;
+    }
+    auto frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_frame);
+    send_pipe_message(ltproto::id(frame), frame);
+}
+
 void Worker::on_pipe_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg)
 {
     dispatch_service_message(type, msg);
@@ -322,17 +332,12 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
     auto msg = std::static_pointer_cast<ltproto::peer2peer::StartWorking>(_msg);
     auto ack = std::make_shared<ltproto::peer2peer::StartWorkingAck>();
     do {
-        host::VideoParams video_params {};
-        video_params._metrics = metrics_.get();
-        video_params.height = negotiated_display_setting_.height;
-        video_params.width = negotiated_display_setting_.width;
-        video_params.refresh_rate = negotiated_display_setting_.refrash_rate;
-        video_params.codec_type = negotiated_video_codec_type_;
-        video_params.encoder_backend = negotiated_video_codec_beckend_;
-        video_params.send_message = std::bind(&Host::send_ipc_message, this, std::placeholders::_1, std::placeholders::_2);
-        video_params.register_message_handler = std::bind(&Host::register_message_handler, this, std::placeholders::_1, std::placeholders::_2);
-        video_ = host::Video::create(video_params);
-        if (video_ == nullptr) {
+        auto negotiated_params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_params_);
+        lt::VideoCapturer::Params video_params {};
+        video_params.backend = lt::VideoCapturer::Backend::Dxgi;
+        video_params.on_frame = std::bind(&Worker::on_captured_video_frame, this, std::placeholders::_1);
+        video_capturer_ = lt::VideoCapturer::create(video_params);
+        if (video_capturer_ == nullptr) {
             ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_VideoFailed);
             break;
         }

@@ -29,6 +29,7 @@ namespace ltproto
         class ControllerAddedRemoved;
         class ControllerStatus;
         class ControllerResponse;
+        class CaptureVideoFrame;
     }
     namespace server
     {
@@ -107,6 +108,7 @@ namespace ltproto
         constexpr uint32_t kControllerAddedRemoved = 105;
         constexpr uint32_t kControllerStatus = 106;
         constexpr uint32_t kControllerResponse = 107;
+        constexpr uint32_t kCaptureVideoFrame = 108;
         constexpr uint32_t kLoginDevice = 1001;
         constexpr uint32_t kLoginDeviceAck = 1002;
         constexpr uint32_t kLoginUser = 1003;
@@ -146,6 +148,7 @@ namespace ltproto
     uint32_t id(const std::shared_ptr<peer2peer::ControllerAddedRemoved>&);
     uint32_t id(const std::shared_ptr<peer2peer::ControllerStatus>&);
     uint32_t id(const std::shared_ptr<peer2peer::ControllerResponse>&);
+    uint32_t id(const std::shared_ptr<peer2peer::CaptureVideoFrame>&);
     uint32_t id(const std::shared_ptr<server::LoginDevice>&);
     uint32_t id(const std::shared_ptr<server::LoginDeviceAck>&);
     uint32_t id(const std::shared_ptr<server::LoginUser>&);

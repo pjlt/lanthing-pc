@@ -10,8 +10,6 @@
 namespace lt
 {
 
-class D3D11Provider;
-
 class VideoEncoder
 {
 public:

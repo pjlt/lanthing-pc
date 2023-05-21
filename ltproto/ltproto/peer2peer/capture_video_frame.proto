@@ -8,12 +8,10 @@ message CaptureVideoFrame
     {
         DxgiSharedHandle = 0;
     }
-    bool is_keyframe = 1;
-    uint64 picture_id = 2;
-    uint32 width = 3;
-    uint32 height = 4;
-    int64 capture_timestamp_us = 5;
-    optional uint32 temporal_id = 6;
-    string name = 7;
-    UnderlyingType underlying_type = 8;
+    uint64 picture_id = 1;
+    uint32 width = 2;
+    uint32 height = 3;
+    int64 capture_timestamp_us = 4;
+    string name = 5;
+    UnderlyingType underlying_type = 6;
 }

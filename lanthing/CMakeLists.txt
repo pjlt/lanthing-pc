@@ -33,7 +33,7 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
 
-    # graphics
+    # graphics->encoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/nvidia_encoder.h
@@ -42,6 +42,14 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_allocator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.cpp
+    # graphics->capturer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi_video_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi_video_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/common_types.h
 )
 
 if(LT_WINDOWS)

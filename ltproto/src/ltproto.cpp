@@ -18,6 +18,7 @@
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
 #include <ltproto/peer2peer/controller_status.pb.h>
 #include <ltproto/peer2peer/controller_response.pb.h>
+#include <ltproto/peer2peer/capture_video_frame.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/login_user.pb.h>
@@ -79,6 +80,8 @@ std::shared_ptr<google::protobuf::MessageLite> create_by_type(uint32_t _type)
         return std::make_shared<peer2peer::ControllerStatus>();
     case kControllerResponse:
         return std::make_shared<peer2peer::ControllerResponse>();
+    case kCaptureVideoFrame:
+        return std::make_shared<peer2peer::CaptureVideoFrame>();
     case kLoginDevice:
         return std::make_shared<server::LoginDevice>();
     case kLoginDeviceAck:
@@ -187,6 +190,10 @@ uint32_t id(const std::shared_ptr<peer2peer::ControllerStatus>&)
 uint32_t id(const std::shared_ptr<peer2peer::ControllerResponse>&)
 {
     return type::kControllerResponse;
+}
+uint32_t id(const std::shared_ptr<peer2peer::CaptureVideoFrame>&)
+{
+    return type::kCaptureVideoFrame;
 }
 uint32_t id(const std::shared_ptr<server::LoginDevice>&)
 {

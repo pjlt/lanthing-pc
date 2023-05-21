@@ -83,7 +83,7 @@ private:
     void dispatch_dc_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_start_transmission(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_keep_alive(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_video_frame(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void on_captured_frame(std::shared_ptr<google::protobuf::MessageLite> msg);
     bool send_message_to_remote_client(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable);
 
     void update_last_recv_time();

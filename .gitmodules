@@ -1,0 +1,18 @@
+[submodule "third_party/g3log"]
+	path = third_party/g3log
+	url = https://github.com/KjellKod/g3log.git
+[submodule "third_party/IntelMediaSDK"]
+	path = third_party/IntelMediaSDK
+	url = https://github.com/Intel-Media-SDK/MediaSDK.git
+[submodule "third_party/libuv"]
+	path = third_party/libuv
+	url = https://github.com/libuv/libuv.git
+[submodule "third_party/protobuf"]
+	path = third_party/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
+[submodule "third_party/utfcpp"]
+	path = third_party/utfcpp
+	url = https://github.com/nemtrif/utfcpp.git
+[submodule "third_party/mbedtls"]
+	path = third_party/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git

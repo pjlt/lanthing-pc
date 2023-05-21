@@ -7,6 +7,7 @@
 #include <ltlib/io/client.h>
 #include <ltlib/threads.h>
 #include <graphics/encoder/video_encoder.h>
+#include <graphics/capturer/video_capturer.h>
 #include "message_handler.h"
 #include "session_change_observer.h"
 #include "display_setting.h"
@@ -46,6 +47,7 @@ private:
     bool send_pipe_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void print_stats();
     void check_timeout();
+    void on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> frame);
 
     // pipe message handlers
     void on_pipe_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -73,6 +75,7 @@ private:
     std::unique_ptr<ltlib::Client> pipe_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     uint32_t last_time_received_from_service_;
+    std::unique_ptr<lt::VideoCapturer> video_capturer_;
 };
 
 } // namespace worker

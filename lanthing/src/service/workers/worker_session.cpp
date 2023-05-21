@@ -415,8 +415,8 @@ void WorkerSession::on_pipe_message(uint32_t fd, uint32_t type, std::shared_ptr<
     case ltype::kStartWorkingAck:
         on_start_working_ack(msg);
         break;
-    case ltype::kVideoFrame:
-        on_video_frame(msg);
+    case ltype::kCaptureVideoFrame:
+        on_captured_frame(msg);
         break;
     case ltype::kStreamingParams:
         on_worker_streaming_params(msg);
@@ -531,26 +531,27 @@ void WorkerSession::on_ltrtc_signaling_message(const std::string& key, const std
     });
 }
 
-void WorkerSession::on_video_frame(std::shared_ptr<google::protobuf::MessageLite> _msg)
+void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageLite> _msg)
 {
+    auto captured_frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_msg);
+    ltrtc::VideoFrame encoded_frame {};
     //TODO: ±àÂë
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::VideoFrame>(_msg);
-    ltrtc::VideoFrame frame {};
-    frame.is_keyframe = msg->is_keyframe();
-    frame.ltframe_id = msg->picture_id();
-    frame.data = std::shared_ptr<uint8_t>(new uint8_t[msg->frame().size()]);
-    ::memcpy(frame.data.get(), msg->frame().data(), msg->frame().size());
-    frame.size = msg->frame().size();
-    frame.width = msg->width();
-    frame.height = msg->height();
-    frame.capture_timestamp_us = msg->capture_timestamp_us();
-    frame.start_encode_timestamp_us = msg->start_encode_timestamp_us();
-    frame.end_encode_timestamp_us = msg->end_encode_timestamp_us();
-    if (msg->has_temporal_id()) {
-        frame.temporal_id = msg->temporal_id();
-    }
+    // 
+    //frame.is_keyframe = msg->is_keyframe();
+    //frame.ltframe_id = msg->picture_id();
+    //frame.data = std::shared_ptr<uint8_t>(new uint8_t[msg->frame().size()]);
+    //::memcpy(frame.data.get(), msg->frame().data(), msg->frame().size());
+    //frame.size = msg->frame().size();
+    //frame.width = msg->width();
+    //frame.height = msg->height();
+    //frame.capture_timestamp_us = msg->capture_timestamp_us();
+    //frame.start_encode_timestamp_us = msg->start_encode_timestamp_us();
+    //frame.end_encode_timestamp_us = msg->end_encode_timestamp_us();
+    //if (msg->has_temporal_id()) {
+    //    frame.temporal_id = msg->temporal_id();
+    //}
 
-    ltrtc_server_->send_video(frame);
+    ltrtc_server_->send_video(encoded_frame);
     // static std::ofstream out { "C:\\Users\\ntu\\AppData\\Roaming\\lanthing\\service_stream", std::ios::binary };
     // out.write(msg->frame().c_str(), msg->frame().size());
     // out.flush();
