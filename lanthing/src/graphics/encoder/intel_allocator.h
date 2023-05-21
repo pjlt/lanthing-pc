@@ -10,9 +10,6 @@
 namespace lt
 {
 
-namespace svc
-{
-
 // TODO: auto manage mids
 struct FrameBuffer
 {
@@ -106,7 +103,5 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Device> device_;
 };
 #endif
-
-} // namespace svc
 
 } // namespace lt

@@ -36,7 +36,7 @@ bool Service::init()
     if (ioloop_ == nullptr) {
         return false;
     }
-    if (!init_net_client()) {
+    if (!init_tcp_client()) {
         return false;
     }
     std::promise<void> promise;
@@ -56,7 +56,7 @@ void Service::uninit()
     //
 }
 
-bool Service::init_net_client()
+bool Service::init_tcp_client()
 {
     constexpr uint16_t kSslPort = 43899;
     constexpr uint16_t kNonSslPort = 43898;
@@ -98,8 +98,8 @@ dr3eXDA0n51BvL+i7ryWJrshwhuT2p4ZLg==
     params.on_closed = std::bind(&Service::on_server_disconnected, this);
     params.on_reconnecting = std::bind(&Service::on_server_reconnecting, this);
     params.on_message = std::bind(&Service::on_server_message, this, std::placeholders::_1, std::placeholders::_2);
-    net_client_ = ltlib::Client::create(params);
-    if (net_client_ == nullptr) {
+    tcp_client_ = ltlib::Client::create(params);
+    if (tcp_client_ == nullptr) {
         return false;
     }
     return true;
@@ -207,7 +207,7 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
         worker_sessions_[session_name] = session;
     } else {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
-        net_client_->send(ltproto::id(ack), ack);
+        tcp_client_->send(ltproto::id(ack), ack);
         // É¾³ýÕ¼Î»µÄnullptr
         std::lock_guard<std::mutex> lock { mutex_ };
         worker_sessions_.erase(session_name);
@@ -248,7 +248,7 @@ void Service::on_create_session_completed_thread_safe(bool success, const std::s
     } else {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
     }
-    net_client_->send(ltproto::id(ack), ack);
+    tcp_client_->send(ltproto::id(ack), ack);
 }
 
 void Service::on_session_closed_thread_safe(WorkerSession::CloseReason close_reason, const std::string& session_name, const std::string& room_id)
@@ -263,7 +263,7 @@ void Service::on_session_closed_thread_safe(WorkerSession::CloseReason close_rea
 
 void Service::send_message_to_server(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg)
 {
-    net_client_->send(type, msg);
+    tcp_client_->send(type, msg);
 }
 
 void Service::login_device()
@@ -276,7 +276,7 @@ void Service::login_device()
     } else {
         msg->set_allow_control(false);
     }
-    net_client_->send(ltproto::id(msg), msg);
+    tcp_client_->send(ltproto::id(msg), msg);
 }
 
 void Service::login_user()
@@ -286,7 +286,7 @@ void Service::login_user()
 void Service::allocate_device_id()
 {
     auto msg = std::make_shared<ltproto::server::AllocateDeviceID>();
-    net_client_->send(ltproto::id(msg), msg);
+    tcp_client_->send(ltproto::id(msg), msg);
 }
 
 void Service::report_session_closed(WorkerSession::CloseReason close_reason, const std::string& room_id)
@@ -308,7 +308,7 @@ void Service::report_session_closed(WorkerSession::CloseReason close_reason, con
     }
     msg->set_reason(reason);
     msg->set_room_id(room_id);
-    net_client_->send(ltproto::id(msg), msg);
+    tcp_client_->send(ltproto::id(msg), msg);
 }
 
 } // namespace svc

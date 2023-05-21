@@ -4,9 +4,6 @@
 namespace lt
 {
 
-namespace svc
-{
-
 using Microsoft::WRL::ComPtr;
 
 mfxStatus MFX_CDECL MfxFrameAllocator::_alloc(mfxHDL pthis, mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
@@ -334,7 +331,5 @@ mfxStatus MfxDecoderFrameAllocator::alloc_internal_frame(mfxFrameAllocRequest* r
     response->mids = fb.mids;
     return MFX_ERR_NONE;
 }
-
-} // namespace svc
 
 } // namespace lt

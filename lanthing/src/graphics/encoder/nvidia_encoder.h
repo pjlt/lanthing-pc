@@ -6,19 +6,16 @@
 
 #include <ltrtc/lttypes.h>
 
-#include "video_encoder.h"
+#include <graphics/encoder/video_encoder.h>
 
 namespace lt
-{
-
-namespace svc
 {
 
 class NvD3d11EncoderImpl;
 class NvD3d11Encoder : public VideoEncoder
 {
 public:
-    NvD3d11Encoder();
+    NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx);
     ~NvD3d11Encoder() override;
     bool init(const InitParams& params);
     void reconfigure(const ReconfigureParams& params) override;
@@ -27,7 +24,5 @@ public:
 private:
     std::shared_ptr<NvD3d11EncoderImpl> impl_;
 };
-
-} // namespace svc
 
 } // namespace lt

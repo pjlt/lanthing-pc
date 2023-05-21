@@ -10,9 +10,6 @@
 namespace lt
 {
 
-namespace svc
-{
-
 class D3D11Provider;
 
 class VideoEncoder
@@ -39,7 +36,6 @@ public:
 
     struct InitParams
     {
-        void* context = nullptr;
         Backend backend = Backend::Unknown;
         ltrtc::VideoCodecType codec_type = ltrtc::VideoCodecType::H264;
         uint32_t width = 0;
@@ -55,20 +51,30 @@ public:
         std::optional<uint32_t> fps;
     };
 
+    struct Ability
+    {
+        Backend backend;
+        ltrtc::VideoCodecType codec_type;
+    };
+
 public:
     static std::unique_ptr<VideoEncoder> create(const InitParams& params);
     virtual ~VideoEncoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
     EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame, bool force_idr);
 
+    static std::vector<Ability> check_encode_abilities(uint32_t width, uint32_t height);
+
 protected:
-    VideoEncoder(void* d3d11_device);
+    VideoEncoder(void* d3d11_dev, void* d3d11_ctx);
     virtual EncodedFrame encode_one_frame(void* input_frame, bool force_idr) = 0;
 
 private:
-    void* d3d11_device_;
-};
+    static std::unique_ptr<VideoEncoder> do_create_encoder(const InitParams& params, void* d3d11_dev, void* d3d11_ctx);
 
-} // namespace svc
+private:
+    void* d3d11_dev_ = nullptr;
+    void* d3d11_ctx_ = nullptr;
+};
 
 } // namespace lt

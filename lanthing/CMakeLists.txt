@@ -23,19 +23,25 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_process.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.cpp
-    # Service->vencoder
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/video_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/video_encoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/nvidia_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/nvidia_encoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/intel_allocator.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/intel_allocator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/intel_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/vencoder/intel_encoder.cpp
 
     # Worker
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/message_handler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
+
+    # graphics
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/nvidia_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/nvidia_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_allocator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_allocator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.cpp
 )
 
 if(LT_WINDOWS)

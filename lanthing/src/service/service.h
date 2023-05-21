@@ -20,7 +20,7 @@ public:
     void uninit();
 
 private:
-    bool init_net_client();
+    bool init_tcp_client();
     void main_loop(const std::function<void()>& i_am_alive);
     bool init_settings();
     void destroy_session(const std::string& session_name);
@@ -48,7 +48,7 @@ private:
 
 private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;
-    std::unique_ptr<ltlib::Client> net_client_;
+    std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::mutex mutex_;
     std::map<std::string, std::shared_ptr<WorkerSession>> worker_sessions_;

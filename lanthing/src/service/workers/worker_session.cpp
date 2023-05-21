@@ -15,6 +15,7 @@
 #include <ltlib/system.h>
 #include <ltlib/times.h>
 #include <string_keys.h>
+//#include <graphics/encoder/video_encoder.h>
 #include "worker_process.h"
 
 namespace

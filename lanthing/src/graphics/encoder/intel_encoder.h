@@ -1,12 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include <service/vencoder/video_encoder.h>
+#include <graphics/encoder/video_encoder.h>
 
 namespace lt
-{
-
-namespace svc
 {
 
 class IntelEncoderImpl;
@@ -14,7 +11,7 @@ class IntelEncoderImpl;
 class IntelEncoder : public VideoEncoder
 {
 public:
-    IntelEncoder();
+    IntelEncoder(void* d3d11_dev, void* d3d11_ctx);
     ~IntelEncoder() override { }
     bool init(const InitParams& params);
     void reconfigure(const ReconfigureParams& params) override;
@@ -23,7 +20,5 @@ public:
 private:
     std::shared_ptr<IntelEncoderImpl> impl_;
 };
-
-} // namespace svc
 
 } // namespace lt

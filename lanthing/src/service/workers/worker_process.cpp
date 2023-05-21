@@ -72,7 +72,7 @@ void WorkerProcess::start()
     std::promise<void> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
-        "host_process", [this, &promise](const std::function<void()>& i_am_alive, void*) {
+        "worker_process", [this, &promise](const std::function<void()>& i_am_alive, void*) {
             main_loop(promise, i_am_alive);
         },
         nullptr);
@@ -84,7 +84,7 @@ void WorkerProcess::main_loop(std::promise<void>& promise, const std::function<v
     while (!stoped_) {
         i_am_alive();
         if (!launch_worker_process()) {
-            LOG(WARNING) << "Launch host process failed";
+            LOG(WARNING) << "Launch worker process failed";
             std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
             continue;
         }

@@ -41,6 +41,7 @@ private:
         std::function<void(CloseReason, const std::string&, const std::string&)> on_closed);
     bool init(std::shared_ptr<google::protobuf::MessageLite> msg);
     bool init_rtc_server();
+    bool check_encode_abilities(uint32_t width, uint32_t height);
     void create_worker_process(uint32_t client_width, uint32_t client_height, uint32_t client_refresh_rate, std::vector<ltrtc::VideoCodecType> client_codecs);
     void main_loop(const std::function<void()>& i_am_alive);
     void on_closed(CloseReason reason);

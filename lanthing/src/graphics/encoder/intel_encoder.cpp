@@ -70,9 +70,6 @@ mfxU16 FourCCToChroma(mfxU32 fourCC)
 namespace lt
 {
 
-namespace svc
-{
-
 class IntelEncoderImpl
 {
 public:
@@ -107,8 +104,9 @@ private:
     bool enable_qsvff_ = false;
 };
 
-IntelEncoder::IntelEncoder()
-    : impl_(std::make_shared<IntelEncoderImpl>())
+IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx)
+    : VideoEncoder { d3d11_dev, d3d11_ctx }
+    , impl_(std::make_shared<IntelEncoderImpl>())
 {
 }
 
@@ -404,7 +402,5 @@ mfxVideoParam IntelEncoderImpl::gen_vpp_param()
 #undef MSDK_ALIGN16
     return params;
 }
-
-} // namespace svc
 
 } // namespace lt

@@ -13,9 +13,6 @@
 namespace lt
 {
 
-namespace svc
-{
-
 class NvEncParamsHelper
 {
 public:
@@ -225,7 +222,8 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& p)
     }
 }
 
-NvD3d11Encoder::NvD3d11Encoder()
+NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx)
+    : VideoEncoder { d3d11_dev, d3d11_ctx }
 {
 }
 
@@ -247,7 +245,5 @@ NvD3d11Encoder::EncodedFrame NvD3d11Encoder::encode_one_frame(void* input_frame,
 {
     return impl_->encode_one_frame(input_frame, request_iframe);
 }
-
-} // namespace svc
 
 } // namespace lt
