@@ -21,7 +21,7 @@
 
 #include "nvEncodeAPI.h"
 
-#include "mlib/log/log.h"
+#include <g3log/g3log.hpp>
 
 #ifndef _WIN32
 inline bool operator==(const GUID& guid1, const GUID& guid2) {
@@ -290,8 +290,8 @@ public:
         }
 
         funcInit(pParams);
-        LOG_DEBUG("%s", NvEncoderInitParam().MainParamToString(pParams).c_str());
-        LOG_DEBUG("%s", NvEncoderInitParam().FullParamToString(pParams).c_str());
+        LOGF(DEBUG, "%s", NvEncoderInitParam().MainParamToString(pParams).c_str());
+        LOGF(DEBUG, "%s", NvEncoderInitParam().FullParamToString(pParams).c_str());
     }
 
 private:
@@ -302,7 +302,7 @@ private:
         auto it = std::find(vstrValueName.begin(), vstrValueName.end(), strValue);
         if (it == vstrValueName.end()) {
             // LOG(ERROR) << strName << " options: " << strValueNames;
-            LOG_ERROR("%s options %s", strName.c_str(), strValueNames.c_str());
+            LOGF(WARNING, "%s options %s", strName.c_str(), strValueNames.c_str());
             return false;
         }
         *pValue = vValue[it - vstrValueName.begin()];
@@ -314,7 +314,7 @@ private:
         auto it = std::find(vValue.begin(), vValue.end(), value);
         if (it == vValue.end()) {
             // LOG(ERROR) << "Invalid value. Can't convert to one of " << strValueNames;
-            LOG_ERROR("invalid value, can't convert to one of %s", strValueNames.c_str());
+            LOGF(WARNING, "invalid value, can't convert to one of %s", strValueNames.c_str());
             return std::string();
         }
         return split(strValueNames, ' ')[it - vValue.begin()];
@@ -325,7 +325,7 @@ private:
             double r = std::stod(strValue, &l);
             char c = strValue[l];
             if (c != 0 && c != 'k' && c != 'm') {
-                LOG_ERROR("%s units: 1, K, M (lower case also allowed)", strName.c_str());
+                LOGF(WARNING, "%s units: 1, K, M (lower case also allowed)", strName.c_str());
             }
             *pBitRate = (unsigned)((c == 'm' ? 1000000 : (c == 'k' ? 1000 : 1)) * r);
         } catch (std::invalid_argument) {
@@ -339,7 +339,7 @@ private:
             *pInt = std::stoi(strValue);
         } catch (std::invalid_argument) {
             // LOG(ERROR) << strName << " need a value of positive number";
-            LOG_ERROR("%s need a value of positive number", strName.c_str());
+            LOGF(WARNING, "%s need a value of positive number", strName.c_str());
             return false;
         }
         return true;
@@ -356,7 +356,7 @@ private:
                         (unsigned)std::stoi(vQp[2])};
             }
             else {
-                LOG_ERROR("%s qp_for_P_B_I or qp_P,qp_B,qp_I (no space is allowed)",
+                LOGF(WARNING, "%s qp_for_P_B_I or qp_P,qp_B,qp_I (no space is allowed)",
                           strName.c_str());
                 return false;
             }

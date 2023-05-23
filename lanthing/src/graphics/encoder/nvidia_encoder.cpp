@@ -43,16 +43,17 @@ public:
     };
 
 public:
-    NvD3d11EncoderImpl();
+    NvD3d11EncoderImpl(ID3D11Device* d3d11_device);
+    ~NvD3d11EncoderImpl();
     bool init(const VideoEncoder::InitParams& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
     VideoEncoder::EncodedFrame encode_one_frame(void* input_frame, bool request_iframe);
 
 private:
-    std::unique_ptr<NvEncoderD3D11> impl_;
+    std::unique_ptr<NvEncoderD3D11> encoder_impl_;
     ltrtc::VideoCodecType codec_;
     std::optional<NvEncParamsHelper> params_;
-    Microsoft::WRL::ComPtr<ID3D11Device> d3d_device_;
+    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device_;
 };
 
 NvEncParamsHelper::NvEncParamsHelper(ltrtc::VideoCodecType c)
@@ -138,7 +139,8 @@ std::string NvEncParamsHelper::params() const
     return oss.str();
 }
 
-NvD3d11EncoderImpl::NvD3d11EncoderImpl()
+NvD3d11EncoderImpl::NvD3d11EncoderImpl(ID3D11Device* d3d11_device)
+    : d3d11_device_ { d3d11_device }
 {
 }
 
@@ -148,17 +150,16 @@ NvD3d11EncoderImpl::~NvD3d11EncoderImpl()
 
 bool NvD3d11EncoderImpl::init(const VideoEncoder::InitParams& params)
 {
-    d3d_device_ = reinterpret_cast<ID3D11Device*>(params.context);
     codec_ = params.codec_type;
     params_ = NvEncParamsHelper { codec_ };
-    impl_ = std::make_unique<NvEncoderD3D11>(d3d_device_.Get(), params.width, params.height,
+    encoder_impl_ = std::make_unique<NvEncoderD3D11>(d3d11_device_.Get(), params.width, params.height,
         NV_ENC_BUFFER_FORMAT_ARGB, 0);
 
     NV_ENC_INITIALIZE_PARAMS init_params = { NV_ENC_INITIALIZE_PARAMS_VER };
     NV_ENC_CONFIG config = { NV_ENC_CONFIG_VER };
     init_params.encodeConfig = &config;
     auto cli_ops = NvEncoderInitParam(params_->params().c_str());
-    impl_->CreateDefaultEncoderParams(&init_params, cli_ops.GetEncodeGUID(),
+    encoder_impl_->CreateDefaultEncoderParams(&init_params, cli_ops.GetEncodeGUID(),
         cli_ops.GetPresetGUID());
     if (init_params.encodeGUID == NV_ENC_CODEC_H264_GUID) {
         init_params.encodeConfig->encodeCodecConfig.h264Config.maxNumRefFrames = 0;
@@ -173,7 +174,7 @@ bool NvD3d11EncoderImpl::init(const VideoEncoder::InitParams& params)
     cli_ops.SetInitParams(&init_params, NV_ENC_BUFFER_FORMAT_ARGB);
 
     try {
-        impl_->CreateEncoder(&init_params);
+        encoder_impl_->CreateEncoder(&init_params);
     } catch (const NVENCException& exception) {
         LOGF(INFO, "nvenc exception: %s", exception.what());
         return false;
@@ -190,10 +191,10 @@ VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encode_one_frame(void* input_fram
     }
     VideoEncoder::EncodedFrame out_frame {};
     std::vector<std::vector<uint8_t>> imgs;
-    auto type = impl_->EncodeFrame(input_frame, imgs, &pic_params);
+    auto type = encoder_impl_->EncodeFrame(input_frame, imgs, &pic_params);
     if (!imgs.empty()) {
         out_frame.size = imgs.back().size();
-        out_frame.data = std::make_shared<uint8_t>(new uint8_t[out_frame.size]);
+        out_frame.data = std::shared_ptr<uint8_t>(new uint8_t[out_frame.size]);
         memcpy(out_frame.data.get(), imgs.back().data(), out_frame.size);
         out_frame.is_keyframe = type == NV_ENC_PIC_TYPE_I || type == NV_ENC_PIC_TYPE_IDR;
     }
@@ -214,9 +215,9 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& p)
     NV_ENC_RECONFIGURE_PARAMS params = { NV_ENC_RECONFIGURE_PARAMS_VER };
     NV_ENC_CONFIG config = { NV_ENC_CONFIG_VER };
     params.reInitEncodeParams.encodeConfig = &config;
-    impl_->GetInitializeParams(&params.reInitEncodeParams);
+    encoder_impl_->GetInitializeParams(&params.reInitEncodeParams);
     cli_ops.SetInitParams(&params.reInitEncodeParams, NV_ENC_BUFFER_FORMAT_ARGB);
-    if (impl_->Reconfigure(&params)) {
+    if (encoder_impl_->Reconfigure(&params)) {
         LOGF(WARNING, "reconfig NvEnc failed, params: %s",
             cli_ops.MainParamToString(&params.reInitEncodeParams).c_str());
     }
@@ -224,6 +225,7 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& p)
 
 NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx)
     : VideoEncoder { d3d11_dev, d3d11_ctx }
+    , impl_ { std::make_shared<NvD3d11EncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev)) }
 {
 }
 

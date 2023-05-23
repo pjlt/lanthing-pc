@@ -73,7 +73,7 @@ auto init_log(Role role) -> std::tuple<std::unique_ptr<g3::LogWorker>, std::uniq
     //    ltrtc::init_logging(log_dir.string(), rtc_prefix);
     //}
 
-    return std::make_tuple(g3worker, g3sink);
+    return std::make_tuple(std::move(g3worker), std::move(g3sink));
 }
 
 std::map<std::string, std::string> parse_options(int argc, char* argv[])
@@ -119,7 +119,7 @@ bool is_another_instance_running()
 int run_as_client(std::map<std::string, std::string> options)
 {
     auto [g3worker, g3sink] = init_log(Role::Client);
-    auto client = lt::Client::create(options);
+    auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
         return 0;
@@ -153,7 +153,7 @@ int run_as_service(std::map<std::string, std::string> options)
 int run_as_worker(std::map<std::string, std::string> options)
 {
     auto [g3worker, g3sink] = init_log(Role::Worker);
-    auto worker = lt::Worker::create(options);
+    auto worker = lt::worker::Worker::create(options);
     if (worker) {
         worker->wait();
         return 0;

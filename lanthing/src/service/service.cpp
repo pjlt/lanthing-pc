@@ -230,6 +230,7 @@ void Service::on_allocate_device_id_ack(std::shared_ptr<google::protobuf::Messag
     device_id_ = ack->device_id();
     settings_->set_integer("device_id", device_id_);
     login_device();
+    // TODO: 以前Service是连接后台的唯一接口，现在UI独立连接，需要重新理一理接口
     push_device_id_to_ui();
 }
 

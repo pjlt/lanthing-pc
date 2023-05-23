@@ -73,7 +73,7 @@ namespace lt
 class IntelEncoderImpl
 {
 public:
-    IntelEncoderImpl() = default;
+    IntelEncoderImpl(ID3D11Device* d3d11_dev);
     ~IntelEncoderImpl() = default;
     bool init(const VideoEncoder::InitParams& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
@@ -106,7 +106,7 @@ private:
 
 IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx)
     : VideoEncoder { d3d11_dev, d3d11_ctx }
-    , impl_(std::make_shared<IntelEncoderImpl>())
+    , impl_(std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev)))
 {
 }
 
@@ -125,6 +125,11 @@ VideoEncoder::EncodedFrame IntelEncoder::encode_one_frame(void* input_frame, boo
     return impl_->encode_one_frame(input_frame, force_idr);
 }
 
+IntelEncoderImpl::IntelEncoderImpl(ID3D11Device* d3d11_dev)
+    : device_ { reinterpret_cast<ID3D11Device*>(d3d11_dev) }
+{
+}
+
 bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
 {
     if (!params.validate()) {
@@ -132,7 +137,6 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
     }
     width_ = params.width;
     height_ = params.height;
-    device_ = reinterpret_cast<ID3D11Device*>(params.context);
     device_->GetImmediateContext(device_context_.GetAddressOf());
     codec_type_ = params.codec_type;
     bitrate_bps_ = params.bitrate_bps;

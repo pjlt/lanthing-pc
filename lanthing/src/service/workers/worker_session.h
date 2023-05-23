@@ -7,6 +7,7 @@
 #include <ltlib/io/client.h>
 #include <ltlib/io/server.h>
 #include <ltlib/threads.h>
+#include <graphics/encoder/video_encoder.h>
 
 namespace lt
 {
@@ -46,6 +47,7 @@ private:
     void main_loop(const std::function<void()>& i_am_alive);
     void on_closed(CloseReason reason);
     void maybe_on_create_session_completed();
+    bool create_video_encoder();
 
     // –≈¡Ó
     bool init_signling_client();
@@ -97,6 +99,7 @@ private:
     std::unique_ptr<ltlib::TaskThread> task_thread_;
     std::unique_ptr<ltrtc::LTServer> ltrtc_server_;
     std::unique_ptr<ltlib::Server> pipe_server_;
+    std::unique_ptr<lt::VideoEncoder> video_encoder_;
     uint32_t pipe_client_fd_ = std::numeric_limits<uint32_t>::max();
     std::string pipe_name_;
     std::set<uint32_t> worker_registered_msg_;

@@ -33,6 +33,20 @@ ltrtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type)
     }
 }
 
+lt::VideoEncoder::Backend to_lt(ltproto::peer2peer::StreamingParams::VideoEncodeBackend backend)
+{
+    switch (backend) {
+    case ltproto::peer2peer::StreamingParams_VideoEncodeBackend_NvEnc:
+        return lt::VideoEncoder::Backend::NvEnc;
+    case ltproto::peer2peer::StreamingParams_VideoEncodeBackend_IntelMediaSDK:
+        return lt::VideoEncoder::Backend::IntelMediaSDK;
+    case ltproto::peer2peer::StreamingParams_VideoEncodeBackend_AMF:
+        return lt::VideoEncoder::Backend::Amf;
+    default:
+        return lt::VideoEncoder::Backend::Unknown;
+    }
+}
+
 } // 匿名空间
 
 namespace lt
@@ -240,8 +254,7 @@ void WorkerSession::maybe_on_create_session_completed()
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
-    auto params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
-    if (params->video_codecs_size() == 0) {
+    if (!create_video_encoder()) {
         on_create_session_completed_(false, session_name_, empty_params);
         return;
     }
@@ -250,6 +263,29 @@ void WorkerSession::maybe_on_create_session_completed()
         return;
     }
     on_create_session_completed_(true, session_name_, negotiated_streaming_params_);
+}
+
+bool WorkerSession::create_video_encoder()
+{
+    auto params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
+    if (params->video_codecs_size() == 0) {
+        LOG(WARNING) << "Negotiate failed, no appropriate video codec";
+        return false;
+    }
+    auto backend = params->video_codecs().Get(0).backend();
+    auto codec = params->video_codecs().Get(0).codec_type();
+    LOG(INFO) << "Negotiate success, using "
+        << ltproto::peer2peer::StreamingParams_VideoEncodeBackend_Name(backend)
+        << ":"
+        << ltproto::peer2peer::VideoCodecType_Name(codec);
+    lt::VideoEncoder::InitParams init_params {};
+    init_params.backend = to_lt(backend);
+    init_params.codec_type = to_ltrtc(codec);
+    init_params.bitrate_bps = 10'000'000; // TODO: 修改更合理的值，或者协商
+    init_params.width = params->video_width();
+    init_params.height = params->video_height();
+    video_encoder_ = lt::VideoEncoder::create(init_params);
+    return video_encoder_ != nullptr;
 }
 
 bool WorkerSession::init_signling_client()
@@ -533,24 +569,12 @@ void WorkerSession::on_ltrtc_signaling_message(const std::string& key, const std
 
 void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageLite> _msg)
 {
+    // NOTE: 这是在IOLoop线程
     auto captured_frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_msg);
-    ltrtc::VideoFrame encoded_frame {};
-    //TODO: 编码
-    // 
-    //frame.is_keyframe = msg->is_keyframe();
-    //frame.ltframe_id = msg->picture_id();
-    //frame.data = std::shared_ptr<uint8_t>(new uint8_t[msg->frame().size()]);
-    //::memcpy(frame.data.get(), msg->frame().data(), msg->frame().size());
-    //frame.size = msg->frame().size();
-    //frame.width = msg->width();
-    //frame.height = msg->height();
-    //frame.capture_timestamp_us = msg->capture_timestamp_us();
-    //frame.start_encode_timestamp_us = msg->start_encode_timestamp_us();
-    //frame.end_encode_timestamp_us = msg->end_encode_timestamp_us();
-    //if (msg->has_temporal_id()) {
-    //    frame.temporal_id = msg->temporal_id();
-    //}
-
+    auto encoded_frame = video_encoder_->encode(captured_frame, false);
+    if (encoded_frame.is_black_frame) {
+        //???
+    }
     ltrtc_server_->send_video(encoded_frame);
     // static std::ofstream out { "C:\\Users\\ntu\\AppData\\Roaming\\lanthing\\service_stream", std::ios::binary };
     // out.write(msg->frame().c_str(), msg->frame().size());

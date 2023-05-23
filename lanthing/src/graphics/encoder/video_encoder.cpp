@@ -87,6 +87,7 @@ namespace lt
 std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params)
 {
     if (!params.validate()) {
+        LOG(WARNING) << "Create VideoEncoder failed: invalid parameters";
         return nullptr;
     }
     auto [device, context, vendor_id] = create_d3d11();
@@ -181,7 +182,7 @@ VideoEncoder::EncodedFrame VideoEncoder::encode(std::shared_ptr<ltproto::peer2pe
     encoded_frame.is_black_frame = is_black_frame(encoded_frame);
     encoded_frame.start_encode_timestamp_us = start_encode;
     encoded_frame.end_encode_timestamp_us = end_encode;
-    encoded_frame.ltframe_id = input_frame->picture_id();
+    encoded_frame.ltframe_id = frame_id_++;
     encoded_frame.capture_timestamp_us = input_frame->capture_timestamp_us();
     encoded_frame.width = input_frame->width();
     encoded_frame.height = input_frame->height();

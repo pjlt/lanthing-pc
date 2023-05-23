@@ -73,6 +73,7 @@ private:
 private:
     void* d3d11_dev_ = nullptr;
     void* d3d11_ctx_ = nullptr;
+    uint64_t frame_id_ = 0;
 };
 
 } // namespace lt

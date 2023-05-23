@@ -74,7 +74,7 @@ private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> pipe_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    uint32_t last_time_received_from_service_;
+    int64_t last_time_received_from_service_;
     std::unique_ptr<lt::VideoCapturer> video_capturer_;
 };
 

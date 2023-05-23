@@ -1,6 +1,6 @@
 #include <Windows.h>
 #include <g3log/g3log.hpp>
-#include <ltutil/system.h>
+#include <ltlib/system.h>
 #include <worker/session_change_observer.h>
 
 namespace
@@ -61,7 +61,7 @@ void SessionChangeObserver::stop()
 void SessionChangeObserver::waiting_loop()
 {
     while (!stoped_) {
-        if (!ltutil::is_run_as_local_system()) {
+        if (!ltlib::is_run_as_local_system()) {
             std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
             continue;
         }

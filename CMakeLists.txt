@@ -34,6 +34,8 @@ add_subdirectory(third_party/libuv)
 add_subdirectory(third_party/mbedtls)
 add_subdirectory(third_party/nvcodec)
 add_subdirectory(third_party/mfx_builder)
+add_subdirectory(third_party/SDL)
+add_subdirectory(third_party/ffmpeg)
 
 add_subdirectory(ltrtc)
 add_subdirectory(ltproto)

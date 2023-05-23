@@ -10,6 +10,26 @@ set(LT_SRCS
     # Client
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.cpp
+    # Client->graphics
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/ct_smoother.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/ct_smoother.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/d3d11_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/d3d11_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/pixel_shader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/vertex_shader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/video.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/video.cpp
+    # Client->input
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input_event.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input_event.cpp
+    # Client->platforms
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl_input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl_input.cpp
 
     # Service
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.h
@@ -93,6 +113,8 @@ target_link_libraries(${PROJECT_NAME}
     g3log
     protobuf::libprotobuf-lite
     tomlpp
+    SDL2::SDL2-static
+    ffmpeg
     nvcodec
     mfx
     uv_a
