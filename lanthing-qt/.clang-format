@@ -1,0 +1,21 @@
+---
+Language:        Cpp
+BasedOnStyle:  WebKit
+FixNamespaceComments: true
+NamespaceIndentation: None
+AllowShortBlocksOnASingleLine: Always
+AllowShortFunctionsOnASingleLine: Inline
+
+# 不要重排头文件
+SortIncludes: false
+
+# 左 {
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterStruct: true
+  AfterClass: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+...

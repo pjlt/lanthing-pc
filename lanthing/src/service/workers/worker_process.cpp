@@ -8,7 +8,7 @@
 namespace
 {
 
-static std::string to_string(std::vector<ltrtc::VideoCodecType> codecs)
+std::string to_string(std::vector<ltrtc::VideoCodecType> codecs)
 {
     std::string str;
     for (size_t i = 0; i < codecs.size(); i++) {

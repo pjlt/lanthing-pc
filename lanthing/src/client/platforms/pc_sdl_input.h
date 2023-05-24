@@ -27,15 +27,6 @@ public:
     static std::unique_ptr<SdlInput> create(const Params& params);
     void set_input_handler(const OnInputEvent& on_input_event);
     void rumble(uint16_t controller_number, uint16_t log_freq_motor, uint16_t high_freq_motor);
-    void release_all_keys(); // TODO: 看看fl的这部分逻辑
-    void on_mouse_leave();
-    void on_focus_lost();
-    void on_mouse_pos();
-    void update_keyboard_grab(); //??
-    void is_capture_active(); //???
-    void is_system_key_capture_active(); //???
-    void set_capture_active();
-    void is_mouse_in_video_region(int32_t x, int32_t y, int32_t width, int32_t height);
 
     void handle_key_up_down(const SDL_KeyboardEvent& ev);
     void handle_mouse_button(const SDL_MouseButtonEvent& ev);

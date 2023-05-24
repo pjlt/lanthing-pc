@@ -62,12 +62,6 @@ void SdlInput::handle_key_up_down(const SDL_KeyboardEvent& ev)
         return;
     }
     on_input_event(KeyboardEvent { static_cast<uint16_t>(ev.keysym.scancode), ev.type == SDL_KEYDOWN });
-    //auto old_state_is_pressed = keyboard_state_[ev.keysym.scancode] == 0 ? false : true;
-    //auto new_state_is_pressed = ev.type == SDL_KEYUP ? false : true;
-    //if (old_state_is_pressed != new_state_is_pressed) {
-    //    keyboard_state_[ev.keysym.scancode] = new_state_is_pressed;
-    //    keys_to_send = ({ev.keysym.scancode, new_state_is_pressed});
-    //}
 }
 
 void SdlInput::handle_mouse_button(const SDL_MouseButtonEvent& ev)
