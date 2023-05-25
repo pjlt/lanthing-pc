@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package ltproto.ui;
-option java_package = "cn.lanthing.ltproto.ui";
-
-message PushDeviceID
-{
-	int64 device_id = 1;
-}

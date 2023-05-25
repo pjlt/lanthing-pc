@@ -1,6 +1,0 @@
-*.pb.cc
-*.pb.h
-*.exe
-*.pb.go
-/target
-.vscode

@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package ltproto.peer2peer;
-
-message KeyboardEvent
-{
-    int32 key = 1;
-    bool down = 2;
-}

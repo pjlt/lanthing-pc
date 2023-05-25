@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package ltproto.peer2peer;
-
-message StartWorking
-{
-}
