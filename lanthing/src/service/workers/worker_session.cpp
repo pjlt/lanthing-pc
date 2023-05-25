@@ -174,6 +174,7 @@ bool WorkerSession::init_rtc_server()
     auto negotiated_params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
     namespace ph = std::placeholders;
     ltrtc::LTServerConfig cfg;
+    cfg.use_nbp2p = false;
     cfg.username = p2p_username_.c_str();
     cfg.password = p2p_password_.c_str();
     cfg.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());

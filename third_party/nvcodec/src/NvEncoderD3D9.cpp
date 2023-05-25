@@ -12,7 +12,7 @@
 #ifndef WIN32
 #include <dlfcn.h>
 #endif
-#include "NvEncoderD3D9.h"
+#include <nvcodec/NvEncoderD3D9.h>
 #include <D3D9Types.h>
 #include <utility>
 

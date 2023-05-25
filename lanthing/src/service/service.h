@@ -34,14 +34,12 @@ private:
     void send_message_to_server(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void login_device();
     void login_user();
-    void allocate_device_id();
     void report_session_closed(WorkerSession::CloseReason close_reason, const std::string& room_id);
 
     // ÏûÏ¢handler
     void on_open_connection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_allocate_device_id_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void on_create_session_completed_thread_safe(bool success, const std::string& session_name, std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_session_closed_thread_safe(WorkerSession::CloseReason close_reason, const std::string& session_name, const std::string& room_id);

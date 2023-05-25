@@ -8,6 +8,8 @@
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
+#include <ltproto/server/allocate_device_id.pb.h>
+#include <ltproto/server/allocate_device_id_ack.pb.h>
 
 namespace
 {
@@ -81,8 +83,10 @@ void ClientUI::connect(int64_t device_id)
     auto req = std::make_shared<ltproto::server::RequestConnection>();
     req->set_conn_type(ltproto::server::ConnectionType::Control);
     req->set_device_id(device_id);
-    ltcore::client::HardDecodability abilities = ltcore::client::check_hard_decodability();
-    ltlib::DisplayOutputDesc display_output_desc = ltutil::get_display_output_desc();
+    //HardDecodability abilities = lt::check_hard_decodability();
+    bool h264_decodable = true;
+    bool h265_decodable = true;
+    ltlib::DisplayOutputDesc display_output_desc = ltlib::get_display_output_desc();
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);
     params->set_enable_gamepad(false);
@@ -94,14 +98,14 @@ void ClientUI::connect(int64_t device_id)
         using CodecType = ltproto::peer2peer::VideoCodecType;
         switch (codec) {
         case ltproto::peer2peer::AVC:
-            if (abilities.h264) {
+            if (h264_decodable) {
                 auto video_codec = params->add_video_codecs();
                 video_codec->set_backend(Backend::StreamingParams_VideoEncodeBackend_Unknown);
                 video_codec->set_codec_type(CodecType::AVC);
             }
             break;
         case ltproto::peer2peer::HEVC:
-            if (abilities.h265) {
+            if (h265_decodable) {
                 auto video_codec = params->add_video_codecs();
                 video_codec->set_backend(Backend::StreamingParams_VideoEncodeBackend_Unknown);
                 video_codec->set_codec_type(CodecType::HEVC);
@@ -113,31 +117,55 @@ void ClientUI::connect(int64_t device_id)
     }
     if (params->video_codecs_size() == 0) {
         LOG(WARNING) << "No decodability!";
-        return -1;
+        return;
     }
     {
         std::lock_guard<std::mutex> lock { mutex_ };
         auto result = sessions_.insert({ device_id, nullptr });
         if (!result.second) {
             LOG(WARNING) << "Another task already connected/connecting to device_id:" << device_id;
-            return -1;
+            return;
         }
     }
-    send_message_to_server(ltproto::id(req), req);
+    send_message(ltproto::id(req), req);
     try_remove_session_after_10s(device_id);
-    return 0;
 }
 
 void ClientUI::try_remove_session_after_10s(int64_t device_id)
 {
+    ioloop_->post_delay(10'000, [device_id, this]() {
+        try_remove_session(device_id);
+    });
 }
 
 void ClientUI::try_remove_session(int64_t device_id)
 {
+    std::lock_guard<std::mutex> lock { mutex_ };
+    auto iter = sessions_.find(device_id);
+    if (iter == sessions_.end() || iter->second != nullptr) {
+        return;
+    } else {
+        sessions_.erase(iter);
+        LOG(WARNING) << "Remove session(device_id:" << device_id << ") by timeout";
+    }
 }
 
 void ClientUI::on_client_exited_thread_safe(int64_t device_id)
 {
+    if (ioloop_->is_not_current_thread()) {
+        ioloop_->post(std::bind(&ClientUI::on_client_exited_thread_safe, this, device_id));
+        return;
+    }
+    size_t size;
+    {
+        std::lock_guard<std::mutex> lock { mutex_ };
+        size = sessions_.erase(device_id);
+    }
+    if (size == 0) {
+        LOG(WARNING) << "Try remove ClientSession due to client exited, but the session(" << device_id << ") doesn't exist.";
+    } else {
+        LOG(INFO) << "Remove session(" << device_id << ") success";
+    }
 }
 
 bool ClientUI::init_tcp_client()
@@ -171,9 +199,13 @@ void ClientUI::send_message(uint32_t type, std::shared_ptr<google::protobuf::Mes
 void ClientUI::on_server_connected()
 {
     LOG(INFO) << "Connected to server";
-    auto msg = std::make_shared<ltproto::server::LoginDevice>();
-    msg->set_device_id(my_device_id_);
-    send_message(ltproto::id(msg), msg);
+    if (my_device_id_ != 0) {
+        login_device();
+    } else {
+        // 前期开发中，device_id写死，不会向服务器申请
+        assert(false);
+        allocate_device_id();
+    }
 }
 
 void ClientUI::on_server_disconnected()
@@ -191,9 +223,40 @@ void ClientUI::on_server_message(uint32_t type, std::shared_ptr<google::protobuf
     LOG(DEBUG) << "On server message, type:" << type;
     namespace ltype = ltproto::type;
     switch (type) {
+    case ltype::kLoginDeviceAck:
+        handle_login_device_ack(msg);
+        break;
+    case ltype::kAllocateDeviceIDAck:
+        handle_allocate_device_id_ack(msg);
+        break;
+    case ltype::kRequestConnectionAck:
+        handle_request_connection_ack(msg);
+        break;
     default:
+        LOG(WARNING) << "Unknown server message:" << type;
         break;
     }
+}
+
+void ClientUI::login_device()
+{
+    auto msg = std::make_shared<ltproto::server::LoginDevice>();
+    msg->set_device_id(my_device_id_);
+    send_message(ltproto::id(msg), msg);
+}
+
+void ClientUI::allocate_device_id()
+{
+    auto msg = std::make_shared<ltproto::server::AllocateDeviceID>();
+    send_message(ltproto::id(msg), msg);
+}
+
+void ClientUI::handle_allocate_device_id_ack(std::shared_ptr<google::protobuf::MessageLite> msg)
+{
+    auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
+    my_device_id_ = ack->device_id();
+    //settings_->set_integer("device_id", my_device_id_);
+    login_device();
 }
 
 void ClientUI::handle_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> _msg)
@@ -203,6 +266,7 @@ void ClientUI::handle_login_device_ack(std::shared_ptr<google::protobuf::Message
         LOG(WARNING) << "Login with device id(" << my_device_id_ << ") failed";
         return;
     }
+    // 测试程序，所以登录设备后，直接发起连接。
     connect(peer_device_id_);
 }
 

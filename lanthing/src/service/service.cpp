@@ -148,9 +148,6 @@ void Service::dispatch_server_message(uint32_t type, std::shared_ptr<google::pro
     case ltype::kLoginUser:
         on_login_user_ack(msg);
         break;
-    case ltype::kAllocateDeviceIDAck:
-        on_allocate_device_id_ack(msg);
-        break;
     case ltype::kOpenConnection:
         on_open_connection(msg);
         break;
@@ -176,7 +173,8 @@ void Service::on_server_connected()
     if (device_id_ != 0) {
         login_device();
     } else {
-        allocate_device_id();
+        // ID由ClientUI申请好，才能启动Service
+        assert(false);
     }
 }
 
@@ -222,16 +220,6 @@ void Service::on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite>
 
 void Service::on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg)
 {
-}
-
-void Service::on_allocate_device_id_ack(std::shared_ptr<google::protobuf::MessageLite> msg)
-{
-    auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
-    device_id_ = ack->device_id();
-    settings_->set_integer("device_id", device_id_);
-    login_device();
-    // TODO: 以前Service是连接后台的唯一接口，现在UI独立连接，需要重新理一理接口
-    push_device_id_to_ui();
 }
 
 void Service::on_create_session_completed_thread_safe(bool success, const std::string& session_name, std::shared_ptr<google::protobuf::MessageLite> params)
@@ -282,12 +270,6 @@ void Service::login_device()
 
 void Service::login_user()
 {
-}
-
-void Service::allocate_device_id()
-{
-    auto msg = std::make_shared<ltproto::server::AllocateDeviceID>();
-    tcp_client_->send(ltproto::id(msg), msg);
 }
 
 void Service::report_session_closed(WorkerSession::CloseReason close_reason, const std::string& room_id)

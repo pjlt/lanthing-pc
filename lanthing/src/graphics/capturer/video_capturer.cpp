@@ -43,6 +43,7 @@ bool VideoCapturer::init()
         [this](const std::function<void()>& i_am_alive, void*) {
             main_loop(i_am_alive);
     }, nullptr);
+    return true;
 }
 
 void VideoCapturer::main_loop(const std::function<void()>& i_am_alive)

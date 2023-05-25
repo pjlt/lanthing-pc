@@ -11,6 +11,7 @@ namespace ltrtc
 struct LTClientConfig
 {
     VideoCodecType video_codec_type;
+    bool use_nbp2p;
     const char* username;
     const char* password;
     OnData on_data;

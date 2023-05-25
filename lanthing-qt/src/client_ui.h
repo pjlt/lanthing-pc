@@ -43,8 +43,11 @@ private:
     void on_server_disconnected();
     void on_server_reconnecting();
     void on_server_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void login_device();
+    void allocate_device_id();
 
     // message handler
+    void handle_allocate_device_id_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handle_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handle_request_connection_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
 

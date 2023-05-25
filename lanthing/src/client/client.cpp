@@ -300,6 +300,7 @@ bool Client::init_ltrtc()
 {
     namespace ph = std::placeholders;
     ltrtc::LTClientConfig cfg;
+    cfg.use_nbp2p = false;
     cfg.username = p2p_username_.c_str();
     cfg.password = p2p_password_.c_str();
     cfg.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);

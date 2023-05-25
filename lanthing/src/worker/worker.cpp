@@ -133,6 +133,16 @@ Worker::Worker(const Params& params)
 {
 }
 
+Worker::~Worker()
+{
+    //
+}
+
+void Worker::wait()
+{
+    session_observer_->wait_for_change();
+}
+
 bool Worker::init()
 {
     session_observer_ = SessionChangeObserver::create();

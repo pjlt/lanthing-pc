@@ -12,7 +12,7 @@
 #ifndef WIN32
 #include <dlfcn.h>
 #endif
-#include "NvEncoder.h"
+#include <nvcodec/NvEncoder.h>
 
 #ifndef _WIN32
 #include <cstring>
