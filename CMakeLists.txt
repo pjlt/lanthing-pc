@@ -25,6 +25,7 @@ if(NOT LT_SERVER_ADDR)
 endif()
 
 option(protobuf_BUILD_TESTS OFF)
+option(G3_SHARED_LIB OFF)
 
 add_subdirectory(third_party/g3log)
 add_subdirectory(third_party/protobuf/cmake)

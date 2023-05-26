@@ -97,7 +97,7 @@ bool WorkerProcess::launch_worker_process()
 {
     std::stringstream ss;
     ss << path_
-       << " -type host "
+       << " -type worker "
        << " -name " << pipe_name_
        << " -width " << client_width_
        << " -height " << client_height_

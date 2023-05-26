@@ -87,7 +87,7 @@ WorkerSession::WorkerSession(
     ::srand(static_cast<unsigned int>(::time(nullptr)));
     constexpr int kRandLength = 4;
     // ÊÇ·ñÐèÒªglobal?
-    pipe_name_ = "\\\\?\\pipe\\Lanthing_worker_";
+    pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
         pipe_name_.push_back(rand() % 26 + 'A');
     }
@@ -410,7 +410,7 @@ bool WorkerSession::init_pipe_server()
     ltlib::Server::Params params {};
     params.stype = ltlib::StreamType::Pipe;
     params.ioloop = ioloop_.get();
-    params.pipe_name = pipe_name_;
+    params.pipe_name = "\\\\?\\pipe\\" + pipe_name_;
     params.on_accepted = std::bind(&WorkerSession::on_pipe_accepted, this, std::placeholders::_1);
     params.on_closed = std::bind(&WorkerSession::on_pipe_disconnected, this, std::placeholders::_1);
     params.on_message = std::bind(&WorkerSession::on_pipe_message, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
@@ -430,6 +430,7 @@ void WorkerSession::on_pipe_accepted(uint32_t fd)
         return;
     }
     pipe_client_fd_ = fd;
+    LOG(INFO) << "Pipe server accpeted worker(" << fd << ")";
 }
 
 void WorkerSession::on_pipe_disconnected(uint32_t fd)
@@ -439,10 +440,12 @@ void WorkerSession::on_pipe_disconnected(uint32_t fd)
         return;
     }
     pipe_client_fd_ = std::numeric_limits<uint32_t>::max();
+    LOGF(INFO, "Worker(%d) disconnected from pipe server", fd);
 }
 
 void WorkerSession::on_pipe_message(uint32_t fd, uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg)
 {
+    LOGF(DEBUG, "Received pipe message {fd:%u, type:%u}", fd, type);
     if (fd != pipe_client_fd_) {
         LOG(FATAL) << "fd != pipe_client_fd_";
         return;

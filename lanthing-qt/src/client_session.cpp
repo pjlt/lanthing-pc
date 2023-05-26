@@ -43,7 +43,8 @@ bool ClientSession::start()
 {
     // TODO: 改成跨平台的方式
     std::stringstream ss;
-    ss << ltlib::get_program_fullpath<char>()
+    ss << ltlib::get_program_path<char>() << "\\"
+       << "lanthing.exe "
        << " -type client"
        << " -cid " << params_.client_id
        << " -rid " << params_.room_id

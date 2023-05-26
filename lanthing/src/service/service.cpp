@@ -27,11 +27,12 @@ Service::~Service()
 
 bool Service::init()
 {
-    if (!init_settings()) {
-        return false;
-    }
-    std::optional<int64_t> device_id = settings_->get_integer("device_id");
-    device_id_ = device_id.value_or(0);
+    //if (!init_settings()) {
+    //    return false;
+    //}
+    //std::optional<int64_t> device_id = settings_->get_integer("device_id");
+    //device_id_ = device_id.value_or(0);
+    device_id_ = 1234567;
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -63,12 +64,12 @@ bool Service::init_tcp_client()
     ltlib::Client::Params params {};
     params.stype = ltlib::StreamType::TCP;
     params.ioloop = ioloop_.get();
-#define MACRO_TO_STRING_HELPER(str) #str
-#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-    params.host = "192.168.31.121";
-    params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
-#undef MACRO_TO_STRING
-#undef MACRO_TO_STRING_HELPER
+//#define MACRO_TO_STRING_HELPER(str) #str
+//#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+    params.host = "127.0.0.1";
+//    params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
+//#undef MACRO_TO_STRING
+//#undef MACRO_TO_STRING_HELPER
     params.port = kNonSslPort;
     params.is_tls = false;
     params.cert = R"(-----BEGIN CERTIFICATE-----
@@ -257,7 +258,8 @@ void Service::send_message_to_server(uint32_t type, std::shared_ptr<google::prot
 
 void Service::login_device()
 {
-    std::optional<bool> allow_control = settings_->get_boolean("allow_control");
+    //std::optional<bool> allow_control = settings_->get_boolean("allow_control");
+    std::optional<bool> allow_control = true;
     auto msg = std::make_shared<ltproto::server::LoginDevice>();
     msg->set_device_id(device_id_);
     if (allow_control.has_value()) {

@@ -104,7 +104,7 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
     }
     params.refresh_rate = static_cast<uint32_t>(freq);
     std::string codec;
-    while (std::getline(ss, codec)) {
+    while (std::getline(ss, codec, ',')) {
         if (codec == "avc") {
             params.codecs.push_back(ltrtc::VideoCodecType::H264);
         } else if (codec == "hevc") {
@@ -168,6 +168,19 @@ bool Worker::init()
     }
     negotiate_parameters();
 
+    namespace ltype = ltproto::type;
+    namespace ph = std::placeholders;
+    const std::pair<uint32_t, MessageHandler> handlers[] = {
+        { ltype::kStartWorking, std::bind(&Worker::on_start_working, this, ph::_1) },
+        { ltype::kStopWorking, std::bind(&Worker::on_stop_working, this, ph::_1) },
+        { ltype::kKeepAlive, std::bind(&Worker::on_keep_alive, this, ph::_1) },
+    };
+    for (auto& handler : handlers) {
+        if (!register_message_handler(handler.first, handler.second)) {
+            LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
+        }
+    }
+
     ioloop_->post_delay(500 /*ms*/, std::bind(&Worker::check_timeout, this));
     std::promise<void> promise;
     auto future = promise.get_future();
@@ -186,7 +199,7 @@ bool Worker::init_pipe_client()
     ltlib::Client::Params params {};
     params.stype = ltlib::StreamType::Pipe;
     params.ioloop = ioloop_.get();
-    params.pipe_name = pipe_name_;
+    params.pipe_name = "\\\\?\\pipe\\" + pipe_name_;
     params.is_tls = false;
     params.on_closed = std::bind(&Worker::on_pipe_disconnected, this);
     params.on_connected = std::bind(&Worker::on_pipe_connected, this);
@@ -248,8 +261,7 @@ void Worker::main_loop(const std::function<void()>& i_am_alive)
 
 void Worker::stop()
 {
-    //NOTE: 只能由ioloop以外的线程调用
-    ioloop_->stop();
+    session_observer_->stop();
 }
 
 bool Worker::register_message_handler(uint32_t type, const MessageHandler& handler)
@@ -290,8 +302,7 @@ void Worker::check_timeout()
     constexpr int64_t kTimeout = 3'000;
     auto now = ltlib::steady_now_ms();
     if (now - last_time_received_from_service_ > kTimeout) {
-        //stop(); // check_timeout()是跑在ioloop里的，而stop只能由ioloop以外的线程执行
-        std::exit(0); //想一个更好的办法退出
+        stop();
     } else {
         ioloop_->post_delay(500, std::bind(&Worker::check_timeout, this));
     }
@@ -380,8 +391,7 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
 void Worker::on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg)
 {
     LOG(INFO) << "Received StopWorking";
-    // stop(); // check_timeout()是跑在ioloop里的，而stop只能由ioloop以外的线程执行
-    std::exit(0); // 想一个更好的办法退出
+    stop(); // check_timeout()是跑在ioloop里的，而stop只能由ioloop以外的线程执行
 }
 
 void Worker::on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg)

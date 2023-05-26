@@ -25,7 +25,19 @@ enum class Role
     Worker,
 };
 
-auto init_log(Role role) -> std::tuple<std::unique_ptr<g3::LogWorker>, std::unique_ptr<g3::FileSinkHandle>>
+std::unique_ptr<g3::LogWorker> g_log_worker;
+std::unique_ptr<g3::FileSinkHandle> g_log_sink;
+
+void sigint_handler(int)
+{
+    LOG(INFO) << "SIGINT Received";
+    g_log_worker.reset();
+    g_log_sink.reset();
+    std::terminate();
+}
+
+
+void init_log(Role role)
 {
     std::string prefix;
     std::string rtc_prefix;
@@ -45,7 +57,7 @@ auto init_log(Role role) -> std::tuple<std::unique_ptr<g3::LogWorker>, std::uniq
         break;
     default:
         std::cout << "Unknown process role " << static_cast<int>(role) << std::endl;
-        return {};
+        return;
     }
 
     std::string bin_path = ltlib::get_program_fullpath<char>();
@@ -64,16 +76,15 @@ auto init_log(Role role) -> std::tuple<std::unique_ptr<g3::LogWorker>, std::uniq
             ::printf("Create log directory '%s' failed\n", log_dir.string().c_str());
         }
     }
-    auto g3worker = g3::LogWorker::createLogWorker();
-    auto g3sink = g3worker->addDefaultLogger(prefix, log_dir.string());
-    g3::initializeLogging(g3worker.get());
+    g_log_worker = g3::LogWorker::createLogWorker();
+    g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string());
+    g3::initializeLogging(g_log_worker.get());
     LOG(INFO) << "Log system initialized";
 
     //if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
     //    ltrtc::init_logging(log_dir.string(), rtc_prefix);
     //}
-
-    return std::make_tuple(std::move(g3worker), std::move(g3sink));
+    signal(SIGINT, sigint_handler);
 }
 
 std::map<std::string, std::string> parse_options(int argc, char* argv[])
@@ -118,7 +129,7 @@ bool is_another_instance_running()
 
 int run_as_client(std::map<std::string, std::string> options)
 {
-    auto [g3worker, g3sink] = init_log(Role::Client);
+    init_log(Role::Client);
     auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
@@ -130,7 +141,7 @@ int run_as_client(std::map<std::string, std::string> options)
 
 int run_as_service(std::map<std::string, std::string> options)
 {
-    auto [g3worker, g3sink] = init_log(Role::Service);
+    init_log(Role::Service);
     if (is_another_instance_running()) {
         return -1;
     }
@@ -143,6 +154,9 @@ int run_as_service(std::map<std::string, std::string> options)
     if (!svc.init()) {
         return -1;
     }
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds { 10000 });
+    }
     svc.uninit();
 #endif
 
@@ -152,10 +166,11 @@ int run_as_service(std::map<std::string, std::string> options)
 
 int run_as_worker(std::map<std::string, std::string> options)
 {
-    auto [g3worker, g3sink] = init_log(Role::Worker);
+    init_log(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
         worker->wait();
+        LOG(INFO) << "Normal exit";
         return 0;
     } else {
         return -1;
@@ -176,6 +191,7 @@ int main(int argc, char* argv[])
         // std::this_thread::sleep_for(std::chrono::seconds { 15 });
         return run_as_client(options);
     } else if (iter->second == "worker") {
+        //std::this_thread::sleep_for(std::chrono::seconds { 15 });
         return run_as_worker(options);
     } else {
         std::cerr << "Unknown type '" << iter->second << "'" << std::endl;

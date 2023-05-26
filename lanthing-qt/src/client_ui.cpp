@@ -171,7 +171,7 @@ void ClientUI::on_client_exited_thread_safe(int64_t device_id)
 bool ClientUI::init_tcp_client()
 {
     constexpr uint16_t kPort = 44898;
-    constexpr char* kHost = "192.168.31.121";
+    constexpr char* kHost = "127.0.0.1";
 
     ltlib::Client::Params params {};
     params.stype = ltlib::StreamType::TCP;
@@ -266,6 +266,7 @@ void ClientUI::handle_login_device_ack(std::shared_ptr<google::protobuf::Message
         LOG(WARNING) << "Login with device id(" << my_device_id_ << ") failed";
         return;
     }
+    LOG(INFO) << "LoginDeviceAck: Success";
     // 测试程序，所以登录设备后，直接发起连接。
     connect(peer_device_id_);
 }

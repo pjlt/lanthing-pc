@@ -17,3 +17,7 @@ target_link_libraries(${PROJECT_NAME}
 	ltlib
 	ltrtc
 )
+
+install(
+    TARGETS ${PROJECT_NAME}
+)
