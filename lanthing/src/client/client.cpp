@@ -17,17 +17,17 @@
 namespace
 {
 
-ltrtc::VideoCodecType to_ltrtc(std::string codec_str)
+rtc::VideoCodecType to_ltrtc(std::string codec_str)
 {
     static const std::string kAVC = "avc";
     static const std::string kHEVC = "hevc";
     std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(), std::tolower);
     if (codec_str == kAVC) {
-        return ltrtc::VideoCodecType::H264;
+        return rtc::VideoCodecType::H264;
     } else if (codec_str == kHEVC) {
-        return ltrtc::VideoCodecType::H265;
+        return rtc::VideoCodecType::H265;
     } else {
-        return ltrtc::VideoCodecType::Unknown;
+        return rtc::VideoCodecType::Unknown;
     }
 }
 
@@ -257,10 +257,10 @@ void Client::on_join_room_ack(std::shared_ptr<google::protobuf::MessageLite> _ms
     video_params_.sdl = sdl_.get();
     input_params_.sdl = sdl_.get();
     if (!init_ltrtc()) {
-        LOG(INFO) << "Initialize ltrtc failed";
+        LOG(INFO) << "Initialize rtc failed";
         return;
     }
-    LOG(INFO) << "Initialize ltrtc success";
+    LOG(INFO) << "Initialize rtc success";
 }
 
 void Client::on_signaling_message(std::shared_ptr<google::protobuf::MessageLite> _msg)
@@ -272,7 +272,7 @@ void Client::on_signaling_message(std::shared_ptr<google::protobuf::MessageLite>
         break;
     case ltproto::signaling::SignalingMessage::Rtc: {
         auto& rtc_msg = msg->rtc_message();
-        ltrtc_client_->on_signaling_message(rtc_msg.key(), rtc_msg.value());
+        rtc_client_->on_signaling_message(rtc_msg.key(), rtc_msg.value());
         break;
     }
     default:
@@ -299,7 +299,7 @@ void Client::on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageL
 bool Client::init_ltrtc()
 {
     namespace ph = std::placeholders;
-    ltrtc::LTClientConfig cfg;
+    rtc::Client::Params cfg;
     cfg.use_nbp2p = false;
     cfg.username = p2p_username_.c_str();
     cfg.password = p2p_password_.c_str();
@@ -312,12 +312,12 @@ bool Client::init_ltrtc()
     cfg.on_disconnected = std::bind(&Client::on_ltrtc_disconnected, this);
     cfg.on_signaling_message = std::bind(&Client::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
     cfg.video_codec_type = video_params_.codec_type;
-    ltrtc_client_ = ltrtc::LTClient::create(std::move(cfg));
-    if (ltrtc_client_ == nullptr) {
-        LOG(INFO) << "Create ltrtc client failed";
+    rtc_client_ = rtc::Client::create(std::move(cfg));
+    if (rtc_client_ == nullptr) {
+        LOG(INFO) << "Create rtc client failed";
         return false;
     }
-    if (!ltrtc_client_->connect()) {
+    if (!rtc_client_->connect()) {
         LOG(INFO) << "LTClient connect failed";
         return false;
     }
@@ -339,7 +339,7 @@ void Client::on_ltrtc_data(const std::shared_ptr<uint8_t>& data, uint32_t size, 
     dispatch_remote_message(*type, msg);
 }
 
-void Client::on_ltrtc_video_frame(const ltrtc::VideoFrame& frame)
+void Client::on_ltrtc_video_frame(const rtc::VideoFrame& frame)
 {
     Video::Action action = video_module_->submit(frame);
 }
@@ -434,7 +434,7 @@ bool Client::send_message_to_host(uint32_t type, const std::shared_ptr<google::p
     }
     const auto& pkt = packet.value();
     // WebRTC的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
-    bool success = ltrtc_client_->send_data(pkt.payload, pkt.header.payload_size, reliable);
+    bool success = rtc_client_->send_data(pkt.payload, pkt.header.payload_size, reliable);
     return success;
 }
 

@@ -9,15 +9,15 @@
 namespace
 {
 
-ltrtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type)
+rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type)
 {
     switch (codec_type) {
     case ltproto::peer2peer::AVC:
-        return ltrtc::VideoCodecType::H264;
+        return rtc::VideoCodecType::H264;
     case ltproto::peer2peer::HEVC:
-        return ltrtc::VideoCodecType::H265;
+        return rtc::VideoCodecType::H265;
     default:
-        return ltrtc::VideoCodecType::Unknown;
+        return rtc::VideoCodecType::Unknown;
     }
 }
 
@@ -35,24 +35,24 @@ ltproto::peer2peer::StreamingParams::VideoEncodeBackend to_protobuf(lt::VideoEnc
     }
 }
 
-ltproto::peer2peer::VideoCodecType to_protobuf(ltrtc::VideoCodecType codec_type)
+ltproto::peer2peer::VideoCodecType to_protobuf(rtc::VideoCodecType codec_type)
 {
     switch (codec_type) {
-    case ltrtc::VideoCodecType::H264:
+    case rtc::VideoCodecType::H264:
         return ltproto::peer2peer::VideoCodecType::AVC;
-    case ltrtc::VideoCodecType::H265:
+    case rtc::VideoCodecType::H265:
         return ltproto::peer2peer::VideoCodecType::HEVC;
     default:
         return ltproto::peer2peer::VideoCodecType::Unknown;
     }
 }
 
-std::string to_string(ltrtc::VideoCodecType type)
+std::string to_string(rtc::VideoCodecType type)
 {
     switch (type) {
-    case ltrtc::VideoCodecType::H264:
+    case rtc::VideoCodecType::H264:
         return "AVC";
-    case ltrtc::VideoCodecType::H265:
+    case rtc::VideoCodecType::H265:
         return "HEVC";
     default:
         return "Unknown Codec";
@@ -106,9 +106,9 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
     std::string codec;
     while (std::getline(ss, codec, ',')) {
         if (codec == "avc") {
-            params.codecs.push_back(ltrtc::VideoCodecType::H264);
+            params.codecs.push_back(rtc::VideoCodecType::H264);
         } else if (codec == "hevc") {
-            params.codecs.push_back(ltrtc::VideoCodecType::H265);
+            params.codecs.push_back(rtc::VideoCodecType::H265);
         }
     }
     if (params.codecs.empty()) {
@@ -391,7 +391,7 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
 void Worker::on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg)
 {
     LOG(INFO) << "Received StopWorking";
-    stop(); // check_timeout()是跑在ioloop里的，而stop只能由ioloop以外的线程执行
+    stop();
 }
 
 void Worker::on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg)

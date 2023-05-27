@@ -8,15 +8,15 @@
 namespace
 {
 
-std::string to_string(std::vector<ltrtc::VideoCodecType> codecs)
+std::string to_string(std::vector<rtc::VideoCodecType> codecs)
 {
     std::string str;
     for (size_t i = 0; i < codecs.size(); i++) {
         switch (codecs[i]) {
-        case ltrtc::VideoCodecType::H264:
+        case rtc::VideoCodecType::H264:
             str += "avc";
             break;
-        case ltrtc::VideoCodecType::H265:
+        case rtc::VideoCodecType::H265:
             str += "hevc";
             break;
         default:

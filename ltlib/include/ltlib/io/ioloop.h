@@ -1,4 +1,5 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <functional>
 #include <memory>
 
@@ -7,7 +8,7 @@ namespace ltlib
 
 class IOLoopImpl;
 
-class IOLoop
+class LT_API IOLoop
 {
 public:
     static std::unique_ptr<IOLoop> create();

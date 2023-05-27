@@ -1,4 +1,5 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <ltlib/io/types.h>
 #include <ltlib/io/ioloop.h>
 #include <cstdint>
@@ -11,7 +12,7 @@ namespace ltlib
 class ServerImpl;
 
 //²»Ö§³ÖTLS
-class Server
+class LT_API Server
 {
 public:
 	struct Params

@@ -1,11 +1,12 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <memory>
 #include <string>
 
 namespace ltlib
 {
 
-class DynamicLibrary
+class LT_API DynamicLibrary
 {
 public:
     static std::unique_ptr<DynamicLibrary> load(const std::string& path);

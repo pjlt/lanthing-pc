@@ -1,4 +1,5 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <ltlib/io/types.h>
 #include <memory>
 #include <string>
@@ -11,7 +12,7 @@ namespace ltlib
 class ClientImpl;
 class IOLoop;
 
-class Client
+class LT_API Client
 {
 public:
     struct Params

@@ -1,9 +1,10 @@
 #pragma once
+#include <ltlib/ltlib.h>
 
 namespace ltlib
 {
 
-enum class StreamType
+enum class LT_API StreamType
 {
     TCP,
     Pipe,

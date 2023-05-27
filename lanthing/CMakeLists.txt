@@ -101,7 +101,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE LT_SERVER_ADDR=${LT_SERVER_AD
 
 if(LT_WINDOWS)
     set(PLATFORM_LIBS
-            libucrt.lib Secur32.lib dmoguids.lib d3d11.lib d3d9.lib
+            Secur32.lib dmoguids.lib d3d11.lib d3d9.lib
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib)
 else()
@@ -113,14 +113,15 @@ target_link_libraries(${PROJECT_NAME}
     g3log
     protobuf::libprotobuf-lite
     tomlpp
-    SDL2::SDL2-static
+    SDL2::SDL2
     ffmpeg
     nvcodec
     mfx
-    uv_a
+    uv
+    breakpad
     ltlib
     ltproto
-    ltrtc
+    rtc
 )
 
 install(

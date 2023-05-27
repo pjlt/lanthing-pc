@@ -10,7 +10,7 @@
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/server.h>
 #include <ltproto/ltproto.h>
-#include <ltrtc/lttypes.h>
+#include <rtc/rtc.h>
 
 namespace lt
 {
@@ -29,7 +29,7 @@ public:
         uint32_t client_width;
         uint32_t client_height;
         uint32_t client_refresh_rate;
-        std::vector<ltrtc::VideoCodecType> client_codecs;
+        std::vector<rtc::VideoCodecType> client_codecs;
     };
 
 public:
@@ -51,7 +51,7 @@ private:
     uint32_t client_width_;
     uint32_t client_height_;
     uint32_t client_refresh_rate_;
-    std::vector<ltrtc::VideoCodecType> client_codecs_;
+    std::vector<rtc::VideoCodecType> client_codecs_;
     bool run_as_win_service_;
     std::mutex mutex_;
     std::unique_ptr<ltlib::BlockingThread> thread_;

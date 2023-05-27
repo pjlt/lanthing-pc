@@ -3,6 +3,7 @@ project(ltlib)
 
 
 set(LTLIB_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/ltlib.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/win_service.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/strings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/system.h
@@ -39,7 +40,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.cpp
 )
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME} SHARED
     ${LTLIB_SRCS}
 )
 
@@ -50,12 +51,18 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
+     	winmm.lib
         utf8cpp
-        libprotobuf-lite
-        uv_a
+        protobuf::libprotobuf-lite
+        uv
         g3log
         MbedTLS::mbedtls
         MbedTLS::mbedcrypto
         MbedTLS::mbedx509
         ltproto
+)
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        BUILDING_LTLIB
 )

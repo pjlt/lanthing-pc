@@ -3,7 +3,7 @@
 #include <functional>
 #include <memory>
 #include <google/protobuf/message_lite.h>
-#include <ltrtc/lttypes.h>
+#include <rtc/rtc.h>
 #include <client/platforms/pc_sdl.h>
 
 namespace lt
@@ -18,10 +18,10 @@ class Video
 public:
     struct Params
     {
-        Params(ltrtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height, uint32_t _screen_refresh_rate, std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message);
+        Params(rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height, uint32_t _screen_refresh_rate, std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message);
         bool validate() const;
 
-        ltrtc::VideoCodecType codec_type;
+        rtc::VideoCodecType codec_type;
         uint32_t width;
         uint32_t height;
         uint32_t screen_refresh_rate;
@@ -38,7 +38,7 @@ public:
 public:
     static std::unique_ptr<Video> create(const Params& params);
     void reset_decoder_renderer();
-    Action submit(const ltrtc::VideoFrame& frame);
+    Action submit(const rtc::VideoFrame& frame);
 
 private:
     Video() = default;

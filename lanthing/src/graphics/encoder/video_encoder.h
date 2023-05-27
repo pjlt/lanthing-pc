@@ -5,7 +5,7 @@
 #include <optional>
 #include <limits>
 #include <ltproto/peer2peer/capture_video_frame.pb.h>
-#include <ltrtc/lttypes.h>
+#include <rtc/rtc.h>
 
 namespace lt
 {
@@ -27,7 +27,7 @@ public:
         PFrame,
     };
 
-    struct EncodedFrame : ltrtc::VideoFrame
+    struct EncodedFrame : rtc::VideoFrame
     {
         bool is_black_frame = false;
     };
@@ -35,7 +35,7 @@ public:
     struct InitParams
     {
         Backend backend = Backend::Unknown;
-        ltrtc::VideoCodecType codec_type = ltrtc::VideoCodecType::H264;
+        rtc::VideoCodecType codec_type = rtc::VideoCodecType::H264;
         uint32_t width = 0;
         uint32_t height = 0;
         uint32_t bitrate_bps = 0;
@@ -52,7 +52,7 @@ public:
     struct Ability
     {
         Backend backend;
-        ltrtc::VideoCodecType codec_type;
+        rtc::VideoCodecType codec_type;
     };
 
 public:

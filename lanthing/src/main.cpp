@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <g3log/g3log.hpp>
 #include <g3log/logworker.hpp>
+#include <lt_minidump_generator.h>
 #include <ltlib/system.h>
 #include <ltlib/event.h>
 #include <client/client.h>
@@ -27,17 +28,19 @@ enum class Role
 
 std::unique_ptr<g3::LogWorker> g_log_worker;
 std::unique_ptr<g3::FileSinkHandle> g_log_sink;
+std::unique_ptr<LTMinidumpGenerator> g_minidump_genertator;
 
 void sigint_handler(int)
 {
     LOG(INFO) << "SIGINT Received";
     g_log_worker.reset();
     g_log_sink.reset();
+    g_minidump_genertator.reset();
     std::terminate();
 }
 
 
-void init_log(Role role)
+void init_log_and_minidump(Role role)
 {
     std::string prefix;
     std::string rtc_prefix;
@@ -79,6 +82,11 @@ void init_log(Role role)
     g_log_worker = g3::LogWorker::createLogWorker();
     g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string());
     g3::initializeLogging(g_log_worker.get());
+    // g3log必须再minidump前初始化
+    g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
+    ltlib::ThreadWatcher::instance()->register_terminate_callback([](const std::string& last_word) {
+        LOG(INFO) << "Last words: "  << last_word;
+    });
     LOG(INFO) << "Log system initialized";
 
     //if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
@@ -129,7 +137,7 @@ bool is_another_instance_running()
 
 int run_as_client(std::map<std::string, std::string> options)
 {
-    init_log(Role::Client);
+    init_log_and_minidump(Role::Client);
     auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
@@ -141,7 +149,7 @@ int run_as_client(std::map<std::string, std::string> options)
 
 int run_as_service(std::map<std::string, std::string> options)
 {
-    init_log(Role::Service);
+    init_log_and_minidump(Role::Service);
     if (is_another_instance_running()) {
         return -1;
     }
@@ -166,7 +174,7 @@ int run_as_service(std::map<std::string, std::string> options)
 
 int run_as_worker(std::map<std::string, std::string> options)
 {
-    init_log(Role::Worker);
+    init_log_and_minidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
         worker->wait();

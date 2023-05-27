@@ -15,7 +15,7 @@ target_link_libraries(${PROJECT_NAME}
 	protobuf::libprotobuf-lite
 	ltproto
 	ltlib
-	ltrtc
+	rtc
 )
 
 install(

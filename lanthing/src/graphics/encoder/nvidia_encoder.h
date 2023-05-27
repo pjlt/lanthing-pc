@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 
-#include <ltrtc/lttypes.h>
+#include <rtc/rtc.h>
 
 #include <graphics/encoder/video_encoder.h>
 

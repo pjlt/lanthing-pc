@@ -21,15 +21,15 @@
 namespace
 {
 
-ltrtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type)
+rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type)
 {
     switch (type) {
     case ltproto::peer2peer::VideoCodecType::AVC:
-        return ltrtc::VideoCodecType::H264;
+        return rtc::VideoCodecType::H264;
     case ltproto::peer2peer::VideoCodecType::HEVC:
-        return ltrtc::VideoCodecType::H265;
+        return rtc::VideoCodecType::H265;
     default:
-        return ltrtc::VideoCodecType::Unknown;
+        return rtc::VideoCodecType::Unknown;
     }
 }
 
@@ -123,14 +123,14 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg)
         LOG(WARNING) << "Received OpenConnection with invalid streaming params";
         return false;
     }
-    std::vector<ltrtc::VideoCodecType> client_codecs;
+    std::vector<rtc::VideoCodecType> client_codecs;
     for (auto codec : msg->streaming_params().video_codecs()) {
         switch (ltproto::peer2peer::VideoCodecType(codec.codec_type())) {
         case ltproto::peer2peer::VideoCodecType::AVC:
-            client_codecs.push_back(ltrtc::VideoCodecType::H264);
+            client_codecs.push_back(rtc::VideoCodecType::H264);
             break;
         case ltproto::peer2peer::VideoCodecType::HEVC:
-            client_codecs.push_back(ltrtc::VideoCodecType::H265);
+            client_codecs.push_back(rtc::VideoCodecType::H265);
             break;
         default:
             break;
@@ -173,7 +173,7 @@ bool WorkerSession::init_rtc_server()
 {
     auto negotiated_params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
     namespace ph = std::placeholders;
-    ltrtc::LTServerConfig cfg;
+    rtc::Server::Params cfg;
     cfg.use_nbp2p = false;
     cfg.username = p2p_username_.c_str();
     cfg.password = p2p_password_.c_str();
@@ -184,9 +184,9 @@ bool WorkerSession::init_rtc_server()
     cfg.on_conn_changed = std::bind(&WorkerSession::on_ltrtc_conn_changed, this);
     cfg.on_data = std::bind(&WorkerSession::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
     cfg.on_signaling_message = std::bind(&WorkerSession::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
-    ltrtc_server_ = ltrtc::LTServer::create(std::move(cfg));
-    if (ltrtc_server_ == nullptr) {
-        LOG(WARNING) << "Create ltrtc server failed";
+    rtc_server_ = rtc::Server::create(std::move(cfg));
+    if (rtc_server_ == nullptr) {
+        LOG(WARNING) << "Create rtc server failed";
         return false;
     } else {
         rtc_closed_ = false;
@@ -200,7 +200,7 @@ void WorkerSession::main_loop(const std::function<void()>& i_am_alive)
     ioloop_->run(i_am_alive);
 }
 
-void WorkerSession::create_worker_process(uint32_t client_width, uint32_t client_height, uint32_t client_refresh_rate, std::vector<ltrtc::VideoCodecType> client_codecs)
+void WorkerSession::create_worker_process(uint32_t client_width, uint32_t client_height, uint32_t client_refresh_rate, std::vector<rtc::VideoCodecType> client_codecs)
 {
     WorkerProcess::Params params {};
     params.pipe_name = pipe_name_;
@@ -230,7 +230,7 @@ void WorkerSession::on_closed(CloseReason reason)
         break;
     }
     if (!rtc_closed_) {
-        ltrtc_server_->close();
+        rtc_server_->close();
         rtc_closed_ = true;
     }
     if (!worker_process_stoped_) {
@@ -392,7 +392,7 @@ void WorkerSession::on_signaling_message_ack(std::shared_ptr<google::protobuf::M
 void WorkerSession::dispatch_signaling_message_rtc(std::shared_ptr<google::protobuf::MessageLite> _msg)
 {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
-    ltrtc_server_->on_signaling_message(msg->rtc_message().key(), msg->rtc_message().value());
+    rtc_server_->on_signaling_message(msg->rtc_message().key(), msg->rtc_message().value());
 }
 
 void WorkerSession::dispatch_signaling_message_core(std::shared_ptr<google::protobuf::MessageLite> _msg)
@@ -579,7 +579,7 @@ void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageL
     if (encoded_frame.is_black_frame) {
         //???
     }
-    ltrtc_server_->send_video(encoded_frame);
+    rtc_server_->send_video(encoded_frame);
     // static std::ofstream out { "C:\\Users\\ntu\\AppData\\Roaming\\lanthing\\service_stream", std::ios::binary };
     // out.write(msg->frame().c_str(), msg->frame().size());
     // out.flush();
@@ -640,7 +640,7 @@ void WorkerSession::check_timeout()
     constexpr auto kTimeout = 3000;
     auto now = ltlib::steady_now_ms();
     if (now - last_recv_time_ms_ > kTimeout) {
-        ltrtc_server_->close();
+        rtc_server_->close();
         //FIXME: on_closed必须在ioloop线程调用，这里用错了
         on_closed(CloseReason::TimeoutClose);
     } else {
@@ -660,8 +660,8 @@ bool WorkerSession::send_message_to_remote_client(uint32_t type, const std::shar
         return false;
     }
     const auto& pkt = packet.value();
-    // ltrtc的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
-    bool success = ltrtc_server_->send_data(pkt.payload, pkt.header.payload_size, reliable);
+    // rtc的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
+    bool success = rtc_server_->send_data(pkt.payload, pkt.header.payload_size, reliable);
     return success;
 }
 

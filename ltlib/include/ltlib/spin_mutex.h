@@ -1,10 +1,11 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <atomic>
 
 namespace ltlib
 {
 
-class SpinMutex
+class LT_API SpinMutex
 {
 public:
     SpinMutex() = default;

@@ -1,4 +1,5 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <cstdint>
 #include <string>
 #include <memory>
@@ -7,7 +8,7 @@
 namespace ltlib
 {
 
-class WinApp
+class LT_API WinApp
 {
 public:
     virtual ~WinApp() { }
@@ -16,7 +17,7 @@ public:
     virtual void run() = 0;
 };
 
-class ServiceApp
+class LT_API ServiceApp
 {
 public:
     ServiceApp(WinApp* service);

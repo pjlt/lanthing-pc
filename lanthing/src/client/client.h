@@ -6,7 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <ltrtc/ltclient.h>
+#include <rtc/rtc.h>
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/threads.h>
@@ -81,7 +81,7 @@ private:
     // ltrtc::LTClient
     bool init_ltrtc();
     void on_ltrtc_data(const std::shared_ptr<uint8_t>& data, uint32_t size, bool is_reliable);
-    void on_ltrtc_video_frame(const ltrtc::VideoFrame& frame);
+    void on_ltrtc_video_frame(const rtc::VideoFrame& frame);
     void on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate, uint32_t number_of_channels, const void* audio_data, uint32_t size);
     void on_ltrtc_connected(/*connection info*/);
     void on_ltrtc_conn_changed(/*old_conn_info, new_conn_info*/);
@@ -106,7 +106,7 @@ private:
     std::unique_ptr<Input> input_module_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
-    std::unique_ptr<ltrtc::LTClient> ltrtc_client_;
+    std::unique_ptr<rtc::Client> rtc_client_;
     std::unique_ptr<PcSdl> sdl_;
     std::unique_ptr<ltlib::BlockingThread> main_thread_;
     std::unique_ptr<ltlib::TaskThread> hb_thread_;

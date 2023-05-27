@@ -201,7 +201,7 @@ std::vector<VideoEncoder::Ability> VideoEncoder::check_encode_abilities(uint32_t
         return {};
     }
 
-    auto check_with_backend_and_codec = [width, height, dev = device.Get(), ctx = context.Get()](Backend backend, ltrtc::VideoCodecType codec) -> bool {
+    auto check_with_backend_and_codec = [width, height, dev = device.Get(), ctx = context.Get()](Backend backend, rtc::VideoCodecType codec) -> bool {
         InitParams params;
         params.backend = backend;
         params.codec_type = codec;
@@ -213,7 +213,7 @@ std::vector<VideoEncoder::Ability> VideoEncoder::check_encode_abilities(uint32_t
     };
 
     auto check_with_order = [width, height, dev = device.Get(), ctx = context.Get(), check_with_backend_and_codec]
-        (std::vector<Backend> backend_order, std::vector<ltrtc::VideoCodecType> codec_order) -> std::vector<Ability> {
+        (std::vector<Backend> backend_order, std::vector<rtc::VideoCodecType> codec_order) -> std::vector<Ability> {
             std::vector<Ability> abilities;
             for (auto backend : backend_order) {
                 for (auto codec_type : codec_order) {
@@ -232,33 +232,33 @@ std::vector<VideoEncoder::Ability> VideoEncoder::check_encode_abilities(uint32_t
     std::vector<Ability> abilities;
     switch (vendor_id) {
     case kIntelVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK, ltrtc::VideoCodecType::H265)) {
-            abilities.push_back({ VideoEncoder::Backend::IntelMediaSDK, ltrtc::VideoCodecType::H265 });
+        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H265)) {
+            abilities.push_back({ VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H265 });
         }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK, ltrtc::VideoCodecType::H264)) {
-            abilities.push_back({ VideoEncoder::Backend::IntelMediaSDK, ltrtc::VideoCodecType::H264 });
+        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H264)) {
+            abilities.push_back({ VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H264 });
         }
         break;
     case kNvidiaVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, ltrtc::VideoCodecType::H265)) {
-            abilities.push_back({ VideoEncoder::Backend::NvEnc, ltrtc::VideoCodecType::H265 });
+        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265)) {
+            abilities.push_back({ VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265 });
         }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, ltrtc::VideoCodecType::H264)) {
-            abilities.push_back({ VideoEncoder::Backend::NvEnc, ltrtc::VideoCodecType::H264 });
+        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264)) {
+            abilities.push_back({ VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264 });
         }
         break;
     case kAMDVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, ltrtc::VideoCodecType::H265)) {
-            abilities.push_back({ VideoEncoder::Backend::Amf, ltrtc::VideoCodecType::H265 });
+        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265)) {
+            abilities.push_back({ VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265 });
         }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, ltrtc::VideoCodecType::H264)) {
-            abilities.push_back({ VideoEncoder::Backend::Amf, ltrtc::VideoCodecType::H264 });
+        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264)) {
+            abilities.push_back({ VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264 });
         }
         break;
     default:
         abilities = check_with_order(
             { VideoEncoder::Backend::NvEnc, VideoEncoder::Backend::IntelMediaSDK, VideoEncoder::Backend::Amf },
-            { ltrtc::VideoCodecType::H265, ltrtc::VideoCodecType::H264 });
+            { rtc::VideoCodecType::H265, rtc::VideoCodecType::H264 });
         break;
     }
     return abilities;
@@ -271,7 +271,7 @@ bool VideoEncoder::InitParams::validate() const
         || this->bitrate_bps == 0) {
         return false;
     }
-    if (codec_type != ltrtc::VideoCodecType::H264 && codec_type != ltrtc::VideoCodecType::H265) {
+    if (codec_type != rtc::VideoCodecType::H264 && codec_type != rtc::VideoCodecType::H265) {
         return false;
     }
     return true;

@@ -16,7 +16,7 @@ namespace lt
 class NvEncParamsHelper
 {
 public:
-    NvEncParamsHelper(ltrtc::VideoCodecType c);
+    NvEncParamsHelper(rtc::VideoCodecType c);
 
     NvEncParamsHelper& fps(int fps);
 
@@ -51,15 +51,15 @@ public:
 
 private:
     std::unique_ptr<NvEncoderD3D11> encoder_impl_;
-    ltrtc::VideoCodecType codec_;
+    rtc::VideoCodecType codec_;
     std::optional<NvEncParamsHelper> params_;
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device_;
 };
 
-NvEncParamsHelper::NvEncParamsHelper(ltrtc::VideoCodecType c)
+NvEncParamsHelper::NvEncParamsHelper(rtc::VideoCodecType c)
 {
-    assert(c == ltrtc::VideoCodecType::H264 || c == ltrtc::VideoCodecType::H265);
-    std::string codec = c == ltrtc::VideoCodecType::H264 ? "h264" : "hevc";
+    assert(c == rtc::VideoCodecType::H264 || c == rtc::VideoCodecType::H265);
+    std::string codec = c == rtc::VideoCodecType::H264 ? "h264" : "hevc";
     params_["-codec"] = codec;
     params_["-gop"] = "-1";
     params_["-rc"] = "vbr";

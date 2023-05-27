@@ -3,7 +3,7 @@
 #include <functional>
 #include <memory>
 #include <ltlib/threads.h>
-#include <ltrtc/lttypes.h>
+#include <rtc/rtc.h>
 
 namespace lt
 {
@@ -24,7 +24,7 @@ public:
         std::string p2p_password;
         std::string signaling_addr;
         int32_t signaling_port;
-        ltrtc::VideoCodecType video_codec_type;
+        rtc::VideoCodecType video_codec_type;
         uint32_t width;
         uint32_t height;
         uint32_t refresh_rate;

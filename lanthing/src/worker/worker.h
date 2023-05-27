@@ -2,7 +2,7 @@
 #include <string>
 #include <map>
 #include <memory>
-#include <ltrtc/lttypes.h>
+#include <rtc/rtc.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/client.h>
 #include <ltlib/threads.h>
@@ -27,7 +27,7 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t refresh_rate;
-        std::vector<ltrtc::VideoCodecType> codecs;
+        std::vector<rtc::VideoCodecType> codecs;
     };
 
 public:
@@ -62,13 +62,13 @@ private:
     const uint32_t client_width_;
     const uint32_t client_height_;
     const uint32_t client_refresh_rate_;
-    const std::vector<ltrtc::VideoCodecType> client_codec_types_;
+    const std::vector<rtc::VideoCodecType> client_codec_types_;
     const std::string pipe_name_;
     bool connected_to_service_ = false;
     std::unique_ptr<SessionChangeObserver> session_observer_;
     std::map<uint32_t, MessageHandler> msg_handlers_;
     DisplaySetting negotiated_display_setting_;
-    ltrtc::VideoCodecType negotiated_video_codec_type_ = ltrtc::VideoCodecType::Unknown;
+    rtc::VideoCodecType negotiated_video_codec_type_ = rtc::VideoCodecType::Unknown;
     VideoEncoder::Backend negotiated_video_codec_beckend_ = VideoEncoder::Backend::Unknown;
     std::shared_ptr<google::protobuf::MessageLite> negotiated_params_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;

@@ -28,7 +28,7 @@ public:
     ~VideoImpl();
     bool init();
     void reset_deocder_renderer();
-    Video::Action submit(const ltrtc::VideoFrame& frame);
+    Video::Action submit(const rtc::VideoFrame& frame);
 
 private:
     void decode_loop(const std::function<void()>& i_am_alive);
@@ -38,7 +38,7 @@ private:
     const uint32_t width_;
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
-    const ltrtc::VideoCodecType codec_type_;
+    const rtc::VideoCodecType codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message_to_host_;
     HWND hwnd_;
 
@@ -46,7 +46,7 @@ private:
     std::mutex wait_for_mtx_;
     std::condition_variable wait_for_frames_;
     std::atomic<bool> request_i_frame_ = false;
-    std::vector<ltrtc::VideoFrame> encoded_frames_;
+    std::vector<rtc::VideoFrame> encoded_frames_;
 
     std::unique_ptr<D3D11Pipeline> d3d11_pipe_line_;
     CTSmoother smoother_;
@@ -116,7 +116,7 @@ void VideoImpl::reset_deocder_renderer()
     LOG(FATAL) << "reset_deocder_renderer() not implemented";
 }
 
-Video::Action VideoImpl::submit(const ltrtc::VideoFrame& frame)
+Video::Action VideoImpl::submit(const rtc::VideoFrame& frame)
 {
     {
         std::unique_lock<std::mutex> lock(wait_for_mtx_);
@@ -133,7 +133,7 @@ void VideoImpl::decode_loop(const std::function<void()>& i_am_alive)
 {
     while (!stoped_) {
         i_am_alive();
-        std::vector<ltrtc::VideoFrame> frames;
+        std::vector<rtc::VideoFrame> frames;
         {
             std::unique_lock<std::mutex> lock(wait_for_mtx_);
             if (encoded_frames_.empty()) {
@@ -184,7 +184,7 @@ void VideoImpl::render_loop(const std::function<void()>& i_am_alive)
 }
 
 
-Video::Params::Params(ltrtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height, uint32_t _screen_refresh_rate, std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message)
+Video::Params::Params(rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height, uint32_t _screen_refresh_rate, std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message)
     : codec_type(_codec_type)
     , width(_width)
     , height(_height)
@@ -195,7 +195,7 @@ Video::Params::Params(ltrtc::VideoCodecType _codec_type, uint32_t _width, uint32
 
 bool Video::Params::validate() const
 {
-    if (codec_type == ltrtc::VideoCodecType::Unknown || sdl == nullptr || send_message_to_host == nullptr) {
+    if (codec_type == rtc::VideoCodecType::Unknown || sdl == nullptr || send_message_to_host == nullptr) {
         return false;
     } else {
         return true;
@@ -222,7 +222,7 @@ void Video::reset_decoder_renderer()
     impl_->reset_deocder_renderer();
 }
 
-Video::Action Video::submit(const ltrtc::VideoFrame& frame)
+Video::Action Video::submit(const rtc::VideoFrame& frame)
 {
     return impl_->submit(frame);
 }

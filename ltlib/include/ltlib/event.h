@@ -1,11 +1,12 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <string>
 
 
 namespace ltlib
 {
 
-class Event
+class LT_API Event
 {
 public:
     enum class WaitResult

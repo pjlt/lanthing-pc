@@ -1,4 +1,5 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -14,7 +15,7 @@
 namespace ltlib
 {
 
-class ThreadWatcher
+class LT_API ThreadWatcher
 {
 public:
     static constexpr int64_t kMaxBlockTimeMS = 5'000;
@@ -53,7 +54,7 @@ private:
     std::atomic<bool> enable_crash_ { true };
 };
 
-class BlockingThread
+class LT_API BlockingThread
 {
 public:
     using EntryFunction = std::function<void(std::function<void()>/*i_am_alive*/, void*/*user_data*/)>;
@@ -84,7 +85,7 @@ private:
     int64_t last_report_time_;
 };
 
-enum class Priority : uint32_t
+enum class LT_API Priority : uint32_t
 {
     Low,
     Medium,
@@ -95,7 +96,7 @@ inline bool operator<(const Priority& left, const Priority& right)
     return static_cast<std::underlying_type_t<Priority>>(left) < static_cast<std::underlying_type_t<Priority>>(right);
 }
 
-struct PriorityTask
+struct LT_API PriorityTask
 {
     Priority priority;
     std::function<void()> task;
@@ -103,7 +104,7 @@ struct PriorityTask
     void run() { task(); }
 };
 
-struct PriorityDelayTask : PriorityTask
+struct LT_API PriorityDelayTask : PriorityTask
 {
     PriorityDelayTask(std::chrono::milliseconds _delay, PriorityTask task)
         : PriorityTask(task)
@@ -125,7 +126,7 @@ struct PriorityDelayTask : PriorityTask
     std::chrono::time_point<std::chrono::steady_clock> run_at;
 };
 
-class TaskThread
+class LT_API TaskThread
 {
 public:
     static std::unique_ptr<TaskThread> create(const std::string& prefix);

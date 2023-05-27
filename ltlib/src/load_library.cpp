@@ -25,6 +25,8 @@ std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
     return dlib;
 }
 
+DynamicLibrary::DynamicLibrary() = default;
+
 DynamicLibrary::~DynamicLibrary()
 {
     if (handle_) {

@@ -1,11 +1,12 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <cstdint>
 #include <array>
 
 namespace ltlib
 {
 
-class ReconnectInterval
+class LT_API ReconnectInterval
 {
 public:
     ReconnectInterval() = default;

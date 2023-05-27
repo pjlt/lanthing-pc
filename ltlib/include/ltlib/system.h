@@ -1,30 +1,43 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <string>
 
 namespace ltlib
 {
 
 template <typename CharT>
-std::basic_string<CharT> get_program_fullpath();
+std::basic_string<CharT> LT_API get_program_fullpath();
+
+template <>
+std::string LT_API get_program_fullpath<char>();
 
 template <typename CharT>
-std::basic_string<CharT> get_program_path();
+std::basic_string<CharT> LT_API get_program_path();
 
-std::string get_appdata_path(bool is_service);
+template <>
+std::wstring LT_API get_program_fullpath<wchar_t>();
 
-uint32_t get_session_id_by_pid(uint32_t pid);
+template <>
+std::string LT_API get_program_path<char>();
 
-uint32_t get_parent_pid(uint32_t curr_pid);
+template <>
+std::wstring LT_API get_program_path<wchar_t>();
 
-bool is_run_as_local_system();
-bool is_run_as_service();
+std::string LT_API get_appdata_path(bool is_service);
 
-int32_t get_screen_width();
-int32_t get_screen_height();
+uint32_t LT_API get_session_id_by_pid(uint32_t pid);
 
-bool set_thread_desktop();
+uint32_t LT_API get_parent_pid(uint32_t curr_pid);
 
-struct DisplayOutputDesc
+bool LT_API is_run_as_local_system();
+bool LT_API is_run_as_service();
+
+int32_t LT_API get_screen_width();
+int32_t LT_API get_screen_height();
+
+bool LT_API set_thread_desktop();
+
+struct LT_API DisplayOutputDesc
 {
     DisplayOutputDesc() = delete;
     DisplayOutputDesc(uint32_t w, uint32_t h, uint32_t f)
@@ -37,6 +50,6 @@ struct DisplayOutputDesc
     int32_t height;
     int32_t frequency;
 };
-DisplayOutputDesc get_display_output_desc();
+DisplayOutputDesc LT_API get_display_output_desc();
 
 } // namespace ltlib

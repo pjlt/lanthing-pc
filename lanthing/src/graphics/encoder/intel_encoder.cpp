@@ -91,7 +91,7 @@ private:
     uint32_t width_ = 0;
     uint32_t height_ = 0;
     uint32_t bitrate_bps_ = 0;
-    ltrtc::VideoCodecType codec_type_ = ltrtc::VideoCodecType::Unknown;
+    rtc::VideoCodecType codec_type_ = rtc::VideoCodecType::Unknown;
     std::shared_ptr<MfxEncoderFrameAllocator> allocator_;
     mfxVideoParam encode_param_;
     mfxVideoParam vpp_param_;
@@ -160,8 +160,8 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
     MFXQueryVersion(mfx_session_, &ver);
     mfxPlatform platform {};
     MFXVideoCORE_QueryPlatform(mfx_session_, &platform);
-    if ((codec_type_ == ltrtc::VideoCodecType::H264 && platform.CodeName > MFX_PLATFORM_SKYLAKE)
-        || (codec_type_ == ltrtc::VideoCodecType::H265 && platform.CodeName > MFX_PLATFORM_ICELAKE)) {
+    if ((codec_type_ == rtc::VideoCodecType::H264 && platform.CodeName > MFX_PLATFORM_SKYLAKE)
+        || (codec_type_ == rtc::VideoCodecType::H265 && platform.CodeName > MFX_PLATFORM_ICELAKE)) {
         enable_qsvff_ = true;
     }
     status = MFXVideoCORE_SetHandle(mfx_session_, MFX_HANDLE_D3D11_DEVICE, device_.Get());
@@ -321,7 +321,7 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param()
 #define MSDK_ALIGN32(X) (((mfxU32)((X) + 31)) & (~(mfxU32)31))
     mfxVideoParam params;
     memset(&params, 0, sizeof(params));
-    params.mfx.CodecId = codec_type_ == ltrtc::VideoCodecType::H264 ? MFX_CODEC_AVC : MFX_CODEC_HEVC;
+    params.mfx.CodecId = codec_type_ == rtc::VideoCodecType::H264 ? MFX_CODEC_AVC : MFX_CODEC_HEVC;
     params.mfx.TargetUsage = MFX_TARGETUSAGE_BEST_SPEED;
     params.mfx.TargetKbps = 3 * 1024 * 8;
     params.mfx.RateControlMethod = MFX_RATECONTROL_VBR;
@@ -329,7 +329,7 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param()
     params.mfx.GopPicSize = static_cast<mfxU16>(1000000);
     params.mfx.NumRefFrame = 1;
     params.mfx.IdrInterval = 0; // ОґМо
-    params.mfx.CodecProfile = codec_type_ == ltrtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN;
+    params.mfx.CodecProfile = codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN;
     params.mfx.CodecLevel = 0; // ОґМо
     params.mfx.MaxKbps = 40 * 1024 * 8;
     params.mfx.InitialDelayInKB = 0; // ОґМо
