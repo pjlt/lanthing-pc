@@ -12,6 +12,8 @@
 #include <map>
 #include <queue>
 
+#include <ltlib/times.h>
+
 namespace ltlib
 {
 
@@ -96,46 +98,37 @@ inline bool operator<(const Priority& left, const Priority& right)
     return static_cast<std::underlying_type_t<Priority>>(left) < static_cast<std::underlying_type_t<Priority>>(right);
 }
 
-struct LT_API PriorityTask
-{
-    Priority priority;
-    std::function<void()> task;
-    void operator()() { task(); }
-    void run() { task(); }
-};
 
-struct LT_API PriorityDelayTask : PriorityTask
-{
-    PriorityDelayTask(std::chrono::milliseconds _delay, PriorityTask task)
-        : PriorityTask(task)
-        , delay(_delay)
-        , run_at(std::chrono::steady_clock::now() + delay)
-    {
-    }
-    PriorityDelayTask(PriorityTask task, std::chrono::milliseconds _delay)
-        : PriorityTask(task)
-        , delay(_delay)
-        , run_at(std::chrono::steady_clock::now() + delay)
-    {
-    }
-    bool operator<(const PriorityDelayTask& rhs) const
-    {
-        return delay < rhs.delay;
-    }
-    std::chrono::milliseconds delay;
-    std::chrono::time_point<std::chrono::steady_clock> run_at;
-};
 
 class LT_API TaskThread
 {
 public:
+    using Task = std::function<void()>;
+    using TimerID = int64_t;
+
+public:
     static std::unique_ptr<TaskThread> create(const std::string& prefix);
     ~TaskThread();
-    void post(PriorityTask task);
-    void post_delay(std::chrono::milliseconds duration, PriorityTask task);
+    void post(const Task& task);
+    TimerID post_delay(TimeDelta delta_time, const Task& task);
+    void cancel(TimerID timer);
     bool is_current_thread();
     void wake();
     bool is_running();
+
+    template <typename ReturnT, typename = std::enable_if<!std::is_void<ReturnT>::value>::type>
+    ReturnT invoke(std::function<ReturnT(void)> func)
+    {
+        ReturnT ret;
+        invokeInternal([func, &ret]() { ret = func(); });
+        return ret;
+    }
+
+    template <typename ReturnT, typename = std::enable_if<std::is_void<ReturnT>::value>::type>
+    void invoke(std::function<ReturnT(void)> task)
+    {
+        invokeInternal(task);
+    }
 
 private:
     TaskThread(const std::string& prfix);
@@ -150,13 +143,14 @@ private:
     void unregister_from_thread_watcher();
     void i_am_alive();
     void set_thread_name();
-    inline std::deque<PriorityTask> get_pending_tasks();
-    inline std::tuple<std::vector<PriorityTask>, std::chrono::milliseconds> get_timeup_delay_tasks();
+    void invokeInternal(const Task& task);
+    inline std::deque<Task> get_pending_tasks();
+    inline std::tuple<std::vector<Task>, TimeDelta> get_timeup_delay_tasks();
 
 private:
     std::string name_;
-    std::deque<PriorityTask> tasks_;
-    std::priority_queue<PriorityDelayTask> delay_tasks_;
+    std::deque<Task> tasks_;
+    std::map<Timestamp, Task> delay_tasks_;
     std::mutex mutex_;
     std::condition_variable cv_;
     std::atomic<bool> wakeup_ { true };

@@ -537,7 +537,7 @@ void WorkerSession::on_ltrtc_accepted_thread_safe()
     }
     LOG(INFO) << "Accepted client";
     update_last_recv_time();
-    task_thread_->post(ltlib::PriorityTask { ltlib::Priority::Medium, std::bind(&WorkerSession::check_timeout, this) });
+    task_thread_->post(std::bind(&WorkerSession::check_timeout, this));
 }
 
 void WorkerSession::on_ltrtc_conn_changed()
@@ -631,24 +631,21 @@ void WorkerSession::on_keep_alive(std::shared_ptr<google::protobuf::MessageLite>
 
 void WorkerSession::update_last_recv_time()
 {
-    last_recv_time_ms_ = ltlib::steady_now_ms();
+    last_recv_time_us_ = ltlib::steady_now_us();
 }
 
 void WorkerSession::check_timeout()
 {
-    constexpr auto kCheckInterval = 500;
-    constexpr auto kTimeout = 3000;
-    auto now = ltlib::steady_now_ms();
-    if (now - last_recv_time_ms_ > kTimeout) {
+    constexpr auto kTimeoutUS = 3000'000;
+    auto now = ltlib::steady_now_us();
+    if (now - last_recv_time_us_ > kTimeoutUS) {
         rtc_server_->close();
         //FIXME: on_closed必须在ioloop线程调用，这里用错了
         on_closed(CloseReason::TimeoutClose);
     } else {
         task_thread_->post_delay(
-            std::chrono::milliseconds { kTimeout },
-            ltlib::PriorityTask {
-                ltlib::Priority::Medium,
-                std::bind(&WorkerSession::check_timeout, this) });
+            ltlib::TimeDelta { kTimeoutUS },
+            std::bind(&WorkerSession::check_timeout, this));
     }
 }
 

@@ -369,7 +369,7 @@ void Client::on_ltrtc_connected()
     //      LOG(INFO) << "Create audio module failed";
     //      return;
     //  }
-    hb_thread_->post(ltlib::PriorityTask { ltlib::Priority::Medium, [this]() { send_keep_alive(); } });
+    hb_thread_->post(std::bind(&Client::send_keep_alive, this));
     // 如果未来有“串流”以外的业务，在这个StartTransmission添加字段.
     auto start = std::make_shared<ltproto::peer2peer::StartTransmission>();
     start->set_client_os(ltproto::peer2peer::StartTransmission_ClientOS_Windows);
@@ -421,8 +421,8 @@ void Client::send_keep_alive()
     auto keep_alive = std::make_shared<ltproto::peer2peer::KeepAlive>();
     send_message_to_host(ltproto::id(keep_alive), keep_alive, true);
 
-    const auto k500ms = std::chrono::milliseconds { 500 };
-    hb_thread_->post_delay(k500ms, ltlib::PriorityTask { ltlib::Priority::Medium, [this]() { send_keep_alive(); } });
+    const auto k500ms = ltlib::TimeDelta { 500'000 };
+    hb_thread_->post_delay(k500ms, std::bind(&Client::send_keep_alive, this));
 }
 
 bool Client::send_message_to_host(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable)

@@ -13,7 +13,6 @@ using SetThreadDescriptionFunc = HRESULT(WINAPI*)(HANDLE hThread, PCWSTR lpThrea
 
 void set_current_thread_name(const char* name)
 {
-// TODO: 这些宏在cmake中检测设置
 #if defined(LT_WINDOWS)
     static auto set_thread_description_func = reinterpret_cast<SetThreadDescriptionFunc>(::GetProcAddress(
         ::GetModuleHandleA("Kernel32.dll"), "SetThreadDescription"));
@@ -67,6 +66,8 @@ void crash_me()
 
 namespace ltlib
 {
+
+using namespace time;
 
 ThreadWatcher* ThreadWatcher::instance()
 {
@@ -265,7 +266,7 @@ TaskThread::~TaskThread()
     }
 }
 
-void TaskThread::post(PriorityTask task)
+void TaskThread::post(const Task& task)
 {
     {
         std::lock_guard<std::mutex> lock { mutex_ };
@@ -275,10 +276,22 @@ void TaskThread::post(PriorityTask task)
     cv_.notify_one();
 }
 
-void TaskThread::post_delay(std::chrono::milliseconds duration, PriorityTask task)
+TaskThread::TimerID TaskThread::post_delay(TimeDelta delta_time, const Task& task)
 {
-    std::lock_guard<std::mutex> lock { mutex_ };
-    delay_tasks_.push({ duration, task });
+    Timestamp when = Timestamp::now() + delta_time;
+    {
+        std::lock_guard<std::mutex> lock { mutex_ };
+        for (;;) {
+            auto iter = delay_tasks_.find(when);
+            if (iter == delay_tasks_.end()) {
+                delay_tasks_.emplace(when, task);
+                break;
+            }
+            when = when + 1_us;
+        }
+    }
+    cv_.notify_one();
+    return when.microseconds();
 }
 
 void TaskThread::start()
@@ -306,7 +319,7 @@ void TaskThread::main_loop(std::promise<void>& promise)
         if (old_tasks.empty() && delay_tasks.empty()) { // && proactor_tasks.empty())
             std::unique_lock lock { mutex_ };
             wakeup_.store(false, std::memory_order::memory_order_relaxed);
-            cv_.wait_for(lock, sleep_for, [this]() { return wakeup_.load(std::memory_order::memory_order_relaxed); });
+            cv_.wait_for(lock, std::chrono::microseconds { sleep_for.value() }, [this]() { return wakeup_.load(std::memory_order::memory_order_relaxed); });
             continue;
         }
 
@@ -357,25 +370,27 @@ void TaskThread::set_thread_name()
     ::set_current_thread_name(name_.c_str());
 }
 
-std::deque<PriorityTask> TaskThread::get_pending_tasks()
+std::deque<TaskThread::Task> TaskThread::get_pending_tasks()
 {
     std::lock_guard lock { mutex_ };
     return std::move(tasks_);
 }
 
-std::tuple<std::vector<PriorityTask>, std::chrono::milliseconds> TaskThread::get_timeup_delay_tasks()
+std::tuple<std::vector<TaskThread::Task>, TimeDelta> TaskThread::get_timeup_delay_tasks()
 {
-    std::vector<PriorityTask> tasks;
-    auto now = std::chrono::steady_clock::now();
+    std::vector<Task> tasks;
+    auto now = Timestamp::now();
     std::lock_guard lock { mutex_ };
-    while (!delay_tasks_.empty() && delay_tasks_.top().run_at <= now) {
-        tasks.push_back(delay_tasks_.top());
-        delay_tasks_.pop();
+    auto iter = delay_tasks_.begin();
+    while (iter != delay_tasks_.end() && iter->first <= now) {
+        tasks.push_back(iter->second);
+        iter = delay_tasks_.erase(iter);
     }
+
     if (!delay_tasks_.empty()) {
-        return { tasks, std::chrono::duration_cast<std::chrono::milliseconds>(delay_tasks_.top().run_at - now) };
+        return { tasks, delay_tasks_.begin()->first - now };
     } else {
-        return { tasks, std::chrono::milliseconds { 10 } };
+        return { tasks, TimeDelta { 10'000 } };
     }
 }
 
@@ -392,6 +407,22 @@ void TaskThread::wake()
 bool TaskThread::is_running()
 {
     return wakeup_.load(std::memory_order::memory_order_relaxed);
+}
+
+void TaskThread::invokeInternal(const Task& task)
+{
+    std::promise<void> promise;
+    post([&promise, task]() {
+        task();
+        promise.set_value();
+    });
+    promise.get_future().get();
+}
+
+void TaskThread::cancel(TimerID timer)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    delay_tasks_.erase(timer);
 }
 
 } // namespace ltlib

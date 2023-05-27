@@ -114,7 +114,7 @@ private:
     std::atomic<bool> client_connected_ { false };
     std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)> on_create_session_completed_;
     std::function<void(CloseReason, const std::string&, const std::string&)> on_closed_;
-    std::atomic<int64_t> last_recv_time_ms_ = 0;
+    std::atomic<int64_t> last_recv_time_us_ = 0;
     bool rtc_closed_ = true;
     bool worker_process_stoped_ = true;
     std::optional<bool> join_signaling_room_success_;
