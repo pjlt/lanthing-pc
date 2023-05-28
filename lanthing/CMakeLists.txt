@@ -91,12 +91,12 @@ add_executable(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME}
-    #让本项目的代码可以从"src"文件夹开始include
+    #璁╂湰椤圭洰鐨勪唬鐮佸彲浠ヤ粠"src"鏂囦欢澶瑰紑濮媔nclude
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-#服务器地址
+#鏈嶅姟鍣ㄥ湴鍧�
 target_compile_definitions(${PROJECT_NAME} PRIVATE LT_SERVER_ADDR=${LT_SERVER_ADDR})
 
 if(LT_WINDOWS)

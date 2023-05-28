@@ -1,0 +1,7 @@
+root = true
+
+[*.*]
+enable = true
+command = Edit.FormatDocument
+allowed_extensions = .cpp .h
+denied_extensions =

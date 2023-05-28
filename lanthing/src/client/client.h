@@ -69,7 +69,7 @@ private:
     void on_platform_exit();
     void stop_wait();
 
-    // 信令.
+    // 淇′护.
     void on_signaling_net_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_signaling_disconnected();
     void on_signaling_reconnecting();
@@ -89,7 +89,7 @@ private:
     void on_ltrtc_disconnected();
     void on_ltrtc_signaling_message(const std::string& key, const std::string& value);
 
-    // 数据通道.
+    // 鏁版嵁閫氶亾.
     void dispatch_remote_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void send_keep_alive();
     bool send_message_to_host(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable);

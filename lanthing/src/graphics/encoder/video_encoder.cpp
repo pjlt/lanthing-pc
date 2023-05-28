@@ -42,7 +42,7 @@ std::string backend_to_string(lt::VideoEncoder::Backend backend)
 
 auto create_d3d11() -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t>
 {
-    // TODO: 遍历每个GPU
+    // TODO: 閬嶅巻姣忎釜GPU
     uint32_t vendor_id = 0;
     ComPtr<ID3D11Device> device;
     ComPtr<ID3D11DeviceContext> context;
@@ -79,7 +79,7 @@ auto create_d3d11() -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceConte
     return { device, context, vendor_id };
 }
 
-} // 匿名空间
+} // 鍖垮悕绌洪棿
 
 namespace lt
 {
@@ -221,7 +221,7 @@ std::vector<VideoEncoder::Ability> VideoEncoder::check_encode_abilities(uint32_t
                         abilities.push_back({ backend, codec_type });
                     }
                 }
-                // 某一backend下，如果检测成功，则立马返回，因为一块显卡不可能支持NvEnc的同时，又支持IntelMediaSDK
+                // 鏌愪竴backend涓嬶紝濡傛灉妫�娴嬫垚鍔燂紝鍒欑珛椹繑鍥烇紝鍥犱负涓�鍧楁樉鍗′笉鍙兘鏀寔NvEnc鐨勫悓鏃讹紝鍙堟敮鎸両ntelMediaSDK
                 if (!abilities.empty()) {
                     return abilities;
                 }

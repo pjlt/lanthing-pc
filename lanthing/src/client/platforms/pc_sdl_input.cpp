@@ -23,13 +23,13 @@ std::unique_ptr<SdlInput> SdlInput::create(const Params& params)
 SdlInput::SdlInput(const Params& params)
     : window_ { params.window }
 {
-    //TODO: ³õÊ¼»¯
+    //TODO: åˆå§‹åŒ–
 }
 
 void SdlInput::init()
 {
-    //TODO: ¼ÓÔØÍ¨¹ıÄ³ÖÖ·½Ê½Ç¶Èë¶ş½øÖÆÎÄ¼şµÄgamemappingÎÄ¼ş
-    //NOTE: ÕâÀïÖ»ÓĞmapping_cout > 0Õâ¸ö·ÖÖ§Ìõ¼şÊÇÕı³££¬ÆäËû¶¼ÊÇÎª´íÎó£¡
+    //TODO: åŠ è½½é€šè¿‡æŸç§æ–¹å¼åµŒå…¥äºŒè¿›åˆ¶æ–‡ä»¶çš„gamemappingæ–‡ä»¶
+    //NOTE: è¿™é‡Œåªæœ‰mapping_cout > 0è¿™ä¸ªåˆ†æ”¯æ¡ä»¶æ˜¯æ­£å¸¸ï¼Œå…¶ä»–éƒ½æ˜¯ä¸ºé”™è¯¯ï¼
     std::string mapping_contents;
     if (!mapping_contents.empty()) {
         int mapping_count = SDL_GameControllerAddMappingsFromRW(SDL_RWFromConstMem(mapping_contents.c_str(), mapping_contents.size()), true);
@@ -57,7 +57,7 @@ void SdlInput::handle_key_up_down(const SDL_KeyboardEvent& ev)
     if (ev.repeat) {
         return;
     }
-    //Õâ¸ö·¶Î§Àï²¢²»ÊÇÃ¿Ò»¸öÊıÖµ¶¼ÓĞ¶ÔÓ¦µÄSDL Scancode£¬½øÒ»²½¹ıÂËµÄÂß¼­½»ÓÉÒµÎñ´úÂëÈ¥×ö£¡
+    //è¿™ä¸ªèŒƒå›´é‡Œå¹¶ä¸æ˜¯æ¯ä¸€ä¸ªæ•°å€¼éƒ½æœ‰å¯¹åº”çš„SDL Scancodeï¼Œè¿›ä¸€æ­¥è¿‡æ»¤çš„é€»è¾‘äº¤ç”±ä¸šåŠ¡ä»£ç å»åšï¼
     if (ev.keysym.scancode <= SDL_SCANCODE_UNKNOWN || ev.keysym.scancode >= SDL_NUM_SCANCODES) {
         return;
     }
@@ -66,8 +66,8 @@ void SdlInput::handle_key_up_down(const SDL_KeyboardEvent& ev)
 
 void SdlInput::handle_mouse_button(const SDL_MouseButtonEvent& ev)
 {
-    //SdlInputÊôÓÚplatform²ã£¬Ö»¸ºÔğ°Ñ´°¿ÚÄÚËùÓĞÊó±êbuttonÊÂ¼ş»Øµ÷µ½ÒµÎñ²ãµÄInput
-    //äÖÈ¾µÄÊÓÆµ¿ÉÄÜÖ»ÊÇÕâ¸ö´°¿ÚµÄÒ»²¿·Ö£¬ÅĞ¶Ïµã»÷ÊÇ·ñÔÚ´°¿ÚÄÚµÄÂß¼­£¬ÓÉÒµÎñ²ãÈ¥×ö
+    //SdlInputå±äºplatformå±‚ï¼Œåªè´Ÿè´£æŠŠçª—å£å†…æ‰€æœ‰é¼ æ ‡buttonäº‹ä»¶å›è°ƒåˆ°ä¸šåŠ¡å±‚çš„Input
+    //æ¸²æŸ“çš„è§†é¢‘å¯èƒ½åªæ˜¯è¿™ä¸ªçª—å£çš„ä¸€éƒ¨åˆ†ï¼Œåˆ¤æ–­ç‚¹å‡»æ˜¯å¦åœ¨çª—å£å†…çš„é€»è¾‘ï¼Œç”±ä¸šåŠ¡å±‚å»åš
     if (ev.which == SDL_TOUCH_MOUSEID) {
         return;
     }
@@ -89,7 +89,7 @@ void SdlInput::handle_mouse_button(const SDL_MouseButtonEvent& ev)
         btn = MouseButtonEvent::Button::X2;
         break;
     default:
-        //SDL»á²»»á³öbug£¿
+        //SDLä¼šä¸ä¼šå‡ºbugï¼Ÿ
         return;
     }
     on_input_event(MouseButtonEvent { btn, ev.state == SDL_PRESSED, ev.x, ev.y });

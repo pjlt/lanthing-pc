@@ -47,7 +47,7 @@ lt::VideoEncoder::Backend to_lt(ltproto::peer2peer::StreamingParams::VideoEncode
     }
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace lt
 {
@@ -55,13 +55,13 @@ namespace lt
 namespace svc
 {
 
-// Á¬½ÓÁ÷³Ì
-// 1. Ö÷¿Ø·¢ËÍRequestConnectionµ½·şÎñÆ÷.
-// 2. ·şÎñÆ÷·¢ËÍOpenConnectionµ½±»¿Ø¶Ë.
-// 3. ±»¿Ø¶ËÁ¬½ÓĞÅÁî·şÎñÆ÷£¬Í¬Ê±»Ø¸´·şÎñÆ÷OpenConnectionAck
-// 4. ·şÎñÆ÷»ØÖ÷¿Ø¶ËRequestConnectionAck
-// 5. Ö÷¿Ø¶ËÁ¬½ÓĞÅÁî·şÎñÆ÷.
-// 6. Ö÷¿Ø¶ËÁ¬½ÓĞÅÁî³É¹¦£¬·¢ÆğrtcÁ¬½Ó.
+// è¿æ¥æµç¨‹
+// 1. ä¸»æ§å‘é€RequestConnectionåˆ°æœåŠ¡å™¨.
+// 2. æœåŠ¡å™¨å‘é€OpenConnectionåˆ°è¢«æ§ç«¯.
+// 3. è¢«æ§ç«¯è¿æ¥ä¿¡ä»¤æœåŠ¡å™¨ï¼ŒåŒæ—¶å›å¤æœåŠ¡å™¨OpenConnectionAck
+// 4. æœåŠ¡å™¨å›ä¸»æ§ç«¯RequestConnectionAck
+// 5. ä¸»æ§ç«¯è¿æ¥ä¿¡ä»¤æœåŠ¡å™¨.
+// 6. ä¸»æ§ç«¯è¿æ¥ä¿¡ä»¤æˆåŠŸï¼Œå‘èµ·rtcè¿æ¥.
 
 std::shared_ptr<WorkerSession> svc::WorkerSession::create(
     const std::string& name,
@@ -86,7 +86,7 @@ WorkerSession::WorkerSession(
 {
     ::srand(static_cast<unsigned int>(::time(nullptr)));
     constexpr int kRandLength = 4;
-    // ÊÇ·ñĞèÒªglobal?
+    // æ˜¯å¦éœ€è¦global?
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
         pipe_name_.push_back(rand() % 26 + 'A');
@@ -111,11 +111,11 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg)
     signaling_addr_ = msg->signaling_addr();
     signaling_port_ = msg->signaling_port();
     if (!msg->has_streaming_params()) {
-        // µ±Ç°Ö»Ö§³Ö´®Á÷£¬Î´À´ÓĞ¿ÉÄÜÖ§³Ö´®Á÷ÒÔÍâµÄ¹¦ÄÜ£¬ËùÒÔÕâ¸östreaming_paramsÊÇoptionalµÄ.
+        // å½“å‰åªæ”¯æŒä¸²æµï¼Œæœªæ¥æœ‰å¯èƒ½æ”¯æŒä¸²æµä»¥å¤–çš„åŠŸèƒ½ï¼Œæ‰€ä»¥è¿™ä¸ªstreaming_paramsæ˜¯optionalçš„.
         LOG(WARNING) << "Received OpenConnection without streaming params";
         return false;
     }
-    // NOTE: ÎªÁË¼æÈİJava£¬protobufÃ»ÓĞÊ¹ÓÃuint
+    // NOTE: ä¸ºäº†å…¼å®¹Javaï¼Œprotobufæ²¡æœ‰ä½¿ç”¨uint
     int32_t client_width = msg->streaming_params().video_width();
     int32_t client_height = msg->streaming_params().video_height();
     int32_t client_refresh_rate = msg->streaming_params().screen_refresh_rate();
@@ -155,7 +155,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg)
         return false;
     }
     create_worker_process((uint32_t)client_width, (uint32_t)client_height, (uint32_t)client_refresh_rate, client_codecs);
-    // TODO: ÒÆ³ıÕâ¸ötask_thread_
+    // TODO: ç§»é™¤è¿™ä¸ªtask_thread_
     task_thread_ = ltlib::TaskThread::create("check_timeout");
     std::promise<void> promise;
     auto future = promise.get_future();
@@ -282,7 +282,7 @@ bool WorkerSession::create_video_encoder()
     lt::VideoEncoder::InitParams init_params {};
     init_params.backend = to_lt(backend);
     init_params.codec_type = to_ltrtc(codec);
-    init_params.bitrate_bps = 10'000'000; // TODO: ĞŞ¸Ä¸üºÏÀíµÄÖµ£¬»òÕßĞ­ÉÌ
+    init_params.bitrate_bps = 10'000'000; // TODO: ä¿®æ”¹æ›´åˆç†çš„å€¼ï¼Œæˆ–è€…åå•†
     init_params.width = params->video_width();
     init_params.height = params->video_height();
     video_encoder_ = lt::VideoEncoder::create(init_params);
@@ -483,7 +483,7 @@ void WorkerSession::on_start_working_ack(std::shared_ptr<google::protobuf::Messa
             worker_registered_msg_.insert(type);
         }
     } else {
-        // TODO: Ê§°ÜÁË£¬¹Ø±ÕÕû¸öWorkerSession
+        // TODO: å¤±è´¥äº†ï¼Œå…³é—­æ•´ä¸ªWorkerSession
         ack->set_err_code(ltproto::peer2peer::StartTransmissionAck_ErrCode_HostFailed);
     }
     send_message_to_remote_client(ltproto::id(ack), ack, true);
@@ -516,7 +516,7 @@ void WorkerSession::send_worker_keep_alive()
 void WorkerSession::on_ltrtc_data(const std::shared_ptr<uint8_t>& data, uint32_t size, bool reliable)
 {
     auto type = reinterpret_cast<const uint32_t*>(data.get());
-    // À´×Ôclient£¬·¢¸øserver£¬µÄÏûÏ¢.
+    // æ¥è‡ªclientï¼Œå‘ç»™serverï¼Œçš„æ¶ˆæ¯.
     auto msg = ltproto::create_by_type(*type);
     if (msg == nullptr) {
         LOG(WARNING) << "Unknown message type: " << *type;
@@ -573,7 +573,7 @@ void WorkerSession::on_ltrtc_signaling_message(const std::string& key, const std
 
 void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageLite> _msg)
 {
-    // NOTE: ÕâÊÇÔÚIOLoopÏß³Ì
+    // NOTE: è¿™æ˜¯åœ¨IOLoopçº¿ç¨‹
     auto captured_frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_msg);
     auto encoded_frame = video_encoder_->encode(captured_frame, false);
     if (encoded_frame.is_black_frame) {
@@ -621,12 +621,12 @@ void WorkerSession::on_start_transmission(std::shared_ptr<google::protobuf::Mess
         return;
     }
     start_working();
-    // ÔİÊ±²»»ØAck£¬µÈµ½worker process»ØÁËStartWorkingAckÔÙ»Ø.
+    // æš‚æ—¶ä¸å›Ackï¼Œç­‰åˆ°worker processå›äº†StartWorkingAckå†å›.
 }
 
 void WorkerSession::on_keep_alive(std::shared_ptr<google::protobuf::MessageLite> msg)
 {
-    // ÊÇ·ñĞèÒª»Øack
+    // æ˜¯å¦éœ€è¦å›ack
 }
 
 void WorkerSession::update_last_recv_time()
@@ -640,7 +640,7 @@ void WorkerSession::check_timeout()
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
         rtc_server_->close();
-        //FIXME: on_closed±ØĞëÔÚioloopÏß³Ìµ÷ÓÃ£¬ÕâÀïÓÃ´íÁË
+        //FIXME: on_closedå¿…é¡»åœ¨ioloopçº¿ç¨‹è°ƒç”¨ï¼Œè¿™é‡Œç”¨é”™äº†
         on_closed(CloseReason::TimeoutClose);
     } else {
         task_thread_->post_delay(
@@ -657,7 +657,7 @@ bool WorkerSession::send_message_to_remote_client(uint32_t type, const std::shar
         return false;
     }
     const auto& pkt = packet.value();
-    // rtcµÄÊı¾İÍ¨µÀ¿ÉÒÔ°ïÖúÎÒÃÇÍê³Éstream->packetµÄ¹ı³Ì£¬ËùÒÔÕâÀï²»ĞèÒª°Ñpacket headerÒ»Æğ´«¹ıÈ¥.
+    // rtcçš„æ•°æ®é€šé“å¯ä»¥å¸®åŠ©æˆ‘ä»¬å®Œæˆstream->packetçš„è¿‡ç¨‹ï¼Œæ‰€ä»¥è¿™é‡Œä¸éœ€è¦æŠŠpacket headerä¸€èµ·ä¼ è¿‡å».
     bool success = rtc_server_->send_data(pkt.payload, pkt.header.payload_size, reliable);
     return success;
 }

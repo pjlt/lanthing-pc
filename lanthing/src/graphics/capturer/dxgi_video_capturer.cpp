@@ -31,7 +31,7 @@ bool DxgiVideoCapturer::pre_init()
 
 bool DxgiVideoCapturer::init_d3d11()
 {
-    //µÚÒ»¿éÏÔ¿¨
+    //ç¬¬ä¸€å—æ˜¾å¡
     const uint32_t index = 0;
     HRESULT hr;
     do {
@@ -142,7 +142,7 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture)
         LOGF(WARNING, "handle: 0x%08x", handle);
         shared_handles_[index_] = (uint64_t)handle;
     }
-    // FIXME: Èç¹ûÃ»ÓÐÈË´ò¿ª¹ýhandle, »á³ÖÐøfailed
+    // FIXME: å¦‚æžœæ²¡æœ‰äººæ‰“å¼€è¿‡handle, ä¼šæŒç»­failed
     mutex->ReleaseSync(1);
     mutex->Release();
     resource->Release();
@@ -152,7 +152,7 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture)
 
 //void DxgiVideoCapturer::done_with_frame()
 //{
-//    // ÔÚshared_texture()ÒÑ¾­copy¹ýÒ»´Î£¬ÂíÉÏ¾ÈDoneWithFrame()ÁË£¬ÕâÀï²»Ó¦¸ÃÔÙµ÷ÓÃ
+//    // åœ¨shared_texture()å·²ç»copyè¿‡ä¸€æ¬¡ï¼Œé©¬ä¸Šæ•‘DoneWithFrame()äº†ï¼Œè¿™é‡Œä¸åº”è¯¥å†è°ƒç”¨
 //    //impl_->DoneWithFrame();
 //}
 

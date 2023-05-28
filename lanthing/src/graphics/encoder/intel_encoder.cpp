@@ -65,7 +65,7 @@ mfxU16 FourCCToChroma(mfxU32 fourCC)
     return MFX_CHROMAFORMAT_YUV420;
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace lt
 {
@@ -183,7 +183,7 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
 
 void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params)
 {
-    // todo: ÖØÖÃ±àÂëÆ÷
+    // todo: é‡ç½®ç¼–ç å™¨
 }
 
 VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame, bool force_idr)
@@ -258,7 +258,7 @@ bool IntelEncoderImpl::init_encoder()
     if (status != MFX_ERR_NONE) {
         return false;
     }
-    // ²»´òËãAlloc
+    // ä¸æ‰“ç®—Alloc
     status = MFXVideoENCODE_Init(mfx_session_, &params);
     if (status != MFX_ERR_NONE) {
         return false;
@@ -278,7 +278,7 @@ bool IntelEncoderImpl::init_vpp()
     mfxVideoParam params = gen_vpp_param();
     std::array<mfxFrameAllocRequest, 2> requests;
     memset(requests.data(), 0, requests.size() * sizeof(mfxFrameAllocRequest));
-    // Õâ²½ÆäÊµ¿ÉÒÔ²»ĞèÒª
+    // è¿™æ­¥å…¶å®å¯ä»¥ä¸éœ€è¦
     mfxStatus status = MFXVideoVPP_QueryIOSurf(mfx_session_, &params, requests.data());
     if (status != MFX_ERR_NONE) {
         return false;
@@ -298,7 +298,7 @@ Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::alloc_render_surface()
     D3D11_TEXTURE2D_DESC desc;
     memset(&desc, 0, sizeof(desc));
     desc.Width = 1920;
-    desc.Height = 1088; // ÕâÀïÌî1080»á³öÎÊÌâ
+    desc.Height = 1088; // è¿™é‡Œå¡«1080ä¼šå‡ºé—®é¢˜
     desc.MipLevels = 1;
     desc.ArraySize = 1;
     desc.SampleDesc.Count = 1;
@@ -328,14 +328,14 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param()
     params.mfx.GopRefDist = 1;
     params.mfx.GopPicSize = static_cast<mfxU16>(1000000);
     params.mfx.NumRefFrame = 1;
-    params.mfx.IdrInterval = 0; // Î´Ìî
+    params.mfx.IdrInterval = 0; // æœªå¡«
     params.mfx.CodecProfile = codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN;
-    params.mfx.CodecLevel = 0; // Î´Ìî
+    params.mfx.CodecLevel = 0; // æœªå¡«
     params.mfx.MaxKbps = 40 * 1024 * 8;
-    params.mfx.InitialDelayInKB = 0; // Î´Ìî
-    params.mfx.GopOptFlag = 0; // Î´Ìî
+    params.mfx.InitialDelayInKB = 0; // æœªå¡«
+    params.mfx.GopOptFlag = 0; // æœªå¡«
     params.mfx.BufferSizeInKB = 512;
-    params.mfx.NumSlice = 0; // Î´ÌîÖµ
+    params.mfx.NumSlice = 0; // æœªå¡«å€¼
     params.mfx.EncodedOrder = 0;
     params.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY;
     if (enable_qsvff_) {

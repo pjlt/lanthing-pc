@@ -18,7 +18,7 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
         return {};
     }
 
-    // ±È½Ï{width, height, refresh_rate ¡À 1}
+    // æ¯”è¾ƒ{width, height, refresh_rate Â± 1}
     std::set<DisplaySetting, decltype(&DisplaySetting::compare_full_loose)> available_settings { &DisplaySetting::compare_full_loose };
     DEVMODE mode {};
     mode.dmSize = sizeof(DEVMODE);
@@ -33,16 +33,16 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
         return *iter;
     }
 
-    // ±È½Ï{width, height}
+    // æ¯”è¾ƒ{width, height}
     std::set<DisplaySetting, decltype(&DisplaySetting::compare_width_height)> avaiable_settings2 { available_settings.begin(), available_settings.end(), &DisplaySetting::compare_width_height };
     auto iter2 = avaiable_settings2.find(client_display_setting);
     if (iter2 != avaiable_settings2.end()) {
         DisplaySetting result = *iter2;
-        result.refrash_rate = 0; // ÖÃ0±íÊ¾Ë¢ĞÂÂÊĞ­ÉÌÊ§°Ü.
+        result.refrash_rate = 0; // ç½®0è¡¨ç¤ºåˆ·æ–°ç‡åå•†å¤±è´¥.
         return result;
     }
 
-    // ÕÒµ½ ·Ö±æÂÊ×î½Ó½üclient_display_setting && ·Ö±æÂÊ < client_display_setting µÄÅäÖÃ.
+    // æ‰¾åˆ° åˆ†è¾¨ç‡æœ€æ¥è¿‘client_display_setting && åˆ†è¾¨ç‡ < client_display_setting çš„é…ç½®.
     auto iter3 = avaiable_settings2.lower_bound(client_display_setting);
     if (iter3 != avaiable_settings2.end()) {
         iter3--;
@@ -52,7 +52,7 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
             return result;
         }
     }
-    // ÕÒ²»µ½£¬Ö±½Ó·µ»Øhostµ±Ç°µÄDisplaySetting
+    // æ‰¾ä¸åˆ°ï¼Œç›´æ¥è¿”å›hostå½“å‰çš„DisplaySetting
     DisplaySetting result(current_mode.dmPelsWidth, current_mode.dmPelsHeight, current_mode.dmDisplayFrequency);
     return result;
 }

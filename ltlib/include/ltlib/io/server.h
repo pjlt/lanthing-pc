@@ -11,7 +11,7 @@ namespace ltlib
 
 class ServerImpl;
 
-//不支持TLS
+//涓嶆敮鎸乀LS
 class LT_API Server
 {
 public:
@@ -30,7 +30,7 @@ public:
 public:
 	static std::unique_ptr<Server> create(const Params& params);
 	bool send(uint32_t fd, uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback = nullptr);
-	// 当上层调用send()返回false时，由上层调用close()关闭这个fd。此时on_closed将被回调
+	// 褰撲笂灞傝皟鐢╯end()杩斿洖false鏃讹紝鐢变笂灞傝皟鐢╟lose()鍏抽棴杩欎釜fd銆傛鏃秓n_closed灏嗚鍥炶皟
 	void close(uint32_t fd);
 
 private:

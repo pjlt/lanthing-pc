@@ -23,7 +23,7 @@ bool get_desk_name(HDESK desktop, std::wstring& name)
     return true;
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace lt
 {

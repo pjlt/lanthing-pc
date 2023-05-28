@@ -52,7 +52,7 @@ private:
     };
 
 private:
-    // 0表示没按下，其他任意数字表示按下
+    // 0琛ㄧず娌℃寜涓嬶紝鍏朵粬浠绘剰鏁板瓧琛ㄧず鎸変笅
     SDL_Window* window_;
     uint8_t keyboard_state_[512] = { 0 };
     std::mutex mutex_;

@@ -58,13 +58,13 @@ inline bool operator!=(const TimeDelta& t1, const TimeDelta& t2)
 }
 
 /**
- *¼Ó¼õ³Ë³ı
+ *åŠ å‡ä¹˜é™¤
  */
 template <typename T>
 inline TimeDelta operator+(const TimeDelta d1, const T d2)
 {
-    // ²»ÔÊĞíÊ¹ÓÃ 1_ms + 1 ÕâÑùµÄ²Ù×÷
-    // ÕıÈ·Ê¹ÓÃ¸ñÊ½Îª: 1_ms + 1_ms £¨Á½±ß¶¼ÊÇTimeDeltaÀàĞÍ)
+    // ä¸å…è®¸ä½¿ç”¨ 1_ms + 1 è¿™æ ·çš„æ“ä½œ
+    // æ­£ç¡®ä½¿ç”¨æ ¼å¼ä¸º: 1_ms + 1_ms ï¼ˆä¸¤è¾¹éƒ½æ˜¯TimeDeltaç±»å‹)
     static_assert(!std::is_integral<T>::value, "1_ms + 1 is not allowed");
     return TimeDelta(d1.value() + d2.value());
 }
@@ -79,8 +79,8 @@ inline TimeDelta operator-(const TimeDelta d1, const T d2)
 template <typename T>
 inline TimeDelta operator*(const TimeDelta d1, const T d2)
 {
-    // ²»ÔÊĞí 3ms * 2us µÈÂÒÆß°ËÔãµÄ²Ù×÷
-    // Ö»¿ÉÒÔ 3ms * 2 = 6ms
+    // ä¸å…è®¸ 3ms * 2us ç­‰ä¹±ä¸ƒå…«ç³Ÿçš„æ“ä½œ
+    // åªå¯ä»¥ 3ms * 2 = 6ms
     static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value,
         "integral or float is required");
     // return TimeDelta(std::lround(d1.value() * d2 * 1.0));
@@ -99,13 +99,13 @@ inline TimeDelta operator/(const TimeDelta d1, const T d2)
     static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value,
         "integral or float is required");
     TimeDelta ret(0);
-    // XXX:ÊÇ·ñ¸ÃÌæÊ¹ÓÃÕß¿¼ÂÇ³ıÊıÎª0µÄÎÊÌâ
-    // ³ıÊıÎª0£¬¾ÍÈÃËü±¼À£ºÃÁË
+    // XXX:æ˜¯å¦è¯¥æ›¿ä½¿ç”¨è€…è€ƒè™‘é™¤æ•°ä¸º0çš„é—®é¢˜
+    // é™¤æ•°ä¸º0ï¼Œå°±è®©å®ƒå¥”æºƒå¥½äº†
     // ret = TimeDelta(std::lround(d1.value() * 1.0 / d2 ));
     ret = TimeDelta(static_cast<int64_t>(d1.value() * 1.0 / d2 + 0.5));
     return ret;
 }
-// ÔÊĞíÊ¹ÓÃ:
+// å…è®¸ä½¿ç”¨:
 //       1ms / 1us = 1000;
 //       1ms / 3ms = 0.33333
 inline double operator/(const TimeDelta d1, const TimeDelta d2)

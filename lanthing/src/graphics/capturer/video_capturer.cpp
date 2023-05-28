@@ -54,7 +54,7 @@ void VideoCapturer::main_loop(const std::function<void()>& i_am_alive)
         i_am_alive();
         auto frame = capture_one_frame();
         if (frame) {
-            //TODO: ÉèÖÃÆäËûframeµÄÆäËûÖµ
+            //TODO: è®¾ç½®å…¶ä»–frameçš„å…¶ä»–å€¼
             frame->set_picture_id(frame_no_++);
             on_frame_(frame);
         }
@@ -65,7 +65,7 @@ void VideoCapturer::main_loop(const std::function<void()>& i_am_alive)
 
 void VideoCapturer::stop()
 {
-    //¼´±ãstoped_ÊÇÔ­×ÓÒ²²»Ó¦¸ÃÕâÃ´×ö£¬µ«Õâ¸ö³ÌÐòËÆºõ²»»á³öÏÖÒ»¸öÏß³ÌÕýÔÚÎö¹¹VideoCapture£¬ÁíÒ»¸öÏß³ÌÖ÷¶¯µ÷stop()
+    //å³ä¾¿stoped_æ˜¯åŽŸå­ä¹Ÿä¸åº”è¯¥è¿™ä¹ˆåšï¼Œä½†è¿™ä¸ªç¨‹åºä¼¼ä¹Žä¸ä¼šå‡ºçŽ°ä¸€ä¸ªçº¿ç¨‹æ­£åœ¨æžæž„VideoCaptureï¼Œå¦ä¸€ä¸ªçº¿ç¨‹ä¸»åŠ¨è°ƒstop()
     if (!stoped_) {
         stoped_ = true;
         stop_promise_->get_future().get();

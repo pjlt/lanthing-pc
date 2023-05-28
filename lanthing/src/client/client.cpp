@@ -31,7 +31,7 @@ rtc::VideoCodecType to_ltrtc(std::string codec_str)
     }
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace lt
 {
@@ -213,7 +213,7 @@ void Client::on_signaling_net_message(uint32_t type, std::shared_ptr<google::pro
 
 void Client::on_signaling_disconnected()
 {
-    // TODO: ÒµÎñ´úÂë£¬Ä¿Ç°ÊÇÖ±½ÓÍË³ö½ø³Ì.
+    // TODO: ä¸šåŠ¡ä»£ç ï¼Œç›®å‰æ˜¯ç›´æ¥é€€å‡ºè¿›ç¨‹.
     stop_wait();
 }
 
@@ -244,8 +244,8 @@ void Client::on_join_room_ack(std::shared_ptr<google::protobuf::MessageLite> _ms
     PcSdl::Params params;
     params.video_height = video_params_.height;
     params.video_width = video_params_.width;
-    params.window_height = 720; // Ä¬ÈÏÖµ£¬ºóĞøÍ¨¹ıÆÁÄ»´óĞ¡¼ÆËã.
-    params.window_width = 1280; // Ä¬ÈÏÖµ£¬ºóĞøÍ¨¹ıÆÁÄ»´óĞ¡¼ÆËã.
+    params.window_height = 720; // é»˜è®¤å€¼ï¼Œåç»­é€šè¿‡å±å¹•å¤§å°è®¡ç®—.
+    params.window_width = 1280; // é»˜è®¤å€¼ï¼Œåç»­é€šè¿‡å±å¹•å¤§å°è®¡ç®—.
     params.on_reset = std::bind(&Client::on_platform_render_target_reset, this);
     params.on_exit = std::bind(&Client::on_platform_exit, this);
     sdl_ = PcSdl::create(params);
@@ -268,7 +268,7 @@ void Client::on_signaling_message(std::shared_ptr<google::protobuf::MessageLite>
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
     switch (msg->level()) {
     case ltproto::signaling::SignalingMessage::Core:
-        // ÔİÊ±Ã»ÓĞĞèÒªÔÚÕâ²ã´¦ÀíµÄĞÅÁîÏûÏ¢
+        // æš‚æ—¶æ²¡æœ‰éœ€è¦åœ¨è¿™å±‚å¤„ç†çš„ä¿¡ä»¤æ¶ˆæ¯
         break;
     case ltproto::signaling::SignalingMessage::Rtc: {
         auto& rtc_msg = msg->rtc_message();
@@ -370,7 +370,7 @@ void Client::on_ltrtc_connected()
     //      return;
     //  }
     hb_thread_->post(std::bind(&Client::send_keep_alive, this));
-    // Èç¹ûÎ´À´ÓĞ¡°´®Á÷¡±ÒÔÍâµÄÒµÎñ£¬ÔÚÕâ¸öStartTransmissionÌí¼Ó×Ö¶Î.
+    // å¦‚æœæœªæ¥æœ‰â€œä¸²æµâ€ä»¥å¤–çš„ä¸šåŠ¡ï¼Œåœ¨è¿™ä¸ªStartTransmissionæ·»åŠ å­—æ®µ.
     auto start = std::make_shared<ltproto::peer2peer::StartTransmission>();
     start->set_client_os(ltproto::peer2peer::StartTransmission_ClientOS_Windows);
     start->set_token(auth_token_);
@@ -393,7 +393,7 @@ void Client::on_ltrtc_disconnected()
 
 void Client::on_ltrtc_signaling_message(const std::string& key, const std::string& value)
 {
-    // ½«keyºÍvalue·â×°ÔÚprotoÀï.
+    // å°†keyå’Œvalueå°è£…åœ¨protoé‡Œ.
     auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
     msg->set_level(ltproto::signaling::SignalingMessage::Rtc);
     auto rtc_msg = msg->mutable_rtc_message();
@@ -433,7 +433,7 @@ bool Client::send_message_to_host(uint32_t type, const std::shared_ptr<google::p
         return false;
     }
     const auto& pkt = packet.value();
-    // WebRTCµÄÊı¾İÍ¨µÀ¿ÉÒÔ°ïÖúÎÒÃÇÍê³Éstream->packetµÄ¹ı³Ì£¬ËùÒÔÕâÀï²»ĞèÒª°Ñpacket headerÒ»Æğ´«¹ıÈ¥.
+    // WebRTCçš„æ•°æ®é€šé“å¯ä»¥å¸®åŠ©æˆ‘ä»¬å®Œæˆstream->packetçš„è¿‡ç¨‹ï¼Œæ‰€ä»¥è¿™é‡Œä¸éœ€è¦æŠŠpacket headerä¸€èµ·ä¼ è¿‡å».
     bool success = rtc_client_->send_data(pkt.payload, pkt.header.payload_size, reliable);
     return success;
 }

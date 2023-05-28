@@ -49,7 +49,7 @@ private:
     void maybe_on_create_session_completed();
     bool create_video_encoder();
 
-    // 信令
+    // 淇′护
     bool init_signling_client();
     void on_signaling_message_from_net(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_signaling_disconnected();
@@ -81,7 +81,7 @@ private:
     void on_ltrtc_disconnected_thread_safe();
     void on_ltrtc_signaling_message(const std::string& key, const std::string& value);
 
-    // 数据通道
+    // 鏁版嵁閫氶亾
     void dispatch_dc_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_start_transmission(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_keep_alive(std::shared_ptr<google::protobuf::MessageLite> msg);

@@ -2,18 +2,19 @@ cmake_minimum_required(VERSION 3.20)
 project(lanthing-pc)
 
 set(CMAKE_CXX_STANDARD 17)
-include(cmake/platforms-check.cmake)
+set(LT_CMAKES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(${LT_CMAKES_PATH}/platforms-check.cmake)
 
-# Ä¬ÈÏ±àÒëRelease
+# é»˜è®¤ç¼–è¯‘Release
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
 if(LT_WINDOWS)
-    # Ê¹ÓÃMT,MTd
+    # ä½¿ç”¨MT,MTd
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     add_compile_definitions(UNICODE _UNICODE WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN)# NOGDI)
-    add_compile_options(/wd4819)
+    add_compile_options(/wd4819 /utf-8)
     #add_compile_options(/W4 /WX)
 else()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
@@ -52,3 +53,4 @@ add_subdirectory(ltproto)
 add_subdirectory(ltlib)
 add_subdirectory(lanthing)
 add_subdirectory(lanthing-qt)
+add_subdirectory(app)

@@ -124,9 +124,9 @@ bool Service::init_settings()
 
 void Service::destroy_session(const std::string& session_name)
 {
-    // worker_sessions_.erase(session_name)»áÎö¹¹WorkerSessionÄÚ²¿µÄPeerConnection
-    // ¶øµ±Ç°µÄdestroy_session()ºÜ¿ÉÄÜÊÇPeerConnectionĞÅÁîÏß³Ì»Øµ÷ÉÏÀ´µÄ
-    // ÕâÀïÑ¡Ôñ·Åµ½libuvµÄÏß³ÌÈ¥×ö
+    // worker_sessions_.erase(session_name)ä¼šææ„WorkerSessionå†…éƒ¨çš„PeerConnection
+    // è€Œå½“å‰çš„destroy_session()å¾ˆå¯èƒ½æ˜¯PeerConnectionä¿¡ä»¤çº¿ç¨‹å›è°ƒä¸Šæ¥çš„
+    // è¿™é‡Œé€‰æ‹©æ”¾åˆ°libuvçš„çº¿ç¨‹å»åš
     if (ioloop_->is_not_current_thread()) {
         ioloop_->post(std::bind(&Service::destroy_session, this, session_name));
     } else {
@@ -160,7 +160,7 @@ void Service::dispatch_server_message(uint32_t type, std::shared_ptr<google::pro
 
 void Service::on_server_disconnected()
 {
-    // ÔõÃ´°ì£¿
+    // æ€ä¹ˆåŠï¼Ÿ
 }
 
 void Service::on_server_reconnecting()
@@ -174,7 +174,7 @@ void Service::on_server_connected()
     if (device_id_ != 0) {
         login_device();
     } else {
-        // IDÓÉClientUIÉêÇëºÃ£¬²ÅÄÜÆô¶¯Service
+        // IDç”±ClientUIç”³è¯·å¥½ï¼Œæ‰èƒ½å¯åŠ¨Service
         assert(false);
     }
 }
@@ -190,7 +190,7 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
             LOG(WARNING) << "Only support one client";
             return;
         } else {
-            // ÓÃÒ»¸önullptrÕ¼Î»£¬¼´Ê¹ÊÍ·ÅËø£¬ÆäËûÏß³ÌÒ²²»»ámodifyÕâ¸öworker_sessions_
+            // ç”¨ä¸€ä¸ªnullptrå ä½ï¼Œå³ä½¿é‡Šæ”¾é”ï¼Œå…¶ä»–çº¿ç¨‹ä¹Ÿä¸ä¼šmodifyè¿™ä¸ªworker_sessions_
             worker_sessions_[session_name] = nullptr;
         }
     }
@@ -207,7 +207,7 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
     } else {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
         tcp_client_->send(ltproto::id(ack), ack);
-        // É¾³ıÕ¼Î»µÄnullptr
+        // åˆ é™¤å ä½çš„nullptr
         std::lock_guard<std::mutex> lock { mutex_ };
         worker_sessions_.erase(session_name);
     }

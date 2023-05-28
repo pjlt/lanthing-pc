@@ -35,7 +35,7 @@ void LanthingWinService::on_stop()
         SetEvent(g_stop_service_handle);
         LOG(INFO) << "Emit service exit event";
     }
-    // 不清楚Windows服务on_stop的行为，所以主动调uninit()而不是放到impl的析构函数里
+    // 涓嶆竻妤歐indows鏈嶅姟on_stop鐨勮涓猴紝鎵�浠ヤ富鍔ㄨ皟uninit()鑰屼笉鏄斁鍒癷mpl鐨勬瀽鏋勫嚱鏁伴噷
     impl_->uninit();
 }
 

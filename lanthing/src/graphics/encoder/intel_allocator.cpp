@@ -279,7 +279,7 @@ mfxStatus MfxDecoderFrameAllocator::alloc_external_frame(mfxFrameAllocRequest* r
     desc.Height = 1088;
     desc.MipLevels = 1;
     desc.ArraySize = 1;
-    // decodeÓ¦¸ÃÓÃÄÄÖÖ¸ñÊ½
+    // decodeåº”è¯¥ç”¨å“ªç§æ ¼å¼
     desc.Format = DXGI_FORMAT_NV12;
     desc.SampleDesc.Count = 1;
     // desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
@@ -307,7 +307,7 @@ mfxStatus MfxDecoderFrameAllocator::alloc_internal_frame(mfxFrameAllocRequest* r
     D3D11_TEXTURE2D_DESC desc;
     memset(&desc, 0, sizeof(desc));
     desc.Width = 1920;
-    desc.Height = 1088; // ÕâÀïÌî1080»á³öÎÊÌâ
+    desc.Height = 1088; // è¿™é‡Œå¡«1080ä¼šå‡ºé—®é¢˜
     desc.MipLevels = 1;
     desc.ArraySize = 1;
     desc.SampleDesc.Count = 1;

@@ -20,7 +20,7 @@ int sdl_event_watcher(void* userdata, SDL_Event* ev)
     return 0;
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace lt
 {
@@ -45,7 +45,7 @@ private:
     void quit_sdl_subsystems();
     void flush_window_events();
 
-private: // ÊÂ¼ş´¦Àí
+private: // äº‹ä»¶å¤„ç†
     enum class DispatchResult
     {
         kContinue,
@@ -148,7 +148,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (window_ == nullptr) {
-        // ³ö´íÁË£¬ÍË³öÕû¸öclient£¨
+        // å‡ºé”™äº†ï¼Œé€€å‡ºæ•´ä¸ªclientï¼ˆ
         promise.set_value(false);
         return;
     }
@@ -159,7 +159,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         promise.set_value(false);
         return;
     }
-    // TODO: ÕâÀïµÄpromise.set_value()ÀíÂÛÉÏÓ¦¸ÃµÈµ½Client»ñÈ¡µ½½âÂëÄÜÁ¦²ÅÉèÖÃÖµ
+    // TODO: è¿™é‡Œçš„promise.set_value()ç†è®ºä¸Šåº”è¯¥ç­‰åˆ°Clientè·å–åˆ°è§£ç èƒ½åŠ›æ‰è®¾ç½®å€¼
     promise.set_value(true);
     // TODO: input handler
     SDL_SetWindowResizable(window_, SDL_TRUE);
@@ -168,8 +168,8 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
     currentDisplayIndex_ = SDL_GetWindowDisplayIndex(window_);
 
-    //ÔÚWin10ÏÂ£¬³¤Ê±¼äµã×¡SDLµÄ´°¿ÚÍÏ¶¯£¬»áÈÃSDL_WaitEventTimeout()¿¨×¡£¬SDL_AddEventWatch²ÅÄÜ»ñÈ¡µ½Ïà¹ØÊÂ¼ş
-    //µ«»Øµ÷ËÆºõÊÇÔÚÆäËüÏß³ÌÖ´ĞĞ£¬ÕâµãĞèÒªĞ¡ĞÄ
+    //åœ¨Win10ä¸‹ï¼Œé•¿æ—¶é—´ç‚¹ä½SDLçš„çª—å£æ‹–åŠ¨ï¼Œä¼šè®©SDL_WaitEventTimeout()å¡ä½ï¼ŒSDL_AddEventWatchæ‰èƒ½è·å–åˆ°ç›¸å…³äº‹ä»¶
+    //ä½†å›è°ƒä¼¼ä¹æ˜¯åœ¨å…¶å®ƒçº¿ç¨‹æ‰§è¡Œï¼Œè¿™ç‚¹éœ€è¦å°å¿ƒ
     SDL_AddEventWatch(sdl_event_watcher, (void*)&i_am_alive);
 
     SDL_Event ev;
@@ -189,7 +189,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         }
     }
 CLEANUP:
-    // »ØÊÕ×ÊÔ´£¬É¾³ı½âÂëÆ÷µÈ
+    // å›æ”¶èµ„æºï¼Œåˆ é™¤è§£ç å™¨ç­‰
     SDL_DestroyWindow(window_);
     quit_sdl_subsystems();
     on_exit_();
@@ -274,12 +274,12 @@ PcSdlImpl::DispatchResult PcSdlImpl::dispatch_sdl_event(const SDL_Event& ev)
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_user_event(const SDL_Event& ev)
 {
-    // ÓÃ»§×Ô¶¨ÒåÊÂ¼ş
+    // ç”¨æˆ·è‡ªå®šä¹‰äº‹ä»¶
     switch (ev.user.code) {
     case kUserEventResetRender:
         return reset_renderer_decoder();
     case kUserEventFlushWindowEventBarrier:
-        // TODO: ´¦ÀíFlushWindowEventÊÂ¼ş
+        // TODO: å¤„ç†FlushWindowEventäº‹ä»¶
         return DispatchResult::kContinue;
     default:
         SDL_assert(false);
@@ -291,29 +291,29 @@ PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_window_event(const SDL_Event& ev
 {
     switch (ev.window.event) {
     case SDL_WINDOWEVENT_FOCUS_LOST:
-        // ´°¿ÚÊ§½¹
+        // çª—å£å¤±ç„¦
         return DispatchResult::kContinue;
     case SDL_WINDOWEVENT_FOCUS_GAINED:
-        // ´°¿Ú»ñ½¹
+        // çª—å£è·ç„¦
         return DispatchResult::kContinue;
     case SDL_WINDOWEVENT_LEAVE:
-        // Êó±êÀë¿ª´°¿Ú
+        // é¼ æ ‡ç¦»å¼€çª—å£
         return DispatchResult::kContinue;
     case SDL_WINDOWEVENT_ENTER:
-        // Êó±ê½øÈë´°¿Ú
+        // é¼ æ ‡è¿›å…¥çª—å£
         return DispatchResult::kContinue;
     case SDL_WINDOWEVENT_CLOSE:
-        // µãÁËÓÒÉÏ½ÇµÄ¡°x¡±
+        // ç‚¹äº†å³ä¸Šè§’çš„â€œxâ€
         return DispatchResult::kStop;
     }
 
-    // Èç¹û´°¿ÚÃ»ÓĞ·¢Éú±ä»¯£¬Í¬Ê±Ò²Ã»ÓĞÇĞ»»ÏÔÊ¾Æ÷£¬Ôò²»ÓÃ´¦Àí¶«Î÷ÁË
+    // å¦‚æœçª—å£æ²¡æœ‰å‘ç”Ÿå˜åŒ–ï¼ŒåŒæ—¶ä¹Ÿæ²¡æœ‰åˆ‡æ¢æ˜¾ç¤ºå™¨ï¼Œåˆ™ä¸ç”¨å¤„ç†ä¸œè¥¿äº†
     if (ev.window.event != SDL_WINDOWEVENT_SIZE_CHANGED
         && ev.window.event != SDL_WINDOWEVENT_SHOWN
         && SDL_GetWindowDisplayIndex(window_) == currentDisplayIndex_) {
         return DispatchResult::kContinue;
     }
-    // ×ßµ½ÕâÒ»²½£¬ËµÃ÷½ÓÏÂÀ´ÒªÖØÖÃrendererºÍdecoder
+    // èµ°åˆ°è¿™ä¸€æ­¥ï¼Œè¯´æ˜æ¥ä¸‹æ¥è¦é‡ç½®rendererå’Œdecoder
     // LOG(INFO) << "recreate renderer";
     return DispatchResult::kContinue;
     // return reset_renderer_decoder();
@@ -324,7 +324,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::reset_renderer_decoder()
     flush_window_events();
     currentDisplayIndex_ = SDL_GetWindowDisplayIndex(window_);
     SDL_PumpEvents();
-    // Çå³ıÒÑÓĞµÄÖØÖÃĞÅºÅ
+    // æ¸…é™¤å·²æœ‰çš„é‡ç½®ä¿¡å·
     SDL_FlushEvent(SDL_RENDER_DEVICE_RESET);
     SDL_FlushEvent(SDL_RENDER_TARGETS_RESET);
     {

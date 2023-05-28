@@ -25,7 +25,7 @@ private:
     bool init_settings();
     void destroy_session(const std::string& session_name);
 
-    // ·şÎñÆ÷
+    // æœåŠ¡å™¨
     void on_server_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_server_disconnected();
     void on_server_reconnecting();
@@ -36,7 +36,7 @@ private:
     void login_user();
     void report_session_closed(WorkerSession::CloseReason close_reason, const std::string& room_id);
 
-    // ÏûÏ¢handler
+    // æ¶ˆæ¯handler
     void on_open_connection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg);

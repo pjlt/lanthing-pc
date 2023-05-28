@@ -82,16 +82,16 @@ void init_log_and_minidump(Role role)
     g_log_worker = g3::LogWorker::createLogWorker();
     g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string());
     g3::initializeLogging(g_log_worker.get());
-    // g3log必须再minidump前初始化
-    g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     ltlib::ThreadWatcher::instance()->register_terminate_callback([](const std::string& last_word) {
         LOG(INFO) << "Last words: "  << last_word;
     });
-    LOG(INFO) << "Log system initialized";
-
-    //if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
+    // if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
     //    ltrtc::init_logging(log_dir.string(), rtc_prefix);
     //}
+    LOG(INFO) << "Log system initialized";
+
+    // g3log蹇呴』鍐峬inidump鍓嶅垵濮嬪寲
+    g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     signal(SIGINT, sigint_handler);
 }
 
@@ -185,7 +185,7 @@ int run_as_worker(std::map<std::string, std::string> options)
     }
 }
 
-} // 匿名空间
+} // 鍖垮悕绌洪棿
 
 
 int main(int argc, char* argv[])
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
     if (iter == options.end() || iter->second == "service") {
         return run_as_service(options);
     } else if (iter->second == "client") {
-        // 方便调试attach
+        // 鏂逛究璋冭瘯attach
         // std::this_thread::sleep_for(std::chrono::seconds { 15 });
         return run_as_client(options);
     } else if (iter->second == "worker") {

@@ -92,7 +92,7 @@ private:
 private:
     PcSdl* sdl_;
     std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)> send_message_to_host_;
-    // 0±íÊ¾ËÉ¿ª£¬·Ç0±íÊ¾°´ÏÂ¡£²»ÓÃbool¶øÓÃuint8_tÊÇµ£ĞÄmenset()Ö®Ààº¯Êı²»ºÃ´¦ÀíboolÊı×é
+    // 0è¡¨ç¤ºæ¾å¼€ï¼Œé0è¡¨ç¤ºæŒ‰ä¸‹ã€‚ä¸ç”¨boolè€Œç”¨uint8_tæ˜¯æ‹…å¿ƒmenset()ä¹‹ç±»å‡½æ•°ä¸å¥½å¤„ç†boolæ•°ç»„
     std::array<uint8_t, 512> key_states_ = { 0 };
     uint32_t host_width_;
     uint32_t host_height_;
@@ -158,10 +158,10 @@ void InputImpl::on_platform_input_event(const InputEvent& e)
 
 void InputImpl::handle_keyboard_up_down(const KeyboardEvent& ev)
 {
-    //TODO: Ôö¼ÓÒ»¸öreset×´Ì¬µÄÂß¼­£¬Èë¿ÚÔÚsdl»¹ÊÇinputÁíËµ¡£
+    //TODO: å¢åŠ ä¸€ä¸ªresetçŠ¶æ€çš„é€»è¾‘ï¼Œå…¥å£åœ¨sdlè¿˜æ˜¯inputå¦è¯´ã€‚
     key_states_[ev.scan_code] = ev.is_pressed ? 1 : 0;
     if (try_process_key_combos()) {
-        //´¦ÀíÍêÔ¤ÉèµÄ×éºÏ¼üºó£¬Ö±½Ó·µ»Øµô²»·¢¸ø±»¿Ø¶Ë
+        //å¤„ç†å®Œé¢„è®¾çš„ç»„åˆé”®åï¼Œç›´æ¥è¿”å›æ‰ä¸å‘ç»™è¢«æ§ç«¯
         return;
     }
     auto msg = std::make_shared<ltproto::peer2peer::KeyboardEvent>();
@@ -215,7 +215,7 @@ void InputImpl::handle_mouse_move(const MouseMoveEvent& ev)
     uint32_t padding_width = (client_surface.width - target_rect.width) / 2;
     float x = (ev.x - padding_width) * 1.0f / target_rect.width;
     float y = (ev.y - padding_height) * 1.0f / target_rect.height;
-    //TODO: Ïà¶ÔÄ£Ê½¿ÉÄÜÒªÀÛ»ıÒ»¶ÎÔÙ·¢³öÈ¥
+    //TODO: ç›¸å¯¹æ¨¡å¼å¯èƒ½è¦ç´¯ç§¯ä¸€æ®µå†å‘å‡ºå»
     auto msg = std::make_shared<ltproto::peer2peer::MouseMotion>();
     msg->set_x(x);
     msg->set_y(y);
@@ -266,7 +266,7 @@ void InputImpl::handle_controller_button(const ControllerButtonEvent& ev)
         case ControllerButtonEvent::Button::BACK:
             state->buttons |= kControllerBack;
             break;
-        case ControllerButtonEvent::Button::GUIDE: //²»È·¶¨
+        case ControllerButtonEvent::Button::GUIDE: //ä¸ç¡®å®š
             break;
         case ControllerButtonEvent::Button::START:
             state->buttons |= kControllerStart;
@@ -315,7 +315,7 @@ void InputImpl::handle_controller_button(const ControllerButtonEvent& ev)
         case ControllerButtonEvent::Button::BACK:
             state->buttons &= ~kControllerBack;
             break;
-        case ControllerButtonEvent::Button::GUIDE: //²»È·¶¨
+        case ControllerButtonEvent::Button::GUIDE: //ä¸ç¡®å®š
             break;
         case ControllerButtonEvent::Button::START:
             state->buttons &= ~kControllerStart;

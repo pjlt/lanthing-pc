@@ -32,10 +32,10 @@ public:
 public:
     static std::unique_ptr<Client> create(const Params& params);
     bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback = nullptr);
-    // ÖØÁ¬ÓĞÁ½ÖÖ
-    // 1. µÚÒ»ÖÖÊÇÄÚ²¿·¢Éú´íÎó£¬×Ô·¢ÖØÁ¬
-    // 2. µÚ¶şÖÖÊÇÉÏ²ãµ÷ÓÃbool send()ÎÒÃÇ·µ»Øfalse£¬ºóĞøÓÉÉÏ²ãÖ÷¶¯µ÷reconnect()
-    // ÎŞÂÛÄÄÖÖÖØÁ¬£¬¶¼»á»Øµ÷on_reconnecting
+    // é‡è¿æœ‰ä¸¤ç§
+    // 1. ç¬¬ä¸€ç§æ˜¯å†…éƒ¨å‘ç”Ÿé”™è¯¯ï¼Œè‡ªå‘é‡è¿
+    // 2. ç¬¬äºŒç§æ˜¯ä¸Šå±‚è°ƒç”¨bool send()æˆ‘ä»¬è¿”å›falseï¼Œåç»­ç”±ä¸Šå±‚ä¸»åŠ¨è°ƒreconnect()
+    // æ— è®ºå“ªç§é‡è¿ï¼Œéƒ½ä¼šå›è°ƒon_reconnecting
     void reconnect();
 
 private:

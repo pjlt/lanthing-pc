@@ -59,7 +59,7 @@ std::string to_string(rtc::VideoCodecType type)
     }
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace lt
 {
@@ -211,7 +211,7 @@ bool Worker::init_pipe_client()
 
 void Worker::negotiate_parameters()
 {
-    // TODO: ¼ì²â×¥ÆÁÄÜÁ¦
+    // TODO: æ£€æµ‹æŠ“å±èƒ½åŠ›
     std::vector<VideoEncoder::Ability> encode_abilities = VideoEncoder::check_encode_abilities(client_width_, client_height_);
     auto negotiated_params = std::make_shared<ltproto::peer2peer::StreamingParams>();
     negotiated_params->set_enable_driver_input(false);
@@ -343,7 +343,7 @@ void Worker::on_pipe_connected()
         LOG(INFO) << "Connected to service";
     }
     connected_to_service_ = true;
-    // Á¬ÉÏµÚÒ»Ê±¼ä£¬Ïòservice·¢ËÍĞ­ÉÌºÃµÄ´®Á÷²ÎÊı
+    // è¿ä¸Šç¬¬ä¸€æ—¶é—´ï¼Œå‘serviceå‘é€åå•†å¥½çš„ä¸²æµå‚æ•°
     auto params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_params_);
     send_pipe_message(ltproto::id(params), params);
 }
