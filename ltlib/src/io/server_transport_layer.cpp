@@ -83,7 +83,7 @@ bool LibuvSTransport::init_tcp()
     int ret = uv_tcp_init(uvloop(), server_tcp_.get());
     if (ret != 0) {
         LOG(WARNING) << "Init tcp socket failed: " << ret;
-        server_tcp_.reset(); //resetÊÇÎªÁË¸æËßÎö¹¹º¯Êý£¬²»ÒªcloseÕâ¸ösocket
+        server_tcp_.reset(); //resetæ˜¯ä¸ºäº†å‘Šè¯‰æžæž„å‡½æ•°ï¼Œä¸è¦closeè¿™ä¸ªsocket
     }
     struct sockaddr_in addr;
     ret = uv_ip4_addr(bind_ip_.c_str(), bind_port_, &addr);
@@ -112,7 +112,7 @@ bool LibuvSTransport::init_tcp()
 bool LibuvSTransport::init_pipe()
 {
     server_pipe_ = std::make_unique<uv_pipe_t>();
-    uv_pipe_init(uvloop(), server_pipe_.get(), 0); /*·µ»ØÖµÓÀÔ¶ÊÇ0*/
+    uv_pipe_init(uvloop(), server_pipe_.get(), 0); /*è¿”å›žå€¼æ°¸è¿œæ˜¯0*/
     int ret = uv_pipe_bind(server_pipe_.get(), pipe_name_.c_str());
     if (ret != 0) {
         LOG(WARNING) << "Pipe bind to name '" << pipe_name_ << "' failed: " << ret;
@@ -209,10 +209,10 @@ void LibuvSTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         // EAGAIN
         return;
     } else if (nread == UV_EOF) {
-        //¶ÁÍê
+        //è¯»å®Œ
         that->close(conn->fd);
     } else if (nread < 0) {
-        //Ê§°Ü£¬Ó¦¸Ã¶ÏÁ´
+        //å¤±è´¥ï¼Œåº”è¯¥æ–­é“¾
         that->close(conn->fd);
     } else {
         //const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);

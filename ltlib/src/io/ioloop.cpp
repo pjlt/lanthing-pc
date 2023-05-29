@@ -96,7 +96,7 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive)
 {
     constexpr uint32_t k700ms = 700;
     uv_timer_init(&uvloop_, &alive_handle_);
-    //NOTE: Õâ¸öcopyÄÚ´æĞ¹Â¶ÁË£¬µ«ÊÇ²»ÓÃ¹Ü
+    //NOTE: è¿™ä¸ªcopyå†…å­˜æ³„éœ²äº†ï¼Œä½†æ˜¯ä¸ç”¨ç®¡
     auto copy_i_am_alive = new std::function<void()>;
     *copy_i_am_alive = i_am_alive;
     alive_handle_.data = copy_i_am_alive;
@@ -119,7 +119,7 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive)
     stoped_ = false;
     tid_ = std::this_thread::get_id();
     uv_run(&uvloop_, UV_RUN_DEFAULT);
-    // ·¢ËÍĞÅºÅ£¬±íÊ¾ÒÑ¾­ÍË³öÑ­»·
+    // å‘é€ä¿¡å·ï¼Œè¡¨ç¤ºå·²ç»é€€å‡ºå¾ªç¯
     {
         std::lock_guard<std::mutex> lock { mutex_ };
         stoped_ = true;
@@ -129,12 +129,12 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive)
 
 void IOLoopImpl::stop()
 {
-    // 1. Ïòmain_loopÏß³Ì·¢ËÍstopĞÅºÅ
+    // 1. å‘main_loopçº¿ç¨‹å‘é€stopä¿¡å·
     uv_async_send(&close_handle_);
-    // 2. µÈ´ımain_loop·¢ËÍĞÅºÅ
+    // 2. ç­‰å¾…main_loopå‘é€ä¿¡å·
     std::unique_lock<std::mutex> lock { mutex_ };
     cv_.wait(lock, [this]() { return stoped_; });
-    // 3. ±éÀúËùÓĞÎ´¹Ø±ÕµÄhandle£¬¹Ø±ÕËüÃÇ
+    // 3. éå†æ‰€æœ‰æœªå…³é—­çš„handleï¼Œå…³é—­å®ƒä»¬
     uv_walk(
         &uvloop_, [](uv_handle_t* handle, void* arg) {
             if (uv_is_closing(handle) == 0) {
@@ -142,9 +142,9 @@ void IOLoopImpl::stop()
             }
         },
         nullptr);
-    // 4. ÔÙuv_runÒ»´Î£¬ÈÃµÚ3²½µÄhandleÄÜÖ´ĞĞ×Ô¼ºµÄclose callback
+    // 4. å†uv_runä¸€æ¬¡ï¼Œè®©ç¬¬3æ­¥çš„handleèƒ½æ‰§è¡Œè‡ªå·±çš„close callback
     uv_run(&uvloop_, UV_RUN_DEFAULT);
-    // 5. »ØÊÕuvloop_ÄÚ²¿×ÊÔ´
+    // 5. å›æ”¶uvloop_å†…éƒ¨èµ„æº
     uv_loop_close(&uvloop_);
 }
 
@@ -154,13 +154,13 @@ void IOLoopImpl::post(const std::function<void()>& task)
         std::lock_guard<std::mutex> lock { mutex_ };
         tasks_.push_back(task);
     }
-    //¶ÔÍ¬Ò»¸öuv_async_t¶à´Îµ÷ÓÃuv_async_sendÊÇƒÓÎÊÌâßÕ£¡
+    //å¯¹åŒä¸€ä¸ªuv_async_tå¤šæ¬¡è°ƒç”¨uv_async_sendæ˜¯å†‡é—®é¢˜å“’ï¼
     uv_async_send(&task_handle_);
 }
 
 void IOLoopImpl::post_delay(int64_t delay_ms, const std::function<void()>& task)
 {
-    //Õû¸ölibuvÖ»ÓĞuv_async_send()ÊÇÏß³Ì°²È«µÄ£¬ËùÒÔÎÒÃÇÒªÔÙ°üÒ»²ã£¬°Ñuv_timer_init()¡¢uv_timer_start()ÈÓµ½libuvµÄÏß³ÌÈ¥ÅÜ
+    //æ•´ä¸ªlibuvåªæœ‰uv_async_send()æ˜¯çº¿ç¨‹å®‰å…¨çš„ï¼Œæ‰€ä»¥æˆ‘ä»¬è¦å†åŒ…ä¸€å±‚ï¼ŒæŠŠuv_timer_init()ã€uv_timer_start()æ‰”åˆ°libuvçš„çº¿ç¨‹å»è·‘
     auto user_task_copied = new std::function<void()> { task };
     auto delayed_task = [delay_ms, user_task_copied, this]() {
         auto timer = new uv_timer_t;
@@ -171,7 +171,7 @@ void IOLoopImpl::post_delay(int64_t delay_ms, const std::function<void()>& task)
                 auto user_task = reinterpret_cast<std::function<void()>*>(handle->data);
                 user_task->operator()();
                 delete user_task;
-                // handleÖ»ÄÜÔÚuv_close_cbÀïÉ¾³ı
+                // handleåªèƒ½åœ¨uv_close_cbé‡Œåˆ é™¤
                 uv_timer_stop(handle);
                 uv_close((uv_handle_t*)handle, [](uv_handle_t* handle) {
                     auto timer_handle = (uv_timer_t*)handle;

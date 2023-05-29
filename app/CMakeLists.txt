@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project("app")
+project(app)
 
 
 if(NOT DEFINED LT_QT_CMAKE_PATH)
@@ -74,10 +74,7 @@ target_link_libraries(${PROJECT_NAME}
         rtc
 )
 
-function(deploy_qt6 _target) 
-    add_custom_command(TARGET ${_target} POST_BUILD
-        COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE_DIR:${_target}>
-    )
-endfunction()
+message(WARNING "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
 
-deploy_qt6(${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME})
+install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")

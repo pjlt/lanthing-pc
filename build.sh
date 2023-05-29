@@ -104,6 +104,22 @@ clear_sdl() {
     exit_if_fail
 }
 
+build_g3log() {
+    echo -e "\033[32m building g3log\033[0m"
+    cd third_party/g3log
+    mkdir -p build/; cd build;
+    $CMAKE .. -DENABLE_VECTORED_EXCEPTIONHANDLING=OFF -DENABLE_FATAL_SIGNALHANDLING=OFF -DCMAKE_INSTALL_PREFIX=install/Debug
+    $CMAKE --build . --config Debug --target install
+    $CMAKE .. -DENABLE_VECTORED_EXCEPTIONHANDLING=OFF -DENABLE_FATAL_SIGNALHANDLING=OFF -DCMAKE_INSTALL_PREFIX=install/Release
+    $CMAKE --build . --config Release --target install
+    cd $root_dir;
+}
+
+clear_g3log() {
+    rm third_party/g3log/build/* -rf
+    exit_if_fail
+}
+
 cmake_project() {
     $CMAKE -B build -DCMAKE_BUILD_TYPE=$build_type
     exit_if_fail
@@ -135,6 +151,7 @@ if [ "$action" == "prebuild" ]; then
     build_mbedtls
     build_libuv
     build_sdl
+    build_g3log
    
 elif [ "$action" == "clean" ];then
     clear_protobuf
@@ -142,6 +159,7 @@ elif [ "$action" == "clean" ];then
     clear_mbedtls
     clear_libuv
     clear_sdl
+    clear_g3log
 
 elif [ "$action" == "build" ];then
     build_type=$2

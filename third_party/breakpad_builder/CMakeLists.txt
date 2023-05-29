@@ -32,3 +32,7 @@ target_compile_definitions(${PROJECT_NAME}
 		UNICODE
 		BUILDING_MINIDUMP=1
 )
+
+install(
+	TARGETS ${PROJECT_NAME}
+)

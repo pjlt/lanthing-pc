@@ -94,7 +94,7 @@ bool ServerImpl::send(uint32_t fd, uint32_t type, const std::shared_ptr<google::
         {(char*)pkt.payload.get(), pkt.header.payload_size}
     };
     return transport_->send(fd, buffs, 2, [packet, callback]() {
-        //°Ñpacket capture½øÀ´£¬ÊÇÎªÁËÑÓĞøÄÚ²¿shared_ptrµÄÉúÃüÖÜÆÚ
+        //æŠŠpacket captureè¿›æ¥ï¼Œæ˜¯ä¸ºäº†å»¶ç»­å†…éƒ¨shared_ptrçš„ç”Ÿå‘½å‘¨æœŸ
         if (callback != nullptr) {
             callback();
         }

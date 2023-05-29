@@ -66,3 +66,7 @@ target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         BUILDING_LTLIB
 )
+
+install(
+	TARGETS ${PROJECT_NAME}
+)

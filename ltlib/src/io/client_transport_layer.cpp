@@ -95,7 +95,7 @@ bool LibuvCTransport::init_pipe()
     int ret = uv_pipe_init(uvloop(), pipe_.get(), 0);
     if (ret != 0) {
         LOG(WARNING) << "Init pipe failed: " << ret;
-        pipe_.reset(); // resetÊÇÎªÁË¸æËßÎö¹¹º¯Êı£¬²»ÒªcloseÕâ¸öpipe
+        pipe_.reset(); // resetæ˜¯ä¸ºäº†å‘Šè¯‰ææ„å‡½æ•°ï¼Œä¸è¦closeè¿™ä¸ªpipe
         return false;
     }
     pipe_->data = this;
@@ -238,13 +238,13 @@ void LibuvCTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         // EAGAIN
         return;
     } else if (nread == UV_EOF) {
-        //¶ÁÍê
+        //è¯»å®Œ
         that->reconnect();
     } else if (nread < 0) {
-        //Ê§°Ü£¬Ó¦¸Ã¶ÏÁ´
+        //å¤±è´¥ï¼Œåº”è¯¥æ–­é“¾
         that->reconnect();
     } else {
-        // uvbuf.lenÊÇÈİÁ¿£¬nread²ÅÊÇÎÒÃÇÏëÒªµÄ£¬²»ÄÜÓÃÏÂÃæÕâÖÖ×ª·¨
+        // uvbuf.lenæ˜¯å®¹é‡ï¼Œnreadæ‰æ˜¯æˆ‘ä»¬æƒ³è¦çš„ï¼Œä¸èƒ½ç”¨ä¸‹é¢è¿™ç§è½¬æ³•
         //const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);
         Buffer buff { uvbuf->base, uint32_t(nread) };
         if (!that->on_read_(buff)) {
@@ -260,7 +260,7 @@ void LibuvCTransport::on_written(uv_write_t* req, int status)
     auto user_callback = info->custom_callback;
     delete info;
     delete req;
-    //buff½»ÓÉÉÏ²ãÈ¥ÊÍ·Å£¬ÒòÎªÊÇÉÏ²ã´´½¨µÄ
+    //buffäº¤ç”±ä¸Šå±‚å»é‡Šæ”¾ï¼Œå› ä¸ºæ˜¯ä¸Šå±‚åˆ›å»ºçš„
     user_callback();
     if (status != 0) {
         that->reconnect();
@@ -281,7 +281,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     }
     addrinfo* addr = res;
     while (addr != nullptr) {
-        //NOTE: ÒÔºóÖ§³ÖIPv6¸ÄÕâÀï
+        //NOTE: ä»¥åæ”¯æŒIPv6æ”¹è¿™é‡Œ
         if (addr->ai_family == AF_INET) {
             break;
         }
@@ -296,8 +296,8 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     int ret = uv_tcp_init(that->uvloop(), that->tcp_.get());
     if (ret != 0) {
         LOG(WARNING) << "Init tcp socket failed: " << ret;
-        that->tcp_.reset(); //resetÊÇÎªÁË¸æËßÎö¹¹º¯Êı£¬²»ÒªcloseÕâ¸ösocket
-        that->reconnect(); // Õâ¸ö×´Ì¬ÏÂ£¬³ÌĞòÖØÊÔÒ²ÎŞ·¨¼ÌĞø½øĞĞÏÂÈ¥£¬ÊÇ·ñÓ¦¸Ãon_close?
+        that->tcp_.reset(); //resetæ˜¯ä¸ºäº†å‘Šè¯‰ææ„å‡½æ•°ï¼Œä¸è¦closeè¿™ä¸ªsocket
+        that->reconnect(); // è¿™ä¸ªçŠ¶æ€ä¸‹ï¼Œç¨‹åºé‡è¯•ä¹Ÿæ— æ³•ç»§ç»­è¿›è¡Œä¸‹å»ï¼Œæ˜¯å¦åº”è¯¥on_close?
         return;
     }
     that->tcp_->data = that;

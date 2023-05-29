@@ -59,11 +59,11 @@ private:
 
 private:
     LibuvCTransport uvtransport_;
-    //ÏÂÃæ¼¸¸öÊÇËùÓĞconnections¹²ÓĞµÄ£¬µ«ÎÒÃÇÕâÀïÖ»ÓĞ1¸öconnection
+    //ä¸‹é¢å‡ ä¸ªæ˜¯æ‰€æœ‰connectionså…±æœ‰çš„ï¼Œä½†æˆ‘ä»¬è¿™é‡Œåªæœ‰1ä¸ªconnection
     mbedtls_ssl_config ssl_cfg_;
     mbedtls_pk_context own_key_;
     mbedtls_x509_crt own_cert_;
-    //ÏÂÃæ¼¸¸öÊÇÊôÓÚÄ³Ò»¸öconnection
+    //ä¸‹é¢å‡ ä¸ªæ˜¯å±äºæŸä¸€ä¸ªconnection
     mbedtls_ssl_context ssl_;
     std::unique_ptr<mbedtls_ssl_session> session_;
     mbedtls_ctr_drbg_context drbg_;
