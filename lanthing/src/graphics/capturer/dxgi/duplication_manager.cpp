@@ -109,8 +109,8 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output)
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
             LOGF(WARNING, "There is already the maximum number of applications using the Desktop "
-                      "Duplication API running, please close one of those applications and then "
-                      "try again.",
+                          "Duplication API running, please close one of those applications and then "
+                          "try again.",
                 "Error");
         }
         LOGF(WARNING, "failed to call DuplicateOutput, hr:0x%08x", hr);
@@ -331,6 +331,6 @@ void DUPLICATIONMANAGER::GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr)
 
 void DUPLICATIONMANAGER::WaitForVBlank()
 {
-    assert(m_DxgiOutput_);
+    assert(m_DxgiOutput);
     m_DxgiOutput->WaitForVBlank();
 }

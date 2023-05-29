@@ -44,6 +44,8 @@ add_library(${PROJECT_NAME} SHARED
     ${LTLIB_SRCS}
 )
 
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${LTLIB_SRCS})
+
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include

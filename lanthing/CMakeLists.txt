@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(lanthing)
 
+include(deploy_dlls)
 
 set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -90,6 +91,9 @@ add_executable(${PROJECT_NAME}
     ${PLATFORM_SRCS}
 )
 
+# 按照原始目录结构展开
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src FILES ${LT_SRCS} ${PLATFORM_SRCS})
+
 target_include_directories(${PROJECT_NAME}
     #让本项目的代码可以从"src"文件夹开始include
     PRIVATE
@@ -124,6 +128,10 @@ target_link_libraries(${PROJECT_NAME}
     rtc
 )
 
-install(
-    TARGETS ${PROJECT_NAME}
-)
+# 直接在编译目录中调试, 先把install去掉
+# install(TARGETS ${PROJECT_NAME})
+
+deploy_dlls(${PROJECT_NAME})
+
+# 设置VS调试路径
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
