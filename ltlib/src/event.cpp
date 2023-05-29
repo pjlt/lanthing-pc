@@ -94,7 +94,7 @@ void Event::close()
 
 #else
 
-// 在跨进程使用pthread的mutex和condition variable，需要使用共享内存，有点麻烦
+// 鍦ㄨ法杩涚▼浣跨敤pthread鐨刴utex鍜宑ondition variable锛岄渶瑕佷娇鐢ㄥ叡浜唴瀛橈紝鏈夌偣楹荤儲
 
 Event::Event() noexcept
 {

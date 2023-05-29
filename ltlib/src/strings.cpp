@@ -130,7 +130,7 @@ StringToNumber(const std::string& str, int base = 10)
     return ParseFloatingPoint<T>(str);
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace ltlib
 {

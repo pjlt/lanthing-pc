@@ -50,11 +50,11 @@ bool execute_as_user(const std::function<bool(HANDLE)>& func)
     HANDLE hToken = NULL;
     bool res = false;
     do {
-        //¿ÉÄÜÓĞĞ©µçÄÔÔÚ¸Õ¿ª»úÒ»Ö±»áÊ§°Ü
+        //å¯èƒ½æœ‰äº›ç”µè„‘åœ¨åˆšå¼€æœºä¸€ç›´ä¼šå¤±è´¥
         if (!GetTokenByName(hToken, (const LPTSTR) L"EXPLORER.EXE")) {
             return false;
         }
-        ////¿ÉÄÜ½ø³Ì»¹Ã»ÆğÀ´
+        ////å¯èƒ½è¿›ç¨‹è¿˜æ²¡èµ·æ¥
         //for (int i = 0; i < 1; i++)
         //{
         //    if (!GetTokenByName(hToken, (const LPTSTR)_T("EXPLORER.EXE")))
@@ -69,14 +69,14 @@ bool execute_as_user(const std::function<bool(HANDLE)>& func)
             break;
         }
 
-        // Ä£ÄâµÇÂ¼ÓÃ»§µÄ°²È«ÉÏÏÂÎÄ
+        // æ¨¡æ‹Ÿç™»å½•ç”¨æˆ·çš„å®‰å…¨ä¸Šä¸‹æ–‡
         if (FALSE == ImpersonateLoggedOnUser(hToken)) {
             break;
         }
 
         res = func(hToken);
 
-        // µ½ÕâÀïÒÑ¾­Ä£ÄâÍêÁË£¬±ğÍü¼Ç·µ»ØÔ­À´µÄ°²È«ÉÏÏÂÎÄ
+        // åˆ°è¿™é‡Œå·²ç»æ¨¡æ‹Ÿå®Œäº†ï¼Œåˆ«å¿˜è®°è¿”å›åŸæ¥çš„å®‰å…¨ä¸Šä¸‹æ–‡
         if (FALSE == RevertToSelf()) {
             break;
         }
@@ -88,7 +88,7 @@ bool execute_as_user(const std::function<bool(HANDLE)>& func)
     return res;
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace ltlib
 {
@@ -106,7 +106,7 @@ bool get_program_filename(std::string& filename)
 
 bool get_program_filename(std::wstring& filename)
 {
-    const int kMaxPath = UNICODE_STRING_MAX_CHARS; // unicodeÖ§³Ö32767
+    const int kMaxPath = UNICODE_STRING_MAX_CHARS; // unicodeæ”¯æŒ32767
     std::vector<wchar_t> the_filename(kMaxPath);
     DWORD length = ::GetModuleFileNameW(nullptr, the_filename.data(), kMaxPath);
     if (length > 0 && length < kMaxPath) {

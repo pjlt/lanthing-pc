@@ -53,7 +53,6 @@ add_subdirectory(rtc)
 add_subdirectory(ltproto)
 add_subdirectory(ltlib)
 add_subdirectory(lanthing)
-add_subdirectory(lanthing-qt)
 add_subdirectory(app)
 
 include(${LT_CMAKES_PATH}/deploy-dlls.cmake)

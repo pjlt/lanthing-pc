@@ -18,7 +18,7 @@ bool get_service_status(SC_HANDLE service_handle, SERVICE_STATUS_PROCESS& servic
     return false;
 }
 
-} // ÄäÃû¿Õ¼ä
+} // åŒ¿åç©ºé—´
 
 namespace ltlib
 {
