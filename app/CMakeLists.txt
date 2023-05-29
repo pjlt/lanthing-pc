@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(app)
 
-# QT 需要自动生成一些文件(仍旧需要)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 include (deploy_dlls)
@@ -72,7 +69,7 @@ target_link_libraries(${PROJECT_NAME}
         rtc
 )
 deploy_dlls(${PROJECT_NAME})
-deploy_qt6(${PROJECT_NAME})
+deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 
 install(TARGETS ${PROJECT_NAME})
 install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
