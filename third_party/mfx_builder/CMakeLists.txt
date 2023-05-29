@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME} STATIC
 )
 
 # 按照原始目录结构展开
-source_group(TREE ${MFX_SRC_FOLDER} FILES ${MFX_SOURCES})
+source_group(TREE ${MFX_SRC_FOLDER} PREFIX src FILES ${MFX_SOURCES})
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
