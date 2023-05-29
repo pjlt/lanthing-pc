@@ -49,7 +49,7 @@ MbedtlsCTransport::MbedtlsCTransport(const Params& params)
     , on_closed_ { params.on_closed }
     , on_reconnecting_ { params.on_reconnecting }
     , on_read_ { params.on_read }
-    , more_buffer_ (TLS_BUF_SZ)
+    , more_buffer_(TLS_BUF_SZ)
     , cert_content_ { params.cert }
 {
 }
@@ -87,7 +87,7 @@ bool MbedtlsCTransport::tls_init_context()
     mbedtls_ctr_drbg_seed(&drbg_, mbedtls_entropy_func, &entropy_, seed.get(), MBEDTLS_ENTROPY_MAX_SEED_SIZE);
     mbedtls_ssl_conf_rng(&ssl_cfg_, mbedtls_ctr_drbg_random, &drbg_);
     mbedtls_x509_crt_init(&own_cert_);
-    int ret = mbedtls_x509_crt_parse(&own_cert_, reinterpret_cast<const unsigned char*>(cert_content_.c_str()), cert_content_.size()+1);
+    int ret = mbedtls_x509_crt_parse(&own_cert_, reinterpret_cast<const unsigned char*>(cert_content_.c_str()), cert_content_.size() + 1);
     if (ret != 0) {
         LOG(WARNING) << "Parse cert file failed: " << ret;
         return false;
@@ -101,7 +101,7 @@ bool MbedtlsCTransport::tls_init_engine()
     mbedtls_ssl_init(&ssl_);
     mbedtls_ssl_setup(&ssl_, &ssl_cfg_);
     const std::string& hostname = uvtransport_.is_tcp() ? uvtransport_.host() : uvtransport_.pipe_name();
-    //std::string hostname = "lanthing.net";
+    // std::string hostname = "lanthing.net";
     mbedtls_ssl_set_hostname(&ssl_, hostname.c_str());
     memset(&session_, 0, sizeof(session_));
     bio_in_ = BIO::create();
@@ -200,7 +200,7 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
 {
     int state = ssl_.MBEDTLS_PRIVATE(state);
     if (is_handshake_continue(state)) {
-        Buffer buff {TLS_BUF_SZ};
+        Buffer buff { TLS_BUF_SZ };
         auto hs_state = continue_handshake(uvbuf.base, uvbuf.len, buff.base, &buff.len, TLS_BUF_SZ);
         if (buff.len > 0) {
             int success = uvtransport_.send(&buff, 1, [buff]() { delete buff.base; });
@@ -265,6 +265,7 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
             }
         }
     }
+    return true;
 }
 
 void MbedtlsCTransport::on_uv_closed()
@@ -287,7 +288,7 @@ void MbedtlsCTransport::on_uv_reconnecting()
 
 bool MbedtlsCTransport::on_uv_connected()
 {
-    //tls_reset_engine();
+    // tls_reset_engine();
     int state = ssl_.MBEDTLS_PRIVATE(state);
     LOG(INFO) << "Start tls handshake " << state;
     if (is_handshake_continue(state)) {
@@ -373,13 +374,13 @@ bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count, const std::func
         return true;
     }
 
+    return true;
 }
 
 void MbedtlsCTransport::reconnect()
 {
     uvtransport_.reconnect();
 }
-
 
 BIO* BIO::create()
 {

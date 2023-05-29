@@ -1,18 +1,36 @@
 cmake_minimum_required(VERSION 3.20)
+
 project(lanthing-pc)
 
-set(CMAKE_CXX_STANDARD 17)
-set(LT_CMAKES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(${LT_CMAKES_PATH}/platforms-check.cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# 平台检测
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    set(LT_LINUX ON)
+    add_compile_definitions(LT_LINUX=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(LT_ANDROID ON)
+    add_compile_definitions(LT_ANDROID=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(LT_MAC ON)
+    add_compile_definitions(LT_MAC=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+set(LT_IOS ON)
+    add_compile_definitions(LT_IOS=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+set(LT_WINDOWS ON)
+    add_compile_definitions(LT_WINDOWS=1)
+endif()
+
 
 # 默认编译Release
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 if(LT_WINDOWS)
-    # 使用MT,MTd
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     add_compile_definitions(UNICODE _UNICODE WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN)# NOGDI)
     add_compile_options(/wd4819 /utf-8)
     #add_compile_options(/W4 /WX)
@@ -54,5 +72,3 @@ add_subdirectory(ltproto)
 add_subdirectory(ltlib)
 add_subdirectory(lanthing)
 add_subdirectory(app)
-
-include(${LT_CMAKES_PATH}/deploy-dlls.cmake)

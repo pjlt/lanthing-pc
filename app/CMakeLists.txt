@@ -1,19 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
 project(app)
 
+# QT 需要自动生成一些文件(仍旧需要)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
-if(NOT DEFINED LT_QT_CMAKE_PATH)
-    message(FATAL_ERROR "LT_QT_CMAKE_PATH not set!")
-endif()
-list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
+include (deploy_dlls)
+include (deploy_qt6)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui)
-qt_standard_project_setup()
-get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
-get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
-find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
-
+prepare_qt6()
 
 set(APP_SRCS
     # root
@@ -34,28 +31,20 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.cpp
 )
 
-set(APP_UI_SRCS
+set(APP_UI_VIEWS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.ui
-
 )
 
-qt6_add_executable(${PROJECT_NAME}
-    ${APP_SRCS}
-    ${APP_UI_SRCS}
-)
+add_executable(${PROJECT_NAME} 
+    ${APP_SRCS} 
+    ${APP_UI_VIEWS} 
+    # VS安装QT扩展工具可以直接编辑
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
 
-qt_add_resources(${PROJECT_NAME} "icons"
-    PREFIX
-        "./icons"
-    FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/icons/link.png
-        ${CMAKE_CURRENT_SOURCE_DIR}/icons/lock.png
-        ${CMAKE_CURRENT_SOURCE_DIR}/icons/pc.png
-        ${CMAKE_CURRENT_SOURCE_DIR}/icons/user.png
-)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src FILES ${APP_SRCS} ${APP_UI_VIEWS})
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
@@ -73,6 +62,11 @@ target_link_libraries(${PROJECT_NAME}
         ltproto
         rtc
 )
+deploy_dlls(${PROJECT_NAME})
+deploy_qt6(${PROJECT_NAME})
 
 install(TARGETS ${PROJECT_NAME})
 install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
+
+# 设置VS调试路径
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

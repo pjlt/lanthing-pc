@@ -13,8 +13,8 @@ struct Conn
     {
     }
     explicit Conn(uint32_t _fd)
-        : fd{ _fd }
-        , parser{ std::make_shared<ltproto::Parser>() }
+        : fd { _fd }
+        , parser { std::make_shared<ltproto::Parser>() }
     {
     }
     uint32_t fd;
@@ -22,7 +22,6 @@ struct Conn
 };
 
 } // namespace
-
 
 namespace ltlib
 {
@@ -45,21 +44,21 @@ private:
     std::unique_ptr<LibuvSTransport> transport_;
     std::function<void(uint32_t)> on_accepted_;
     std::function<void(uint32_t)> on_closed_;
-    std::function<void(uint32_t/*fd*/, uint32_t/*type*/, const std::shared_ptr<google::protobuf::MessageLite>&)> on_message_;
-    std::map<uint32_t/*fd*/, Conn> conns_;
+    std::function<void(uint32_t /*fd*/, uint32_t /*type*/, const std::shared_ptr<google::protobuf::MessageLite>&)> on_message_;
+    std::map<uint32_t /*fd*/, Conn> conns_;
 };
 
 ServerImpl::ServerImpl(const Server::Params& params)
-    : transport_{ std::make_unique<LibuvSTransport>(make_uv_params(params)) }
-    , on_accepted_{ params.on_accepted }
-    , on_closed_{ params.on_closed }
-    , on_message_{ params.on_message }
+    : transport_ { std::make_unique<LibuvSTransport>(make_uv_params(params)) }
+    , on_accepted_ { params.on_accepted }
+    , on_closed_ { params.on_closed }
+    , on_message_ { params.on_message }
 {
 }
 
 LibuvSTransport::Params ServerImpl::make_uv_params(const Server::Params& params)
 {
-    LibuvSTransport::Params uvparams{};
+    LibuvSTransport::Params uvparams {};
     uvparams.stype = params.stype;
     uvparams.ioloop = params.ioloop;
     uvparams.pipe_name = params.pipe_name;
@@ -90,11 +89,11 @@ bool ServerImpl::send(uint32_t fd, uint32_t type, const std::shared_ptr<google::
     }
     const auto& pkt = packet.value();
     Buffer buffs[2] = {
-        {(char*)&pkt.header, sizeof(pkt.header)},
-        {(char*)pkt.payload.get(), pkt.header.payload_size}
+        { (char*)&pkt.header, sizeof(pkt.header) },
+        { (char*)pkt.payload.get(), pkt.header.payload_size }
     };
     return transport_->send(fd, buffs, 2, [packet, callback]() {
-        //把packet capture进来，是为了延续内部shared_ptr的生命周期
+        // 把packet capture进来，是为了延续内部shared_ptr的生命周期
         if (callback != nullptr) {
             callback();
         }
@@ -108,7 +107,7 @@ void ServerImpl::close(uint32_t fd)
 
 void ServerImpl::on_transport_accepted(uint32_t fd)
 {
-    Conn conn{ fd };
+    Conn conn { fd };
     conns_[fd] = conn;
     on_accepted_(fd);
 }
@@ -135,6 +134,7 @@ bool ServerImpl::on_transport_read(uint32_t fd, const Buffer& buff)
     while (auto msg = conn.parser->pop_message()) {
         on_message_(fd, msg.value().type, msg.value().msg);
     }
+    return true;
 }
 
 std::unique_ptr<Server> Server::create(const Server::Params& params)
@@ -143,7 +143,7 @@ std::unique_ptr<Server> Server::create(const Server::Params& params)
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<Server> server{ new Server };
+    std::unique_ptr<Server> server { new Server };
     server->impl_ = std::move(impl);
     return server;
 }
