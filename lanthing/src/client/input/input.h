@@ -1,26 +1,26 @@
 #pragma once
-#include <memory>
 #include <client/input/input_event.h>
+#include <memory>
 
-namespace lt
-{
+#include <google/protobuf/api.pb.h>
 
-namespace cli
-{
+namespace lt {
+
+namespace cli {
 
 class PcSdl;
 class InputImpl;
 
-class Input
-{
+class Input {
 public:
-    struct Params
-    {
+    struct Params {
         PcSdl* sdl;
         uint32_t host_width;
         uint32_t host_height;
-        std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)> send_message;
+        std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
+            send_message;
     };
+
 public:
     static std::unique_ptr<Input> create(const Params& params);
 

@@ -53,6 +53,10 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/input.h 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/send_input.h 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/send_input.cpp
 
     # graphics->encoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.h

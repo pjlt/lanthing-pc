@@ -1,21 +1,36 @@
----
-Language:        Cpp
-BasedOnStyle:  WebKit
-FixNamespaceComments: true
-NamespaceIndentation: None
-AllowShortBlocksOnASingleLine: Always
+# Defines the Chromium style for automatic reformatting.
+# http://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+Language: Cpp
+BasedOnStyle: LLVM
+
+ColumnLimit: 100
+
+IndentWidth: 4
+
+IndentRequires: true
+
+AccessModifierOffset: -4
+
+PointerAlignment: Left
+
 AllowShortFunctionsOnASingleLine: Inline
 
-# 不要重排头文件
-SortIncludes: false
+EmptyLineBeforeAccessModifier: Always
 
-# 左 {
+AllowShortEnumsOnASingleLine: true
+
+#clang-format14
+#ShortNamespaceLines:0
+
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel: false
-  AfterStruct: true
-  AfterClass: true
-  AfterEnum: true
-  AfterFunction: true
-  AfterNamespace: true
-...
+    AfterEnum: false 
+    AfterFunction: false
+    AfterNamespace: false
+    AfterCaseLabel: true
+    AfterExternBlock: false
+    BeforeElse: true
+    #AfterControlStatement: MultiLine
+
+BreakConstructorInitializers: BeforeComma

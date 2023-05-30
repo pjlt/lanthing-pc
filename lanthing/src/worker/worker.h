@@ -1,28 +1,28 @@
 #pragma once
-#include <string>
+
 #include <map>
 #include <memory>
-#include <rtc/rtc.h>
-#include <ltlib/io/ioloop.h>
+#include <string>
+
 #include <ltlib/io/client.h>
+#include <ltlib/io/ioloop.h>
 #include <ltlib/threads.h>
-#include <graphics/encoder/video_encoder.h>
-#include <graphics/capturer/video_capturer.h>
+#include <rtc/rtc.h>
+
+#include "display_setting.h"
+#include "input/input.h"
 #include "message_handler.h"
 #include "session_change_observer.h"
-#include "display_setting.h"
+#include <graphics/capturer/video_capturer.h>
+#include <graphics/encoder/video_encoder.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace worker
-{
+namespace worker {
 
-class Worker
-{
+class Worker {
 public:
-    struct Params
-    {
+    struct Params {
         std::string name;
         uint32_t width;
         uint32_t height;
@@ -43,8 +43,10 @@ private:
     void main_loop(const std::function<void()>& i_am_alive);
     void stop();
     bool register_message_handler(uint32_t type, const MessageHandler& msg);
-    void dispatch_service_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    bool send_pipe_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void dispatch_service_message(uint32_t type,
+                                  const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    bool send_pipe_message(uint32_t type,
+                           const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void print_stats();
     void check_timeout();
     void on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> frame);
@@ -57,6 +59,10 @@ private:
     void on_start_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void on_mouse_move(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void on_mouse_button(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void on_mouse_wheel(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void on_keyboard(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const uint32_t client_width_;
@@ -76,6 +82,7 @@ private:
     std::unique_ptr<ltlib::BlockingThread> thread_;
     int64_t last_time_received_from_service_;
     std::unique_ptr<lt::VideoCapturer> video_capturer_;
+    std::unique_ptr<lt::worker::Input> input_;
 };
 
 } // namespace worker
