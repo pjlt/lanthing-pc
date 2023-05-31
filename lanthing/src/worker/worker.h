@@ -59,10 +59,6 @@ private:
     void on_start_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_mouse_move(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_mouse_button(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_mouse_wheel(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_keyboard(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const uint32_t client_width_;

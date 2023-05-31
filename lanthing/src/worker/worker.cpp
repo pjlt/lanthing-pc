@@ -162,11 +162,7 @@ bool Worker::init() {
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kStartWorking, std::bind(&Worker::on_start_working, this, ph::_1)},
         {ltype::kStopWorking, std::bind(&Worker::on_stop_working, this, ph::_1)},
-        {ltype::kKeepAlive, std::bind(&Worker::on_keep_alive, this, ph::_1)},
-        {ltype::kKeyboardEvent, std::bind(&Worker::on_keyboard, this, ph::_1)},
-        {ltype::kMouseClick, std::bind(&Worker::on_mouse_button, this, ph::_1)},
-        {ltype::kMouseMotion, std::bind(&Worker::on_mouse_move, this, ph::_1)},
-        {ltype::kMouseWheel, std::bind(&Worker::on_mouse_wheel, this, ph::_1)}};
+        {ltype::kKeepAlive, std::bind(&Worker::on_keep_alive, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -348,30 +344,16 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
             ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_VideoFailed);
             break;
         }
-        // host::AudioParams audio_params {};
-        // audio_params.send_message = std::bind(&Host::send_ipc_message, this,
-        // std::placeholders::_1, std::placeholders::_2); audio_ =
-        // host::Audio::create(audio_params); if (audio_ == nullptr) {
-        //     video_->stop();
-        //     ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_AudioFailed);
-        //     break;
-        // }
-        // InputParams input_params {};
-        // input_params.send_message = std::bind(&Host::send_ipc_message, this,
-        // std::placeholders::_1, std::placeholders::_2); input_params.register_message_handler =
-        // std::bind(&Host::register_message_handler, this, std::placeholders::_1,
-        // std::placeholders::_2); input_ = host::Input::create(input_params); if (input_ ==
-        // nullptr) {
-        //     video_->stop();
-        //     audio_->stop();
-        //     ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_InputFailed);
-        //     break;
-        // }
+
         Input::Params input_params{};
         input_params.types = static_cast<uint8_t>(Input::Type::WIN32_MESSAGE) |
                              static_cast<uint8_t>(Input::Type::WIN32_DRIVER);
         input_params.screen_width = negotiated_display_setting_.width;
         input_params.screen_height = negotiated_display_setting_.height;
+        input_params.register_message_handler = std::bind(
+            &Worker::register_message_handler, this, std::placeholders::_1, std::placeholders::_2);
+        input_params.send_message = std::bind(&Worker::send_pipe_message, this,
+                                              std::placeholders::_1, std::placeholders::_2);
         input_ = Input::create(input_params);
         if (input_ == nullptr) {
             ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_InputFailed);
@@ -402,30 +384,6 @@ void Worker::on_stop_working(const std::shared_ptr<google::protobuf::MessageLite
 
 void Worker::on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     last_time_received_from_service_ = ltlib::steady_now_ms();
-}
-
-void Worker::on_mouse_move(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    if (input_) {
-        input_->onEvent(std::static_pointer_cast<ltproto::peer2peer::MouseMotion>(msg));
-    }
-}
-
-void Worker::on_mouse_button(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    if (input_) {
-        input_->onEvent(std::static_pointer_cast<ltproto::peer2peer::MouseClick>(msg));
-    }
-}
-
-void Worker::on_mouse_wheel(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    if (input_) {
-        input_->onEvent(std::static_pointer_cast<ltproto::peer2peer::MouseWheel>(msg));
-    }
-}
-
-void Worker::on_keyboard(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    if (input_) {
-        input_->onEvent(std::static_pointer_cast<ltproto::peer2peer::KeyboardEvent>(msg));
-    }
 }
 
 } // namespace worker

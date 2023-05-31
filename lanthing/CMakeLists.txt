@@ -132,8 +132,7 @@ target_link_libraries(${PROJECT_NAME}
     rtc
 )
 
-# 直接在编译目录中调试, 先把install去掉
-# install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME})
 
 deploy_dlls(${PROJECT_NAME})
 
