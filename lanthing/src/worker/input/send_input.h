@@ -11,10 +11,9 @@ public:
         , screen_height_(screen_height) {}
 
 private:
-    void onEvent(const std::shared_ptr<ltproto::peer2peer::MouseClick>&) override;
-    void onEvent(const std::shared_ptr<ltproto::peer2peer::MouseMotion>&) override;
-    void onEvent(const std::shared_ptr<ltproto::peer2peer::MouseWheel>&) override;
-    void onEvent(const std::shared_ptr<ltproto::peer2peer::KeyboardEvent>&) override;
+    bool initKeyMouse() override;
+    void onMouseEvent(const std::shared_ptr<google::protobuf::MessageLite>&) override;
+    void onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>&) override;
 
 private:
     uint32_t screen_width_;

@@ -4,15 +4,15 @@
 #include <thread>
 
 #include <g3log/g3log.hpp>
+#include <ltproto/server/allocate_device_id.pb.h>
+#include <ltproto/server/allocate_device_id_ack.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
-#include <ltproto/server/allocate_device_id.pb.h>
-#include <ltproto/server/allocate_device_id_ack.pb.h>
 
-#include <ltproto/ltproto.h>
 #include <ltlib/system.h>
+#include <ltproto/ltproto.h>
 
 #include <QtWidgets/qwidget.h>
 
@@ -48,13 +48,11 @@ std::unique_ptr<App> lt::App::create() {
     return app;
 }
 
-App::App()
-{
+App::App() {
     //
 }
 
-App::~App()
-{
+App::~App() {
     //
 }
 
@@ -66,7 +64,7 @@ bool App::init() {
     if (!initTcpClient()) {
         return false;
     }
-    //暂时没有本地配置系统，写死
+    // 暂时没有本地配置系统，写死
     device_id_ = 1234567;
     return true;
 }
@@ -77,8 +75,8 @@ int App::exec(int argc, char** argv) {
     ui_ = &w;
     w.show();
     thread_ = ltlib::BlockingThread::create(
-        "io_thread",
-        [this](const std::function<void()>& i_am_alive, void*) { ioLoop(i_am_alive); }, nullptr);
+        "io_thread", [this](const std::function<void()>& i_am_alive, void*) { ioLoop(i_am_alive); },
+        nullptr);
     return a.exec();
 }
 
@@ -137,7 +135,6 @@ void App::connect(int64_t peerDeviceID) {
     }
     sendMessage(ltproto::id(req), req);
     tryRemoveSessionAfter10s(peerDeviceID);
-
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -146,8 +143,7 @@ void App::ioLoop(const std::function<void()>& i_am_alive) {
 }
 
 void App::tryRemoveSessionAfter10s(int64_t device_id) {
-    ioloop_->post_delay(10'000, [device_id, this]() { tryRemoveSession(device_id); }
-    );
+    ioloop_->post_delay(10'000, [device_id, this]() { tryRemoveSession(device_id); });
 }
 
 void App::tryRemoveSession(int64_t device_id) {
@@ -324,6 +320,5 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         sessions_.erase(ack->device_id());
     }
 }
-
 
 } // namespace lt

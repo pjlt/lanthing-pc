@@ -6,9 +6,7 @@
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
 #include <ltproto/peer2peer/controller_status.pb.h>
 #include <ltproto/peer2peer/keyboard_event.pb.h>
-#include <ltproto/peer2peer/mouse_click.pb.h>
-#include <ltproto/peer2peer/mouse_motion.pb.h>
-#include <ltproto/peer2peer/mouse_wheel.pb.h>
+#include <ltproto/peer2peer/mouse_event.pb.h>
 
 namespace {
 
@@ -170,33 +168,33 @@ void InputImpl::handle_mouse_button(const MouseButtonEvent& ev) {
     uint32_t padding_width = (client_surface.width - target_rect.width) / 2;
     float x = (ev.x - padding_width) * 1.0f / target_rect.width;
     float y = (ev.y - padding_height) * 1.0f / target_rect.height;
-    ltproto::peer2peer::MouseClick::KeyFlag key_flag;
+    ltproto::peer2peer::MouseEvent::KeyFlag key_flag;
     switch (ev.button) {
     case MouseButtonEvent::Button::Left:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseClick_KeyFlag_LeftDown
-                                 : ltproto::peer2peer::MouseClick_KeyFlag_LeftUp;
+        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_LeftDown
+                                 : ltproto::peer2peer::MouseEvent_KeyFlag_LeftUp;
         break;
     case MouseButtonEvent::Button::Mid:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseClick_KeyFlag_MidDown
-                                 : ltproto::peer2peer::MouseClick_KeyFlag_MidUp;
+        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_MidDown
+                                 : ltproto::peer2peer::MouseEvent_KeyFlag_MidUp;
         break;
     case MouseButtonEvent::Button::Right:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseClick_KeyFlag_RightDown
-                                 : ltproto::peer2peer::MouseClick_KeyFlag_RightUp;
+        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_RightDown
+                                 : ltproto::peer2peer::MouseEvent_KeyFlag_RightUp;
         break;
     case MouseButtonEvent::Button::X1:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseClick_KeyFlag_X1Down
-                                 : ltproto::peer2peer::MouseClick_KeyFlag_X1Up;
+        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_X1Down
+                                 : ltproto::peer2peer::MouseEvent_KeyFlag_X1Up;
         break;
     case MouseButtonEvent::Button::X2:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseClick_KeyFlag_X2Down
-                                 : ltproto::peer2peer::MouseClick_KeyFlag_X2Up;
+        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_X2Down
+                                 : ltproto::peer2peer::MouseEvent_KeyFlag_X2Up;
         break;
     default:
         LOG(FATAL) << "Unknown Mouse Button: " << static_cast<int32_t>(ev.button);
         return;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::MouseClick>();
+    auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
     msg->set_key_falg(key_flag);
     msg->set_x(x);
     msg->set_y(y);
@@ -204,8 +202,8 @@ void InputImpl::handle_mouse_button(const MouseButtonEvent& ev) {
 }
 
 void InputImpl::handle_mouse_wheel(const MouseWheelEvent& ev) {
-    auto msg = std::make_shared<ltproto::peer2peer::MouseWheel>();
-    msg->set_amount(ev.amount);
+    auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
+    msg->set_delta_z(ev.amount);
     send_message_to_host(ltproto::id(msg), msg, true);
 }
 
@@ -218,7 +216,7 @@ void InputImpl::handle_mouse_move(const MouseMoveEvent& ev) {
     float x = (ev.x - padding_width) * 1.0f / target_rect.width;
     float y = (ev.y - padding_height) * 1.0f / target_rect.height;
     // TODO: 相对模式可能要累积一段再发出去
-    auto msg = std::make_shared<ltproto::peer2peer::MouseMotion>();
+    auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
     msg->set_x(x);
     msg->set_y(y);
     msg->set_delta_x(ev.delta_x);
