@@ -1,27 +1,27 @@
 #include <Windows.h>
-#include <set>
-#include <g3log/g3log.hpp>
+
 #include "display_setting.h"
 
-namespace lt
-{
+#include <g3log/g3log.hpp>
+#include <set>
 
-namespace worker
-{
+namespace lt {
 
-DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display_setting)
-{
-    DEVMODE current_mode {};
-    current_mode.dmSize = sizeof(DEVMODE);
+namespace worker {
+
+DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display_setting) {
+    DEVMODEW current_mode{};
+    current_mode.dmSize = sizeof(DEVMODEW);
     if (EnumDisplaySettingsW(nullptr, ENUM_CURRENT_SETTINGS, &current_mode) == 0) {
         LOG(WARNING) << "Enumerate current display settings failed";
         return {};
     }
 
     // 比较{width, height, refresh_rate ± 1}
-    std::set<DisplaySetting, decltype(&DisplaySetting::compare_full_loose)> available_settings { &DisplaySetting::compare_full_loose };
-    DEVMODE mode {};
-    mode.dmSize = sizeof(DEVMODE);
+    std::set<DisplaySetting, decltype(&DisplaySetting::compare_full_loose)> available_settings{
+        &DisplaySetting::compare_full_loose};
+    DEVMODEW mode{};
+    mode.dmSize = sizeof(DEVMODEW);
     DWORD mode_num = 0;
     while (EnumDisplaySettingsW(nullptr, mode_num, &mode) != 0) {
         mode_num += 1;
@@ -34,7 +34,9 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
     }
 
     // 比较{width, height}
-    std::set<DisplaySetting, decltype(&DisplaySetting::compare_width_height)> avaiable_settings2 { available_settings.begin(), available_settings.end(), &DisplaySetting::compare_width_height };
+    std::set<DisplaySetting, decltype(&DisplaySetting::compare_width_height)> avaiable_settings2{
+        available_settings.begin(), available_settings.end(),
+        &DisplaySetting::compare_width_height};
     auto iter2 = avaiable_settings2.find(client_display_setting);
     if (iter2 != avaiable_settings2.end()) {
         DisplaySetting result = *iter2;
@@ -53,12 +55,12 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
         }
     }
     // 找不到，直接返回host当前的DisplaySetting
-    DisplaySetting result(current_mode.dmPelsWidth, current_mode.dmPelsHeight, current_mode.dmDisplayFrequency);
+    DisplaySetting result(current_mode.dmPelsWidth, current_mode.dmPelsHeight,
+                          current_mode.dmDisplayFrequency);
     return result;
 }
 
-bool DisplaySetting::compare_full_strict(const DisplaySetting& lhs, const DisplaySetting& rhs)
-{
+bool DisplaySetting::compare_full_strict(const DisplaySetting& lhs, const DisplaySetting& rhs) {
     if (lhs.width != rhs.width) {
         return lhs.width < rhs.width;
     }
@@ -68,8 +70,7 @@ bool DisplaySetting::compare_full_strict(const DisplaySetting& lhs, const Displa
     return lhs.refrash_rate < rhs.refrash_rate;
 }
 
-bool DisplaySetting::compare_full_loose(const DisplaySetting& lhs, const DisplaySetting& rhs)
-{
+bool DisplaySetting::compare_full_loose(const DisplaySetting& lhs, const DisplaySetting& rhs) {
     if (lhs.width != rhs.width) {
         return lhs.width < rhs.width;
     }
@@ -82,8 +83,7 @@ bool DisplaySetting::compare_full_loose(const DisplaySetting& lhs, const Display
     return (rhs.refrash_rate > lhs.refrash_rate) && (rhs.refrash_rate - lhs.refrash_rate > 2);
 }
 
-bool DisplaySetting::compare_width_height(const DisplaySetting& lhs, const DisplaySetting& rhs)
-{
+bool DisplaySetting::compare_width_height(const DisplaySetting& lhs, const DisplaySetting& rhs) {
     if (lhs.width != rhs.width) {
         return lhs.width < rhs.width;
     }

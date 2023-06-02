@@ -53,7 +53,10 @@ App::App() {
 }
 
 App::~App() {
-    //
+    if (ioloop_) {
+        ioloop_->stop();
+    }
+    thread_.reset();
 }
 
 bool App::init() {

@@ -18,7 +18,7 @@ bool get_service_status(SC_HANDLE service_handle, SERVICE_STATUS_PROCESS& servic
     return false;
 }
 
-} // 匿名空间
+} // namespace
 
 namespace ltlib
 {
@@ -34,7 +34,7 @@ ServiceApp::~ServiceApp()
 
 void ServiceApp::run()
 {
-    SERVICE_TABLE_ENTRY dispatch_table[] = {
+    SERVICE_TABLE_ENTRYW dispatch_table[] = {
         { NULL, (LPSERVICE_MAIN_FUNCTIONW)service_main },
         { NULL, NULL }
     };
@@ -60,7 +60,6 @@ bool ServiceApp::report_status(uint32_t current_state, uint32_t win32_exit_code,
     return SetServiceStatus(g_status_handle, &g_status) == TRUE;
 }
 
-
 void __stdcall ServiceApp::service_main()
 {
     std::wstring service_name;
@@ -73,7 +72,6 @@ void __stdcall ServiceApp::service_main()
     g_app->run();
     report_status(SERVICE_STOPPED, NO_ERROR, 0);
 }
-
 
 void __stdcall ServiceApp::service_control_handler(unsigned long ctrl_code)
 {

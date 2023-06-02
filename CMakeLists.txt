@@ -31,7 +31,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 
 if(LT_WINDOWS)
-    add_compile_definitions(UNICODE _UNICODE WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN)# NOGDI)
+    add_compile_definitions(WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN)# NOGDI)
     add_compile_options(/wd4819 /utf-8)
     #add_compile_options(/W4 /WX)
 else()

@@ -125,7 +125,10 @@ Worker::Worker(const Params& params)
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
 
 Worker::~Worker() {
-    //
+    if (ioloop_) {
+        ioloop_->stop();
+    }
+    thread_.reset();
 }
 
 void Worker::wait() {

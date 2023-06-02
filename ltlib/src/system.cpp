@@ -1,4 +1,4 @@
-//#include <process.h>
+// #include <process.h>
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <Shlobj.h>
@@ -11,7 +11,7 @@
 namespace
 {
 
-BOOL GetTokenByName(HANDLE& hToken, const LPTSTR lpName)
+BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName)
 {
     if (!lpName)
         return FALSE;
@@ -26,7 +26,7 @@ BOOL GetTokenByName(HANDLE& hToken, const LPTSTR lpName)
 
     pe32.dwSize = sizeof(PROCESSENTRY32W);
 
-    if (Process32First(hProcessSnap, &pe32)) {
+    if (Process32FirstW(hProcessSnap, &pe32)) {
         do {
             if (!wcscmp(wcsupr(pe32.szExeFile), wcsupr(lpName))) {
                 HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pe32.th32ProcessID);
@@ -50,33 +50,18 @@ bool execute_as_user(const std::function<bool(HANDLE)>& func)
     HANDLE hToken = NULL;
     bool res = false;
     do {
-        //可能有些电脑在刚开机一直会失败
-        if (!GetTokenByName(hToken, (const LPTSTR) L"EXPLORER.EXE")) {
+        if (!GetTokenByName(hToken, (const LPWSTR)L"EXPLORER.EXE")) {
             return false;
         }
-        ////可能进程还没起来
-        //for (int i = 0; i < 1; i++)
-        //{
-        //    if (!GetTokenByName(hToken, (const LPTSTR)_T("EXPLORER.EXE")))
-        //    {
-        //        std::this_thread::sleep_for(std::chrono::seconds(1));
-        //        continue;
-        //    }
-        //    break;
-        //}
-
         if (!hToken) {
             break;
         }
-
-        // 模拟登录用户的安全上下文
         if (FALSE == ImpersonateLoggedOnUser(hToken)) {
             break;
         }
 
         res = func(hToken);
 
-        // 到这里已经模拟完了，别忘记返回原来的安全上下文
         if (FALSE == RevertToSelf()) {
             break;
         }
@@ -88,7 +73,7 @@ bool execute_as_user(const std::function<bool(HANDLE)>& func)
     return res;
 }
 
-} // 匿名空间
+} // namespace
 
 namespace ltlib
 {
@@ -142,7 +127,7 @@ bool get_program_path(std::wstring& path)
     return false;
 }
 
-template<>
+template <>
 std::string get_program_path<char>()
 {
     std::string path;
@@ -178,7 +163,7 @@ uint32_t get_session_id_by_pid(uint32_t pid)
 {
     DWORD sid = 0;
     if (FALSE == ProcessIdToSessionId(pid, &sid)) {
-        //TODO error handling
+        // TODO error handling
         return 0;
     }
     return sid;
@@ -191,7 +176,7 @@ uint32_t get_parent_pid(uint32_t curr_pid)
         return 0;
     }
 
-    PROCESSENTRY32 pe32;
+    PROCESSENTRY32W pe32;
     pe32.dwSize = sizeof(pe32);
     pe32.dwFlags = sizeof(pe32);
     BOOL hProcess = Process32FirstW(PHANDLE, &pe32);
@@ -225,18 +210,18 @@ std::string get_appdata_path(bool is_service)
         if (hr != S_OK) {
             return false;
         }
-        if (!pidl || !SHGetPathFromIDList(pidl, szDocument)) {
+        if (!pidl || !SHGetPathFromIDListW(pidl, szDocument)) {
             return false;
         }
         CoTaskMemFree(pidl);
-        GetShortPathName(szDocument, m_lpszDefaultDir, _MAX_PATH);
-        appdata_path =  utf16_to_utf8(std::wstring(m_lpszDefaultDir));
+        GetShortPathNameW(szDocument, m_lpszDefaultDir, _MAX_PATH);
+        appdata_path = utf16_to_utf8(std::wstring(m_lpszDefaultDir));
         return true;
     };
 
     if (is_service) {
         if (!execute_as_user(get_path)) {
-            //log_print(kError, _T("get_path fail"));
+            // log_print(kError, _T("get_path fail"));
             return "";
         }
         return appdata_path;
@@ -306,13 +291,13 @@ bool set_thread_desktop()
             break;
         }
 
-        TCHAR cur_thread_desktop_name[1024] = { 0 };
-        TCHAR cur_input_desktop_name[1024] = { 0 };
+        WCHAR cur_thread_desktop_name[1024] = { 0 };
+        WCHAR cur_input_desktop_name[1024] = { 0 };
         DWORD needLength = 0;
-        if (!GetUserObjectInformation(thread_desktop, UOI_NAME, cur_thread_desktop_name, sizeof(cur_thread_desktop_name), &needLength)) {
+        if (!GetUserObjectInformationW(thread_desktop, UOI_NAME, cur_thread_desktop_name, sizeof(cur_thread_desktop_name), &needLength)) {
             break;
         }
-        if (!GetUserObjectInformation(input_desktop, UOI_NAME, cur_input_desktop_name, sizeof(cur_input_desktop_name), &needLength)) {
+        if (!GetUserObjectInformationW(input_desktop, UOI_NAME, cur_input_desktop_name, sizeof(cur_input_desktop_name), &needLength)) {
             break;
         }
 
