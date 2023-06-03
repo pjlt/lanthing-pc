@@ -13,6 +13,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/times.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/spin_mutex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/reconnect_interval.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/settings.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/client.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/server.h
@@ -27,6 +28,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/threads.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/times.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/reconnect_interval.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/buffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/ioloop.cpp
@@ -57,6 +59,7 @@ target_link_libraries(${PROJECT_NAME}
         utf8cpp
         protobuf::libprotobuf-lite
         uv
+        tomlpp
         g3log
         MbedTLS::mbedtls
         MbedTLS::mbedcrypto

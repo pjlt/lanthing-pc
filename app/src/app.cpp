@@ -60,6 +60,11 @@ App::~App() {
 }
 
 bool App::init() {
+    if (!initSettings()) {
+        return false;
+    }
+    std::optional<int64_t> device_id = settings_->get_integer("device_id");
+    device_id_ = device_id.value_or(0);
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -67,9 +72,12 @@ bool App::init() {
     if (!initTcpClient()) {
         return false;
     }
-    // 暂时没有本地配置系统，写死
-    device_id_ = 1234567;
     return true;
+}
+
+bool App::initSettings() {
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Toml);
+    return settings_ != nullptr;
 }
 
 int App::exec(int argc, char** argv) {
@@ -213,8 +221,6 @@ void App::onServerConnected() {
         loginDevice();
     }
     else {
-        // 前期开发中，device_id写死，不会向服务器申请
-        assert(false);
         allocateDeviceID();
     }
 }
@@ -260,7 +266,7 @@ void App::allocateDeviceID() {
 void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
     device_id_ = ack->device_id();
-    // settings_->set_integer("device_id", device_id_);
+    settings_->set_integer("device_id", device_id_);
     loginDevice();
 }
 

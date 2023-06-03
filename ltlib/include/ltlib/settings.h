@@ -1,18 +1,16 @@
 #pragma once
+#include <ltlib/ltlib.h>
 #include <cstdint>
-#include <string>
-#include <mutex>
-#include <memory>
-#include <optional>
 #include <fstream>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
 
-namespace lt
+namespace ltlib
 {
 
-namespace svc
-{
-
-class Settings
+class LT_API Settings
 {
 public:
     enum class Storage
@@ -35,6 +33,4 @@ protected:
     virtual bool init() = 0;
 };
 
-} // namespace svc
-
-} // namespace lt
+} // namespace ltlib

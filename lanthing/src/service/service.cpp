@@ -25,12 +25,11 @@ Service::~Service() {
 }
 
 bool Service::init() {
-    // if (!init_settings()) {
-    //     return false;
-    // }
-    // std::optional<int64_t> device_id = settings_->get_integer("device_id");
-    // device_id_ = device_id.value_or(0);
-    device_id_ = 1234567;
+    if (!init_settings()) {
+        return false;
+    }
+    std::optional<int64_t> device_id = settings_->get_integer("device_id");
+    device_id_ = device_id.value_or(0);
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -110,13 +109,8 @@ void Service::main_loop(const std::function<void()>& i_am_alive) {
 }
 
 bool Service::init_settings() {
-    settings_ = Settings::create(Settings::Storage::Toml);
-    if (settings_ != nullptr) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Toml);
+    return settings_ != nullptr;
 }
 
 void Service::destroy_session(const std::string& session_name) {
@@ -148,6 +142,9 @@ void Service::dispatch_server_message(uint32_t type,
     case ltype::kOpenConnection:
         on_open_connection(msg);
         break;
+    case ltype::kAllocateDeviceIDAck:
+        on_allocate_device_id_ack(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message from server " << type;
         break;
@@ -168,8 +165,7 @@ void Service::on_server_connected() {
         login_device();
     }
     else {
-        // ID由ClientUI申请好，才能启动Service
-        assert(false);
+        allocate_device_id();
     }
 }
 
@@ -217,6 +213,13 @@ void Service::on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite>
 
 void Service::on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg) {}
 
+void Service::on_allocate_device_id_ack(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
+    device_id_ = ack->device_id();
+    settings_->set_integer("device_id", device_id_);
+    login_device();
+}
+
 void Service::on_create_session_completed_thread_safe(
     bool success, const std::string& session_name,
     std::shared_ptr<google::protobuf::MessageLite> params) {
@@ -257,8 +260,7 @@ void Service::send_message_to_server(uint32_t type,
 }
 
 void Service::login_device() {
-    // std::optional<bool> allow_control = settings_->get_boolean("allow_control");
-    std::optional<bool> allow_control = true;
+    std::optional<bool> allow_control = settings_->get_boolean("allow_control");
     auto msg = std::make_shared<ltproto::server::LoginDevice>();
     msg->set_device_id(device_id_);
     if (allow_control.has_value()) {
@@ -267,6 +269,11 @@ void Service::login_device() {
     else {
         msg->set_allow_control(false);
     }
+    tcp_client_->send(ltproto::id(msg), msg);
+}
+
+void Service::allocate_device_id() {
+    auto msg = std::make_shared<ltproto::server::AllocateDeviceID>();
     tcp_client_->send(ltproto::id(msg), msg);
 }
 

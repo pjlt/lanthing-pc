@@ -5,8 +5,9 @@
 
 #include <google/protobuf/message_lite.h>
 
-#include <ltlib/io/ioloop.h>
 #include <ltlib/io/client.h>
+#include <ltlib/io/ioloop.h>
+#include <ltlib/settings.h>
 #include <ltlib/threads.h>
 
 #include "client_session.h"
@@ -27,6 +28,7 @@ public:
 private:
     App();
     bool init();
+    bool initSettings();
     void ioLoop(const std::function<void()>& i_am_alive);
     void tryRemoveSessionAfter10s(int64_t device_id);
     void tryRemoveSession(int64_t device_id);
@@ -47,10 +49,10 @@ private:
     void handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-
 private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
+    std::unique_ptr<ltlib::Settings> settings_;
     std::map<int64_t /*to_device*/, std::shared_ptr<ClientSession>> sessions_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::mutex mutex_;

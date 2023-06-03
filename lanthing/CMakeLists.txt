@@ -36,9 +36,6 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon.h
-    # Service->settings
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/settings/settings.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/settings/settings.cpp
     # Service->workers
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_process.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_process.cpp
@@ -120,7 +117,6 @@ target_link_libraries(${PROJECT_NAME}
     ${PLATFORM_LIBS}
     g3log
     protobuf::libprotobuf-lite
-    tomlpp
     SDL2::SDL2
     ffmpeg
     nvcodec
