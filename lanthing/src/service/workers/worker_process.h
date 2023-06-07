@@ -1,28 +1,27 @@
 #pragma once
 #include <cstdint>
-#include <string>
-#include <mutex>
-#include <memory>
-#include <future>
+
 #include <atomic>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <string>
+
 #include <google/protobuf/message_lite.h>
-#include <ltlib/threads.h>
+
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/server.h>
+#include <ltlib/threads.h>
 #include <ltproto/ltproto.h>
 #include <rtc/rtc.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace svc
-{
+namespace svc {
 
-class WorkerProcess
-{
+class WorkerProcess {
 public:
-    struct Params
-    {
+    struct Params {
         std::string pipe_name;
         std::function<void()> on_stoped;
         std::string path;
@@ -55,7 +54,7 @@ private:
     bool run_as_win_service_;
     std::mutex mutex_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    std::atomic<bool> stoped_ { true };
+    std::atomic<bool> stoped_{true};
     void* process_handle_ = nullptr;
     void* thread_handle_ = nullptr;
     ltproto::Parser parser_;

@@ -1,38 +1,33 @@
 #include "intel_allocator.h"
+
 #include <g3log/g3log.hpp>
 
-namespace lt
-{
+namespace lt {
 
 using Microsoft::WRL::ComPtr;
 
-mfxStatus MFX_CDECL MfxFrameAllocator::_alloc(mfxHDL pthis, mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
-{
+mfxStatus MFX_CDECL MfxFrameAllocator::_alloc(mfxHDL pthis, mfxFrameAllocRequest* request,
+                                              mfxFrameAllocResponse* response) {
     return reinterpret_cast<MfxFrameAllocator*>(pthis)->alloc(request, response);
 }
 
-mfxStatus MFX_CDECL MfxFrameAllocator::_lock(mfxHDL pthis, mfxMemId mid, mfxFrameData* ptr)
-{
+mfxStatus MFX_CDECL MfxFrameAllocator::_lock(mfxHDL pthis, mfxMemId mid, mfxFrameData* ptr) {
     return reinterpret_cast<MfxFrameAllocator*>(pthis)->lock(mid, ptr);
 }
 
-mfxStatus MFX_CDECL MfxFrameAllocator::_unlock(mfxHDL pthis, mfxMemId mid, mfxFrameData* ptr)
-{
+mfxStatus MFX_CDECL MfxFrameAllocator::_unlock(mfxHDL pthis, mfxMemId mid, mfxFrameData* ptr) {
     return reinterpret_cast<MfxFrameAllocator*>(pthis)->unlock(mid, ptr);
 }
 
-mfxStatus MFX_CDECL MfxFrameAllocator::_getHDL(mfxHDL pthis, mfxMemId mid, mfxHDL* handle)
-{
+mfxStatus MFX_CDECL MfxFrameAllocator::_getHDL(mfxHDL pthis, mfxMemId mid, mfxHDL* handle) {
     return reinterpret_cast<MfxFrameAllocator*>(pthis)->get_hdl(mid, handle);
 }
 
-mfxStatus MFX_CDECL MfxFrameAllocator::_free(mfxHDL pthis, mfxFrameAllocResponse* response)
-{
+mfxStatus MFX_CDECL MfxFrameAllocator::_free(mfxHDL pthis, mfxFrameAllocResponse* response) {
     return reinterpret_cast<MfxFrameAllocator*>(pthis)->free(response);
 }
 
-MfxFrameAllocator::MfxFrameAllocator()
-{
+MfxFrameAllocator::MfxFrameAllocator() {
     this->pthis = this;
     this->Alloc = this->_alloc;
     this->Free = this->_free;
@@ -84,7 +79,8 @@ mfxStatus MfxD3D11Allocator::free(mfxFrameAllocResponse* response)
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxD3D11Allocator::alloc_external_frame(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
+mfxStatus MfxD3D11Allocator::alloc_external_frame(mfxFrameAllocRequest* request,
+mfxFrameAllocResponse* response)
 {
     if (external_frames_.mids != nullptr) {
         response->mids = external_frames_.mids;
@@ -102,12 +98,10 @@ mfxStatus MfxD3D11Allocator::alloc_external_frame(mfxFrameAllocRequest* request,
     desc.BindFlags = D3D11_BIND_DECODER;
     desc.Usage = D3D11_USAGE_DEFAULT;
     desc.MiscFlags = 0;
-    external_frames_.mids = static_cast<mfxMemId*>(malloc(request->NumFrameSuggested * sizeof(mfxMemId)));
-    for (int i = 0; i < request->NumFrameSuggested; i++) {
-        ComPtr<ID3D11Texture2D> frame;
-        HRESULT hr = device_->CreateTexture2D(&desc, nullptr, frame.GetAddressOf());
-        if (FAILED(hr)) {
-            return MFX_ERR_MEMORY_ALLOC;
+    external_frames_.mids = static_cast<mfxMemId*>(malloc(request->NumFrameSuggested *
+sizeof(mfxMemId))); for (int i = 0; i < request->NumFrameSuggested; i++) { ComPtr<ID3D11Texture2D>
+frame; HRESULT hr = device_->CreateTexture2D(&desc, nullptr, frame.GetAddressOf()); if (FAILED(hr))
+{ return MFX_ERR_MEMORY_ALLOC;
         }
         external_frames_.mids[i] = frame.Get();
         external_frames_.frames.push_back(frame);
@@ -117,7 +111,8 @@ mfxStatus MfxD3D11Allocator::alloc_external_frame(mfxFrameAllocRequest* request,
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxD3D11Allocator::alloc_internal_frame(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
+mfxStatus MfxD3D11Allocator::alloc_internal_frame(mfxFrameAllocRequest* request,
+mfxFrameAllocResponse* response)
 {
     FrameBuffer fb;
     D3D11_TEXTURE2D_DESC desc;
@@ -149,14 +144,14 @@ mfxStatus MfxD3D11Allocator::alloc_internal_frame(mfxFrameAllocRequest* request,
 
 */
 
-MfxEncoderFrameAllocator::MfxEncoderFrameAllocator(Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> device_context)
+MfxEncoderFrameAllocator::MfxEncoderFrameAllocator(
+    Microsoft::WRL::ComPtr<ID3D11Device> device,
+    Microsoft::WRL::ComPtr<ID3D11DeviceContext> device_context)
     : device_(device)
-    , device_context_(device_context)
-{
-}
+    , device_context_(device_context) {}
 
-mfxStatus MfxEncoderFrameAllocator::alloc(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
-{
+mfxStatus MfxEncoderFrameAllocator::alloc(mfxFrameAllocRequest* request,
+                                          mfxFrameAllocResponse* response) {
     FrameBuffer fb;
     D3D11_TEXTURE2D_DESC desc;
     memset(&desc, 0, sizeof(desc));
@@ -184,8 +179,7 @@ mfxStatus MfxEncoderFrameAllocator::alloc(mfxFrameAllocRequest* request, mfxFram
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxEncoderFrameAllocator::lock(mfxMemId mid, mfxFrameData* ptr)
-{
+mfxStatus MfxEncoderFrameAllocator::lock(mfxMemId mid, mfxFrameData* ptr) {
     // throw std::exception { "MfxEncoderFrameAllocator::lock()" };
     (void)mid;
     (void)ptr;
@@ -193,8 +187,7 @@ mfxStatus MfxEncoderFrameAllocator::lock(mfxMemId mid, mfxFrameData* ptr)
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxEncoderFrameAllocator::unlock(mfxMemId mid, mfxFrameData* ptr)
-{
+mfxStatus MfxEncoderFrameAllocator::unlock(mfxMemId mid, mfxFrameData* ptr) {
     // throw std::exception { "MfxEncoderFrameAllocator::unlock()" };
     (void)mid;
     (void)ptr;
@@ -202,72 +195,64 @@ mfxStatus MfxEncoderFrameAllocator::unlock(mfxMemId mid, mfxFrameData* ptr)
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxEncoderFrameAllocator::get_hdl(mfxMemId mid, mfxHDL* handle)
-{
+mfxStatus MfxEncoderFrameAllocator::get_hdl(mfxMemId mid, mfxHDL* handle) {
     *handle = mid;
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxEncoderFrameAllocator::free(mfxFrameAllocResponse* response)
-{
+mfxStatus MfxEncoderFrameAllocator::free(mfxFrameAllocResponse* response) {
     frame_buffers_.erase(response->mids);
     return MFX_ERR_NONE;
 }
 
 MfxDecoderFrameAllocator::MfxDecoderFrameAllocator(Microsoft::WRL::ComPtr<ID3D11Device> device)
-    : device_(device)
-{
-}
+    : device_(device) {}
 
-mfxStatus MfxDecoderFrameAllocator::alloc(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
-{
+mfxStatus MfxDecoderFrameAllocator::alloc(mfxFrameAllocRequest* request,
+                                          mfxFrameAllocResponse* response) {
     if (request->Type & MFX_MEMTYPE_EXTERNAL_FRAME && request->Type & MFX_MEMTYPE_FROM_DECODE) {
         return alloc_external_frame(request, response);
-    } else {
+    }
+    else {
         return alloc_internal_frame(request, response);
     }
 }
 
-mfxStatus MfxDecoderFrameAllocator::lock(mfxMemId mid, mfxFrameData* ptr)
-{
+mfxStatus MfxDecoderFrameAllocator::lock(mfxMemId mid, mfxFrameData* ptr) {
     LOG(INFO) << "MfxDecoderFrameAllocator::lock()";
     (void)mid;
     (void)ptr;
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxDecoderFrameAllocator::unlock(mfxMemId mid, mfxFrameData* ptr)
-{
+mfxStatus MfxDecoderFrameAllocator::unlock(mfxMemId mid, mfxFrameData* ptr) {
     LOG(INFO) << "MfxDecoderFrameAllocator::unlock()";
     (void)mid;
     (void)ptr;
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxDecoderFrameAllocator::get_hdl(mfxMemId mid, mfxHDL* handle)
-{
+mfxStatus MfxDecoderFrameAllocator::get_hdl(mfxMemId mid, mfxHDL* handle) {
     mfxHDLPair* pair = (mfxHDLPair*)handle;
     pair->first = mid;
     pair->second = 0;
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxDecoderFrameAllocator::free(mfxFrameAllocResponse* response)
-{
+mfxStatus MfxDecoderFrameAllocator::free(mfxFrameAllocResponse* response) {
     LOG(INFO) << "MfxDecoderFrameAllocator::free()";
     (void)response;
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxDecoderFrameAllocator::release_frame(ComPtr<ID3D11Texture2D> frame)
-{
+mfxStatus MfxDecoderFrameAllocator::release_frame(ComPtr<ID3D11Texture2D> frame) {
     LOG(INFO) << "MfxDecoderFrameAllocator::release_frame()";
     (void)frame;
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxDecoderFrameAllocator::alloc_external_frame(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
-{
+mfxStatus MfxDecoderFrameAllocator::alloc_external_frame(mfxFrameAllocRequest* request,
+                                                         mfxFrameAllocResponse* response) {
     if (external_frames_.mids != nullptr) {
         response->mids = external_frames_.mids;
         response->NumFrameActual = static_cast<mfxU16>(external_frames_.frames.size());
@@ -286,7 +271,8 @@ mfxStatus MfxDecoderFrameAllocator::alloc_external_frame(mfxFrameAllocRequest* r
     desc.BindFlags = D3D11_BIND_DECODER; // maybe change to decoder
     desc.Usage = D3D11_USAGE_DEFAULT;
     desc.MiscFlags = 0;
-    external_frames_.mids = static_cast<mfxMemId*>(malloc(request->NumFrameSuggested * sizeof(mfxMemId)));
+    external_frames_.mids =
+        static_cast<mfxMemId*>(malloc(request->NumFrameSuggested * sizeof(mfxMemId)));
     for (int i = 0; i < request->NumFrameSuggested; i++) {
         ComPtr<ID3D11Texture2D> frame;
         HRESULT hr = device_->CreateTexture2D(&desc, nullptr, frame.GetAddressOf());
@@ -301,8 +287,8 @@ mfxStatus MfxDecoderFrameAllocator::alloc_external_frame(mfxFrameAllocRequest* r
     return MFX_ERR_NONE;
 }
 
-mfxStatus MfxDecoderFrameAllocator::alloc_internal_frame(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response)
-{
+mfxStatus MfxDecoderFrameAllocator::alloc_internal_frame(mfxFrameAllocRequest* request,
+                                                         mfxFrameAllocResponse* response) {
     FrameBuffer fb;
     D3D11_TEXTURE2D_DESC desc;
     memset(&desc, 0, sizeof(desc));

@@ -1,4 +1,5 @@
 #include "pc_sdl_input.h"
+
 #include <g3log/g3log.hpp>
 
 namespace {

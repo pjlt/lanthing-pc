@@ -1,53 +1,36 @@
 #include "client/input/input_event.h"
 
-namespace lt
-{
+namespace lt {
 
-namespace cli
-{
+namespace cli {
 
 InputEvent::InputEvent(const KeyboardEvent& kb)
-    : type {InputEventType::Keyboard}
-    , ev {kb}
-{
-}
+    : type{InputEventType::Keyboard}
+    , ev{kb} {}
 
 InputEvent::InputEvent(const MouseButtonEvent& mouse)
-    : type{ InputEventType::MouseButton }
-    , ev { mouse }
-{
-
-}
+    : type{InputEventType::MouseButton}
+    , ev{mouse} {}
 
 InputEvent::InputEvent(const MouseMoveEvent& mouse)
-    : type { InputEventType::MouseMove }
-    , ev {mouse}
-{
-}
+    : type{InputEventType::MouseMove}
+    , ev{mouse} {}
 
 InputEvent::InputEvent(const MouseWheelEvent& mouse)
-    : type { InputEventType::MouseWheel }
-    , ev {mouse}
-{
-}
+    : type{InputEventType::MouseWheel}
+    , ev{mouse} {}
 
 InputEvent::InputEvent(const ControllerAddedRemovedEvent& controller)
-    : type { InputEventType::ControllerAddedRemoved }
-    , ev { controller }
-{
-}
+    : type{InputEventType::ControllerAddedRemoved}
+    , ev{controller} {}
 
 InputEvent::InputEvent(const ControllerButtonEvent& controlelr)
-    : type { InputEventType::ControllerButton }
-    , ev { controlelr }
-{
-}
+    : type{InputEventType::ControllerButton}
+    , ev{controlelr} {}
 
 InputEvent::InputEvent(const ControllerAxisEvent& controller)
-    : type { InputEventType::ControllerAxis }
-    , ev { controller }
-{
-}
+    : type{InputEventType::ControllerAxis}
+    , ev{controller} {}
 
 } // namespace cli
 

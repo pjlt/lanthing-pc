@@ -1,9 +1,13 @@
 #include "worker_process.h"
+
 #include <Windows.h>
+
 #include <g3log/g3log.hpp>
+
+#include <ltproto/peer2peer/stop_working.pb.h>
+
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
-#include <ltproto/peer2peer/stop_working.pb.h>
 
 namespace {
 

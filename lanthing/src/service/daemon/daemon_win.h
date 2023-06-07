@@ -1,16 +1,13 @@
 #pragma once
 #include <ltlib/win_service.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace svc
-{
+namespace svc {
 
 class Service;
 
-class LanthingWinService : public ltlib::WinApp
-{
+class LanthingWinService : public ltlib::WinApp {
 public:
     LanthingWinService();
     ~LanthingWinService() override;

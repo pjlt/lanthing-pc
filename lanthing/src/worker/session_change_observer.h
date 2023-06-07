@@ -1,17 +1,15 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <thread>
-#include <atomic>
 
-namespace lt
-{
+namespace lt {
 
-namespace worker
-{
+namespace worker {
 
-class SessionChangeObserver
-{
+class SessionChangeObserver {
 public:
     static std::unique_ptr<SessionChangeObserver> create();
     void wait_for_change();
@@ -23,7 +21,7 @@ private:
 
 private:
     // std::thread thread_;
-    std::atomic<bool> stoped_ { false };
+    std::atomic<bool> stoped_{false};
     uint32_t startup_session_id_;
     std::wstring startup_desk_name_;
 };

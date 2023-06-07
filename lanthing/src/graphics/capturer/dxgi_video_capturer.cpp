@@ -1,24 +1,21 @@
 #include "dxgi_video_capturer.h"
-#include <dxgi.h>
+
 #include <d3d11.h>
+#include <dxgi.h>
+
 #include <g3log/g3log.hpp>
+
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
 
-namespace lt
-{
+namespace lt {
 
 DxgiVideoCapturer::DxgiVideoCapturer()
-    : impl_ { std::make_unique<DUPLICATIONMANAGER>() }
-{
-}
+    : impl_{std::make_unique<DUPLICATIONMANAGER>()} {}
 
-DxgiVideoCapturer::~DxgiVideoCapturer()
-{
-}
+DxgiVideoCapturer::~DxgiVideoCapturer() {}
 
-bool DxgiVideoCapturer::pre_init()
-{
+bool DxgiVideoCapturer::pre_init() {
     if (!init_d3d11()) {
         return false;
     }
@@ -29,9 +26,8 @@ bool DxgiVideoCapturer::pre_init()
     return true;
 }
 
-bool DxgiVideoCapturer::init_d3d11()
-{
-    //第一块显卡
+bool DxgiVideoCapturer::init_d3d11() {
+    // 第一块显卡
     const uint32_t index = 0;
     HRESULT hr;
     do {
@@ -56,7 +52,8 @@ bool DxgiVideoCapturer::init_d3d11()
         flag |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
         hr = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flag, nullptr, 0,
-            D3D11_SDK_VERSION, d3d11_dev_.GetAddressOf(), nullptr, d3d11_ctx_.GetAddressOf());
+                               D3D11_SDK_VERSION, d3d11_dev_.GetAddressOf(), nullptr,
+                               d3d11_ctx_.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
             break;
@@ -66,8 +63,7 @@ bool DxgiVideoCapturer::init_d3d11()
     return SUCCEEDED(hr);
 }
 
-std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::capture_one_frame()
-{
+std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::capture_one_frame() {
     FRAME_DATA frame;
     bool timeout = false;
     auto hr = impl_->GetFrame(&frame, &timeout);
@@ -85,14 +81,14 @@ std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captur
     return nullptr;
 }
 
-std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture)
-{
+std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture) {
     std::string name;
     if (texture_pool_.empty()) {
         D3D11_TEXTURE2D_DESC desc;
         texture->GetDesc(&desc);
         desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-        desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+        desc.MiscFlags =
+            D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
         const size_t kDefaultPoolSize = 2;
         for (size_t i = 0; i < kDefaultPoolSize; i++) {
             ID3D11Texture2D* texture = NULL;
@@ -150,14 +146,13 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture)
     return name;
 }
 
-//void DxgiVideoCapturer::done_with_frame()
+// void DxgiVideoCapturer::done_with_frame()
 //{
-//    // 在shared_texture()已经copy过一次，马上救DoneWithFrame()了，这里不应该再调用
-//    //impl_->DoneWithFrame();
-//}
+//     // 在shared_texture()已经copy过一次，马上救DoneWithFrame()了，这里不应该再调用
+//     //impl_->DoneWithFrame();
+// }
 
-void DxgiVideoCapturer::wait_for_vblank()
-{
+void DxgiVideoCapturer::wait_for_vblank() {
     impl_->WaitForVBlank();
 }
 

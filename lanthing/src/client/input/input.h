@@ -1,5 +1,6 @@
 #pragma once
 #include <client/input/input_event.h>
+
 #include <memory>
 
 #include <google/protobuf/api.pb.h>

@@ -8,12 +8,10 @@
 
 #include <graphics/encoder/video_encoder.h>
 
-namespace lt
-{
+namespace lt {
 
 class NvD3d11EncoderImpl;
-class NvD3d11Encoder : public VideoEncoder
-{
+class NvD3d11Encoder : public VideoEncoder {
 public:
     NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx);
     ~NvD3d11Encoder() override;

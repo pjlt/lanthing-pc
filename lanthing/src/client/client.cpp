@@ -1,7 +1,8 @@
 #include "client.h"
-#include <g3log/g3log.hpp>
 
+#include <g3log/g3log.hpp>
 #include <ltproto/ltproto.h>
+
 #include <ltproto/peer2peer/keep_alive.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>

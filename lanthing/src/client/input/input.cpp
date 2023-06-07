@@ -1,8 +1,11 @@
 #include "client/input/input.h"
 #include "client/platforms/pc_sdl.h"
+
 #include <array>
+
 #include <g3log/g3log.hpp>
 #include <ltproto/ltproto.h>
+
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
 #include <ltproto/peer2peer/controller_status.pb.h>
 #include <ltproto/peer2peer/keyboard_event.pb.h>

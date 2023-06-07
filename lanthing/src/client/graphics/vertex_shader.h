@@ -1,8 +1,7 @@
 
 #include <string>
 
-namespace lt
-{
+namespace lt {
 
 const std::string d3d11_vertex_shader = {"\
 struct ShaderInput{\

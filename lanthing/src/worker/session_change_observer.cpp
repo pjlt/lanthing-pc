@@ -1,13 +1,14 @@
 #include <Windows.h>
+
 #include <g3log/g3log.hpp>
+
 #include <ltlib/system.h>
+
 #include <worker/session_change_observer.h>
 
-namespace
-{
+namespace {
 
-bool get_desk_name(HDESK desktop, std::wstring& name)
-{
+bool get_desk_name(HDESK desktop, std::wstring& name) {
     DWORD name_length = 0;
     GetUserObjectInformationW(desktop, UOI_NAME, 0, 0, &name_length);
     if (!name_length) {
@@ -23,17 +24,14 @@ bool get_desk_name(HDESK desktop, std::wstring& name)
     return true;
 }
 
-} // 匿名空间
+} // namespace
 
-namespace lt
-{
+namespace lt {
 
-namespace worker
-{
+namespace worker {
 
-std::unique_ptr<SessionChangeObserver> SessionChangeObserver::create()
-{
-    std::unique_ptr<SessionChangeObserver> observer { new SessionChangeObserver };
+std::unique_ptr<SessionChangeObserver> SessionChangeObserver::create() {
+    std::unique_ptr<SessionChangeObserver> observer{new SessionChangeObserver};
     DWORD current_process_id = GetCurrentProcessId();
     DWORD prev_session_id = 0;
     ProcessIdToSessionId(current_process_id, &prev_session_id);
@@ -48,21 +46,18 @@ std::unique_ptr<SessionChangeObserver> SessionChangeObserver::create()
     return observer;
 }
 
-void SessionChangeObserver::wait_for_change()
-{
+void SessionChangeObserver::wait_for_change() {
     waiting_loop();
 }
 
-void SessionChangeObserver::stop()
-{
+void SessionChangeObserver::stop() {
     stoped_ = true;
 }
 
-void SessionChangeObserver::waiting_loop()
-{
+void SessionChangeObserver::waiting_loop() {
     while (!stoped_) {
         if (!ltlib::is_run_as_local_system()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
+            std::this_thread::sleep_for(std::chrono::milliseconds{100});
             continue;
         }
         DWORD curr_session_id = WTSGetActiveConsoleSessionId();
@@ -70,10 +65,12 @@ void SessionChangeObserver::waiting_loop()
             curr_session_id = 0;
         }
         if (curr_session_id != startup_session_id_) {
-            LOG(WARNING) << "SessionID changed: " << startup_session_id_ << " -> " << curr_session_id;
+            LOG(WARNING) << "SessionID changed: " << startup_session_id_ << " -> "
+                         << curr_session_id;
             return;
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
+        }
+        else {
+            std::this_thread::sleep_for(std::chrono::milliseconds{100});
         }
     }
 }

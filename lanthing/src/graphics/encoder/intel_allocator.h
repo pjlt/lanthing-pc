@@ -2,28 +2,24 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include <mfxvideo.h>
 
-namespace lt
-{
+namespace lt {
 
 // TODO: auto manage mids
-struct FrameBuffer
-{
+struct FrameBuffer {
     mfxMemId* mids = nullptr;
     std::vector<Microsoft::WRL::ComPtr<ID3D11Texture2D>> frames;
-    ~FrameBuffer()
-    {
+    ~FrameBuffer() {
         if (mids)
             delete mids;
     }
 };
 
-class MfxFrameAllocator : public mfxFrameAllocator
-{
+class MfxFrameAllocator : public mfxFrameAllocator {
 public:
     MfxFrameAllocator();
     virtual ~MfxFrameAllocator() = default;
@@ -34,17 +30,18 @@ public:
     virtual mfxStatus free(mfxFrameAllocResponse* response) = 0;
 
 private:
-    static mfxStatus MFX_CDECL _alloc(mfxHDL pthis, mfxFrameAllocRequest* request, mfxFrameAllocResponse* response);
+    static mfxStatus MFX_CDECL _alloc(mfxHDL pthis, mfxFrameAllocRequest* request,
+                                      mfxFrameAllocResponse* response);
     static mfxStatus MFX_CDECL _lock(mfxHDL pthis, mfxMemId mid, mfxFrameData* ptr);
     static mfxStatus MFX_CDECL _unlock(mfxHDL pthis, mfxMemId mid, mfxFrameData* ptr);
     static mfxStatus MFX_CDECL _getHDL(mfxHDL pthis, mfxMemId mid, mfxHDL* handle);
     static mfxStatus MFX_CDECL _free(mfxHDL pthis, mfxFrameAllocResponse* response);
 };
 
-class MfxEncoderFrameAllocator : public MfxFrameAllocator
-{
+class MfxEncoderFrameAllocator : public MfxFrameAllocator {
 public:
-    MfxEncoderFrameAllocator(Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> device_context);
+    MfxEncoderFrameAllocator(Microsoft::WRL::ComPtr<ID3D11Device> device,
+                             Microsoft::WRL::ComPtr<ID3D11DeviceContext> device_context);
     ~MfxEncoderFrameAllocator() override = default;
 
     mfxStatus alloc(mfxFrameAllocRequest* request, mfxFrameAllocResponse* response) override;
@@ -59,8 +56,7 @@ private:
     std::map<mfxMemId*, FrameBuffer> frame_buffers_;
 };
 
-class MfxDecoderFrameAllocator : public MfxFrameAllocator
-{
+class MfxDecoderFrameAllocator : public MfxFrameAllocator {
 public:
     MfxDecoderFrameAllocator(Microsoft::WRL::ComPtr<ID3D11Device> device);
     ~MfxDecoderFrameAllocator() override = default;

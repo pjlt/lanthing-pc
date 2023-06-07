@@ -1,9 +1,8 @@
 #include <string>
 
-namespace lt
-{
+namespace lt {
 
-const std::string d3d11_pixel_shader = { "\
+const std::string d3d11_pixel_shader = {"\
 Texture2D<min16float> luminancePlane : register(t0);\
 Texture2D<min16float2> chrominancePlane : register(t1);\
 SamplerState theSampler : register(s0);\
@@ -30,6 +29,6 @@ min16float4 main(ShaderInput input) : SV_TARGET \
     yuv = mul(yuv, cscMatrix);\
 \
     return min16float4(yuv, 1.0);\
-}" };
+}"};
 
 } // namespace lt

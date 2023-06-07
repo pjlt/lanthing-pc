@@ -1,7 +1,6 @@
 #pragma once
 
-namespace lt
-{
+namespace lt {
 
 extern const char kSigCoreClose[];
 

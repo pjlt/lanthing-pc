@@ -1,12 +1,16 @@
 #include "intel_encoder.h"
 #include "intel_allocator.h"
+
 #include <array>
+#include <thread>
+
 #include <d3d11.h>
 #include <dxgi1_2.h>
-#include <ltlib/times.h>
-#include <mfxvideo.h>
-#include <thread>
 #include <wrl/client.h>
+
+#include <mfxvideo.h>
+
+#include <ltlib/times.h>
 
 // https://github.com/Intel-Media-SDK/samples/blob/master/samples/sample_encode/src/pipeline_region_encode.cpp
 

@@ -1,25 +1,23 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <mutex>
-#include <array>
 #include <optional>
+
 #include <SDL.h>
+
 #include <client/input/input_event.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace cli
-{
+namespace cli {
 
 constexpr uint8_t kMaxControllers = 4;
 
-class SdlInput
-{
+class SdlInput {
 public:
-    struct Params
-    {
+    struct Params {
         SDL_Window* window;
     };
 
@@ -44,8 +42,7 @@ private:
     void on_input_event(const InputEvent& ev);
 
 private:
-    struct ControllerState
-    {
+    struct ControllerState {
         SDL_GameController* controller = nullptr;
         SDL_JoystickID joystick_id = -1;
         uint8_t index = std::numeric_limits<uint8_t>::max();
@@ -54,7 +51,7 @@ private:
 private:
     // 0表示没按下，其他任意数字表示按下
     SDL_Window* window_;
-    uint8_t keyboard_state_[512] = { 0 };
+    uint8_t keyboard_state_[512] = {0};
     std::mutex mutex_;
     std::function<void(const InputEvent&)> on_input_event_;
     std::array<std::optional<ControllerState>, kMaxControllers> controller_states_;

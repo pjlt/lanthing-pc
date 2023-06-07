@@ -1,7 +1,6 @@
 #include "ct_smoother.h"
 
-namespace lt
-{
+namespace lt {
 
 void CTSmoother::push(Frame frame) {
     frames_.push_back(frame);

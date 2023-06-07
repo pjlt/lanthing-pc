@@ -1,13 +1,16 @@
 #pragma once
 #include <cstdint>
+#include <memory>
+
 #include <google/protobuf/message_lite.h>
-#include <graphics/encoder/video_encoder.h>
+
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/server.h>
 #include <ltlib/threads.h>
-#include <memory>
 #include <rtc/rtc.h>
+
+#include <graphics/encoder/video_encoder.h>
 
 namespace lt {
 

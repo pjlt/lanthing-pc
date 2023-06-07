@@ -1,19 +1,18 @@
 #pragma once
-#include <graphics/capturer/video_capturer.h>
-#include <graphics/capturer/dxgi/duplication_manager.h>
 #include <wrl/client.h>
 
-namespace lt
-{
+#include <graphics/capturer/dxgi/duplication_manager.h>
+#include <graphics/capturer/video_capturer.h>
 
-class DxgiVideoCapturer : public VideoCapturer
-{
+namespace lt {
+
+class DxgiVideoCapturer : public VideoCapturer {
 public:
     DxgiVideoCapturer();
     ~DxgiVideoCapturer() override;
     bool pre_init() override;
     std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> capture_one_frame() override;
-    //void done_with_frame() override;
+    // void done_with_frame() override;
     void wait_for_vblank() override;
 
 private:

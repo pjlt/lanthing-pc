@@ -5,8 +5,7 @@
 
 #include <string>
 
-namespace lt
-{
+namespace lt {
 
 enum class Codec : uint8_t {
     UNKNOWN = 0,

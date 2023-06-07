@@ -1,34 +1,27 @@
 #include <g3log/g3log.hpp>
+
 #include "daemon_win.h"
 #include <service/service.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace svc
-{
+namespace svc {
 
 HANDLE g_stop_service_handle = NULL;
 
 LanthingWinService::LanthingWinService()
-    : impl_(std::make_unique<Service>())
-{
-}
+    : impl_(std::make_unique<Service>()) {}
 
-LanthingWinService::~LanthingWinService()
-{
-}
+LanthingWinService::~LanthingWinService() {}
 
-void LanthingWinService::on_start()
-{
+void LanthingWinService::on_start() {
     if (!impl_->init()) {
         is_stop_ = true;
     }
     return;
 }
 
-void LanthingWinService::on_stop()
-{
+void LanthingWinService::on_stop() {
     LOG(INFO) << "Lanthing service on stop";
     is_stop_ = true;
     if (g_stop_service_handle) {
@@ -39,8 +32,7 @@ void LanthingWinService::on_stop()
     impl_->uninit();
 }
 
-void LanthingWinService::run()
-{
+void LanthingWinService::run() {
     std::wstringstream ss;
     ss << L"Global\\lanthing_stop_service_" << GetCurrentProcessId();
     std::wstring event_name = ss.str();
@@ -50,7 +42,7 @@ void LanthingWinService::run()
     psd = (PSECURITY_DESCRIPTOR)sd;
     InitializeSecurityDescriptor(psd, SECURITY_DESCRIPTOR_REVISION);
     SetSecurityDescriptorDacl(psd, TRUE, (PACL)NULL, FALSE);
-    SECURITY_ATTRIBUTES sa = { sizeof(sa), psd, FALSE };
+    SECURITY_ATTRIBUTES sa = {sizeof(sa), psd, FALSE};
     g_stop_service_handle = ::CreateEventW(&sa, FALSE, FALSE, event_name.c_str());
 
     if (!g_stop_service_handle) {

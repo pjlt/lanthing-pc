@@ -2,23 +2,24 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+
 #include <google/protobuf/message_lite.h>
-#include <rtc/rtc.h>
+
 #include <client/platforms/pc_sdl.h>
+#include <rtc/rtc.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace cli
-{
+namespace cli {
 
 class VideoImpl;
-class Video
-{
+class Video {
 public:
-    struct Params
-    {
-        Params(rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height, uint32_t _screen_refresh_rate, std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message);
+    struct Params {
+        Params(rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
+               uint32_t _screen_refresh_rate,
+               std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
+                   send_message);
         bool validate() const;
 
         rtc::VideoCodecType codec_type;
@@ -26,11 +27,11 @@ public:
         uint32_t height;
         uint32_t screen_refresh_rate;
         PcSdl* sdl = nullptr;
-        std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message_to_host;
+        std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
+            send_message_to_host;
     };
 
-    enum class Action
-    {
+    enum class Action {
         REQUEST_KEY_FRAME = 1,
         NONE = 2,
     };

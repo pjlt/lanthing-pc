@@ -1,14 +1,17 @@
-#include <client/client.h>
 #include <filesystem>
-#include <g3log/g3log.hpp>
-#include <g3log/logworker.hpp>
 #include <iostream>
-#include <lt_minidump_generator.h>
-#include <ltlib/event.h>
-#include <ltlib/system.h>
 #include <map>
 #include <string>
 #include <vector>
+
+#include <g3log/g3log.hpp>
+#include <g3log/logworker.hpp>
+
+#include <lt_minidump_generator.h>
+#include <ltlib/event.h>
+#include <ltlib/system.h>
+
+#include <client/client.h>
 #include <worker/worker.h>
 #if defined(RUN_AS_SERVICE)
 #include <service/daemon/daemon.h>

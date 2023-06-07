@@ -1,8 +1,9 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <future>
 #include <memory>
-#include <functional>
+
 #include "client/input/input_event.h"
 
 extern "C" {
@@ -11,17 +12,13 @@ struct SDL_Window;
 
 } // extern "C"
 
-namespace lt
-{
+namespace lt {
 
-namespace cli
-{
+namespace cli {
 
-class PcSdl
-{
+class PcSdl {
 public:
-    struct Params
-    {
+    struct Params {
         uint32_t window_width = 0;
         uint32_t window_height = 0;
         uint32_t video_width = 0;
@@ -32,7 +29,7 @@ public:
 
 public:
     static std::unique_ptr<PcSdl> create(const Params& params);
-    virtual ~PcSdl() {};
+    virtual ~PcSdl(){};
     // virtual void set_negotiated_params(uint32_t width, uint32_t height) = 0;
     virtual SDL_Window* window() = 0;
 

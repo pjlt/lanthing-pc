@@ -3,10 +3,9 @@
 #include <cstdint>
 #include <deque>
 
-namespace lt
-{
+namespace lt {
 
-//平滑算法
+// 平滑算法
 class CTSmoother {
 public:
     struct Frame {
