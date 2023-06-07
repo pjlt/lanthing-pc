@@ -1,14 +1,14 @@
-#include <map>
-#include <string>
-#include <iostream>
-#include <vector>
+#include <client/client.h>
 #include <filesystem>
 #include <g3log/g3log.hpp>
 #include <g3log/logworker.hpp>
+#include <iostream>
 #include <lt_minidump_generator.h>
-#include <ltlib/system.h>
 #include <ltlib/event.h>
-#include <client/client.h>
+#include <ltlib/system.h>
+#include <map>
+#include <string>
+#include <vector>
 #include <worker/worker.h>
 #if defined(RUN_AS_SERVICE)
 #include <service/daemon/daemon.h>
@@ -16,11 +16,9 @@
 #include <service/service.h>
 #endif
 
-namespace
-{
+namespace {
 
-enum class Role
-{
+enum class Role {
     Service,
     Client,
     Worker,
@@ -30,8 +28,7 @@ std::unique_ptr<g3::LogWorker> g_log_worker;
 std::unique_ptr<g3::FileSinkHandle> g_log_sink;
 std::unique_ptr<LTMinidumpGenerator> g_minidump_genertator;
 
-void sigint_handler(int)
-{
+void sigint_handler(int) {
     LOG(INFO) << "SIGINT Received";
     g_log_worker.reset();
     g_log_sink.reset();
@@ -39,9 +36,7 @@ void sigint_handler(int)
     std::terminate();
 }
 
-
-void init_log_and_minidump(Role role)
-{
+void init_log_and_minidump(Role role) {
     std::string prefix;
     std::string rtc_prefix;
     std::filesystem::path log_dir;
@@ -70,7 +65,8 @@ void init_log_and_minidump(Role role)
         log_dir = appdata_dir;
         log_dir /= "lanthing";
         log_dir /= prefix;
-    } else {
+    }
+    else {
         log_dir = bin_dir;
         log_dir /= "log";
     }
@@ -82,9 +78,8 @@ void init_log_and_minidump(Role role)
     g_log_worker = g3::LogWorker::createLogWorker();
     g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string());
     g3::initializeLogging(g_log_worker.get());
-    ltlib::ThreadWatcher::instance()->register_terminate_callback([](const std::string& last_word) {
-        LOG(INFO) << "Last words: "  << last_word;
-    });
+    ltlib::ThreadWatcher::instance()->register_terminate_callback(
+        [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
     // if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
     //    ltrtc::init_logging(log_dir.string(), rtc_prefix);
     //}
@@ -95,8 +90,7 @@ void init_log_and_minidump(Role role)
     signal(SIGINT, sigint_handler);
 }
 
-std::map<std::string, std::string> parse_options(int argc, char* argv[])
-{
+std::map<std::string, std::string> parse_options(int argc, char* argv[]) {
     std::vector<std::string> args;
     std::map<std::string, std::string> options;
     for (int i = 0; i < argc; i++) {
@@ -110,52 +104,52 @@ std::map<std::string, std::string> parse_options(int argc, char* argv[])
             break;
         }
         if ('-' != args[i + 1][0]) {
-            options.insert({ args[i], args[i + 1] });
+            options.insert({args[i], args[i + 1]});
             ++i;
         }
     }
     return options;
 }
 
-bool is_another_instance_running()
-{
+bool is_another_instance_running() {
     namespace fs = std::filesystem;
-    fs::path program_full_path { ltlib::get_program_fullpath<char>() };
+    fs::path program_full_path{ltlib::get_program_fullpath<char>()};
 #ifdef LT_WINDOWS
-    std::string event_name = std::string { "Global\\" } + program_full_path.filename().string() + ".tsa";
+    std::string event_name =
+        std::string{"Global\\"} + program_full_path.filename().string() + ".tsa";
 #else
     std::string event_name = "xxxx";
 #endif
-    ltlib::Event singleton { event_name };
+    ltlib::Event singleton{event_name};
     if (!singleton.is_owner()) {
         LOG(WARNING) << "Another instance is running";
         return true;
-    } else {
+    }
+    else {
         return false;
     }
 }
 
-int run_as_client(std::map<std::string, std::string> options)
-{
+int run_as_client(std::map<std::string, std::string> options) {
     init_log_and_minidump(Role::Client);
     auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
         return 0;
-    } else {
+    }
+    else {
         return -1;
     }
 }
 
-int run_as_service(std::map<std::string, std::string> options)
-{
+int run_as_service(std::map<std::string, std::string> options) {
     init_log_and_minidump(Role::Service);
     if (is_another_instance_running()) {
         return -1;
     }
 #if defined(LT_WINDOWS) && defined(RUN_AS_SERVICE)
     lt::svc::LanthingWinService svc;
-    ltlib::ServiceApp app { &svc };
+    ltlib::ServiceApp app{&svc};
     app.run();
 #else
     lt::svc::Service svc;
@@ -163,7 +157,7 @@ int run_as_service(std::map<std::string, std::string> options)
         return -1;
     }
     while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds { 10000 });
+        std::this_thread::sleep_for(std::chrono::seconds{10000});
     }
     svc.uninit();
 #endif
@@ -172,36 +166,37 @@ int run_as_service(std::map<std::string, std::string> options)
     return 0;
 }
 
-int run_as_worker(std::map<std::string, std::string> options)
-{
+int run_as_worker(std::map<std::string, std::string> options) {
     init_log_and_minidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
         worker->wait();
         LOG(INFO) << "Normal exit";
         return 0;
-    } else {
+    }
+    else {
         return -1;
     }
 }
 
-} // 匿名空间
+} // namespace
 
-
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     auto options = parse_options(argc, argv);
     auto iter = options.find("-type");
     if (iter == options.end() || iter->second == "service") {
         return run_as_service(options);
-    } else if (iter->second == "client") {
+    }
+    else if (iter->second == "client") {
         // 方便调试attach
         // std::this_thread::sleep_for(std::chrono::seconds { 15 });
         return run_as_client(options);
-    } else if (iter->second == "worker") {
-        //std::this_thread::sleep_for(std::chrono::seconds { 15 });
+    }
+    else if (iter->second == "worker") {
+        // std::this_thread::sleep_for(std::chrono::seconds { 15 });
         return run_as_worker(options);
-    } else {
+    }
+    else {
         std::cerr << "Unknown type '" << iter->second << "'" << std::endl;
         return -1;
     }

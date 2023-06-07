@@ -7,14 +7,12 @@
 
 #include <g3log/g3log.hpp>
 
-#include <nvcodec/NvEncoderD3D11.h>
 #include <nvcodec/NvEncoderCLIOptions.h>
+#include <nvcodec/NvEncoderD3D11.h>
 
-namespace lt
-{
+namespace lt {
 
-class NvEncParamsHelper
-{
+class NvEncParamsHelper {
 public:
     NvEncParamsHelper(rtc::VideoCodecType c);
 
@@ -32,11 +30,9 @@ private:
     bool enable_vbv_ = false;
 };
 
-class NvD3d11EncoderImpl
-{
+class NvD3d11EncoderImpl {
 public:
-    struct Params
-    {
+    struct Params {
         uint32_t width = 0;
         uint32_t height = 0;
         int fps = 0;
@@ -56,8 +52,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device_;
 };
 
-NvEncParamsHelper::NvEncParamsHelper(rtc::VideoCodecType c)
-{
+NvEncParamsHelper::NvEncParamsHelper(rtc::VideoCodecType c) {
     assert(c == rtc::VideoCodecType::H264 || c == rtc::VideoCodecType::H265);
     std::string codec = c == rtc::VideoCodecType::H264 ? "h264" : "hevc";
     params_["-codec"] = codec;
@@ -71,16 +66,14 @@ NvEncParamsHelper::NvEncParamsHelper(rtc::VideoCodecType c)
     params_["-maxbitrate"] = std::to_string(10 * 1024 * 1024 * 1.05f);
 }
 
-NvEncParamsHelper& NvEncParamsHelper::fps(int fps)
-{
+NvEncParamsHelper& NvEncParamsHelper::fps(int fps) {
     fps_ = fps;
     params_["-fps"] = std::to_string(fps);
     bitrate(bitrate_kbps_, enable_vbv_);
     return *this;
 }
 
-NvEncParamsHelper& NvEncParamsHelper::bitrate(int bitrate_kbps, bool enable_vbv)
-{
+NvEncParamsHelper& NvEncParamsHelper::bitrate(int bitrate_kbps, bool enable_vbv) {
     enable_vbv_ = enable_vbv;
     bitrate_kbps_ = bitrate_kbps;
     int bitrate_bps = bitrate_kbps_ * 1024;
@@ -91,23 +84,28 @@ NvEncParamsHelper& NvEncParamsHelper::bitrate(int bitrate_kbps, bool enable_vbv)
             params_["-qmin"] = "14,14,24";
             params_["-qmax"] = "39,39,39";
             vbv = 2.7f;
-        } else if (bitrate_bps >= 8 * 1024 * 1024) {
+        }
+        else if (bitrate_bps >= 8 * 1024 * 1024) {
             params_["-qmin"] = "15,15,24";
             params_["-qmax"] = "40,40,41";
             vbv = 2.6f;
-        } else if (bitrate_bps >= 6 * 1024 * 1024) {
+        }
+        else if (bitrate_bps >= 6 * 1024 * 1024) {
             params_["-qmin"] = "17,17,25";
             params_["-qmax"] = "42,42,42";
             vbv = 2.4f;
-        } else if (bitrate_bps >= 4 * 1024 * 1024) {
+        }
+        else if (bitrate_bps >= 4 * 1024 * 1024) {
             params_["-qmin"] = "18,18,26";
             params_["-qmax"] = "43,43,42";
             vbv = 2.3f;
-        } else if (bitrate_bps >= 3 * 1024 * 1024) {
+        }
+        else if (bitrate_bps >= 3 * 1024 * 1024) {
             params_["-qmin"] = "19,19,27";
             params_["-qmax"] = "44,44,43";
             vbv = 2.1f;
-        } else {
+        }
+        else {
             params_["-qmin"] = "21,21,28";
             params_["-qmax"] = "47,47,46";
             vbv = 2.1f;
@@ -116,7 +114,8 @@ NvEncParamsHelper& NvEncParamsHelper::bitrate(int bitrate_kbps, bool enable_vbv)
         int vbv_buf = static_cast<int>(bitrate_vbv * 1.0f / fps_ + 0.5f);
         params_["-vbvbufsize"] = std::to_string(vbv_buf);
         params_["-vbvinit"] = std::to_string(vbv_buf);
-    } else {
+    }
+    else {
         params_.erase("-vbvbufsize");
         params_.erase("-vbvinit");
     }
@@ -127,8 +126,7 @@ NvEncParamsHelper& NvEncParamsHelper::bitrate(int bitrate_kbps, bool enable_vbv)
     return *this;
 }
 
-std::string NvEncParamsHelper::params() const
-{
+std::string NvEncParamsHelper::params() const {
     std::stringstream oss;
     for (const auto& param : params_) {
         if (param.first.empty() || param.second.empty()) {
@@ -140,27 +138,22 @@ std::string NvEncParamsHelper::params() const
 }
 
 NvD3d11EncoderImpl::NvD3d11EncoderImpl(ID3D11Device* d3d11_device)
-    : d3d11_device_ { d3d11_device }
-{
-}
+    : d3d11_device_{d3d11_device} {}
 
-NvD3d11EncoderImpl::~NvD3d11EncoderImpl()
-{
-}
+NvD3d11EncoderImpl::~NvD3d11EncoderImpl() {}
 
-bool NvD3d11EncoderImpl::init(const VideoEncoder::InitParams& params)
-{
+bool NvD3d11EncoderImpl::init(const VideoEncoder::InitParams& params) {
     codec_ = params.codec_type;
-    params_ = NvEncParamsHelper { codec_ };
-    encoder_impl_ = std::make_unique<NvEncoderD3D11>(d3d11_device_.Get(), params.width, params.height,
-        NV_ENC_BUFFER_FORMAT_ARGB, 0);
+    params_ = NvEncParamsHelper{codec_};
+    encoder_impl_ = std::make_unique<NvEncoderD3D11>(d3d11_device_.Get(), params.width,
+                                                     params.height, NV_ENC_BUFFER_FORMAT_ARGB, 0);
 
-    NV_ENC_INITIALIZE_PARAMS init_params = { NV_ENC_INITIALIZE_PARAMS_VER };
-    NV_ENC_CONFIG config = { NV_ENC_CONFIG_VER };
+    NV_ENC_INITIALIZE_PARAMS init_params = {NV_ENC_INITIALIZE_PARAMS_VER};
+    NV_ENC_CONFIG config = {NV_ENC_CONFIG_VER};
     init_params.encodeConfig = &config;
     auto cli_ops = NvEncoderInitParam(params_->params().c_str());
     encoder_impl_->CreateDefaultEncoderParams(&init_params, cli_ops.GetEncodeGUID(),
-        cli_ops.GetPresetGUID());
+                                              cli_ops.GetPresetGUID());
     if (init_params.encodeGUID == NV_ENC_CODEC_H264_GUID) {
         init_params.encodeConfig->encodeCodecConfig.h264Config.maxNumRefFrames = 0;
         init_params.encodeConfig->encodeCodecConfig.h264Config.sliceMode = 3;
@@ -183,26 +176,26 @@ bool NvD3d11EncoderImpl::init(const VideoEncoder::InitParams& params)
     return true;
 }
 
-VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encode_one_frame(void* input_frame, bool request_iframe)
-{
-    NV_ENC_PIC_PARAMS pic_params = { NV_ENC_PIC_PARAMS_VER };
+VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encode_one_frame(void* input_frame,
+                                                                bool request_iframe) {
+    NV_ENC_PIC_PARAMS pic_params = {NV_ENC_PIC_PARAMS_VER};
     if (request_iframe) {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR | NV_ENC_PIC_FLAG_OUTPUT_SPSPPS;
     }
-    VideoEncoder::EncodedFrame out_frame {};
+    VideoEncoder::EncodedFrame out_frame{};
     std::vector<std::vector<uint8_t>> imgs;
     auto type = encoder_impl_->EncodeFrame(input_frame, imgs, &pic_params);
     if (!imgs.empty()) {
         out_frame.size = imgs.back().size();
-        out_frame.data = std::shared_ptr<uint8_t>(new uint8_t[out_frame.size]);
-        memcpy(out_frame.data.get(), imgs.back().data(), out_frame.size);
+        out_frame.internal_data = std::shared_ptr<uint8_t>(new uint8_t[out_frame.size]);
+        memcpy(out_frame.internal_data.get(), imgs.back().data(), out_frame.size);
+        out_frame.data = out_frame.internal_data.get();
         out_frame.is_keyframe = type == NV_ENC_PIC_TYPE_I || type == NV_ENC_PIC_TYPE_IDR;
     }
     return out_frame;
 }
 
-void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& p)
-{
+void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& p) {
     bool changed = false;
     if (p.bitrate_bps.has_value()) {
         params_->bitrate(p.bitrate_bps.value() / 1024);
@@ -212,39 +205,33 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& p)
         params_->fps(p.fps.value());
     }
     auto cli_ops = NvEncoderInitParam(params_->params().c_str());
-    NV_ENC_RECONFIGURE_PARAMS params = { NV_ENC_RECONFIGURE_PARAMS_VER };
-    NV_ENC_CONFIG config = { NV_ENC_CONFIG_VER };
+    NV_ENC_RECONFIGURE_PARAMS params = {NV_ENC_RECONFIGURE_PARAMS_VER};
+    NV_ENC_CONFIG config = {NV_ENC_CONFIG_VER};
     params.reInitEncodeParams.encodeConfig = &config;
     encoder_impl_->GetInitializeParams(&params.reInitEncodeParams);
     cli_ops.SetInitParams(&params.reInitEncodeParams, NV_ENC_BUFFER_FORMAT_ARGB);
     if (encoder_impl_->Reconfigure(&params)) {
         LOGF(WARNING, "reconfig NvEnc failed, params: %s",
-            cli_ops.MainParamToString(&params.reInitEncodeParams).c_str());
+             cli_ops.MainParamToString(&params.reInitEncodeParams).c_str());
     }
 }
 
 NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx)
-    : VideoEncoder { d3d11_dev, d3d11_ctx }
-    , impl_ { std::make_shared<NvD3d11EncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev)) }
-{
-}
+    : VideoEncoder{d3d11_dev, d3d11_ctx}
+    , impl_{std::make_shared<NvD3d11EncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev))} {}
 
-NvD3d11Encoder::~NvD3d11Encoder()
-{
-}
+NvD3d11Encoder::~NvD3d11Encoder() {}
 
-bool NvD3d11Encoder::init(const InitParams& params)
-{
+bool NvD3d11Encoder::init(const InitParams& params) {
     return impl_->init(params);
 }
 
-void NvD3d11Encoder::reconfigure(const ReconfigureParams& params)
-{
+void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-NvD3d11Encoder::EncodedFrame NvD3d11Encoder::encode_one_frame(void* input_frame, bool request_iframe)
-{
+NvD3d11Encoder::EncodedFrame NvD3d11Encoder::encode_one_frame(void* input_frame,
+                                                              bool request_iframe) {
     return impl_->encode_one_frame(input_frame, request_iframe);
 }
 

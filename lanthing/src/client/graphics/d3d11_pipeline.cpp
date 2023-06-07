@@ -19,8 +19,7 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "Dwmapi.lib")
 
-namespace lt
-{
+namespace lt {
 
 D3D11Pipeline::D3D11Pipeline() {
     DwmEnableMMCSS(TRUE);
@@ -420,7 +419,7 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
         return;
     }
     uint8_t* dptr = reinterpret_cast<uint8_t*>(resource.pData);
-    //保存argb数据
+    // 保存argb数据
     static std::FILE* file = std::fopen("decoded.nv12", "wb");
     for (size_t i = 0; i < 1080 * 3 / 2; i++) {
         std::fwrite(dptr + i * resource.RowPitch, 1920, 1, file);
@@ -432,7 +431,7 @@ bool D3D11Pipeline::render(int64_t resouce) {
     // LOGF(INFO, "render resouce %lld", resouce);
     auto frame = get(resouce);
     if (!frame) {
-        LOGF(WARNING,"can not find resouce[%lld]", resouce);
+        LOGF(WARNING, "can not find resouce[%lld]", resouce);
         return false;
     }
     size_t index = frame->index;
@@ -448,7 +447,7 @@ bool D3D11Pipeline::render(int64_t resouce) {
     auto hr = swap_chain_->Present(0, 0);
 
     if (FAILED(hr)) {
-        LOGF(WARNING,"failed to call presenter, hr:0x%08x", hr);
+        LOGF(WARNING, "failed to call presenter, hr:0x%08x", hr);
         return false;
     }
     return true;
@@ -703,15 +702,14 @@ enum AVPixelFormat D3D11Pipeline::getFormat(AVCodecContext* context,
     return AV_PIX_FMT_NONE;
 }
 
-int64_t D3D11Pipeline::decode(const std::shared_ptr<uint8_t>& data, uint32_t size)
-{
+int64_t D3D11Pipeline::decode(const uint8_t* data, uint32_t size) {
     std::lock_guard<std::mutex> lock1(pipeline_mtx_);
     std::lock_guard<std::mutex> lock(frames_mtx_);
     auto& front = frames_.front();
     av_packet_unref(front.pkt);
     av_frame_unref(front.frame);
 
-    front.pkt->data = data.get();
+    front.pkt->data = const_cast<uint8_t*>(data);
     front.pkt->size = size;
 
     int err = avcodec_send_packet(avcodec_context_, front.pkt);

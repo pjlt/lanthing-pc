@@ -1,46 +1,40 @@
 #pragma once
-#include <cstdint>
-#include <memory>
-#include <map>
-#include <string>
-#include <mutex>
 #include <condition_variable>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <string>
 
-#include <rtc/rtc.h>
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/threads.h>
+#include <rtc/rtc.h>
 
-#include <client/platforms/pc_sdl.h>
 #include <client/graphics/video.h>
 #include <client/input/input.h>
+#include <client/platforms/pc_sdl.h>
 
-namespace lt
-{
+namespace lt {
 
-namespace cli
-{
+namespace cli {
 
-struct SignalingParams
-{
-    SignalingParams(const std::string& _client_id, const std::string& _room_id, const std::string& _addr, uint16_t _port)
+struct SignalingParams {
+    SignalingParams(const std::string& _client_id, const std::string& _room_id,
+                    const std::string& _addr, uint16_t _port)
         : client_id(_client_id)
         , room_id(_room_id)
         , addr(_addr)
-        , port(_port)
-    {
-    }
+        , port(_port) {}
     std::string client_id;
     std::string room_id;
     std::string addr;
     uint16_t port;
 };
 
-class Client
-{
+class Client {
 public:
-    struct Params
-    {
+    struct Params {
         std::string client_id;
         std::string room_id;
         std::string auth_token;
@@ -70,7 +64,8 @@ private:
     void stop_wait();
 
     // 信令.
-    void on_signaling_net_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void on_signaling_net_message(uint32_t type,
+                                  std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_signaling_disconnected();
     void on_signaling_reconnecting();
     void on_signaling_connected();
@@ -80,9 +75,10 @@ private:
 
     // ltrtc::LTClient
     bool init_ltrtc();
-    void on_ltrtc_data(const std::shared_ptr<uint8_t>& data, uint32_t size, bool is_reliable);
+    void on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable);
     void on_ltrtc_video_frame(const rtc::VideoFrame& frame);
-    void on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate, uint32_t number_of_channels, const void* audio_data, uint32_t size);
+    void on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate,
+                             uint32_t number_of_channels, const void* audio_data, uint32_t size);
     void on_ltrtc_connected(/*connection info*/);
     void on_ltrtc_conn_changed(/*old_conn_info, new_conn_info*/);
     void on_ltrtc_failed();
@@ -90,9 +86,12 @@ private:
     void on_ltrtc_signaling_message(const std::string& key, const std::string& value);
 
     // 数据通道.
-    void dispatch_remote_message(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void dispatch_remote_message(uint32_t type,
+                                 const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void send_keep_alive();
-    bool send_message_to_host(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable);
+    bool send_message_to_host(uint32_t type,
+                              const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                              bool reliable);
     void on_start_transmission_ack(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
@@ -100,13 +99,13 @@ private:
     std::string p2p_username_;
     std::string p2p_password_;
     SignalingParams signaling_params_;
-    Input::Params input_params_ {};
+    Input::Params input_params_{};
     Video::Params video_params_;
     std::unique_ptr<Video> video_module_;
     std::unique_ptr<Input> input_module_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
-    std::unique_ptr<rtc::Client> rtc_client_;
+    std::unique_ptr<rtc::Client, rtc::Client::Deleter> rtc_client_;
     std::unique_ptr<PcSdl> sdl_;
     std::unique_ptr<ltlib::BlockingThread> main_thread_;
     std::unique_ptr<ltlib::TaskThread> hb_thread_;
