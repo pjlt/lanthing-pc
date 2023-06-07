@@ -1,20 +1,18 @@
 #include "intel_encoder.h"
 #include "intel_allocator.h"
-#include <wrl/client.h>
+#include <array>
 #include <d3d11.h>
 #include <dxgi1_2.h>
-#include <mfxvideo.h>
-#include <array>
-#include <thread>
 #include <ltlib/times.h>
+#include <mfxvideo.h>
+#include <thread>
+#include <wrl/client.h>
 
-//https://github.com/Intel-Media-SDK/samples/blob/master/samples/sample_encode/src/pipeline_region_encode.cpp
+// https://github.com/Intel-Media-SDK/samples/blob/master/samples/sample_encode/src/pipeline_region_encode.cpp
 
-namespace
-{
+namespace {
 
-mfxStatus ConvertFrameRate(mfxF64 dFrameRate, mfxU32* pnFrameRateExtN, mfxU32* pnFrameRateExtD)
-{
+mfxStatus ConvertFrameRate(mfxF64 dFrameRate, mfxU32* pnFrameRateExtN, mfxU32* pnFrameRateExtD) {
     mfxU32 fr;
 
     fr = (mfxU32)(dFrameRate + .5);
@@ -39,8 +37,7 @@ mfxStatus ConvertFrameRate(mfxF64 dFrameRate, mfxU32* pnFrameRateExtN, mfxU32* p
     return MFX_ERR_NONE;
 }
 
-mfxU16 FourCCToChroma(mfxU32 fourCC)
-{
+mfxU16 FourCCToChroma(mfxU32 fourCC) {
     switch (fourCC) {
     case MFX_FOURCC_NV12:
     case MFX_FOURCC_P010:
@@ -65,13 +62,11 @@ mfxU16 FourCCToChroma(mfxU32 fourCC)
     return MFX_CHROMAFORMAT_YUV420;
 }
 
-} // 匿名空间
+} // namespace
 
-namespace lt
-{
+namespace lt {
 
-class IntelEncoderImpl
-{
+class IntelEncoderImpl {
 public:
     IntelEncoderImpl(ID3D11Device* d3d11_dev);
     ~IntelEncoderImpl() = default;
@@ -105,33 +100,25 @@ private:
 };
 
 IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx)
-    : VideoEncoder { d3d11_dev, d3d11_ctx }
-    , impl_(std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev)))
-{
-}
+    : VideoEncoder{d3d11_dev, d3d11_ctx}
+    , impl_(std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev))) {}
 
-bool IntelEncoder::init(const InitParams& params)
-{
+bool IntelEncoder::init(const InitParams& params) {
     return impl_->init(params);
 }
 
-void IntelEncoder::reconfigure(const ReconfigureParams& params)
-{
+void IntelEncoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame IntelEncoder::encode_one_frame(void* input_frame, bool force_idr)
-{
+VideoEncoder::EncodedFrame IntelEncoder::encode_one_frame(void* input_frame, bool force_idr) {
     return impl_->encode_one_frame(input_frame, force_idr);
 }
 
 IntelEncoderImpl::IntelEncoderImpl(ID3D11Device* d3d11_dev)
-    : device_ { reinterpret_cast<ID3D11Device*>(d3d11_dev) }
-{
-}
+    : device_{reinterpret_cast<ID3D11Device*>(d3d11_dev)} {}
 
-bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
-{
+bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params) {
     if (!params.validate()) {
         return false;
     }
@@ -148,7 +135,7 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
         return false;
     }
     tmp10->SetMultithreadProtected(true);
-    mfxVersion ver = { { 0, 1 } };
+    mfxVersion ver = {{0, 1}};
     // FIXEME set impl to previous impl
     mfxIMPL impl = MFX_IMPL_HARDWARE_ANY | MFX_IMPL_VIA_D3D11;
     mfxStatus status = MFXInit(impl, &ver, &mfx_session_);
@@ -158,10 +145,10 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
     }
     MFXQueryIMPL(mfx_session_, &impl);
     MFXQueryVersion(mfx_session_, &ver);
-    mfxPlatform platform {};
+    mfxPlatform platform{};
     MFXVideoCORE_QueryPlatform(mfx_session_, &platform);
-    if ((codec_type_ == rtc::VideoCodecType::H264 && platform.CodeName > MFX_PLATFORM_SKYLAKE)
-        || (codec_type_ == rtc::VideoCodecType::H265 && platform.CodeName > MFX_PLATFORM_ICELAKE)) {
+    if ((codec_type_ == rtc::VideoCodecType::H264 && platform.CodeName > MFX_PLATFORM_SKYLAKE) ||
+        (codec_type_ == rtc::VideoCodecType::H265 && platform.CodeName > MFX_PLATFORM_ICELAKE)) {
         enable_qsvff_ = true;
     }
     status = MFXVideoCORE_SetHandle(mfx_session_, MFX_HANDLE_D3D11_DEVICE, device_.Get());
@@ -181,13 +168,11 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params)
     return true;
 }
 
-void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params)
-{
+void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) {
     // todo: 重置编码器
 }
 
-VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame, bool force_idr)
-{
+VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame, bool force_idr) {
     VideoEncoder::EncodedFrame out_frame;
     mfxFrameSurface1 vppin, vppout;
     memset(&vppin, 0, sizeof(mfxFrameSurface1));
@@ -206,11 +191,12 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame,
     vppout.Info = vpp_param_.vpp.Out;
     mfxStatus status;
     // while (true) {
-    //     status = MFXVideoVPP_RunFrameVPPAsync(mfx_session_, &vppin, &vppout, nullptr, &syncp_vpp);
-    //     if (status == MFX_WRN_DEVICE_BUSY) {
+    //     status = MFXVideoVPP_RunFrameVPPAsync(mfx_session_, &vppin, &vppout, nullptr,
+    //     &syncp_vpp); if (status == MFX_WRN_DEVICE_BUSY) {
     //         std::this_thread::sleep_for(std::chrono::milliseconds { 1 });
     //         continue;
-    //     } else if (status >= MFX_ERR_NONE || status == MFX_ERR_MORE_DATA || status == MFX_ERR_MORE_SURFACE) {
+    //     } else if (status >= MFX_ERR_NONE || status == MFX_ERR_MORE_DATA || status ==
+    //     MFX_ERR_MORE_SURFACE) {
     //         break;
     //     } else {
     //         return out_frame;
@@ -219,14 +205,17 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame,
     while (true) {
         status = MFXVideoENCODE_EncodeFrameAsync(mfx_session_, nullptr, &vppin, &bs, &syncp_encode);
         if (status == MFX_WRN_DEVICE_BUSY) {
-            std::this_thread::sleep_for(std::chrono::milliseconds { 1 });
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
             continue;
-        } else if (status >= MFX_ERR_NONE) {
+        }
+        else if (status >= MFX_ERR_NONE) {
             break;
-        } else if (status == MFX_ERR_NOT_ENOUGH_BUFFER) {
+        }
+        else if (status == MFX_ERR_NOT_ENOUGH_BUFFER) {
             // TODO: error
             break;
-        } else {
+        }
+        else {
             return out_frame;
         }
     }
@@ -236,9 +225,10 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame,
         if (status < MFX_ERR_NONE) {
             return out_frame;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds { 1 });
+        std::this_thread::sleep_for(std::chrono::milliseconds{1});
     }
-    out_frame.data = buffer;
+    out_frame.internal_data = buffer;
+    out_frame.data = out_frame.internal_data.get();
     out_frame.size = bs.DataLength;
     out_frame.width = vppin.Info.Width;
     out_frame.height = vppin.Info.Height;
@@ -246,14 +236,13 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame,
     return out_frame;
 }
 
-bool IntelEncoderImpl::init_encoder()
-{
+bool IntelEncoderImpl::init_encoder() {
     auto params = gen_encode_param();
     mfxStatus status = MFXVideoENCODE_Query(mfx_session_, &params, &params);
     if (status != MFX_ERR_NONE) {
         return false;
     }
-    mfxFrameAllocRequest request {};
+    mfxFrameAllocRequest request{};
     status = MFXVideoENCODE_QueryIOSurf(mfx_session_, &params, &request);
     if (status != MFX_ERR_NONE) {
         return false;
@@ -273,8 +262,7 @@ bool IntelEncoderImpl::init_encoder()
     return true;
 }
 
-bool IntelEncoderImpl::init_vpp()
-{
+bool IntelEncoderImpl::init_vpp() {
     mfxVideoParam params = gen_vpp_param();
     std::array<mfxFrameAllocRequest, 2> requests;
     memset(requests.data(), 0, requests.size() * sizeof(mfxFrameAllocRequest));
@@ -292,8 +280,7 @@ bool IntelEncoderImpl::init_vpp()
     return true;
 }
 
-Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::alloc_render_surface()
-{
+Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::alloc_render_surface() {
     Microsoft::WRL::ComPtr<ID3D11Texture2D> frame;
     D3D11_TEXTURE2D_DESC desc;
     memset(&desc, 0, sizeof(desc));
@@ -315,8 +302,7 @@ Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::alloc_render_surface()
     return frame;
 }
 
-mfxVideoParam IntelEncoderImpl::gen_encode_param()
-{
+mfxVideoParam IntelEncoderImpl::gen_encode_param() {
 #define MSDK_ALIGN16(value) (((value + 15) >> 4) << 4)
 #define MSDK_ALIGN32(X) (((mfxU32)((X) + 31)) & (~(mfxU32)31))
     mfxVideoParam params;
@@ -329,11 +315,12 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param()
     params.mfx.GopPicSize = static_cast<mfxU16>(1000000);
     params.mfx.NumRefFrame = 1;
     params.mfx.IdrInterval = 0; // 未填
-    params.mfx.CodecProfile = codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN;
+    params.mfx.CodecProfile =
+        codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN;
     params.mfx.CodecLevel = 0; // 未填
     params.mfx.MaxKbps = 40 * 1024 * 8;
     params.mfx.InitialDelayInKB = 0; // 未填
-    params.mfx.GopOptFlag = 0; // 未填
+    params.mfx.GopOptFlag = 0;       // 未填
     params.mfx.BufferSizeInKB = 512;
     params.mfx.NumSlice = 0; // 未填值
     params.mfx.EncodedOrder = 0;
@@ -365,8 +352,7 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param()
 #undef MSDK_ALIGN16
 }
 
-mfxVideoParam IntelEncoderImpl::gen_vpp_param()
-{
+mfxVideoParam IntelEncoderImpl::gen_vpp_param() {
     mfxVideoParam params;
     memset(&params, 0, sizeof(params));
 #define MSDK_ALIGN16(value) (((value + 15) >> 4) << 4)
@@ -391,16 +377,19 @@ mfxVideoParam IntelEncoderImpl::gen_vpp_param()
 
     // chromasiting
     // auto colorconversion = m_mfxVppParams.AddExtBuffer<mfxExtColorConversion>();
-    // colorconversion->ChromaSiting = MFX_CHROMA_SITING_VERTICAL_CENTER | MFX_CHROMA_SITING_HORIZONTAL_CENTER;
-    // colorconversion->Header.BufferId = MFX_EXTBUFF_VPP_COLOR_CONVERSION;
-    // colorconversion->Header.BufferSz = sizeof(mfxExtColorConversion);
+    // colorconversion->ChromaSiting = MFX_CHROMA_SITING_VERTICAL_CENTER |
+    // MFX_CHROMA_SITING_HORIZONTAL_CENTER; colorconversion->Header.BufferId =
+    // MFX_EXTBUFF_VPP_COLOR_CONVERSION; colorconversion->Header.BufferSz =
+    // sizeof(mfxExtColorConversion);
 
     // BT709
     // auto videosignalinfo = m_mfxVppParams.AddExtBuffer<mfxExtVPPVideoSignalInfo>(); //1221
-    // videosignalinfo->In.NominalRange = 1; //specify YUV nominal range for input surface: 0 - unknown; 1 - [0...255]; 2 - [16...235]
-    // videosignalinfo->Out.NominalRange = 2; //specify YUV nominal range for output surface: 0 - unknown; 1 - [0...255]; 2 - [16...235]
-    // videosignalinfo->In.TransferMatrix = 2; //specify YUV<->RGB transfer matrix for input surface: 0 - unknown; 1 - BT709; 2 - BT601
-    // videosignalinfo->Out.TransferMatrix = 1; //specify YUV<->RGB transfer matrix for output surface: 0 - unknown; 1 - BT709; 2 - BT601
+    // videosignalinfo->In.NominalRange = 1; //specify YUV nominal range for input surface: 0 -
+    // unknown; 1 - [0...255]; 2 - [16...235] videosignalinfo->Out.NominalRange = 2; //specify YUV
+    // nominal range for output surface: 0 - unknown; 1 - [0...255]; 2 - [16...235]
+    // videosignalinfo->In.TransferMatrix = 2; //specify YUV<->RGB transfer matrix for input
+    // surface: 0 - unknown; 1 - BT709; 2 - BT601 videosignalinfo->Out.TransferMatrix = 1; //specify
+    // YUV<->RGB transfer matrix for output surface: 0 - unknown; 1 - BT709; 2 - BT601
 
 #undef MSDK_ALIGN32
 #undef MSDK_ALIGN16

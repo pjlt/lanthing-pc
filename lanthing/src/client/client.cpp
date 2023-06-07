@@ -245,7 +245,7 @@ void Client::on_signaling_message(std::shared_ptr<google::protobuf::MessageLite>
     case ltproto::signaling::SignalingMessage::Rtc:
     {
         auto& rtc_msg = msg->rtc_message();
-        rtc_client_->on_signaling_message(rtc_msg.key(), rtc_msg.value());
+        rtc_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
         break;
     }
     default:
@@ -296,13 +296,13 @@ bool Client::init_ltrtc() {
     return true;
 }
 
-void Client::on_ltrtc_data(const std::shared_ptr<uint8_t>& data, uint32_t size, bool is_reliable) {
-    auto type = reinterpret_cast<const uint32_t*>(data.get());
+void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable) {
+    auto type = reinterpret_cast<const uint32_t*>(data);
     auto msg = ltproto::create_by_type(*type);
     if (msg == nullptr) {
         LOG(INFO) << "Unknown message type: " << *type;
     }
-    bool success = msg->ParseFromArray(data.get() + 4, size - 4);
+    bool success = msg->ParseFromArray(data + 4, size - 4);
     if (!success) {
         LOG(INFO) << "Parse message failed, type: " << *type;
         return;
@@ -401,7 +401,7 @@ bool Client::send_message_to_host(uint32_t type,
     const auto& pkt = packet.value();
     // WebRTC的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet
     // header一起传过去.
-    bool success = rtc_client_->send_data(pkt.payload, pkt.header.payload_size, reliable);
+    bool success = rtc_client_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
 }
 

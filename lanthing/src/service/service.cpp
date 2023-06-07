@@ -62,7 +62,7 @@ bool Service::init_tcp_client() {
     params.ioloop = ioloop_.get();
     // #define MACRO_TO_STRING_HELPER(str) #str
     // #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-    params.host = "127.0.0.1";
+    params.host = "101.43.32.170";
     //    params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
     // #undef MACRO_TO_STRING
     // #undef MACRO_TO_STRING_HELPER

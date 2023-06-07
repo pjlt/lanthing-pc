@@ -190,7 +190,7 @@ void App::onClientExitedThreadSafe(int64_t device_id) {
 
 bool App::initTcpClient() {
     constexpr uint16_t kPort = 44898;
-    const std::string kHost = "127.0.0.1";
+    const std::string kHost = "101.43.32.170";
 
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;

@@ -19,8 +19,7 @@ extern "C" {
 #include <libavutil/hwcontext_d3d11va.h>
 }
 
-namespace lt
-{
+namespace lt {
 
 class D3D11Pipeline {
 public:
@@ -35,7 +34,7 @@ public:
 
     bool setupDecoder(Format format);
 
-    int64_t decode(const std::shared_ptr<uint8_t>& data, uint32_t size);
+    int64_t decode(const uint8_t* data, uint32_t size);
 
     bool render(int64_t resouce);
 

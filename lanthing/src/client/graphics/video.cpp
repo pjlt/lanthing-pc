@@ -1,7 +1,10 @@
 #include "video.h"
+
 #include <atomic>
 #include <condition_variable>
+#include <fstream>
 #include <mutex>
+
 #include <g3log/g3log.hpp>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -10,19 +13,21 @@
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
 
-#include "d3d11_pipeline.h"
 #include "ct_smoother.h"
+#include "d3d11_pipeline.h"
 
-namespace lt
-{
+namespace lt {
 
-namespace cli
-{
+namespace cli {
 
 using namespace std::chrono_literals;
 
-class VideoImpl
-{
+class VideoImpl {
+public:
+    struct VideoFrameInternal : rtc::VideoFrame {
+        std::shared_ptr<uint8_t> data_internal;
+    };
+
 public:
     VideoImpl(const Video::Params& params);
     ~VideoImpl();
@@ -39,46 +44,43 @@ private:
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
     const rtc::VideoCodecType codec_type_;
-    std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message_to_host_;
+    std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
+        send_message_to_host_;
     HWND hwnd_;
 
     bool signal_ = false;
     std::mutex wait_for_mtx_;
     std::condition_variable wait_for_frames_;
     std::atomic<bool> request_i_frame_ = false;
-    std::vector<rtc::VideoFrame> encoded_frames_;
+    std::vector<VideoFrameInternal> encoded_frames_;
 
     std::unique_ptr<D3D11Pipeline> d3d11_pipe_line_;
     CTSmoother smoother_;
-    std::atomic<bool> stoped_ { true };
+    std::atomic<bool> stoped_{true};
     std::unique_ptr<ltlib::BlockingThread> decode_thread_;
     std::unique_ptr<ltlib::BlockingThread> render_thread_;
 };
 
-
 VideoImpl::VideoImpl(const Video::Params& params)
-    : width_ { params.width }
-    , height_ { params.height }
-    , screen_refresh_rate_ { params.screen_refresh_rate }
-    , codec_type_ { params.codec_type }
-    , send_message_to_host_ { params.send_message_to_host }
-{
-    SDL_SysWMinfo info {};
+    : width_{params.width}
+    , height_{params.height}
+    , screen_refresh_rate_{params.screen_refresh_rate}
+    , codec_type_{params.codec_type}
+    , send_message_to_host_{params.send_message_to_host} {
+    SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(params.sdl->window(), &info);
     hwnd_ = info.info.win.window;
 }
 
-VideoImpl::~VideoImpl()
-{
+VideoImpl::~VideoImpl() {
     stoped_ = true;
     decode_thread_.reset();
     render_thread_.reset();
     d3d11_pipe_line_.reset();
 }
 
-bool VideoImpl::init()
-{
+bool VideoImpl::init() {
     d3d11_pipe_line_ = std::make_unique<D3D11Pipeline>();
     if (!d3d11_pipe_line_->init(0)) {
         LOG(WARNING) << "Failed to initialize d3d11 pipeline on apdater " << 0;
@@ -98,26 +100,37 @@ bool VideoImpl::init()
     stoped_ = false;
     decode_thread_ = ltlib::BlockingThread::create(
         "decode",
-        [this](const std::function<void()>& i_am_alive, void*) {
-            decode_loop(i_am_alive);
-        },
+        [this](const std::function<void()>& i_am_alive, void*) { decode_loop(i_am_alive); },
         nullptr);
     render_thread_ = ltlib::BlockingThread::create(
         "render",
-        [this](const std::function<void()>& i_am_alive, void*) {
-            render_loop(i_am_alive);
-        },
+        [this](const std::function<void()>& i_am_alive, void*) { render_loop(i_am_alive); },
         nullptr);
     return true;
 }
 
-void VideoImpl::reset_deocder_renderer()
-{
+void VideoImpl::reset_deocder_renderer() {
     LOG(FATAL) << "reset_deocder_renderer() not implemented";
 }
 
-Video::Action VideoImpl::submit(const rtc::VideoFrame& frame)
-{
+Video::Action VideoImpl::submit(const rtc::VideoFrame& _frame) {
+    // static std::fstream stream{"./vidoe_stream",
+    //                            std::ios::out | std::ios::binary | std::ios::trunc};
+    // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
+    // stream.flush();
+    VideoFrameInternal frame{};
+    frame.is_keyframe = _frame.is_keyframe;
+    frame.ltframe_id = _frame.ltframe_id;
+    frame.size = _frame.size;
+    frame.width = _frame.width;
+    frame.height = _frame.height;
+    frame.capture_timestamp_us = _frame.capture_timestamp_us;
+    frame.start_encode_timestamp_us = _frame.start_encode_timestamp_us;
+    frame.end_encode_timestamp_us = _frame.end_encode_timestamp_us;
+    frame.temporal_id = _frame.temporal_id;
+    frame.data_internal = std::shared_ptr<uint8_t>(new uint8_t[_frame.size]);
+    memcpy(frame.data_internal.get(), _frame.data, _frame.size);
+    frame.data = frame.data_internal.get();
     {
         std::unique_lock<std::mutex> lock(wait_for_mtx_);
         encoded_frames_.emplace_back(frame);
@@ -125,15 +138,13 @@ Video::Action VideoImpl::submit(const rtc::VideoFrame& frame)
         lock.unlock();
     }
     bool request_i_frame = request_i_frame_.exchange(false);
-    return request_i_frame ? Video::Action::REQUEST_KEY_FRAME
-                           : Video::Action::NONE;
+    return request_i_frame ? Video::Action::REQUEST_KEY_FRAME : Video::Action::NONE;
 }
 
-void VideoImpl::decode_loop(const std::function<void()>& i_am_alive)
-{
+void VideoImpl::decode_loop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
-        std::vector<rtc::VideoFrame> frames;
+        std::vector<VideoFrameInternal> frames;
         {
             std::unique_lock<std::mutex> lock(wait_for_mtx_);
             if (encoded_frames_.empty()) {
@@ -145,7 +156,7 @@ void VideoImpl::decode_loop(const std::function<void()>& i_am_alive)
         if (frames.empty()) {
             continue;
         }
-        for (auto frame : frames) {
+        for (auto& frame : frames) {
             auto resouce_id = d3d11_pipe_line_->decode(frame.data, frame.size);
             if (resouce_id < 0) {
                 LOG(WARNING) << "failed to call decode(), reqesut i frame";
@@ -161,8 +172,7 @@ void VideoImpl::decode_loop(const std::function<void()>& i_am_alive)
     }
 }
 
-void VideoImpl::render_loop(const std::function<void()>& i_am_alive)
-{
+void VideoImpl::render_loop(const std::function<void()>& i_am_alive) {
     uint64_t cur_time_us = 0;
     uint64_t vsync_time_us = 0;
     uint64_t render_time_us = 0;
@@ -183,27 +193,28 @@ void VideoImpl::render_loop(const std::function<void()>& i_am_alive)
     }
 }
 
-
-Video::Params::Params(rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height, uint32_t _screen_refresh_rate, std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)> send_message)
+Video::Params::Params(
+    rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
+    uint32_t _screen_refresh_rate,
+    std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
+        send_message)
     : codec_type(_codec_type)
     , width(_width)
     , height(_height)
     , screen_refresh_rate(_screen_refresh_rate)
-    , send_message_to_host(send_message)
-{
-}
+    , send_message_to_host(send_message) {}
 
-bool Video::Params::validate() const
-{
-    if (codec_type == rtc::VideoCodecType::Unknown || sdl == nullptr || send_message_to_host == nullptr) {
+bool Video::Params::validate() const {
+    if (codec_type == rtc::VideoCodecType::Unknown || sdl == nullptr ||
+        send_message_to_host == nullptr) {
         return false;
-    } else {
+    }
+    else {
         return true;
     }
 }
 
-std::unique_ptr<Video> Video::create(const Params& params)
-{
+std::unique_ptr<Video> Video::create(const Params& params) {
     if (!params.validate()) {
         LOG(FATAL) << "Create video module failed: invalid parameter";
         return nullptr;
@@ -212,18 +223,16 @@ std::unique_ptr<Video> Video::create(const Params& params)
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<Video> video { new Video };
+    std::unique_ptr<Video> video{new Video};
     video->impl_ = std::move(impl);
     return video;
 }
 
-void Video::reset_decoder_renderer()
-{
+void Video::reset_decoder_renderer() {
     impl_->reset_deocder_renderer();
 }
 
-Video::Action Video::submit(const rtc::VideoFrame& frame)
-{
+Video::Action Video::submit(const rtc::VideoFrame& frame) {
     return impl_->submit(frame);
 }
 

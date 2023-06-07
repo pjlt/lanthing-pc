@@ -1,39 +1,36 @@
 #pragma once
 #include <cstdint>
-#include <memory>
-#include <vector>
-#include <optional>
 #include <limits>
+#include <memory>
+#include <optional>
+#include <vector>
+
 #include <ltproto/peer2peer/capture_video_frame.pb.h>
+
 #include <rtc/rtc.h>
 
-namespace lt
-{
+namespace lt {
 
-class VideoEncoder
-{
+class VideoEncoder {
 public:
-    enum class Backend
-    {
+    enum class Backend {
         Unknown,
         NvEnc,
         IntelMediaSDK,
         Amf,
     };
 
-    enum class FrameType
-    {
+    enum class FrameType {
         IFrame,
         PFrame,
     };
 
-    struct EncodedFrame : rtc::VideoFrame
-    {
+    struct EncodedFrame : rtc::VideoFrame {
         bool is_black_frame = false;
+        std::shared_ptr<uint8_t> internal_data;
     };
 
-    struct InitParams
-    {
+    struct InitParams {
         Backend backend = Backend::Unknown;
         rtc::VideoCodecType codec_type = rtc::VideoCodecType::H264;
         uint32_t width = 0;
@@ -43,14 +40,12 @@ public:
         bool validate() const;
     };
 
-    struct ReconfigureParams
-    {
+    struct ReconfigureParams {
         std::optional<uint32_t> bitrate_bps;
         std::optional<uint32_t> fps;
     };
 
-    struct Ability
-    {
+    struct Ability {
         Backend backend;
         rtc::VideoCodecType codec_type;
     };
@@ -59,7 +54,8 @@ public:
     static std::unique_ptr<VideoEncoder> create(const InitParams& params);
     virtual ~VideoEncoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
-    EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame, bool force_idr);
+    EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame,
+                        bool force_idr);
 
     static std::vector<Ability> check_encode_abilities(uint32_t width, uint32_t height);
 
@@ -68,7 +64,8 @@ protected:
     virtual EncodedFrame encode_one_frame(void* input_frame, bool force_idr) = 0;
 
 private:
-    static std::unique_ptr<VideoEncoder> do_create_encoder(const InitParams& params, void* d3d11_dev, void* d3d11_ctx);
+    static std::unique_ptr<VideoEncoder> do_create_encoder(const InitParams& params,
+                                                           void* d3d11_dev, void* d3d11_ctx);
 
 private:
     void* d3d11_dev_ = nullptr;
