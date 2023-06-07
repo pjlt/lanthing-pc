@@ -245,7 +245,7 @@ void Client::on_signaling_message(std::shared_ptr<google::protobuf::MessageLite>
     case ltproto::signaling::SignalingMessage::Rtc:
     {
         auto& rtc_msg = msg->rtc_message();
-        rtc_client_->on_signaling_message(rtc_msg.key().c_str(), rtc_msg.value().c_str());
+        rtc_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
         break;
     }
     default:
@@ -401,7 +401,7 @@ bool Client::send_message_to_host(uint32_t type,
     const auto& pkt = packet.value();
     // WebRTC的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet
     // header一起传过去.
-    bool success = rtc_client_->send_data(pkt.payload.get(), pkt.header.payload_size, reliable);
+    bool success = rtc_client_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
 }
 

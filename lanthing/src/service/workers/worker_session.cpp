@@ -387,8 +387,8 @@ void WorkerSession::on_signaling_message_ack(std::shared_ptr<google::protobuf::M
 void WorkerSession::dispatch_signaling_message_rtc(
     std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
-    rtc_server_->on_signaling_message(msg->rtc_message().key().c_str(),
-                                      msg->rtc_message().value().c_str());
+    rtc_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
+                                    msg->rtc_message().value().c_str());
 }
 
 void WorkerSession::dispatch_signaling_message_core(
@@ -562,7 +562,7 @@ void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageL
     if (encoded_frame.is_black_frame) {
         //???
     }
-    rtc_server_->send_video(encoded_frame);
+    rtc_server_->sendVideo(encoded_frame);
     // static std::ofstream out{"./service_stream", std::ios::binary};
     // out.write(reinterpret_cast<const char*>(encoded_frame.data), encoded_frame.size);
     // out.flush();
@@ -637,7 +637,7 @@ bool WorkerSession::send_message_to_remote_client(
     }
     const auto& pkt = packet.value();
     // rtc的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
-    bool success = rtc_server_->send_data(pkt.payload.get(), pkt.header.payload_size, reliable);
+    bool success = rtc_server_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
 }
 
