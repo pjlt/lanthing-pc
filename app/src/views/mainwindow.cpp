@@ -52,7 +52,7 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
         main_page_ui, &MainPage::onConnectBtnPressed1,
         [this](const std::string& dev_id, const std::string& token) { doInvite(dev_id, token); });
 
-    // FIXME: »¹Ã»ÓÐÊµÏÖ"µÇÂ¼Âß¼­"
+    // FIXME: è¿˜æ²¡æœ‰å®žçŽ°"ç™»å½•é€»è¾‘"
     menu_ui->setLoginStatus(Menu::LoginStatus::LOGINING);
 }
 
