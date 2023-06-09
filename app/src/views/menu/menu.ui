@@ -180,17 +180,17 @@
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>490</y>
-     <width>191</width>
-     <height>80</height>
+     <x>40</x>
+     <y>520</y>
+     <width>151</width>
+     <height>31</height>
     </rect>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QVBoxLayout" name="login_status_layout">
     <item>
      <widget class="QLabel" name="info_label">
       <property name="text">
-       <string>connected with server</string>
+       <string>connecting server</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

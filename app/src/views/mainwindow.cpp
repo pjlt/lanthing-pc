@@ -48,10 +48,12 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
 
     connect(menu_ui, &Menu::pageSelect,
             [pages_layout](const int index) { pages_layout->setCurrentIndex(index); });
-
     connect(
         main_page_ui, &MainPage::onConnectBtnPressed1,
         [this](const std::string& dev_id, const std::string& token) { doInvite(dev_id, token); });
+
+    // FIXME: 还没有实现"登录逻辑"
+    menu_ui->setLoginStatus(Menu::LoginStatus::LOGINING);
 }
 
 MainWindow::~MainWindow() {
@@ -73,9 +75,12 @@ void DispatchToMainThread(std::function<void()> callback) {
 
 void MainWindow::onLoginRet(ErrCode code, const std::string& err) {
     DispatchToMainThread([this, code, err]() {
-        char buf[1024] = {0};
-        snprintf(buf, sizeof(buf) - 1, "login ret: %s", code == ErrCode::OK ? "ok" : "not ok");
-        QMessageBox::information(this, "info", buf, QMessageBox::Discard);
+        if (code != ErrCode::OK) {
+            menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_FAILED);
+        }
+        else if (code == ErrCode::OK) {
+            menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_SUCCESS);
+        }
     });
 }
 
