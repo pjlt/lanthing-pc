@@ -14,11 +14,14 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/spin_mutex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/reconnect_interval.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/settings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/locale.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/client.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/server.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/ioloop.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/types.h
+
+
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/win_service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/strings.cpp
@@ -29,6 +32,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/times.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/reconnect_interval.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/locale.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/buffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/ioloop.cpp

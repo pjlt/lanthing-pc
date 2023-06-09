@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <mutex>
 
 namespace lt {
 
@@ -24,8 +25,10 @@ public:
 
     void clear();
 
+    size_t size() const;
+
 private:
+    mutable std::mutex buf_mtx_;
     std::deque<Frame> frames_;
 };
-
 } // namespace lt
