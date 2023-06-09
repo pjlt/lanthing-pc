@@ -4,10 +4,10 @@
 #include <d3dcompiler.h>
 #include <dwmapi.h>
 
-#include <g3log/g3log.hpp>
-
 #include "pixel_shader.h"
 #include "vertex_shader.h"
+
+#include <g3log/g3log.hpp>
 
 #define SAFE_COM_RELEASE(x)                                                                        \
     if (x) {                                                                                       \
@@ -26,6 +26,9 @@ D3D11Pipeline::D3D11Pipeline() {
 }
 
 D3D11Pipeline ::~D3D11Pipeline() {
+    if (waitable_obj_) {
+        CloseHandle(waitable_obj_);
+    }
     SAFE_COM_RELEASE(swap_chain_);
     SAFE_COM_RELEASE(dxgi_factory_);
     SAFE_COM_RELEASE(d3d11_dev_);
@@ -54,8 +57,8 @@ void D3D11Pipeline::uninitDecoder() {
     }
 }
 
-// 初始化确定有几个显卡、支持哪些解码方式.
-bool D3D11Pipeline::init(size_t index) {
+// 初始化确定有几个显卡、支持哪些解码方式
+bool D3D11Pipeline::init(uint64_t luid) {
     HRESULT hr;
     DWM_TIMING_INFO info;
     info.cbSize = sizeof(DWM_TIMING_INFO);
@@ -68,24 +71,30 @@ bool D3D11Pipeline::init(size_t index) {
     refresh_rate_ = info.rateRefresh.uiNumerator / info.rateRefresh.uiDenominator;
 
     bool success = false;
-
     hr = CreateDXGIFactory(__uuidof(IDXGIFactory5), (void**)&dxgi_factory_);
     if (FAILED(hr)) {
-        LOGF(WARNING, "fail to create dxgi factory, er:%08x", hr);
+        LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
         return false;
     }
 
     IDXGIAdapter1* adapter = nullptr;
-    DXGI_ADAPTER_DESC1 adapter_desc;
-    hr = dxgi_factory_->EnumAdapters1(index, &adapter);
-    if (hr == DXGI_ERROR_NOT_FOUND) {
-        // Expected at the end of enumeration
-        return false;
+    for (UINT i = 0;; i++) {
+        DXGI_ADAPTER_DESC1 desc;
+        hr = dxgi_factory_->EnumAdapters1(i, &adapter);
+        if (hr == DXGI_ERROR_NOT_FOUND) {
+            // Expected at the end of enumeration
+            break;
+        }
+        hr = adapter->GetDesc1(&desc);
+        if (FAILED(hr)) {
+            continue;
+        }
+        if (luid == ((uint64_t)(desc.AdapterLuid.HighPart) << 32 + desc.AdapterLuid.LowPart)) {
+            break;
+        }
     }
-
-    hr = adapter->GetDesc1(&adapter_desc);
-    if (FAILED(hr)) {
-        false;
+    if (adapter == NULL) {
+        dxgi_factory_->EnumAdapters1(0, &adapter);
     }
     UINT flag = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
 #ifdef _DEBUG
@@ -97,7 +106,6 @@ bool D3D11Pipeline::init(size_t index) {
         LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
         return false;
     }
-    adapter_ = index;
     return true;
 }
 
@@ -117,14 +125,14 @@ bool D3D11Pipeline::setupRender(HWND hwnd, uint32_t width, uint32_t height) {
     swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+    // DISCARD 和 DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL模式如何选择?
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-    swapChainDesc.Flags = 0;
     swapChainDesc.Width = display_width_;
     swapChainDesc.Height = display_height_;
-    swapChainDesc.BufferCount = 3 + 1 + 1;
+    swapChainDesc.BufferCount = 2;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
     IDXGISwapChain1* swapChain;
     auto hr = dxgi_factory_->CreateSwapChainForHwnd(d3d11_dev_, hwnd_, &swapChainDesc, nullptr,
                                                     nullptr, &swapChain);
@@ -141,6 +149,11 @@ bool D3D11Pipeline::setupRender(HWND hwnd, uint32_t width, uint32_t height) {
     hr = dxgi_factory_->MakeWindowAssociation(hwnd_, DXGI_MWA_NO_WINDOW_CHANGES);
     if (FAILED(hr)) {
         LOGF(WARNING, "IDXGIFactory::MakeWindowAssociation() failed: %x", hr);
+        return false;
+    }
+    swap_chain_->SetMaximumFrameLatency(1);
+    waitable_obj_ = swap_chain_->GetFrameLatencyWaitableObject();
+    if (!waitable_obj_) {
         return false;
     }
 
@@ -162,7 +175,22 @@ bool D3D11Pipeline::setupRender(HWND hwnd, uint32_t width, uint32_t height) {
         return false;
     }
     LOGF(INFO, "d3d11 %u:%u, %u:%u", display_width_, display_height_, video_width_, video_height_);
+
     return true;
+}
+
+bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {
+    if (!pipeline_ready_) {
+        DWORD result = WaitForSingleObjectEx(waitable_obj_, max_wait_ms, false);
+        if (result == WAIT_OBJECT_0) {
+            pipeline_ready_ = true;
+            return true;
+        }
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
 struct Vertex {
@@ -428,7 +456,7 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
 }
 
 bool D3D11Pipeline::render(int64_t resouce) {
-    // LOGF(INFO, "render resouce %lld", resouce);
+    // LOG_INFO("render resouce %lld", resouce);
     auto frame = get(resouce);
     if (!frame) {
         LOGF(WARNING, "can not find resouce[%lld]", resouce);
@@ -445,7 +473,7 @@ bool D3D11Pipeline::render(int64_t resouce) {
     d3d11_ctx_->DrawIndexed(6, 0, 0);
 
     auto hr = swap_chain_->Present(0, 0);
-
+    pipeline_ready_ = false;
     if (FAILED(hr)) {
         LOGF(WARNING, "failed to call presenter, hr:0x%08x", hr);
         return false;
@@ -462,7 +490,6 @@ bool D3D11Pipeline::setupDecoder(Format format) {
     if (!checkDecoder()) {
         return false;
     }
-    LOGF(INFO, "adapter %zu support %s", adapter_, videoFormatToString(format_).c_str());
 
     const AVCodec* decoder = avcodec_find_decoder(codec_id);
     if (!decoder) {
@@ -544,7 +571,7 @@ bool D3D11Pipeline::checkDecoder() {
     hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
     video_device->Release();
     if (FAILED(hr) || !supported) {
-        LOGF(INFO, "%s is not supported", videoFormatToString(format_).c_str());
+        LOGF(WARNING, "%s is not supported", videoFormatToString(format_).c_str());
         return false;
     }
 
@@ -709,7 +736,7 @@ int64_t D3D11Pipeline::decode(const uint8_t* data, uint32_t size) {
     av_packet_unref(front.pkt);
     av_frame_unref(front.frame);
 
-    front.pkt->data = const_cast<uint8_t*>(data);
+    front.pkt->data = (uint8_t*)data;
     front.pkt->size = size;
 
     int err = avcodec_send_packet(avcodec_context_, front.pkt);

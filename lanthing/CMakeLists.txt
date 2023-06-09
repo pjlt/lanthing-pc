@@ -16,6 +16,8 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/ct_smoother.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/d3d11_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/d3d11_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/gpu_capability.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/gpu_capability.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/pixel_shader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/types.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/vertex_shader.h

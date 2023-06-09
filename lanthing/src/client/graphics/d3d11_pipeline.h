@@ -12,7 +12,8 @@
 #include <d3d11_1.h>
 #include <dxgi1_5.h>
 
-#include <client/graphics/types.h>
+#include "ltlib/times.h"
+#include "types.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -28,17 +29,17 @@ public:
     ~D3D11Pipeline();
 
     // 在指定的adapter上初始化D3D
-    bool init(size_t adapter);
+    bool init(uint64_t luid);
 
     bool setupRender(HWND hwnd, uint32_t width, uint32_t height);
+
+    bool waitForPipeline(int64_t max_wait_ms);
 
     bool setupDecoder(Format format);
 
     int64_t decode(const uint8_t* data, uint32_t size);
 
     bool render(int64_t resouce);
-
-    int64_t nextVsyncTime(int64_t at_time_us) { return 0; }
 
 private:
     bool setupIAAndVSStage();
@@ -74,7 +75,6 @@ private:
 
 private:
     HWND hwnd_ = nullptr;
-    size_t adapter_ = 0;
     int refresh_rate_ = 60;
 
     struct ShaderView {
@@ -86,6 +86,8 @@ private:
 
     IDXGIFactory5* dxgi_factory_ = nullptr;
     IDXGISwapChain4* swap_chain_ = nullptr;
+    HANDLE waitable_obj_ = NULL;
+    bool pipeline_ready_ = false;
     ID3D11RenderTargetView* render_view_ = nullptr;
     std::vector<ShaderView> shader_views_;
 
@@ -115,9 +117,6 @@ private:
     int64_t id_counter_ = 0;
 
     std::map<int64_t, Frame> decoded_frames_;
-
-    std::atomic<bool> alive_{false};
-    std::shared_ptr<std::thread> vsync_thread_;
 };
 
 } // namespace lt
