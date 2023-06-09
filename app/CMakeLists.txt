@@ -35,6 +35,8 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.cpp
 )
 
 set(APP_UI_VIEWS

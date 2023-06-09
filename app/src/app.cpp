@@ -69,9 +69,6 @@ bool App::init() {
     if (ioloop_ == nullptr) {
         return false;
     }
-    if (!initTcpClient()) {
-        return false;
-    }
     return true;
 }
 
@@ -85,9 +82,16 @@ int App::exec(int argc, char** argv) {
     MainWindow w(this, nullptr);
     ui_ = &w;
     w.show();
+
+    // XXX: 暂时先放到这里
+    if (!initTcpClient()) {
+        return false;
+    }
+
     thread_ = ltlib::BlockingThread::create(
         "io_thread", [this](const std::function<void()>& i_am_alive, void*) { ioLoop(i_am_alive); },
         nullptr);
+
     return a.exec();
 }
 
@@ -223,10 +227,12 @@ void App::onServerConnected() {
     else {
         allocateDeviceID();
     }
+    ui_->onLoginRet(UiCallback::ErrCode::OK, "backend");
 }
 
 void App::onServerDisconnected() {
     LOG(WARNING) << "Disconnected from server";
+    ui_->onLoginRet(UiCallback::ErrCode::FALIED, "backend");
 }
 
 void App::onServerReconnecting() {
