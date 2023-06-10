@@ -5,9 +5,7 @@ namespace lt {
 // 先不做任何平滑
 void CTSmoother::push(Frame frame) {
     std::lock_guard<std::mutex> lock(buf_mtx_);
-    while (!frames_.empty()) {
-        frames_.pop_front();
-    }
+    frames_.clear();
     frames_.push_back(frame);
 }
 
