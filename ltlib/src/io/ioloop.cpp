@@ -96,7 +96,7 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive)
 {
     constexpr uint32_t k700ms = 700;
     uv_timer_init(&uvloop_, &alive_handle_);
-    //NOTE: 这个copy内存泄露了，但是不用管
+    // NOTE: 这个copy内存泄露了，但是不用管
     auto copy_i_am_alive = new std::function<void()>;
     *copy_i_am_alive = i_am_alive;
     alive_handle_.data = copy_i_am_alive;
@@ -137,7 +137,7 @@ void IOLoopImpl::stop()
     // 3. 遍历所有未关闭的handle，关闭它们
     uv_walk(
         &uvloop_, [](uv_handle_t* handle, void* arg) {
-            if (uv_is_closing(handle) == 0) {
+            if (!uv_is_closing(handle)) {
                 uv_close(handle, [](uv_handle_t* h) {});
             }
         },
@@ -154,13 +154,13 @@ void IOLoopImpl::post(const std::function<void()>& task)
         std::lock_guard<std::mutex> lock { mutex_ };
         tasks_.push_back(task);
     }
-    //对同一个uv_async_t多次调用uv_async_send是冇问题哒！
+    // 对同一个uv_async_t多次调用uv_async_send是冇问题哒！
     uv_async_send(&task_handle_);
 }
 
 void IOLoopImpl::post_delay(int64_t delay_ms, const std::function<void()>& task)
 {
-    //整个libuv只有uv_async_send()是线程安全的，所以我们要再包一层，把uv_timer_init()、uv_timer_start()扔到libuv的线程去跑
+    // 整个libuv只有uv_async_send()是线程安全的，所以我们要再包一层，把uv_timer_init()、uv_timer_start()扔到libuv的线程去跑
     auto user_task_copied = new std::function<void()> { task };
     auto delayed_task = [delay_ms, user_task_copied, this]() {
         auto timer = new uv_timer_t;

@@ -21,15 +21,45 @@ namespace ltlib
 {
 
 LibuvSTransport::LibuvSTransport(const Params& params)
-    : stype_{ params.stype }
-    , ioloop_{ params.ioloop }
-    , pipe_name_{ params.pipe_name }
-    , bind_ip_{ params.bind_ip }
-    , bind_port_{ params.bind_port }
-    , on_accepted_{ params.on_accepted }
-    , on_closed_{ params.on_closed }
-    , on_read_{ params.on_read }
+    : stype_ { params.stype }
+    , ioloop_ { params.ioloop }
+    , pipe_name_ { params.pipe_name }
+    , bind_ip_ { params.bind_ip }
+    , bind_port_ { params.bind_port }
+    , on_accepted_ { params.on_accepted }
+    , on_closed_ { params.on_closed }
+    , on_read_ { params.on_read }
 {
+}
+
+LibuvSTransport::~LibuvSTransport()
+{
+    if (stype_ == StreamType::TCP) {
+        if (server_tcp_ == nullptr) {
+            return;
+        }
+        auto tcp_handle = server_tcp_.release();
+        if (ioloop_->is_not_current_thread()) {
+            ioloop_->post([tcp_handle]() {
+                uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+            });
+        } else {
+            uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+        }
+
+    } else {
+        if (server_pipe_ == nullptr) {
+            return;
+        }
+        auto pipe_conn = server_pipe_.release();
+        if (ioloop_->is_not_current_thread()) {
+            ioloop_->post([pipe_conn]() {
+                uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+            });
+        } else {
+            uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+        }
+    }
 }
 
 bool LibuvSTransport::init()
@@ -50,7 +80,7 @@ bool LibuvSTransport::send(uint32_t fd, Buffer buff[], uint32_t buff_count, cons
     }
     auto conn = iter->second;
     auto info = new UvWrittenInfo(conn.get(), callback);
-    uv_write_t* write_req = new uv_write_t{};
+    uv_write_t* write_req = new uv_write_t {};
     write_req->data = info;
     uv_buf_t* uvbuf = reinterpret_cast<uv_buf_t*>(buff);
     int ret = uv_write(write_req, conn->handle, uvbuf, buff_count, &LibuvSTransport::on_written);
@@ -83,7 +113,7 @@ bool LibuvSTransport::init_tcp()
     int ret = uv_tcp_init(uvloop(), server_tcp_.get());
     if (ret != 0) {
         LOG(WARNING) << "Init tcp socket failed: " << ret;
-        server_tcp_.reset(); //reset是为了告诉析构函数，不要close这个socket
+        server_tcp_.reset(); // reset是为了告诉析构函数，不要close这个socket
     }
     struct sockaddr_in addr;
     ret = uv_ip4_addr(bind_ip_.c_str(), bind_port_, &addr);
@@ -209,13 +239,13 @@ void LibuvSTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         // EAGAIN
         return;
     } else if (nread == UV_EOF) {
-        //读完
+        // 读完
         that->close(conn->fd);
     } else if (nread < 0) {
-        //失败，应该断链
+        // 失败，应该断链
         that->close(conn->fd);
     } else {
-        //const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);
+        // const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);
         Buffer buff { uvbuf->base, uint32_t(nread) };
         if (!that->on_read_(conn->fd, buff)) {
             that->close(conn->fd);
@@ -224,12 +254,11 @@ void LibuvSTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
 }
 
 LibuvSTransport::Conn::Conn(StreamType _stype)
-    : stype{ _stype }
+    : stype { _stype }
 {
     if (stype == StreamType::Pipe) {
         handle = reinterpret_cast<uv_stream_t*>(new uv_pipe_t);
-    }
-    else {
+    } else {
         handle = reinterpret_cast<uv_stream_t*>(new uv_tcp_t);
     }
 }
@@ -238,8 +267,7 @@ LibuvSTransport::Conn::~Conn()
 {
     if (stype == StreamType::Pipe) {
         delete reinterpret_cast<uv_pipe_t*>(handle);
-    }
-    else {
+    } else {
         delete reinterpret_cast<uv_tcp_t*>(handle);
     }
 }

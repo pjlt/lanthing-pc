@@ -127,6 +127,7 @@ Worker::Worker(const Params& params)
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
 
 Worker::~Worker() {
+    pipe_client_.reset();
     if (ioloop_) {
         ioloop_->stop();
     }

@@ -19,7 +19,7 @@ class SimpleGuard
 {
 public:
     SimpleGuard(const std::function<void()>& cleanup)
-        : cleanup_{ cleanup }
+        : cleanup_ { cleanup }
     {
     }
     ~SimpleGuard()
@@ -37,15 +37,15 @@ namespace ltlib
 {
 
 LibuvCTransport::LibuvCTransport(const Params& params)
-    : stype_{ params.stype }
-    , ioloop_{ params.ioloop }
-    , pipe_name_{ params.pipe_name }
-    , host_{ params.host }
-    , port_{ params.port }
-    , on_connected_{ params.on_connected }
-    , on_closed_{ params.on_closed }
-    , on_reconnecting_{ params.on_reconnecting }
-    , on_read_{ params.on_read }
+    : stype_ { params.stype }
+    , ioloop_ { params.ioloop }
+    , pipe_name_ { params.pipe_name }
+    , host_ { params.host }
+    , port_ { params.port }
+    , on_connected_ { params.on_connected }
+    , on_closed_ { params.on_closed }
+    , on_reconnecting_ { params.on_reconnecting }
+    , on_read_ { params.on_read }
 {
 }
 
@@ -56,13 +56,26 @@ LibuvCTransport::~LibuvCTransport()
             return;
         }
         auto tcp_handle = tcp_.release();
-        uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete handle; });
+        if (ioloop_->is_not_current_thread()) {
+            ioloop_->post([tcp_handle]() {
+                uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+            });
+        } else {
+            uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+        }
+
     } else {
         if (pipe_ == nullptr) {
             return;
         }
         auto pipe_conn = pipe_.release();
-        uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete handle; });
+        if (ioloop_->is_not_current_thread()) {
+            ioloop_->post([pipe_conn]() {
+                uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+            });
+        } else {
+            uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+        }
     }
 }
 
@@ -117,7 +130,7 @@ bool LibuvCTransport::send(Buffer buff[], uint32_t buff_count, const std::functi
         return false;
     }
     auto info = new UvWrittenInfo(this, callback);
-    uv_write_t* write_req = new uv_write_t{};
+    uv_write_t* write_req = new uv_write_t {};
     write_req->data = info;
     uv_buf_t* uvbuf = reinterpret_cast<uv_buf_t*>(buff);
     uv_stream_t* stream_handle = uvstream();
@@ -148,28 +161,19 @@ const std::string& LibuvCTransport::host()
 
 uv_stream_t* LibuvCTransport::uvstream()
 {
-    uv_stream_t* stream_handle =
-        is_tcp() ?
-        reinterpret_cast<uv_stream_t*>(tcp_.get()) :
-        reinterpret_cast<uv_stream_t*>(pipe_.get());
+    uv_stream_t* stream_handle = is_tcp() ? reinterpret_cast<uv_stream_t*>(tcp_.get()) : reinterpret_cast<uv_stream_t*>(pipe_.get());
     return stream_handle;
 }
 
 uv_handle_t* LibuvCTransport::uvhandle()
 {
-    uv_handle_t* handle =
-        is_tcp() ?
-        reinterpret_cast<uv_handle_t*>(tcp_.get()) :
-        reinterpret_cast<uv_handle_t*>(pipe_.get());
+    uv_handle_t* handle = is_tcp() ? reinterpret_cast<uv_handle_t*>(tcp_.get()) : reinterpret_cast<uv_handle_t*>(pipe_.get());
     return handle;
 }
 
 uv_handle_t* LibuvCTransport::uvhandle_release()
 {
-    uv_handle_t* handle =
-        is_tcp() ?
-        reinterpret_cast<uv_handle_t*>(tcp_.release()) :
-        reinterpret_cast<uv_handle_t*>(pipe_.release());
+    uv_handle_t* handle = is_tcp() ? reinterpret_cast<uv_handle_t*>(tcp_.release()) : reinterpret_cast<uv_handle_t*>(pipe_.release());
     return handle;
 }
 
@@ -194,7 +198,6 @@ void LibuvCTransport::delay_reconnect(uv_handle_t* handle)
     uv_timer_init(that->uvloop(), timer);
     timer->data = that;
     uv_timer_start(timer, &LibuvCTransport::do_reconnect, that->intervals_.next(), 0);
-
 }
 
 void LibuvCTransport::do_reconnect(uv_timer_t* handle)
@@ -204,7 +207,7 @@ void LibuvCTransport::do_reconnect(uv_timer_t* handle)
     uv_close((uv_handle_t*)handle, [](uv_handle_t* handle) {
         auto timer_handle = (uv_timer_t*)handle;
         delete timer_handle;
-        });
+    });
     if (!that->init()) {
         that->on_closed_();
     }
@@ -217,8 +220,7 @@ void LibuvCTransport::on_connected(uv_connect_t* req, int status)
         that->intervals_.reset();
         that->on_connected_();
         uv_read_start(that->uvstream(), &LibuvCTransport::on_alloc_memory, &LibuvCTransport::on_read);
-    }
-    else {
+    } else {
         LOG(WARNING) << "Connect server failed with: " << status;
         that->reconnect();
     }
@@ -238,14 +240,14 @@ void LibuvCTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         // EAGAIN
         return;
     } else if (nread == UV_EOF) {
-        //读完
+        // 读完
         that->reconnect();
     } else if (nread < 0) {
-        //失败，应该断链
+        // 失败，应该断链
         that->reconnect();
     } else {
         // uvbuf.len是容量，nread才是我们想要的，不能用下面这种转法
-        //const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);
+        // const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);
         Buffer buff { uvbuf->base, uint32_t(nread) };
         if (!that->on_read_(buff)) {
             that->reconnect();
@@ -260,7 +262,7 @@ void LibuvCTransport::on_written(uv_write_t* req, int status)
     auto user_callback = info->custom_callback;
     delete info;
     delete req;
-    //buff交由上层去释放，因为是上层创建的
+    // buff交由上层去释放，因为是上层创建的
     user_callback();
     if (status != 0) {
         that->reconnect();
@@ -271,7 +273,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
 {
     SimpleGuard addrinfo_guard { [res]() {
         uv_freeaddrinfo(res);
-    }};
+    } };
     auto that = reinterpret_cast<LibuvCTransport*>(req->data);
     delete req;
     if (status != 0) {
@@ -281,7 +283,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     }
     addrinfo* addr = res;
     while (addr != nullptr) {
-        //NOTE: 以后支持IPv6改这里
+        // NOTE: 以后支持IPv6改这里
         if (addr->ai_family == AF_INET) {
             break;
         }
@@ -296,7 +298,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     int ret = uv_tcp_init(that->uvloop(), that->tcp_.get());
     if (ret != 0) {
         LOG(WARNING) << "Init tcp socket failed: " << ret;
-        that->tcp_.reset(); //reset是为了告诉析构函数，不要close这个socket
+        that->tcp_.reset(); // reset是为了告诉析构函数，不要close这个socket
         that->reconnect(); // 这个状态下，程序重试也无法继续进行下去，是否应该on_close?
         return;
     }

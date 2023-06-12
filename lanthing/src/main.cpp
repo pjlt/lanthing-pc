@@ -36,7 +36,8 @@ void sigint_handler(int) {
     g_log_worker.reset();
     g_log_sink.reset();
     g_minidump_genertator.reset();
-    std::terminate();
+    // std::terminate();
+    ::exit(0);
 }
 
 void init_log_and_minidump(Role role) {

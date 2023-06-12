@@ -53,6 +53,7 @@ App::App() {
 }
 
 App::~App() {
+    tcp_client_.reset();
     if (ioloop_) {
         ioloop_->stop();
     }

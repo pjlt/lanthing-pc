@@ -37,8 +37,10 @@ public:
         LibuvSTransport* svr;
         bool closing = false;
     };
+
 public:
     LibuvSTransport(const Params& params);
+    ~LibuvSTransport();
     bool init();
     bool send(uint32_t fd, Buffer buff[], uint32_t buff_count, const std::function<void()>& callback);
     void close(uint32_t fd);
@@ -66,7 +68,7 @@ private:
     std::function<void(uint32_t)> on_accepted_;
     std::function<void(uint32_t)> on_closed_;
     std::function<bool(uint32_t, const Buffer&)> on_read_;
-    std::map<uint32_t/*fd*/, std::shared_ptr<Conn>> conns_;
+    std::map<uint32_t /*fd*/, std::shared_ptr<Conn>> conns_;
 };
 
 } // namespace ltlib

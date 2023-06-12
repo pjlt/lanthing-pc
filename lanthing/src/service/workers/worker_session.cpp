@@ -94,6 +94,8 @@ WorkerSession::WorkerSession(
 }
 
 WorkerSession::~WorkerSession() {
+    signaling_client_.reset();
+    pipe_server_.reset();
     ioloop_->stop();
 }
 

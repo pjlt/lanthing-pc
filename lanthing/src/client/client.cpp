@@ -106,6 +106,7 @@ Client::Client(const Params& params)
 
 Client::~Client() {
     assert(ioloop_->is_not_current_thread());
+    signaling_client_.reset();
     ioloop_->stop();
 }
 
