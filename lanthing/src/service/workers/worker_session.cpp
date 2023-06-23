@@ -176,9 +176,22 @@ bool WorkerSession::init_rtc_server() {
         std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
     namespace ph = std::placeholders;
     rtc::Server::Params cfg;
-    cfg.use_nbp2p = false;
-    cfg.username = p2p_username_.c_str();
-    cfg.password = p2p_password_.c_str();
+    cfg.use_nbp2p = true;
+    char* reflex_servers[] = {"stun://153.35.89.23:18000", "stun://122.228.2.7:18000",
+                              "stun://36.155.14.195:18000"};
+    if (cfg.use_nbp2p) {
+        cfg.nbp2p_params.disable_ipv6 = false;
+        cfg.nbp2p_params.disable_lan_udp = false;
+        cfg.nbp2p_params.disable_mapping = false;
+        cfg.nbp2p_params.disable_reflex = false;
+        cfg.nbp2p_params.disable_relay = false;
+        cfg.nbp2p_params.username = p2p_username_.c_str();
+        cfg.nbp2p_params.password = p2p_password_.c_str();
+        cfg.nbp2p_params.reflex_servers = (const char**)reflex_servers;
+        cfg.nbp2p_params.reflex_servers_count = 3;
+        cfg.nbp2p_params.relay_servers = nullptr;
+        cfg.nbp2p_params.relay_servers_count = 0;
+    }
     cfg.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
     cfg.on_failed = std::bind(&WorkerSession::on_ltrtc_failed_thread_safe, this);
     cfg.on_disconnected = std::bind(&WorkerSession::on_ltrtc_disconnected_thread_safe, this);
@@ -487,6 +500,10 @@ void WorkerSession::on_start_working_ack(std::shared_ptr<google::protobuf::Messa
 
 void WorkerSession::send_to_worker(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
+    if (ioloop_->is_not_current_thread()) {
+        ioloop_->post(std::bind(&WorkerSession::send_to_worker, this, type, msg));
+        return;
+    }
     pipe_server_->send(pipe_client_fd_, type, msg);
 }
 

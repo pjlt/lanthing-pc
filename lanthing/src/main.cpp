@@ -10,6 +10,8 @@
 #include <lt_minidump_generator.h>
 #include <ltlib/event.h>
 #include <ltlib/system.h>
+#include <ltlib/threads.h>
+#include <rtc/rtc.h>
 
 #include <client/client.h>
 #include <worker/worker.h>
@@ -84,14 +86,15 @@ void init_log_and_minidump(Role role) {
     g3::initializeLogging(g_log_worker.get());
     ltlib::ThreadWatcher::instance()->register_terminate_callback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
-    // if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
-    //    ltrtc::init_logging(log_dir.string(), rtc_prefix);
-    //}
+    if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
+        rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
+    }
     LOG(INFO) << "Log system initialized";
 
     // g3log必须再minidump前初始化
     g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     signal(SIGINT, sigint_handler);
+    ltlib::ThreadWatcher::instance()->disable_crash_on_timeout();
 }
 
 std::map<std::string, std::string> parse_options(int argc, char* argv[]) {

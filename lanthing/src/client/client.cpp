@@ -273,9 +273,22 @@ void Client::on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageL
 bool Client::init_ltrtc() {
     namespace ph = std::placeholders;
     rtc::Client::Params cfg;
-    cfg.use_nbp2p = false;
-    cfg.username = p2p_username_.c_str();
-    cfg.password = p2p_password_.c_str();
+    cfg.use_nbp2p = true;
+    char* reflex_servers[] = {"stun://153.35.89.23:18000", "stun://122.228.2.7:18000",
+                              "stun://36.155.14.195:18000"};
+    if (cfg.use_nbp2p) {
+        cfg.nbp2p_params.disable_ipv6 = false;
+        cfg.nbp2p_params.disable_lan_udp = false;
+        cfg.nbp2p_params.disable_mapping = false;
+        cfg.nbp2p_params.disable_reflex = false;
+        cfg.nbp2p_params.disable_relay = false;
+        cfg.nbp2p_params.username = p2p_username_.c_str();
+        cfg.nbp2p_params.password = p2p_password_.c_str();
+        cfg.nbp2p_params.reflex_servers = (const char**)reflex_servers;
+        cfg.nbp2p_params.reflex_servers_count = 3;
+        cfg.nbp2p_params.relay_servers = nullptr;
+        cfg.nbp2p_params.relay_servers_count = 0;
+    }
     cfg.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
     cfg.on_video = std::bind(&Client::on_ltrtc_video_frame, this, ph::_1);
     cfg.on_audio =
