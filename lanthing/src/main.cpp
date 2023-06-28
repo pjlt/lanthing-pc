@@ -94,7 +94,7 @@ void init_log_and_minidump(Role role) {
     // g3log必须再minidump前初始化
     g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     signal(SIGINT, sigint_handler);
-    ltlib::ThreadWatcher::instance()->disable_crash_on_timeout();
+    // ltlib::ThreadWatcher::instance()->disable_crash_on_timeout();
 }
 
 std::map<std::string, std::string> parse_options(int argc, char* argv[]) {
