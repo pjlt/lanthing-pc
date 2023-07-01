@@ -1,3 +1,10 @@
+#if defined(LT_WINDOWS)
+#include <Windows.h>
+#elif defined(LT_LINUX)
+#include <fcntl.h>
+#else
+#error unsupported platform
+#endif
 #include <ltlib/settings.h>
 
 #include <filesystem>
@@ -7,48 +14,174 @@
 
 #include <ltlib/system.h>
 #include <ltlib/times.h>
+#include <ltlib/strings.h>
 
 namespace
 {
 
 constexpr uint32_t k5ms = 5;
 
-class UniqueFile
+#if defined(LT_WINDOWS)
+// Windows implementation
+class FileMutex
 {
 public:
-    static std::unique_ptr<UniqueFile> open(const std::string& path);
+    FileMutex(HANDLE handle)
+        : handle_ { handle }
+    {
+    }
+    void lock()
+    {
+        BOOL ret;
+        DWORD size_low, size_high;
+        OVERLAPPED ol;
+        int flags = 0;
+        size_low = GetFileSize(handle_, &size_high);
+        ::memset(&ol, 0, sizeof(OVERLAPPED));
+        ret = LockFileEx(handle_, LOCKFILE_EXCLUSIVE_LOCK, 0, size_low, size_high, &ol);
+    }
+    void unlock()
+    {
+        BOOL ret;
+        DWORD size_low, size_high;
+        size_low = GetFileSize(handle_, &size_high);
+        ret = UnlockFile(handle_, 0, 0, size_low, size_high);
+    }
+
+private:
+    HANDLE handle_;
+};
+#elif defined(LT_LINUX)
+// Linux implementation
+class FileMutex
+{
+public:
+    FileMutex(int fd)
+        : fd_ { fd }
+    {
+    }
+    void lock()
+    {
+    }
+    void unlock()
+    {
+    }
+
+private:
+    int fd_;
+};
+#else
+#error unsupported platform
+#endif
+
+class LockedFile
+{
+public:
+    ~LockedFile();
+    static std::unique_ptr<LockedFile> open(const std::string& path);
     std::string read_str();
     void write_str(const std::string& str);
 
 private:
-    std::fstream file_;
+#if defined(LT_WINDOWS)
+    // Windows implementation
+    HANDLE handle_ = nullptr;
+#elif defined(LT_LINUX)
+    // Linux implementation
+    int fd_ = -1;
+#else
+#error unsupported platform
+#endif
+    std::unique_ptr<FileMutex> mutex_;
 };
 
-std::unique_ptr<UniqueFile> UniqueFile::open(const std::string& path)
+std::unique_ptr<LockedFile> LockedFile::open(const std::string& path)
 {
-    // linux用flock()
-    std::fstream file;
-    file.rdbuf()->open(path, std::ios::in | std::ios::out, _SH_DENYRW);
-    if (file.fail()) {
+#if defined(LT_WINDOWS)
+    // Windows implementation
+    std::wstring wpath = ltlib::utf8_to_utf16(path);
+    HANDLE handle = CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) {
         return nullptr;
     }
-    auto uf = std::make_unique<UniqueFile>();
-    uf->file_ = std::move(file);
+    auto uf = std::make_unique<LockedFile>();
+    uf->handle_ = handle;
+    uf->mutex_ = std::make_unique<FileMutex>(handle);
     return uf;
+#elif defined(LT_LINUX)
+    // Linux implementation
+#else
+#error unsupported platform
+#endif
 }
 
-std::string UniqueFile::read_str()
+LockedFile::~LockedFile()
 {
-    std::stringstream ss;
-    ss << file_.rdbuf();
-    return ss.str();
+#if defined(LT_WINDOWS)
+    // Windows implementation
+    if (handle_ != INVALID_HANDLE_VALUE) {
+        CloseHandle(handle_);
+        handle_ = nullptr;
+    }
+#elif defined(LT_LINUX)
+    // Linux implementation
+#else
+#error unsupported platform
+#endif
 }
 
-void UniqueFile::write_str(const std::string& str)
+std::string LockedFile::read_str()
 {
-    file_.seekp(std::ios::beg);
-    file_.write(str.c_str(), str.size());
-    file_.flush();
+    std::lock_guard<FileMutex> lock { *mutex_ };
+#if defined(LT_WINDOWS)
+    // Windows implementation
+    constexpr DWORD _4MB = 4 * 1024 * 1024;
+    LARGE_INTEGER _size {};
+    BOOL ret = GetFileSizeEx(handle_, &_size);
+    if (ret != TRUE) {
+        return "";
+    }
+    DWORD size = _size.QuadPart;
+    DWORD read_size;
+    if (size > _4MB) {
+        return "";
+    }
+    std::string str(' ', size);
+    SetFilePointer(handle_, 0, nullptr, FILE_BEGIN);
+    ret = ReadFile(handle_, str.data(), size, &read_size, nullptr);
+    if (ret != TRUE) {
+        return "";
+    }
+    if (size != read_size) {
+        // error
+        return "";
+    }
+    return str;
+#elif defined(LT_LINUX)
+    // Linux implementation
+#else
+#error unsupported platform
+#endif
+}
+
+void LockedFile::write_str(const std::string& str)
+{
+    std::lock_guard<FileMutex> lock { *mutex_ };
+#if defined(LT_WINDOWS)
+    // Windows implementation
+    LARGE_INTEGER _size {};
+    BOOL ret = GetFileSizeEx(handle_, &_size);
+    if (ret != TRUE) {
+        return;
+    }
+    DWORD written_size = 0;
+    SetFilePointer(handle_, 0, nullptr, FILE_BEGIN);
+    ret = WriteFile(handle_, str.data(), _size.QuadPart, &written_size, nullptr);
+#elif defined(LT_LINUX)
+    // Linux implementation
+#else
+#error unsupported platform
+#endif
 }
 
 } // namespace
@@ -74,9 +207,9 @@ private:
     void set_value(const std::string& key, VType value)
     {
         std::lock_guard<std::mutex> lk { mutex_ };
-        std::unique_ptr<UniqueFile> file;
+        std::unique_ptr<LockedFile> file;
         if (ltlib::steady_now_ms() - last_read_time_ms_ >= k5ms) {
-            file = UniqueFile::open(filepath_);
+            file = LockedFile::open(filepath_);
             if (file == nullptr) {
                 return;
             }
@@ -95,9 +228,9 @@ private:
     std::optional<VType> get_value(const std::string& key)
     {
         std::lock_guard<std::mutex> lk { mutex_ };
-        std::unique_ptr<UniqueFile> file;
+        std::unique_ptr<LockedFile> file;
         if (ltlib::steady_now_ms() - last_read_time_ms_ >= k5ms) {
-            file = UniqueFile::open(filepath_);
+            file = LockedFile::open(filepath_);
             if (file == nullptr) {
                 return {};
             }

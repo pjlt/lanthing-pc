@@ -5,8 +5,6 @@
 
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/server/allocate_device_id.pb.h>
-#include <ltproto/server/allocate_device_id_ack.pb.h>
 #include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
@@ -29,7 +27,11 @@ bool Service::init() {
         return false;
     }
     std::optional<int64_t> device_id = settings_->get_integer("device_id");
-    device_id_ = device_id.value_or(0);
+    if (!device_id.has_value() || device_id.value() == 0) {
+        LOG(WARNING) << "Get device_id from local settings failed";
+        return false;
+    }
+    device_id_ = device_id.value();
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -142,9 +144,6 @@ void Service::dispatch_server_message(uint32_t type,
     case ltype::kOpenConnection:
         on_open_connection(msg);
         break;
-    case ltype::kAllocateDeviceIDAck:
-        on_allocate_device_id_ack(msg);
-        break;
     default:
         LOG(WARNING) << "Unknown message from server " << type;
         break;
@@ -161,12 +160,7 @@ void Service::on_server_reconnecting() {
 
 void Service::on_server_connected() {
     LOG(INFO) << "Connected to server";
-    if (device_id_ != 0) {
-        login_device();
-    }
-    else {
-        allocate_device_id();
-    }
+    login_device();
 }
 
 void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -212,13 +206,6 @@ void Service::on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite>
 }
 
 void Service::on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg) {}
-
-void Service::on_allocate_device_id_ack(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
-    device_id_ = ack->device_id();
-    settings_->set_integer("device_id", device_id_);
-    login_device();
-}
 
 void Service::on_create_session_completed_thread_safe(
     bool success, const std::string& session_name,
@@ -269,11 +256,6 @@ void Service::login_device() {
     else {
         msg->set_allow_control(false);
     }
-    tcp_client_->send(ltproto::id(msg), msg);
-}
-
-void Service::allocate_device_id() {
-    auto msg = std::make_shared<ltproto::server::AllocateDeviceID>();
     tcp_client_->send(ltproto::id(msg), msg);
 }
 
