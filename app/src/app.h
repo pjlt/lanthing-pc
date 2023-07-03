@@ -23,7 +23,7 @@ public:
     ~App();
     int exec(int argc, char** argv);
     void loginUser();
-    void connect(int64_t deviceID);
+    void connect(int64_t deviceID, const std::string& accessToken);
 
 private:
     App();
@@ -57,6 +57,7 @@ private:
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::mutex mutex_;
     int64_t device_id_ = 0;
+    std::string access_token_;
 
     UiCallback* ui_;
 };

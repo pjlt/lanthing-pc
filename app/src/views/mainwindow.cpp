@@ -88,11 +88,19 @@ void MainWindow::onInviteRet(ErrCode code, const std::string& err) {
     ;
 }
 
+void MainWindow::onLocalDeviceID(int64_t device_id) {
+    DispatchToMainThread([this, device_id]() { main_page_ui->onUpdateLocalDeviceID(device_id); });
+}
+
+void MainWindow::onLocalAccessToken(const std::string& access_token) {
+    DispatchToMainThread(
+        [this, access_token]() { main_page_ui->onUpdateLocalAccessToken(access_token); });
+}
+
 void MainWindow::doInvite(const std::string& dev_id, const std::string& token) {
-    (void)token;
     int64_t deviceID;
     if (bool success = ltlib::String::getValue(dev_id, &deviceID)) {
-        app->connect(deviceID);
+        app->connect(deviceID, token);
     }
     else {
         LOG(FATAL) << "Parse deviceID(" << dev_id << ") to int64_t failed!";

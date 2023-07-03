@@ -11,6 +11,7 @@
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 
+#include <ltlib/strings.h>
 #include <ltlib/system.h>
 #include <ltproto/ltproto.h>
 
@@ -41,6 +42,7 @@ rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec) {
 namespace lt {
 
 std::unique_ptr<App> lt::App::create() {
+    ::srand(time(nullptr));
     std::unique_ptr<App> app{new App};
     if (!app->init()) {
         return nullptr;
@@ -66,6 +68,16 @@ bool App::init() {
     }
     std::optional<int64_t> device_id = settings_->get_integer("device_id");
     device_id_ = device_id.value_or(0);
+    std::optional<std::string> access_token = settings_->get_string("access_token");
+    if (access_token.has_value()) {
+        access_token_ = access_token.value();
+    }
+    else {
+        access_token_ = ltlib::random_str(6);
+        // FIXME: 对文件加锁、解锁、加锁太快会崩，这里的sleep是临时解决方案
+        std::this_thread::sleep_for(std::chrono::milliseconds{5});
+        settings_->set_string("access_token", access_token_);
+    }
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -100,10 +112,11 @@ void App::loginUser() {
     LOG(INFO) << "loginUser not implemented";
 }
 
-void App::connect(int64_t peerDeviceID) {
+void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     auto req = std::make_shared<ltproto::server::RequestConnection>();
     req->set_conn_type(ltproto::server::ConnectionType::Control);
     req->set_device_id(peerDeviceID);
+    req->set_access_token(accessToken);
     // HardDecodability abilities = lt::check_hard_decodability();
     bool h264_decodable = true;
     bool h265_decodable = true;
@@ -283,6 +296,9 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
         LOG(WARNING) << "Login with device id(" << device_id_ << ") failed";
         return;
     }
+    // 登录成功才显示device id
+    ui_->onLocalDeviceID(device_id_);
+    ui_->onLocalAccessToken(access_token_);
     LOG(INFO) << "LoginDeviceAck: Success";
 }
 

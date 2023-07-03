@@ -146,7 +146,7 @@ std::string LockedFile::read_str()
     if (size > _4MB) {
         return "";
     }
-    std::string str(' ', size);
+    std::string str(size, ' ');
     SetFilePointer(handle_, 0, nullptr, FILE_BEGIN);
     ret = ReadFile(handle_, str.data(), size, &read_size, nullptr);
     if (ret != TRUE) {
@@ -169,14 +169,9 @@ void LockedFile::write_str(const std::string& str)
     std::lock_guard<FileMutex> lock { *mutex_ };
 #if defined(LT_WINDOWS)
     // Windows implementation
-    LARGE_INTEGER _size {};
-    BOOL ret = GetFileSizeEx(handle_, &_size);
-    if (ret != TRUE) {
-        return;
-    }
     DWORD written_size = 0;
     SetFilePointer(handle_, 0, nullptr, FILE_BEGIN);
-    ret = WriteFile(handle_, str.data(), _size.QuadPart, &written_size, nullptr);
+    BOOL ret = WriteFile(handle_, str.data(), str.size(), &written_size, nullptr);
 #elif defined(LT_LINUX)
     // Linux implementation
 #else

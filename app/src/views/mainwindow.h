@@ -31,7 +31,11 @@ protected:
     void onInviteRet(ErrCode code, const std::string& err = {}) override;
 
     void onDisconnectedWithServer() override { ; }
-    void onDevicesChanged(const std::vector<std::string>& dev_ids) { ; }
+    void onDevicesChanged(const std::vector<std::string>& dev_ids) override { ; }
+
+    void onLocalDeviceID(int64_t device_id) override;
+
+    void onLocalAccessToken(const std::string& access_token) override;
 
 private:
     void doInvite(const std::string& dev_id, const std::string& token);

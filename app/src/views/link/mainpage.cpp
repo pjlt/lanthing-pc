@@ -26,6 +26,14 @@ MainPage::~MainPage() {
     delete ui;
 }
 
+void MainPage::onUpdateLocalDeviceID(int64_t device_id) {
+    ui->my_device_id->setText(QString::fromStdString(std::to_string(device_id)));
+}
+
+void MainPage::onUpdateLocalAccessToken(const std::string& access_token) {
+    ui->my_access_token->setText(QString::fromStdString(access_token));
+}
+
 void MainPage::onConnectBtnPressed() {
     auto dev_id = ui->device_id->text();
     auto token = ui->access_token->text();

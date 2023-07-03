@@ -53,6 +53,7 @@ private:
     std::map<std::string, std::shared_ptr<WorkerSession>> worker_sessions_;
     std::unique_ptr<ltlib::Settings> settings_;
     int64_t device_id_ = 0;
+    std::string access_token_;
 };
 
 } // namespace svc

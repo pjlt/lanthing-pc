@@ -31,7 +31,13 @@ bool Service::init() {
         LOG(WARNING) << "Get device_id from local settings failed";
         return false;
     }
+    std::optional<std::string> access_token = settings_->get_string("access_token");
+    if (!access_token.has_value() || access_token.value().empty()) {
+        LOG(WARNING) << "Get access_token from local settings failed";
+        return false;
+    }
     device_id_ = device_id.value();
+    access_token_ = access_token.value();
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -165,6 +171,15 @@ void Service::on_server_connected() {
 
 void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     LOG(INFO) << "Received OpenConnection";
+    auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
+    auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+    LOG(INFO) << "my: " << access_token_ << ", peer:" << msg->access_token();
+    if (msg->access_token() != access_token_) {
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        tcp_client_->send(ltproto::id(ack), ack);
+        LOG(WARNING) << "Received connection with invalid access_token: " << msg->access_token();
+        return;
+    }
     constexpr size_t kSessionNameLen = 8;
     const std::string session_name = ltlib::random_str(kSessionNameLen);
     {
@@ -178,14 +193,12 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
             worker_sessions_[session_name] = nullptr;
         }
     }
-    auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto session = WorkerSession::create(
         session_name, msg,
         std::bind(&Service::on_create_session_completed_thread_safe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3),
         std::bind(&Service::on_session_closed_thread_safe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3));
-    auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     if (session != nullptr) {
         std::lock_guard<std::mutex> lock{mutex_};
         worker_sessions_[session_name] = session;
