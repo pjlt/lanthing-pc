@@ -21,6 +21,8 @@
 #include <service/service.h>
 #endif
 
+#include "firewall.h"
+
 namespace {
 
 enum class Role {
@@ -139,6 +141,7 @@ bool is_another_instance_running() {
 
 int run_as_client(std::map<std::string, std::string> options) {
     init_log_and_minidump(Role::Client);
+    lt::create_inbound_firewall_rule("Lanthing", ltlib::get_program_fullpath<char>());
     auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
@@ -151,6 +154,7 @@ int run_as_client(std::map<std::string, std::string> options) {
 
 int run_as_service(std::map<std::string, std::string> options) {
     init_log_and_minidump(Role::Service);
+    lt::create_inbound_firewall_rule("Lanthing", ltlib::get_program_fullpath<char>());
     if (is_another_instance_running()) {
         return -1;
     }

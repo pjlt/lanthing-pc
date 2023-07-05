@@ -7,6 +7,8 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
 
     # Client
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.h

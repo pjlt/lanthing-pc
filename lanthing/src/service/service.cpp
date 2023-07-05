@@ -173,7 +173,6 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
     LOG(INFO) << "Received OpenConnection";
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-    LOG(INFO) << "my: " << access_token_ << ", peer:" << msg->access_token();
     if (msg->access_token() != access_token_) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
         tcp_client_->send(ltproto::id(ack), ack);
