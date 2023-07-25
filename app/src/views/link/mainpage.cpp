@@ -1,9 +1,45 @@
 #include "mainpage.h"
 
 #include <QAction>
+#include <QValidator>
 
 #include "app.h"
 #include "ui_mainpage.h"
+
+namespace {
+
+class AccesstokenValidator : public QValidator {
+public:
+    AccesstokenValidator(QWidget* parent);
+    State validate(QString&, int&) const override;
+    // void fixup(QString&) const override;
+};
+
+AccesstokenValidator::AccesstokenValidator(QWidget* parent)
+    : QValidator(parent) {}
+
+QValidator::State AccesstokenValidator::validate(QString& input, int& pos) const {
+    input = input.trimmed();
+    if (input.length() > 6) {
+        input.remove(6, input.length() - 6);
+        pos = std::min(pos, 6);
+    }
+    for (size_t i = 0; i < input.size(); i++) {
+        if ((input[i] >= 'A' && input[i] <= 'Z') || (input[i] >= '0' && input[i] <= '9')) {
+            continue;
+        }
+        if (input[i] >= 'a' && input[i] <= 'z') {
+            input[i] = input[i].toUpper();
+            continue;
+        }
+        return State::Invalid;
+    }
+    return State::Acceptable;
+}
+
+// void AccesstokenValidator::fixup(QString&) const {}
+
+} // namespace
 
 MainPage::MainPage(QWidget* parent)
     : QWidget(parent)
@@ -20,6 +56,7 @@ MainPage::MainPage(QWidget* parent)
     ui->access_token->addAction(action2, QLineEdit::LeadingPosition);
 
     connect(ui->connect_btn, &QPushButton::pressed, [this]() { onConnectBtnPressed(); });
+    ui->access_token->setValidator(new AccesstokenValidator(this));
 }
 
 MainPage::~MainPage() {

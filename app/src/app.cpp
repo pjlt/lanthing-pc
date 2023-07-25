@@ -26,7 +26,7 @@ constexpr ltproto::peer2peer::VideoCodecType kCodecPriority[] = {
     ltproto::peer2peer::VideoCodecType::AVC,
 };
 
-rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec) {
+rtc::VideoCodecType toLtrtc(ltproto::peer2peer::VideoCodecType codec) {
     switch (codec) {
     case ltproto::peer2peer::AVC:
         return rtc::VideoCodecType::H264;
@@ -35,6 +35,22 @@ rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec) {
     default:
         return rtc::VideoCodecType::Unknown;
     }
+}
+
+std::string generateAccessToken() {
+    constexpr size_t kNumLen = 3;
+    constexpr size_t kAlphaLen = 3;
+    static const char numbers[] = "0123456789";
+    static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    std::string str(kNumLen + kAlphaLen, '*');
+
+    for (size_t i = 0; i < kAlphaLen; i++) {
+        str[i] = alphabet[rand() % sizeof(alphabet)];
+    }
+    for (size_t i = kAlphaLen; i < kAlphaLen + kNumLen; i++) {
+        str[i] = numbers[rand() % sizeof(numbers)];
+    }
+    return str;
 }
 
 } // namespace
@@ -73,7 +89,7 @@ bool App::init() {
         access_token_ = access_token.value();
     }
     else {
-        access_token_ = ltlib::random_str(6);
+        access_token_ = generateAccessToken();
         // FIXME: 对文件加锁、解锁、加锁太快会崩，这里的sleep是临时解决方案
         std::this_thread::sleep_for(std::chrono::milliseconds{5});
         settings_->set_string("access_token", access_token_);
@@ -321,7 +337,7 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     params.signaling_addr = ack->signaling_addr();
     params.signaling_port = ack->signaling_port();
     params.on_exited = std::bind(&App::onClientExitedThreadSafe, this, ack->device_id());
-    params.video_codec_type = to_ltrtc(ack->streaming_params().video_codecs().Get(0).codec_type());
+    params.video_codec_type = toLtrtc(ack->streaming_params().video_codecs().Get(0).codec_type());
     params.width = ack->streaming_params().video_width();
     params.height = ack->streaming_params().video_height();
     params.refresh_rate = ack->streaming_params().screen_refresh_rate();
