@@ -28,7 +28,8 @@ void SdlInput::init() {
     std::string mapping_contents;
     if (!mapping_contents.empty()) {
         int mapping_count = SDL_GameControllerAddMappingsFromRW(
-            SDL_RWFromConstMem(mapping_contents.c_str(), mapping_contents.size()), true);
+            SDL_RWFromConstMem(mapping_contents.c_str(), static_cast<int>(mapping_contents.size())),
+            true);
         if (mapping_count > 0) {
             LOGF(INFO, "Successfully load %d controller mappings", mapping_count);
         }

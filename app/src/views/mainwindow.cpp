@@ -85,7 +85,8 @@ void MainWindow::onLoginRet(ErrCode code, const std::string& err) {
 }
 
 void MainWindow::onInviteRet(ErrCode code, const std::string& err) {
-    ;
+    (void)code;
+    (void)err;
 }
 
 void MainWindow::onLocalDeviceID(int64_t device_id) {

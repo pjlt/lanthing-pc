@@ -383,12 +383,12 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
     send_pipe_message(ltproto::id(ack), ack);
 }
 
-void Worker::on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void Worker::on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>&) {
     LOG(INFO) << "Received StopWorking";
     stop();
 }
 
-void Worker::on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void Worker::on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>&) {
     last_time_received_from_service_ = ltlib::steady_now_ms();
 }
 

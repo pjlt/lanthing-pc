@@ -1,3 +1,5 @@
+// ffmpeg头文件有警告
+#pragma warning(disable : 4244)
 #include "d3d11_pipeline.h"
 
 #include <DirectXMath.h>
@@ -70,7 +72,6 @@ bool D3D11Pipeline::init(uint64_t luid) {
     }
     refresh_rate_ = info.rateRefresh.uiNumerator / info.rateRefresh.uiDenominator;
 
-    bool success = false;
     hr = CreateDXGIFactory(__uuidof(IDXGIFactory5), (void**)&dxgi_factory_);
     if (FAILED(hr)) {
         LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
@@ -89,7 +90,8 @@ bool D3D11Pipeline::init(uint64_t luid) {
         if (FAILED(hr)) {
             continue;
         }
-        if (luid == ((uint64_t)(desc.AdapterLuid.HighPart) << 32 + desc.AdapterLuid.LowPart)) {
+        if (luid ==
+            (((uint64_t)(desc.AdapterLuid.HighPart) << 32) + (uint64_t)desc.AdapterLuid.LowPart)) {
             break;
         }
     }
@@ -181,7 +183,7 @@ bool D3D11Pipeline::setupRender(HWND hwnd, uint32_t width, uint32_t height) {
 
 bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {
     if (!pipeline_ready_) {
-        DWORD result = WaitForSingleObjectEx(waitable_obj_, max_wait_ms, false);
+        DWORD result = WaitForSingleObjectEx(waitable_obj_, static_cast<DWORD>(max_wait_ms), false);
         if (result == WAIT_OBJECT_0) {
             pipeline_ready_ = true;
             return true;
@@ -438,7 +440,8 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
             return;
         }
     }
-    d3d11_context->CopySubresourceRegion(cpu_texture, 0, 0, 0, 0, texture, index, nullptr);
+    d3d11_context->CopySubresourceRegion(cpu_texture, 0, 0, 0, 0, texture, static_cast<UINT>(index),
+                                         nullptr);
     D3D11_MAPPED_SUBRESOURCE resource;
     UINT subresource = D3D11CalcSubresource(0, 0, 0);
     auto ret = d3d11_context->Map(cpu_texture, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
@@ -566,6 +569,7 @@ bool D3D11Pipeline::checkDecoder() {
     }
     else {
         assert(false);
+        format = DXGI_FORMAT_UNKNOWN; // 用于取消警告
     }
     BOOL supported = false;
     hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
@@ -608,10 +612,12 @@ bool D3D11Pipeline::initAVCodec(const AVCodec* decoder) {
 }
 
 void D3D11Pipeline::d3d11LockContext(void* ctx) {
+    (void)ctx;
     //((D3D11Pipeline*)ctx)->pipeline_mtx_.lock();
 }
 
 void D3D11Pipeline::d3d11UnlockContext(void* ctx) {
+    (void)ctx;
     //((D3D11Pipeline*)ctx)->pipeline_mtx_.unlock();
 }
 
@@ -651,9 +657,9 @@ bool D3D11Pipeline::initDecoderContext() {
     framesContext->format = AV_PIX_FMT_D3D11;
     framesContext->sw_format = AV_PIX_FMT_NV12;
     int align = codec_ == Codec::VIDEO_H264 ? 16 : 128;
-    framesContext->width = FFALIGN(video_width_, align);
-    framesContext->height = FFALIGN(video_height_, align);
-    framesContext->initial_pool_size = av_pool_size_;
+    framesContext->width = static_cast<int>(FFALIGN(video_width_, align));
+    framesContext->height = static_cast<int>(FFALIGN(video_height_, align));
+    framesContext->initial_pool_size = static_cast<int>(av_pool_size_);
 
     AVD3D11VAFramesContext* d3d11vaFramesContext = (AVD3D11VAFramesContext*)framesContext->hwctx;
     d3d11vaFramesContext->BindFlags = D3D11_BIND_DECODER | D3D11_BIND_SHADER_RESOURCE;

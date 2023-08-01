@@ -200,6 +200,8 @@ public:
 public:
     virtual GUID GetEncodeGUID() { return guidCodec; }
     virtual GUID GetPresetGUID() { return guidPreset; }
+#pragma warning(push)
+#pragma warning(disable:4706)
     virtual void SetInitParams(NV_ENC_INITIALIZE_PARAMS* pParams,
                                NV_ENC_BUFFER_FORMAT eBufferFormat) {
         NV_ENC_CONFIG& config = *pParams->encodeConfig;
@@ -244,7 +246,7 @@ public:
                 tokens[i] == "-temporalaq" && (config.rcParams.enableTemporalAQ = true)) {
                 continue;
             }
-            int aqStrength;
+            int aqStrength = 0;
             if (tokens[i] == "-aq" && ++i != tokens.size() &&
                 ParseInt("-aq", tokens[i], &aqStrength)) {
                 config.rcParams.enableAQ = true;
@@ -293,6 +295,7 @@ public:
         LOGF(DEBUG, "%s", NvEncoderInitParam().MainParamToString(pParams).c_str());
         LOGF(DEBUG, "%s", NvEncoderInitParam().FullParamToString(pParams).c_str());
     }
+#pragma warning(pop)
 
 private:
     template <typename T>
@@ -336,7 +339,7 @@ private:
     template <typename T>
     bool ParseInt(const std::string& strName, const std::string& strValue, T* pInt) {
         try {
-            *pInt = std::stoi(strValue);
+            *pInt = static_cast<T>(std::stoi(strValue));
         } catch (std::invalid_argument) {
             // LOG(ERROR) << strName << " need a value of positive number";
             LOGF(WARNING, "%s need a value of positive number", strName.c_str());
@@ -368,17 +371,17 @@ private:
     std::vector<std::string> split(const std::string& s, char delim) {
         std::stringstream ss(s);
         std::string token;
-        std::vector<std::string> tokens;
+        std::vector<std::string> tokens2;
         while (getline(ss, token, delim)) {
-            tokens.push_back(token);
+            tokens2.push_back(token);
         }
-        return tokens;
+        return tokens2;
     }
 
 private:
     std::string strParam;
     std::function<void(NV_ENC_INITIALIZE_PARAMS* pParams)> funcInit =
-        [](NV_ENC_INITIALIZE_PARAMS* pParams) {};
+        [](NV_ENC_INITIALIZE_PARAMS*) {};
     std::vector<std::string> tokens;
     GUID guidCodec = NV_ENC_CODEC_H264_GUID;
     GUID guidPreset = NV_ENC_PRESET_DEFAULT_GUID;

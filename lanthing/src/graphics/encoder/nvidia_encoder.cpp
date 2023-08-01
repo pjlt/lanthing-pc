@@ -186,7 +186,7 @@ VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encode_one_frame(void* input_fram
     std::vector<std::vector<uint8_t>> imgs;
     auto type = encoder_impl_->EncodeFrame(input_frame, imgs, &pic_params);
     if (!imgs.empty()) {
-        out_frame.size = imgs.back().size();
+        out_frame.size = static_cast<uint32_t>(imgs.back().size());
         out_frame.internal_data = std::shared_ptr<uint8_t>(new uint8_t[out_frame.size]);
         memcpy(out_frame.internal_data.get(), imgs.back().data(), out_frame.size);
         out_frame.data = out_frame.internal_data.get();

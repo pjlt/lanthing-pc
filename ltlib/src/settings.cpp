@@ -35,7 +35,6 @@ public:
         BOOL ret;
         DWORD size_low, size_high;
         OVERLAPPED ol;
-        int flags = 0;
         size_low = GetFileSize(handle_, &size_high);
         ::memset(&ol, 0, sizeof(OVERLAPPED));
         ret = LockFileEx(handle_, LOCKFILE_EXCLUSIVE_LOCK, 0, size_low, size_high, &ol);
@@ -141,7 +140,7 @@ std::string LockedFile::read_str()
     if (ret != TRUE) {
         return "";
     }
-    DWORD size = _size.QuadPart;
+    DWORD size = static_cast<DWORD>(_size.QuadPart);
     DWORD read_size;
     if (size > _4MB) {
         return "";
@@ -171,7 +170,8 @@ void LockedFile::write_str(const std::string& str)
     // Windows implementation
     DWORD written_size = 0;
     SetFilePointer(handle_, 0, nullptr, FILE_BEGIN);
-    BOOL ret = WriteFile(handle_, str.data(), str.size(), &written_size, nullptr);
+    BOOL ret = WriteFile(handle_, str.data(), static_cast<DWORD>(str.size()), &written_size, nullptr);
+    (void)ret; // FIXME: error handling??
 #elif defined(LT_LINUX)
     // Linux implementation
 #else

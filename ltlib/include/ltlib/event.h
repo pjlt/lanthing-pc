@@ -2,7 +2,6 @@
 #include <ltlib/ltlib.h>
 #include <string>
 
-
 namespace ltlib
 {
 
@@ -43,4 +42,3 @@ private:
 };
 
 } // namespace ltlib
-

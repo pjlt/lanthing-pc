@@ -48,7 +48,7 @@ void init_log_and_minidump(Role role) {
     std::string prefix;
     std::string rtc_prefix;
     std::filesystem::path log_dir;
-    uint32_t reverse_days = 7;
+    // uint32_t reverse_days = 7; // TODO: 删除旧日志
     switch (role) {
     case Role::Client:
         prefix = "client";

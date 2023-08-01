@@ -312,6 +312,7 @@ bool Client::init_ltrtc() {
 }
 
 void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable) {
+    (void)is_reliable;
     auto type = reinterpret_cast<const uint32_t*>(data);
     auto msg = ltproto::create_by_type(*type);
     if (msg == nullptr) {
@@ -327,11 +328,25 @@ void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable)
 
 void Client::on_ltrtc_video_frame(const rtc::VideoFrame& frame) {
     Video::Action action = video_module_->submit(frame);
+    switch (action) {
+    case Video::Action::REQUEST_KEY_FRAME:
+        // TODO: 请求关键帧
+        break;
+    case Video::Action::NONE:
+        break;
+    default:
+        break;
+    }
 }
 
 void Client::on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate,
                                  uint32_t number_of_channels, const void* audio_data,
                                  uint32_t size) {
+    (void)bits_per_sample;
+    (void)sample_rate;
+    (void)number_of_channels;
+    (void)audio_data;
+    (void)size;
     // audio_module_->submit(bits_per_sample, sample_rate, number_of_channels,
     // reinterpret_cast<const uint8_t*>(audio_data), size);
 }

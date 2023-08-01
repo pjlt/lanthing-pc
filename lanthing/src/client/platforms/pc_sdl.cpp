@@ -362,6 +362,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_joy_device_added(const SDL_Event
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_touch_event(const SDL_Event& ev) {
+    (void)ev;
     return DispatchResult::kContinue;
 }
 

@@ -1,3 +1,5 @@
+// ffmpeg头文件有警告
+#pragma warning(disable : 4244)
 #include "video.h"
 
 #include <atomic>

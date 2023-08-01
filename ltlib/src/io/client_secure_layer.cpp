@@ -138,7 +138,7 @@ int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
         wrote += rc;
     }
     *out_bytes = bio_out_->read(reinterpret_cast<uint8_t*>(out), maxout);
-    return bio_out_->available;
+    return static_cast<int>(bio_out_->available);
 }
 
 int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out, uint32_t* out_bytes, uint32_t maxout)
@@ -160,7 +160,7 @@ int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* o
         }
     } while (rc > 0 && (maxout - total_out) > 0);
 
-    *out_bytes = total_out;
+    *out_bytes = static_cast<uint32_t>(total_out);
 
     // this indicates that more bytes are needed to complete SSL frame
     if (rc == MBEDTLS_ERR_SSL_WANT_READ) {
@@ -223,7 +223,7 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
         Buffer outbuff = uvbuf;
         enum TLS_RESULT rc = TLS_MORE_AVAILABLE;
         while (rc == TLS_MORE_AVAILABLE || rc == TLS_READ_AGAIN) {
-            uint32_t out_bytes = 0;
+            // uint32_t out_bytes = 0;
             rc = (TLS_RESULT)tls_read(uvbuf.base, uvbuf.len, outbuff.base, &outbuff.len, outbuff.len);
             switch (rc) {
             case ltlib::TLS_OK:
@@ -238,11 +238,12 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
             case ltlib::TLS_MORE_AVAILABLE:
                 on_read_(outbuff);
                 outbuff.base = more_buffer_.data();
-                outbuff.len = more_buffer_.size();
+                outbuff.len = static_cast<uint32_t>(more_buffer_.size());
                 break;
             case ltlib::TLS_HAS_WRITE: {
                 Buffer writebuf { TLS_BUF_SZ };
                 int tls_rc = tls_write(nullptr, 0, writebuf.base, &writebuf.len, TLS_BUF_SZ);
+                (void)tls_rc; // FIXME: tls_rc
                 bool success = uvtransport_.send(&writebuf, 1, [writebuf]() { delete writebuf.base; });
                 if (!success) {
                     return false;
@@ -333,7 +334,7 @@ int MbedtlsCTransport::mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len)
 {
     auto that = reinterpret_cast<MbedtlsCTransport*>(ctx);
     that->bio_out_->put(buf, len);
-    return len;
+    return static_cast<int>(len);
 }
 
 int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len)
@@ -347,6 +348,7 @@ int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len)
 
 bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count, const std::function<void()>& callback)
 {
+    (void)callback;
     int tls_rc = 0;
     uint32_t out_size;
     for (uint32_t i = 0; i < buff_count; i++) {
@@ -425,7 +427,7 @@ int BIO::put(const uint8_t* buf, size_t len)
     available += len;
     qlen += 1;
 
-    return len;
+    return static_cast<int>(len);
 }
 
 int BIO::read(uint8_t* buf, size_t len)

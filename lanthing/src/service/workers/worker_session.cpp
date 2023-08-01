@@ -109,7 +109,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     p2p_username_ = "p2puser";
     p2p_password_ = "p2ppassword";
     signaling_addr_ = msg->signaling_addr();
-    signaling_port_ = msg->signaling_port();
+    signaling_port_ = static_cast<uint16_t>(msg->signaling_port());
     if (!msg->has_streaming_params()) {
         // 当前只支持串流，未来有可能支持串流以外的功能，所以这个streaming_params是optional的.
         LOG(WARNING) << "Received OpenConnection without streaming params";
@@ -525,6 +525,7 @@ void WorkerSession::send_worker_keep_alive() {
 }
 
 void WorkerSession::on_ltrtc_data(const uint8_t* data, uint32_t size, bool reliable) {
+    (void)reliable;
     auto type = reinterpret_cast<const uint32_t*>(data);
     // 来自client，发给server，的消息.
     auto msg = ltproto::create_by_type(*type);

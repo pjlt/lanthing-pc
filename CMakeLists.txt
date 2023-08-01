@@ -31,9 +31,9 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 
 if(LT_WINDOWS)
-    add_compile_definitions(WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN)# NOGDI)
-    add_compile_options(/wd4819 /utf-8)
-    #add_compile_options(/W4 /WX)
+    add_compile_definitions(WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS)# NOGDI)
+    add_compile_options(/wd4819 /wd4251 /utf-8) #c4251这个警告跟dll导出有关，如果整个项目的编译平台、编译工具链、运行时都是一样的，理论上不会有问题
+    add_compile_options(/W4 /WX)
 else()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()

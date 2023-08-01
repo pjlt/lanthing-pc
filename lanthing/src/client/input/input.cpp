@@ -47,8 +47,8 @@ struct Rect {
 };
 
 Rect scale_src_to_dst_surface(Rect src, Rect dst) {
-    int dst_height = dst.width * src.height / src.width;
-    int dst_width = dst.height * src.width / src.height;
+    uint32_t dst_height = dst.width * src.height / src.width;
+    uint32_t dst_width = dst.height * src.width / src.height;
     if (dst_height < dst.height) {
         dst.height = dst_height;
     }
@@ -364,10 +364,10 @@ void InputImpl::handle_controller_axis(const ControllerAxisEvent& ev) {
     }
     switch (ev.axis_type) {
     case ControllerAxisEvent::AxisType::LeftTrigger:
-        state->left_trigger = ev.value * 255UL / 32767;
+        state->left_trigger = static_cast<uint8_t>(ev.value * 255UL / 32767);
         break;
     case ControllerAxisEvent::AxisType::RightTrigger:
-        state->right_trigger = ev.value * 255UL / 32767;
+        state->right_trigger = static_cast<uint8_t>(ev.value * 255UL / 32767);
         break;
     case ControllerAxisEvent::AxisType::LeftThumbX:
         state->left_thumb_x = ev.value;

@@ -124,13 +124,14 @@ template <typename T>
 typename std::enable_if<std::is_floating_point<T>::value, std::optional<T>>::type
 StringToNumber(const std::string& str, int base = 10)
 {
+    (void)base;
     static_assert(std::numeric_limits<T>::max() <= std::numeric_limits<long double>::max(),
         "StringToNumber only supports floating-point numbers as large "
         "as long double");
     return ParseFloatingPoint<T>(str);
 }
 
-} // 匿名空间
+} // namespace
 
 namespace ltlib
 {

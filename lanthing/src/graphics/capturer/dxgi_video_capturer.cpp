@@ -81,23 +81,23 @@ std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captur
     return nullptr;
 }
 
-std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture) {
+std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
     std::string name;
     if (texture_pool_.empty()) {
         D3D11_TEXTURE2D_DESC desc;
-        texture->GetDesc(&desc);
+        texture1->GetDesc(&desc);
         desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
         desc.MiscFlags =
             D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
         const size_t kDefaultPoolSize = 2;
         for (size_t i = 0; i < kDefaultPoolSize; i++) {
-            ID3D11Texture2D* texture = NULL;
-            auto hr = d3d11_dev_->CreateTexture2D(&desc, NULL, &texture);
+            ID3D11Texture2D* texture2 = NULL;
+            auto hr = d3d11_dev_->CreateTexture2D(&desc, NULL, &texture2);
             if (FAILED(hr)) {
                 LOGF(WARNING, "failed to create shared texture, hr:0x%08x", hr);
                 continue;
             }
-            texture_pool_.push_back(texture);
+            texture_pool_.push_back(texture2);
             shared_handles_.push_back(0);
         }
         if (texture_pool_.empty()) {
@@ -112,7 +112,7 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture) {
         LOGF(WARNING, "drop frame, hr:0x%08x", hr);
         return name;
     }
-    d3d11_ctx_->CopyResource(texture_pool_[index_], texture);
+    d3d11_ctx_->CopyResource(texture_pool_[index_], texture1);
 
     IDXGIResource1* resource = NULL;
     hr = texture_pool_[index_]->QueryInterface(__uuidof(IDXGIResource1), (void**)&resource);

@@ -158,7 +158,6 @@ bool WorkerProcess::launch_worker_process() {
 }
 
 void WorkerProcess::wait_for_worker_process(const std::function<void()>& i_am_alive) {
-    int32_t count_seconds = 0;
     while (!stoped_) {
         i_am_alive();
         DWORD ret = WaitForSingleObject(process_handle_, 100);

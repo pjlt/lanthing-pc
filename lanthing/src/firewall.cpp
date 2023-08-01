@@ -51,7 +51,7 @@ void create_inbound_firewall_rule(const std::string& _rule_name, const std::stri
         }
         hr = enumerator->QueryInterface(__uuidof(IEnumVARIANT), (void**)&enum_variant);
         while (SUCCEEDED(hr) && hr != S_FALSE) {
-            INetFwRule* rule;
+            INetFwRule* rule = nullptr;
             ULONG fetched = 0;
             hr = enum_variant->Next(1, &com_var, &fetched);
             if (S_FALSE != hr) {

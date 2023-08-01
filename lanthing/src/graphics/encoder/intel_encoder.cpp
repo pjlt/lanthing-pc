@@ -173,16 +173,18 @@ bool IntelEncoderImpl::init(const VideoEncoder::InitParams& params) {
 }
 
 void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) {
+    (void)params;
     // todo: 重置编码器
 }
 
 VideoEncoder::EncodedFrame IntelEncoderImpl::encode_one_frame(void* input_frame, bool force_idr) {
+    (void)force_idr; // TODO: 请求I帧
     VideoEncoder::EncodedFrame out_frame;
     mfxFrameSurface1 vppin, vppout;
     memset(&vppin, 0, sizeof(mfxFrameSurface1));
     memset(&vppout, 0, sizeof(mfxFrameSurface1));
     mfxBitstream bs;
-    mfxSyncPoint syncp_encode, syncp_vpp;
+    mfxSyncPoint syncp_encode; //, syncp_vpp;
     std::shared_ptr<uint8_t> buffer(new uint8_t[encode_param_.mfx.BufferSizeInKB * 1000]);
     memset(&bs, 0, sizeof(bs));
     bs.Data = buffer.get();
@@ -319,10 +321,10 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param() {
     params.mfx.GopPicSize = static_cast<mfxU16>(1000000);
     params.mfx.NumRefFrame = 1;
     params.mfx.IdrInterval = 0; // 未填
-    params.mfx.CodecProfile =
-        codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN;
+    params.mfx.CodecProfile = static_cast<mfxU16>(
+        codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN);
     params.mfx.CodecLevel = 0; // 未填
-    params.mfx.MaxKbps = 40 * 1024 * 8;
+    params.mfx.MaxKbps = 20 * 1024;
     params.mfx.InitialDelayInKB = 0; // 未填
     params.mfx.GopOptFlag = 0;       // 未填
     params.mfx.BufferSizeInKB = 512;
@@ -340,10 +342,10 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param() {
     params.mfx.FrameInfo.Shift = 0;
     params.mfx.FrameInfo.CropX = 0;
     params.mfx.FrameInfo.CropY = 0;
-    params.mfx.FrameInfo.CropW = width_;
-    params.mfx.FrameInfo.CropH = height_;
-    params.mfx.FrameInfo.Width = MSDK_ALIGN16(width_);
-    params.mfx.FrameInfo.Height = MSDK_ALIGN32(height_);
+    params.mfx.FrameInfo.CropW = static_cast<mfxU16>(width_);
+    params.mfx.FrameInfo.CropH = static_cast<mfxU16>(height_);
+    params.mfx.FrameInfo.Width = MSDK_ALIGN16(static_cast<mfxU16>(width_));
+    params.mfx.FrameInfo.Height = MSDK_ALIGN32(static_cast<mfxU16>(height_));
 
     // auto codingOption = params.AddExtBuffer<mfxExtCodingOption>();
     // codingOption->PicTimingSEI = pInParams->nPicTimingSEI;
@@ -371,10 +373,10 @@ mfxVideoParam IntelEncoderImpl::gen_vpp_param() {
     params.vpp.In.ChromaFormat = FourCCToChroma(params.vpp.In.FourCC);
     params.vpp.In.CropX = 0;
     params.vpp.In.CropY = 0;
-    params.vpp.In.CropW = width_;
-    params.vpp.In.CropH = height_;
-    params.vpp.In.Width = MSDK_ALIGN16(width_);
-    params.vpp.In.Height = MSDK_ALIGN16(height_);
+    params.vpp.In.CropW = static_cast<mfxU16>(width_);
+    params.vpp.In.CropH = static_cast<mfxU16>(height_);
+    params.vpp.In.Width = MSDK_ALIGN16(static_cast<mfxU16>(width_));
+    params.vpp.In.Height = MSDK_ALIGN16(static_cast<mfxU16>(height_));
     params.vpp.In.Shift = 0;
     // Output data
     memcpy(&params.vpp.Out, &params.vpp.In, sizeof(params.vpp.In));

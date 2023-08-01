@@ -230,7 +230,7 @@ void LibuvCTransport::on_alloc_memory(uv_handle_t* handle, size_t suggested_size
 {
     (void)handle;
     buf->base = new char[suggested_size];
-    buf->len = suggested_size;
+    buf->len = static_cast<decltype(buf->len)>(suggested_size);
 }
 
 void LibuvCTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* uvbuf)

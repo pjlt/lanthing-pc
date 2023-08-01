@@ -136,9 +136,9 @@ void IOLoopImpl::stop()
     cv_.wait(lock, [this]() { return stoped_; });
     // 3. 遍历所有未关闭的handle，关闭它们
     uv_walk(
-        &uvloop_, [](uv_handle_t* handle, void* arg) {
+        &uvloop_, [](uv_handle_t* handle, void*) {
             if (!uv_is_closing(handle)) {
-                uv_close(handle, [](uv_handle_t* h) {});
+                uv_close(handle, [](uv_handle_t*) {});
             }
         },
         nullptr);

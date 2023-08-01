@@ -2,6 +2,6 @@
 
 namespace lt {
 
-static const char kSigCoreClose[] = "close";
+const char kSigCoreClose[] = "close";
 
 } // namespace lt

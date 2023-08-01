@@ -3,6 +3,7 @@
 #include <TlHelp32.h>
 #include <Shlobj.h>
 #include <string>
+#include <cstring>
 #include <functional>
 #include <vector>
 #include <ltlib/system.h>
@@ -28,7 +29,7 @@ BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName)
 
     if (Process32FirstW(hProcessSnap, &pe32)) {
         do {
-            if (!wcscmp(wcsupr(pe32.szExeFile), wcsupr(lpName))) {
+            if (!wcscmp(_wcsupr(pe32.szExeFile), _wcsupr(lpName))) {
                 HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pe32.th32ProcessID);
                 bRet = OpenProcessToken(hProcess, TOKEN_ALL_ACCESS, &hToken);
                 CloseHandle(hProcess);

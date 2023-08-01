@@ -24,7 +24,8 @@ QValidator::State AccesstokenValidator::validate(QString& input, int& pos) const
         input.remove(6, input.length() - 6);
         pos = std::min(pos, 6);
     }
-    for (size_t i = 0; i < input.size(); i++) {
+    size_t size = static_cast<size_t>(input.size());
+    for (size_t i = 0; i < size; i++) {
         if ((input[i] >= 'A' && input[i] <= 'Z') || (input[i] >= '0' && input[i] <= '9')) {
             continue;
         }

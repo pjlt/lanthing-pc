@@ -682,7 +682,7 @@ uint32_t NvEncoder::GetNumChromaPlanes(const NV_ENC_BUFFER_FORMAT bufferFormat) 
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return -1;
+        return static_cast<uint32_t>(-1);
     }
 }
 
@@ -705,7 +705,7 @@ uint32_t NvEncoder::GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return -1;
+        return static_cast<uint32_t>(-1);
     }
 }
 

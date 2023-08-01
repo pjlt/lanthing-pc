@@ -35,7 +35,7 @@ bool GpuInfo::init() {
         vAdapters.push_back(pAdapter);
         ++i;
     }
-    IDXGISwapChain4* swap_chain = nullptr;
+    // IDXGISwapChain4* swap_chain = nullptr;
     UINT flag = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
 #ifdef _DEBUG
     flag |= D3D11_CREATE_DEVICE_DEBUG;
@@ -48,7 +48,7 @@ bool GpuInfo::init() {
         ability.desc = ltlib::wideCharToUtf8(desc.Description);
         ability.device_id = desc.DeviceId;
         ability.driver = "0.0.0.0";
-        ability.video_memory_mb = desc.DedicatedVideoMemory / 1024 / 1024;
+        ability.video_memory_mb = static_cast<uint32_t>(desc.DedicatedVideoMemory / 1024 / 1024);
         ability.luid = ((uint64_t)desc.AdapterLuid.HighPart << 32) + desc.AdapterLuid.LowPart;
 
         ID3D11Device* d3d11_dev = nullptr;
@@ -61,7 +61,7 @@ bool GpuInfo::init() {
             continue;
         }
         ID3D11VideoDevice* video_device = nullptr;
-        auto hr = d3d11_dev->QueryInterface(__uuidof(ID3D11VideoDevice), (void**)&video_device);
+        hr = d3d11_dev->QueryInterface(__uuidof(ID3D11VideoDevice), (void**)&video_device);
         if (FAILED(hr)) {
             LOGF(WARNING, "failed to get ID3D11VideoDevice on %s, hr:%08lx", hr,
                  ability.to_str().c_str());

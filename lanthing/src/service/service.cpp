@@ -63,7 +63,7 @@ void Service::uninit() {
 }
 
 bool Service::init_tcp_client() {
-    constexpr uint16_t kSslPort = 43899;
+    // constexpr uint16_t kSslPort = 43899;
     constexpr uint16_t kNonSslPort = 43898;
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;

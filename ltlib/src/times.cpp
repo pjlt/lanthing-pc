@@ -23,16 +23,16 @@ int64_t steady_now_ms()
 
 int64_t utc_now_us()
 {
-    int now = std::chrono::duration_cast<std::chrono::microseconds>(
+    int64_t now = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::system_clock::now().time_since_epoch())
-                  .count();
+                      .count();
     return now;
 }
 int64_t utc_now_ms()
 {
-    int now = std::chrono::duration_cast<std::chrono::milliseconds>(
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch())
-                  .count();
+                      .count();
     return now;
 }
 
@@ -64,7 +64,6 @@ std::string TimeDelta::to_str() const
 
     return std::string(buf) + unit;
 }
-
 
 int64_t Timestamp::kMicroSecondsPerSecond = 1000 * 1000;
 int64_t Timestamp::kMicroSecondsPerDay = kMicroSecondsPerSecond * 24 * 60 * 60;

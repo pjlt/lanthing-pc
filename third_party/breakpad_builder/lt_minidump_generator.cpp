@@ -9,6 +9,12 @@ static bool minidump_callback(const wchar_t* dump_path,
 	MDRawAssertionInfo* assertion,
 	bool succeeded)
 {
+	(void)dump_path;
+	(void)minidump_id;
+	(void)context;
+	(void)exinfo;
+	(void)assertion;
+	(void)succeeded;
 	std::cout << "dump written" << std::endl;
 	return false;
 }
