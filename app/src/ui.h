@@ -13,6 +13,7 @@ public:
         OK = 0,
         TIMEOUT,
         FALIED,
+        CONNECTING,
         SYSTEM_ERROR,
     };
 

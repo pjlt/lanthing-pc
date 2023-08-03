@@ -75,11 +75,20 @@ void DispatchToMainThread(std::function<void()> callback) {
 
 void MainWindow::onLoginRet(ErrCode code, const std::string& err) {
     DispatchToMainThread([this, code, err]() {
-        if (code != ErrCode::OK) {
-            menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_FAILED);
-        }
-        else if (code == ErrCode::OK) {
+        switch (code) {
+        case ErrCode::OK:
             menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_SUCCESS);
+            break;
+        case lt::UiCallback::ErrCode::FALIED:
+            menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_FAILED);
+            break;
+        case lt::UiCallback::ErrCode::CONNECTING:
+            menu_ui->setLoginStatus(Menu::LoginStatus::LOGINING);
+            break;
+        default:
+            menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_FAILED);
+            LOG(FATAL) << "Unknown LoginRet " << static_cast<int32_t>(code);
+            break;
         }
     });
 }

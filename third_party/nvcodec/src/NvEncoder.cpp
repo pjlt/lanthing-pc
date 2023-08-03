@@ -660,7 +660,9 @@ uint32_t NvEncoder::GetWidthInBytes(const NV_ENC_BUFFER_FORMAT bufferFormat, con
         return width * 4;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
+#if !defined(_DEBUG)
         return 0;
+#endif
     }
 }
 
@@ -682,7 +684,9 @@ uint32_t NvEncoder::GetNumChromaPlanes(const NV_ENC_BUFFER_FORMAT bufferFormat) 
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
+#if !defined(_DEBUG)
         return static_cast<uint32_t>(-1);
+#endif
     }
 }
 
@@ -705,7 +709,9 @@ uint32_t NvEncoder::GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
+#if !defined(_DEBUG)
         return static_cast<uint32_t>(-1);
+#endif
     }
 }
 
@@ -760,7 +766,9 @@ uint32_t NvEncoder::GetChromaHeight(const NV_ENC_BUFFER_FORMAT bufferFormat,
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
+#if !defined(_DEBUG)
         return 0;
+#endif
     }
 }
 
@@ -786,7 +794,9 @@ uint32_t NvEncoder::GetChromaWidthInBytes(const NV_ENC_BUFFER_FORMAT bufferForma
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
+#if !defined(_DEBUG)
         return 0;
+#endif
     }
 }
 
@@ -821,7 +831,9 @@ int NvEncoder::GetFrameSize() const {
         return 4 * GetEncodeWidth() * GetEncodeHeight();
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
+#if !defined(_DEBUG)
         return 0;
+#endif
     }
 }
 

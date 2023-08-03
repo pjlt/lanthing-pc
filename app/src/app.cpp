@@ -267,6 +267,7 @@ void App::onServerDisconnected() {
 
 void App::onServerReconnecting() {
     LOG(WARNING) << "Reconnecting to server...";
+    ui_->onLoginRet(UiCallback::ErrCode::CONNECTING, "backend");
 }
 
 void App::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {

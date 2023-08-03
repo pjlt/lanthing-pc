@@ -16,8 +16,9 @@ std::string wideCharToUtf8(const std::wstring& wstr)
     std::string strTo(size_needed, 0);
     WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
     return strTo;
-#endif
+#else
     return "not implement";
+#endif
 }
 
 std::wstring utf8ToWideChar(const std::string& str)
@@ -29,7 +30,8 @@ std::wstring utf8ToWideChar(const std::string& str)
     std::wstring wstrTo(size_needed, 0);
     MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
     return wstrTo;
-#endif
+#else
     return std::wstring(L"not implement");
+#endif
 }
 } // namespace ltlib
