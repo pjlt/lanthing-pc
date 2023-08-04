@@ -24,6 +24,7 @@ private:
     bool on_transport_read(const Buffer& buff);
 
 private:
+    bool connected_ = false;
     IOLoop* ioloop_;
     std::function<void()> on_connected_;
     std::function<void()> on_closed_;
@@ -75,17 +76,20 @@ bool ClientImpl::init()
 
 bool ClientImpl::on_transport_connected()
 {
+    connected_ = true;
     on_connected_();
     return true;
 }
 
 void ClientImpl::on_transport_closed()
 {
+    connected_ = false;
     on_closed_();
 }
 
 void ClientImpl::on_transport_reconnecting()
 {
+    connected_ = false;
     parser_.clear();
     on_reconnecting_();
 }
@@ -108,6 +112,9 @@ bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::Mes
         LOG(FATAL) << "Send data in wrong thread!";
         return false;
     }
+    if (!connected_) {
+        return false;
+    }
     auto packet = ltproto::Packet::create({ type, msg }, true);
     if (!packet.has_value()) {
         LOG(WARNING) << "Create net packet failed, type:" << type;
@@ -119,7 +126,7 @@ bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::Mes
         { (char*)pkt.payload.get(), pkt.header.payload_size }
     };
     return transport_->send(buff, 2, [packet, callback]() {
-        //把packet capture进来，是为了延续内部shared_ptr的生命周期
+        // 把packet capture进来，是为了延续内部shared_ptr的生命周期
         if (callback != nullptr) {
             callback();
         }

@@ -84,7 +84,7 @@ void init_log_and_minidump(Role role) {
         }
     }
     g_log_worker = g3::LogWorker::createLogWorker();
-    g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string());
+    g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string(), "lanthing");
     g3::initializeLogging(g_log_worker.get());
     ltlib::ThreadWatcher::instance()->register_terminate_callback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });

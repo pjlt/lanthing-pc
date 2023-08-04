@@ -3,7 +3,6 @@
 #include <cstdarg>
 #include <filesystem>
 #include <memory>
-#include <filesystem>
 
 #include <g3log/g3log.hpp>
 #include <g3log/logworker.hpp>
@@ -47,7 +46,7 @@ void initLogging() {
         }
     }
     g_logWorker = g3::LogWorker::createLogWorker();
-    g_logsSink = g_logWorker->addDefaultLogger(kPrefix, log_dir.string());
+    g_logsSink = g_logWorker->addDefaultLogger(kPrefix, log_dir.string(), "app");
     g3::initializeLogging(g_logWorker.get());
     ltlib::ThreadWatcher::instance()->register_terminate_callback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
@@ -58,7 +57,7 @@ void initLogging() {
     signal(SIGINT, sigint_handler);
 }
 
-} // 匿名空间
+} // namespace
 
 int main(int argc, char** argv) {
     initLogging();
