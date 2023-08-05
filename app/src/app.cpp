@@ -222,16 +222,17 @@ void App::onClientExitedThreadSafe(int64_t device_id) {
     }
 }
 
+#define MACRO_TO_STRING_HELPER(str) #str
+#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+#include <lanthing.cert>
 bool App::initTcpClient() {
-    constexpr uint16_t kPort = 44898;
-    const std::string kHost = "101.43.32.170";
-
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
     params.ioloop = ioloop_.get();
-    params.host = kHost;
-    params.port = kPort;
-    params.is_tls = false;
+    params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
+    params.port = LT_SERVER_APP_PORT;
+    params.is_tls = LT_SERVER_USE_SSL;
+    params.cert = kLanthingCert;
     params.on_connected = std::bind(&App::onServerConnected, this);
     params.on_closed = std::bind(&App::onServerDisconnected, this);
     params.on_reconnecting = std::bind(&App::onServerReconnecting, this);
@@ -240,6 +241,8 @@ bool App::initTcpClient() {
     tcp_client_ = ltlib::Client::create(params);
     return tcp_client_ != nullptr;
 }
+#undef MACRO_TO_STRING
+#undef MACRO_TO_STRING_HELPER
 
 void App::sendMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
     if (ioloop_->is_not_current_thread()) {

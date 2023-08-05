@@ -28,9 +28,9 @@ private:
     static bool report_status(uint32_t current_state, uint32_t win32_exit_code, uint32_t wait_hint);
     static void __stdcall service_main();
     static void __stdcall service_control_handler(unsigned long ctrl_code);
+    void run_service();
 };
 
 bool is_service_running(const std::string& name, uint32_t& pid);
-bool start_service(const std::string& name);
 
 } // namespace ltlib

@@ -15,7 +15,7 @@
 
 #include <client/client.h>
 #include <worker/worker.h>
-#if defined(RUN_AS_SERVICE)
+#if LT_RUN_AS_SERVICE
 #include <service/daemon/daemon.h>
 #else
 #include <service/service.h>
@@ -158,7 +158,7 @@ int run_as_service(std::map<std::string, std::string> options) {
     if (is_another_instance_running()) {
         return -1;
     }
-#if defined(LT_WINDOWS) && defined(RUN_AS_SERVICE)
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
     lt::svc::LanthingWinService svc;
     ltlib::ServiceApp app{&svc};
     app.run();

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(lanthing-pc)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(cmake/options.cmake)
 
 # 平台检测
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -39,9 +40,18 @@ else()
 endif()
 
 
-if(NOT LT_SERVER_ADDR)
-    set(LT_SERVER_ADDR lanthing.net)
-endif()
+#服务器地址
+add_definitions(-DLT_SERVER_ADDR=${LT_SERVER_ADDR})
+add_definitions(-DLT_SERVER_SVC_PORT=${LT_SERVER_SVC_PORT})
+add_definitions(-DLT_SERVER_APP_PORT=${LT_SERVER_APP_PORT})
+add_definitions(-DLT_SERVER_USE_SSL=$<IF:$<BOOL:${LT_SERVER_USE_SSL}>,true,false>)
+#windows服务
+add_definitions(-DLT_RUN_AS_SERVICE=$<IF:$<BOOL:${LT_RUN_AS_SERVICE}>,true,false>)
+add_definitions(-DLT_WIN_SERVICE_NAME=${LT_WIN_SERVICE_NAME})
+add_definitions(-DLT_WIN_SERVICE_DISPLAY_NAME=${LT_WIN_SERVICE_DISPLAY_NAME})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
+
 
 # 主要是把RelWithDebInfo等也变成Release，方便编写脚本
 if (CMAKE_BUILD_TYPE STREQUAL Debug)

@@ -62,43 +62,17 @@ void Service::uninit() {
     //
 }
 
+#define MACRO_TO_STRING_HELPER(str) #str
+#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+#include <lanthing.cert>
 bool Service::init_tcp_client() {
-    // constexpr uint16_t kSslPort = 43899;
-    constexpr uint16_t kNonSslPort = 43898;
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
     params.ioloop = ioloop_.get();
-    // #define MACRO_TO_STRING_HELPER(str) #str
-    // #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-    params.host = "101.43.32.170";
-    //    params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
-    // #undef MACRO_TO_STRING
-    // #undef MACRO_TO_STRING_HELPER
-    params.port = kNonSslPort;
-    params.is_tls = false;
-    params.cert = R"(-----BEGIN CERTIFICATE-----
-MIIDpTCCAo2gAwIBAgIUYoMnk9C7H/hbvuHzJ6BAA8ReXRcwDQYJKoZIhvcNAQEL
-BQAwYjELMAkGA1UEBhMCQ04xEjAQBgNVBAgMCUd1YW5nZG9uZzERMA8GA1UEBwwI
-U2hlbnpoZW4xFTATBgNVBAoMDExhbnRoaW5nIEx0ZDEVMBMGA1UEAwwMbGFudGhp
-bmcubmV0MB4XDTIzMDMyMjE1MzgyNVoXDTI0MDMyMTE1MzgyNVowYjELMAkGA1UE
-BhMCQ04xEjAQBgNVBAgMCUd1YW5nZG9uZzERMA8GA1UEBwwIU2hlbnpoZW4xFTAT
-BgNVBAoMDExhbnRoaW5nIEx0ZDEVMBMGA1UEAwwMbGFudGhpbmcubmV0MIIBIjAN
-BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlPkFkBTxYN1fNGOfKyoN6jLxu33s
-XMA+AF0/EafXugsn7Wv6evHE3wG05zam8Er+8veqwEnfl5TEYg3WFOV/rh+5yfBw
-5OQpSclm3jeTaUshsJArVTTMgc/QkGY8rzR7nrRJ4LhBReu1bWYGVR35+x7dIHw/
-kyp86rHl4IUOShqJ6EKh+FkvrumHSKn0eISVWYsgEE01Z4PUObhFB0j9BVWC0u7D
-sDXOvZlVOxm2Eq9EUHxtoqloDhLhnW03AtFzGMMY7BpD6kVIjw1eMcK2R7r0GgUN
-2iBCt4g/BiKGPV8TRiBJKBSPis7+RWkbO281447QbxWgJkWGh1oyDKakuwIDAQAB
-o1MwUTAdBgNVHQ4EFgQULUqdsb3Ypvb1ulqg9Os/HzzAlEAwHwYDVR0jBBgwFoAU
-LUqdsb3Ypvb1ulqg9Os/HzzAlEAwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0B
-AQsFAAOCAQEAJ5J5LokF/VGyl4z2IL5flf8wizvLLxf38JJOZ750V3NQrjmWumC4
-Kl+cSSmTX+lWaBqH0Mcr7D+5F8C6sVeRIfKs51lzcQTtb36KA79UmBsgl76FqsY9
-MlbuuH687XfjX5V6golt6Xux7ox7jY5UCuYfg5fvgM/daX6scmCAVw2rlqG+5vpx
-AiJXmUUoJODPzS2BSrYsnKn94ET8ES6A32R5+QR8IU36aclmaZ4hhLlVLIpcaLtH
-Ne1cNzfiba5ouL/AA5QjeTCdI/BREGyESu6eOiVtGe26SN+zvfoYz94y1NsMIie0
-dr3eXDA0n51BvL+i7ryWJrshwhuT2p4ZLg==
------END CERTIFICATE-----
-)";
+    params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
+    params.port = LT_SERVER_SVC_PORT;
+    params.is_tls = LT_SERVER_USE_SSL;
+    params.cert = kLanthingCert;
     params.on_connected = std::bind(&Service::on_server_connected, this);
     params.on_closed = std::bind(&Service::on_server_disconnected, this);
     params.on_reconnecting = std::bind(&Service::on_server_reconnecting, this);
@@ -110,6 +84,8 @@ dr3eXDA0n51BvL+i7ryWJrshwhuT2p4ZLg==
     }
     return true;
 }
+#undef MACRO_TO_STRING
+#undef MACRO_TO_STRING_HELPER
 
 void Service::main_loop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Lanthing service enter main loop";

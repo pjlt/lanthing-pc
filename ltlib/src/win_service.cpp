@@ -24,6 +24,9 @@ namespace ltlib
 {
 
 ServiceApp::ServiceApp(WinApp* app)
+//: service_name_ { service_name }
+//, display_name_ { display_name }
+//, bin_path_ { bin_path }
 {
     g_app = app;
 }
@@ -34,11 +37,70 @@ ServiceApp::~ServiceApp()
 
 void ServiceApp::run()
 {
+    // 只能用脚本或其他进程提前创建好服务
+    // if (create_service()) {
+    run_service();
+    //}
+}
+
+// bool ServiceApp::create_service()
+//{
+//     auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+//     if (!manager_handle) {
+//         return false;
+//     }
+//     std::wstring service_name = utf8_to_utf16(service_name_);
+//     std::wstring display_name = utf8_to_utf16(display_name_);
+//     std::wstring bin_path = utf8_to_utf16(bin_path_);
+//     SC_HANDLE service_handle = ::CreateServiceW(
+//         manager_handle,
+//         service_name.c_str(),
+//         display_name.c_str(),
+//         SERVICE_ALL_ACCESS,
+//         SERVICE_WIN32_OWN_PROCESS,
+//         SERVICE_AUTO_START,
+//         SERVICE_ERROR_NORMAL,
+//         bin_path.c_str(),
+//         NULL,
+//         NULL,
+//         NULL,
+//         NULL,
+//         NULL);
+//     if (service_handle == NULL) {
+//         ::CloseServiceHandle(manager_handle);
+//         const DWORD error = GetLastError();
+//         if (error == ERROR_SERVICE_EXISTS) {
+//             return true;
+//         } else {
+//             return false;
+//         }
+//     }
+//
+//     SC_ACTION sc_action;
+//     sc_action.Type = SC_ACTION_RESTART;
+//     sc_action.Delay = 5000;
+//     SERVICE_FAILURE_ACTIONS failure_action;
+//     failure_action.dwResetPeriod = 0;
+//     failure_action.lpRebootMsg = 0;
+//     failure_action.lpCommand = 0;
+//     failure_action.cActions = 1;
+//     failure_action.lpsaActions = &sc_action;
+//     ::ChangeServiceConfig2W(service_handle, SERVICE_CONFIG_FAILURE_ACTIONS, &failure_action);
+//     ::CloseServiceHandle(service_handle);
+//     ::CloseServiceHandle(manager_handle);
+//     return true;
+// }
+
+void ServiceApp::run_service()
+{
+    wchar_t service_name[1024] = { 0 };
     SERVICE_TABLE_ENTRYW dispatch_table[] = {
-        { NULL, (LPSERVICE_MAIN_FUNCTIONW)service_main },
+        { service_name, (LPSERVICE_MAIN_FUNCTIONW)service_main },
         { NULL, NULL }
     };
     ::StartServiceCtrlDispatcherW(dispatch_table);
+    // DWORD error = GetLastError();
+    //  printf("ret:%d, error:%d", ret, error);
 }
 
 bool ServiceApp::report_status(uint32_t current_state, uint32_t win32_exit_code, uint32_t wait_hint)
@@ -105,25 +167,6 @@ bool is_service_running(const std::string& _name, uint32_t& pid)
     ::CloseServiceHandle(manager_handle);
     pid = status.dwProcessId;
     return (status.dwCurrentState == SERVICE_RUNNING);
-}
-
-bool start_service(const std::string& _name)
-{
-    std::wstring name = utf8_to_utf16(_name);
-    auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-    if (!manager_handle) {
-        return false;
-    }
-    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, name.c_str(),
-        SERVICE_START | SERVICE_QUERY_STATUS);
-    if (service_handle == NULL) {
-        ::CloseServiceHandle(manager_handle);
-        return false;
-    }
-    bool res = ::StartServiceW(service_handle, 0, NULL);
-    ::CloseServiceHandle(service_handle);
-    ::CloseServiceHandle(manager_handle);
-    return res;
 }
 
 } // namespace ltlib

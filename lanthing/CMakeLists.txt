@@ -105,8 +105,6 @@ target_include_directories(${PROJECT_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-#服务器地址
-target_compile_definitions(${PROJECT_NAME} PRIVATE LT_SERVER_ADDR=${LT_SERVER_ADDR})
 
 if(LT_WINDOWS)
     set(PLATFORM_LIBS
