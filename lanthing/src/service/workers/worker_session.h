@@ -120,6 +120,8 @@ private:
     std::string p2p_password_;
     std::string signaling_addr_;
     uint16_t signaling_port_;
+    std::vector<std::string> reflex_servers_;
+    std::vector<std::string> relay_servers_;
     std::atomic<bool> client_connected_{false};
     std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
         on_create_session_completed_;

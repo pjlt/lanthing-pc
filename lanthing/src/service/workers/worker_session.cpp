@@ -106,10 +106,14 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     room_id_ = msg->room_id();
     p2p_username_ = msg->p2p_username();
     p2p_password_ = msg->p2p_password();
-    p2p_username_ = "p2puser";
-    p2p_password_ = "p2ppassword";
     signaling_addr_ = msg->signaling_addr();
     signaling_port_ = static_cast<uint16_t>(msg->signaling_port());
+    for (int i = 0; i < msg->reflex_servers_size(); i++) {
+        reflex_servers_.push_back(msg->reflex_servers(i));
+    }
+    for (int i = 0; i < msg->relay_servers_size(); i++) {
+        relay_servers_.push_back(msg->relay_servers(i));
+    }
     if (!msg->has_streaming_params()) {
         // 当前只支持串流，未来有可能支持串流以外的功能，所以这个streaming_params是optional的.
         LOG(WARNING) << "Received OpenConnection without streaming params";
@@ -177,9 +181,16 @@ bool WorkerSession::init_rtc_server() {
     namespace ph = std::placeholders;
     rtc::Server::Params cfg;
     cfg.use_nbp2p = true;
-    char* reflex_servers[] = {"stun:153.35.89.23:18000", "stun:122.228.2.7:18000",
-                              "stun:36.155.14.195:18000"};
-    char* relay_servers[] = {"relay:101.43.32.170:19000:user1:passwd1"};
+    std::vector<const char*> reflex_servers;
+    std::vector<const char*> relay_servers;
+    for (auto& svr : reflex_servers_) {
+        reflex_servers.push_back(svr.data());
+        //LOG(DEBUG) << "Reflex: " << svr;
+    }
+    for (auto& svr : relay_servers_) {
+        relay_servers.push_back(svr.data());
+        //LOG(DEBUG) << "Relay: " << svr;
+    }
     if (cfg.use_nbp2p) {
         cfg.nbp2p_params.disable_ipv6 = false;
         cfg.nbp2p_params.disable_lan_udp = false;
@@ -188,10 +199,10 @@ bool WorkerSession::init_rtc_server() {
         cfg.nbp2p_params.disable_relay = false;
         cfg.nbp2p_params.username = p2p_username_.c_str();
         cfg.nbp2p_params.password = p2p_password_.c_str();
-        cfg.nbp2p_params.reflex_servers = (const char**)reflex_servers;
-        cfg.nbp2p_params.reflex_servers_count = 3;
-        cfg.nbp2p_params.relay_servers = (const char**)relay_servers;
-        cfg.nbp2p_params.relay_servers_count = 1;
+        cfg.nbp2p_params.reflex_servers = reflex_servers.data();
+        cfg.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
+        cfg.nbp2p_params.relay_servers = relay_servers.data();
+        cfg.nbp2p_params.relay_servers_count = static_cast<uint32_t>(relay_servers.size());
     }
     cfg.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
     cfg.on_failed = std::bind(&WorkerSession::on_ltrtc_failed_thread_safe, this);

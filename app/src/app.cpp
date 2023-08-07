@@ -336,8 +336,6 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     params.auth_token = ack->auth_token();
     params.p2p_username = ack->p2p_username();
     params.p2p_password = ack->p2p_password();
-    params.p2p_username = "p2puser";
-    params.p2p_password = "p2ppassword";
     params.signaling_addr = ack->signaling_addr();
     params.signaling_port = ack->signaling_port();
     params.on_exited = std::bind(&App::onClientExitedThreadSafe, this, ack->device_id());
@@ -347,6 +345,9 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     params.refresh_rate = ack->streaming_params().screen_refresh_rate();
     params.enable_driver_input = ack->streaming_params().enable_driver_input();
     params.enable_gamepad = ack->streaming_params().enable_gamepad();
+    for (int i = 0; i < ack->reflex_servers_size(); i++) {
+        params.reflex_servers.push_back(ack->reflex_servers(i));
+    }
     auto session = std::make_shared<ClientSession>(params);
     {
         std::lock_guard<std::mutex> lock{mutex_};

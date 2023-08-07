@@ -48,6 +48,7 @@ public:
         uint32_t screen_refresh_rate;
         bool enable_driver_input;
         bool enable_gamepad;
+        std::vector<std::string> reflex_servers;
     };
 
 public:
@@ -101,6 +102,7 @@ private:
     SignalingParams signaling_params_;
     Input::Params input_params_{};
     Video::Params video_params_;
+    std::vector<std::string> reflex_servers_;
     std::unique_ptr<Video> video_module_;
     std::unique_ptr<Input> input_module_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;

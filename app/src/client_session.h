@@ -2,18 +2,16 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+
 #include <ltlib/threads.h>
+
 #include <rtc/rtc.h>
 
-namespace lt
-{
+namespace lt {
 
-// TODO: 改成 ClientSession::create()的形式
-class ClientSession
-{
+class ClientSession {
 public:
-    struct Params
-    {
+    struct Params {
         std::string client_id;
         std::string room_id;
         std::string auth_token;
@@ -27,6 +25,7 @@ public:
         uint32_t refresh_rate;
         bool enable_gamepad;
         bool enable_driver_input;
+        std::vector<std::string> reflex_servers;
         std::function<void()> on_exited;
     };
 

@@ -63,6 +63,16 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     int32_t freq = std::atoi(options["-freq"].c_str());
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
+
+    if (options.find("-reflexs") != options.end()) {
+        std::string reflexs_str = options["-reflexs"];
+        std::stringstream ss{reflexs_str};
+        std::string out;
+        while (std::getline(ss, out, ',')) {
+            params.reflex_servers.push_back(out);
+        }
+    }
+
     if (signaling_port <= 0 || signaling_port > 65535) {
         LOG(WARNING) << "Invalid parameter: port";
         return nullptr;
@@ -102,7 +112,8 @@ Client::Client(const Params& params)
                         params.signaling_port}
     , video_params_{to_ltrtc(params.codec), params.width, params.height, params.screen_refresh_rate,
                     std::bind(&Client::send_message_to_host, this, std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3)} {}
+                              std::placeholders::_2, std::placeholders::_3)}
+    , reflex_servers_{params.reflex_servers} {}
 
 Client::~Client() {
     assert(ioloop_->is_not_current_thread());
@@ -274,8 +285,11 @@ bool Client::init_ltrtc() {
     namespace ph = std::placeholders;
     rtc::Client::Params cfg;
     cfg.use_nbp2p = true;
-    char* reflex_servers[] = {"stun:153.35.89.23:18000", "stun:122.228.2.7:18000",
-                              "stun:36.155.14.195:18000"};
+    std::vector<const char*> reflex_servers;
+    for (auto& svr : reflex_servers_) {
+        reflex_servers.push_back(svr.data());
+        //LOG(DEBUG) << "Reflex: " << svr;
+    }
     if (cfg.use_nbp2p) {
         cfg.nbp2p_params.disable_ipv6 = false;
         cfg.nbp2p_params.disable_lan_udp = false;
@@ -284,8 +298,8 @@ bool Client::init_ltrtc() {
         cfg.nbp2p_params.disable_relay = false;
         cfg.nbp2p_params.username = p2p_username_.c_str();
         cfg.nbp2p_params.password = p2p_password_.c_str();
-        cfg.nbp2p_params.reflex_servers = (const char**)reflex_servers;
-        cfg.nbp2p_params.reflex_servers_count = 3;
+        cfg.nbp2p_params.reflex_servers = reflex_servers.data();
+        cfg.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
         cfg.nbp2p_params.relay_servers = nullptr;
         cfg.nbp2p_params.relay_servers_count = 0;
     }
