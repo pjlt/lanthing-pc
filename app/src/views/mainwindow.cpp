@@ -37,13 +37,15 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
     auto* pages_layout = new QStackedLayout();
     auto* main_page = new QWidget();
     auto* setting_page = new QWidget();
-    pages_layout->addWidget(main_page);
-    pages_layout->addWidget(setting_page);
+    pages_layout->addWidget(main_page); // index 0
+    pages_layout->addWidget(setting_page); // index 1
+    switch_to_main_page_ = [pages_layout]() { pages_layout->setCurrentIndex(0); };
+    switch_to_setting_page_ = [pages_layout]() { pages_layout->setCurrentIndex(1); };
 
     layout->addLayout(pages_layout);
 
     menu_ui = new Menu(menu);
-    main_page_ui = new MainPage(main_page);
+    main_page_ui = new MainPage(app->getHistoryDeviceIDs(), main_page);
     setting_page_ui = new SettingPage(setting_page);
 
     connect(menu_ui, &Menu::pageSelect,
@@ -58,6 +60,19 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
 
 MainWindow::~MainWindow() {
     delete ui;
+}
+
+void MainWindow::switchToMainPage() {
+    switch_to_main_page_();
+}
+
+void MainWindow::switchToSettingPage() {
+    switch_to_setting_page_();
+}
+
+void MainWindow::closeEvent(QCloseEvent* ev) {
+    (void)ev;
+    hide();
 }
 
 void DispatchToMainThread(std::function<void()> callback) {

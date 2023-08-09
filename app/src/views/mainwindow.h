@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <functional>
+
 #include <QtWidgets/QMainWindow>
 
 #include "ui.h"
@@ -25,6 +27,11 @@ class MainWindow : public QMainWindow, public lt::UiCallback {
 public:
     MainWindow(lt::App* app, QWidget* parent = nullptr);
     ~MainWindow();
+    void switchToMainPage();
+    void switchToSettingPage();
+
+protected:
+    void closeEvent(QCloseEvent* ev) override;
 
 protected:
     void onLoginRet(ErrCode code, const std::string& err = {}) override;
@@ -46,6 +53,9 @@ private:
     Menu* menu_ui = nullptr;
     MainPage* main_page_ui;
     SettingPage* setting_page_ui;
+
+    std::function<void()> switch_to_main_page_;
+    std::function<void()> switch_to_setting_page_;
 
     lt::App* app;
 };

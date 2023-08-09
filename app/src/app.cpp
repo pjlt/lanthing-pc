@@ -18,6 +18,8 @@
 #include <ltproto/ltproto.h>
 
 #include <QtWidgets/qwidget.h>
+#include <QtWidgets/qsystemtrayicon.h>
+#include <QtWidgets/qmenu.h>
 
 using namespace ltlib::time;
 
@@ -114,8 +116,51 @@ bool App::initSettings() {
 
 int App::exec(int argc, char** argv) {
     QApplication a(argc, argv);
+
+    QIcon icon(":/icons/icons/pc.png");
+    QApplication::setWindowIcon(icon);
+    QApplication::setQuitOnLastWindowClosed(false);
+
     MainWindow w(this, nullptr);
     ui_ = &w;
+
+    QSystemTrayIcon sys_tray_icon;
+    QMenu* menu = new QMenu();
+    QAction* a0 = new QAction("主界面");
+    QAction* a1 = new QAction("设置");
+    QAction* a2 = new QAction("退出");
+    QObject::connect(a0, &QAction::triggered, [&w]() { w.show(); });
+    QObject::connect(a1, &QAction::triggered, [&w]() {
+        w.switchToSettingPage();
+        w.show();
+    });
+    QObject::connect(a2, &QAction::triggered, []() { QApplication::exit(0); });
+    QObject::connect(&sys_tray_icon, &QSystemTrayIcon::activated,
+                     [&w](QSystemTrayIcon::ActivationReason reason) {
+                         switch (reason) {
+                         case QSystemTrayIcon::Unknown:
+                             break;
+                         case QSystemTrayIcon::Context:
+                             break;
+                         case QSystemTrayIcon::DoubleClick:
+                             w.show();
+                             break;
+                         case QSystemTrayIcon::Trigger:
+                             w.show();
+                             break;
+                         case QSystemTrayIcon::MiddleClick:
+                             break;
+                         default:
+                             break;
+                         }
+        });
+    menu->addAction(a0);
+    menu->addAction(a1);
+    menu->addAction(a2);
+    sys_tray_icon.setContextMenu(menu);
+    sys_tray_icon.setIcon(icon);
+
+    sys_tray_icon.show();
     w.show();
 
     // XXX: 暂时先放到这里
@@ -188,6 +233,10 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     }
     sendMessage(ltproto::id(req), req);
     tryRemoveSessionAfter10s(peerDeviceID);
+}
+
+std::vector<std::string> App::getHistoryDeviceIDs() {
+    return {"1234568", "1234567"};
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

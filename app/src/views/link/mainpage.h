@@ -1,6 +1,9 @@
 #ifndef MAINPAGE_H
 #define MAINPAGE_H
 
+#include <vector>
+#include <string>
+
 #include <QtWidgets/QWidget>
 
 namespace Ui {
@@ -15,7 +18,8 @@ class MainPage : public QWidget {
     Q_OBJECT
 
 public:
-    explicit MainPage(QWidget* parent = nullptr);
+    explicit MainPage(const std::vector<std::string>& history_device_ids,
+                      QWidget* parent = nullptr);
     ~MainPage();
     void onUpdateLocalDeviceID(int64_t device_id);
     void onUpdateLocalAccessToken(const std::string& access_token);
@@ -28,6 +32,7 @@ private:
 
 private:
     Ui::MainPage* ui;
+    std::vector<std::string> history_device_ids_;
 };
 
 #endif // MAINPAGE_H

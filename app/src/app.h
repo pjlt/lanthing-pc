@@ -24,6 +24,7 @@ public:
     int exec(int argc, char** argv);
     void loginUser();
     void connect(int64_t deviceID, const std::string& accessToken);
+    std::vector<std::string> getHistoryDeviceIDs();
 
 private:
     App();

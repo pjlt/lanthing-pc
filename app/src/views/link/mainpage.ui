@@ -39,18 +39,18 @@
      <enum>QLayout::SetNoConstraint</enum>
     </property>
     <item>
-     <widget class="QLineEdit" name="device_id">
+     <widget class="QComboBox" name="device_id">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="autoFillBackground">
+      <property name="editable">
        <bool>true</bool>
       </property>
-      <property name="styleSheet">
-       <string notr="true"/>
+      <property name="currentText">
+       <string/>
       </property>
      </widget>
     </item>

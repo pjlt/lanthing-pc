@@ -42,15 +42,24 @@ QValidator::State AccesstokenValidator::validate(QString& input, int& pos) const
 
 } // namespace
 
-MainPage::MainPage(QWidget* parent)
+MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* parent)
     : QWidget(parent)
-    , ui(new Ui::MainPage) {
+    , ui(new Ui::MainPage)
+    , history_device_ids_(history_device_ids) {
 
     ui->setupUi(parent);
 
-    QAction* action1 = new QAction();
-    action1->setIcon(QIcon(":/icons/icons/pc.png"));
-    ui->device_id->addAction(action1, QLineEdit::LeadingPosition);
+    QIcon pc_icon{":/icons/icons/pc.png"};
+    if (history_device_ids_.empty()) {
+        //ui->device_id->insertItem(0, "");
+        //ui->device_id->setItemIcon(0, QIcon(":/icons/icons/pc.png"));
+        ui->device_id->addItem(pc_icon, "");
+    }
+    else {
+        for (const auto& id : history_device_ids_) {
+            ui->device_id->addItem(pc_icon, QString::fromStdString(id));
+        }
+    }
 
     QAction* action2 = new QAction();
     action2->setIcon(QIcon(":/icons/icons/lock.png"));
@@ -73,7 +82,7 @@ void MainPage::onUpdateLocalAccessToken(const std::string& access_token) {
 }
 
 void MainPage::onConnectBtnPressed() {
-    auto dev_id = ui->device_id->text();
+    auto dev_id = ui->device_id->currentText();
     auto token = ui->access_token->text();
 
     emit onConnectBtnPressed1(dev_id.toStdString(), token.toStdString());
