@@ -1,5 +1,6 @@
 #include "app.h"
 
+#include <filesystem>
 #include <iostream>
 #include <thread>
 
@@ -13,6 +14,7 @@
 
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
+#include <ltlib/win_service.h>
 #include <ltproto/ltproto.h>
 
 #include <QtWidgets/qwidget.h>
@@ -20,6 +22,9 @@
 using namespace ltlib::time;
 
 namespace {
+
+const std::string service_name = "Lanthing";
+const std::string display_name = "Lanthing Service";
 
 constexpr ltproto::peer2peer::VideoCodecType kCodecPriority[] = {
     ltproto::peer2peer::VideoCodecType::HEVC,
@@ -76,6 +81,7 @@ App::~App() {
         ioloop_->stop();
     }
     thread_.reset();
+    stopService();
 }
 
 bool App::init() {
@@ -224,6 +230,30 @@ void App::onClientExitedThreadSafe(int64_t device_id) {
     }
 }
 
+void App::createAndStartService() {
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+    std::string path = ltlib::get_program_path<char>();
+    std::filesystem::path bin_path(path);
+    bin_path /= "lanthing.exe";
+    if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
+        LOGF(WARNING, "Create service failed (name:%s, path:%s)", service_name.c_str(),
+            bin_path.string().c_str());
+        return;
+    }
+    if (!ltlib::ServiceCtrl::startService(service_name)) {
+        LOGF(WARNING, "Start service(%s) failed", service_name.c_str());
+        return;
+    }
+    LOGF(INFO, "Start service(%s) success", service_name.c_str());
+#endif // if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+}
+
+void App::stopService() {
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+    ltlib::ServiceCtrl::stopService(service_name);
+#endif // if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+}
+
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
 #include <lanthing.cert>
@@ -322,6 +352,7 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
     ui_->onLocalDeviceID(device_id_);
     ui_->onLocalAccessToken(access_token_);
     LOG(INFO) << "LoginDeviceAck: Success";
+    createAndStartService();
 }
 
 void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {

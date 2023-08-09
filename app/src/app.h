@@ -33,6 +33,8 @@ private:
     void tryRemoveSessionAfter10s(int64_t device_id);
     void tryRemoveSession(int64_t device_id);
     void onClientExitedThreadSafe(int64_t device_id);
+    void createAndStartService();
+    void stopService();
 
     // tcp client
     bool initTcpClient();

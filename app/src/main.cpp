@@ -11,6 +11,12 @@
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
+
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+// 不显示命令行窗口.
+#pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
+#endif
+
 std::unique_ptr<g3::LogWorker> g_logWorker;
 std::unique_ptr<g3::FileSinkHandle> g_logsSink;
 std::unique_ptr<LTMinidumpGenerator> g_minidumpGenertator;

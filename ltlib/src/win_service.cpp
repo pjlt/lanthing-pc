@@ -148,7 +148,90 @@ void __stdcall ServiceApp::service_control_handler(unsigned long ctrl_code)
     }
 }
 
-bool is_service_running(const std::string& _name, uint32_t& pid)
+bool ServiceCtrl::createService(const std::string& _service_name, const std::string& _display_name, const std::string& _bin_path)
+{
+    auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    if (!manager_handle) {
+        return false;
+    }
+    std::wstring service_name = utf8_to_utf16(_service_name);
+    std::wstring display_name = utf8_to_utf16(_display_name);
+    std::wstring bin_path = utf8_to_utf16(_bin_path);
+    SC_HANDLE service_handle = ::CreateServiceW(
+        manager_handle,
+        service_name.c_str(),
+        display_name.c_str(),
+        SERVICE_ALL_ACCESS,
+        SERVICE_WIN32_OWN_PROCESS,
+        SERVICE_AUTO_START,
+        SERVICE_ERROR_NORMAL,
+        bin_path.c_str(),
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+    if (service_handle == NULL) {
+        ::CloseServiceHandle(manager_handle);
+        const DWORD error = GetLastError();
+        if (error == ERROR_SERVICE_EXISTS) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    SC_ACTION sc_action;
+    sc_action.Type = SC_ACTION_RESTART;
+    sc_action.Delay = 5000;
+    SERVICE_FAILURE_ACTIONS failure_action;
+    failure_action.dwResetPeriod = 0;
+    failure_action.lpRebootMsg = 0;
+    failure_action.lpCommand = 0;
+    failure_action.cActions = 1;
+    failure_action.lpsaActions = &sc_action;
+    ::ChangeServiceConfig2W(service_handle, SERVICE_CONFIG_FAILURE_ACTIONS, &failure_action);
+    ::CloseServiceHandle(service_handle);
+    ::CloseServiceHandle(manager_handle);
+    return true;
+}
+
+bool ServiceCtrl::startService(const std::string& _service_name)
+{
+    auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    if (!manager_handle) {
+        return false;
+    }
+    std::wstring service_name = utf8_to_utf16(_service_name);
+    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
+    ::CloseServiceHandle(manager_handle);
+    if (service_handle == NULL) {
+        return false;
+    }
+    BOOL success = ::StartServiceW(service_handle, 0, NULL);
+    ::CloseServiceHandle(service_handle);
+    return success;
+}
+
+bool ServiceCtrl::stopService(const std::string& _service_name)
+{
+    auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    if (!manager_handle) {
+        return false;
+    }
+    std::wstring service_name = utf8_to_utf16(_service_name);
+    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
+    ::CloseServiceHandle(manager_handle);
+    if (service_handle == NULL) {
+        return false;
+    }
+    SERVICE_STATUS status;
+    BOOL success = ::ControlService(service_handle, SERVICE_CONTROL_STOP, &status);
+    ::CloseServiceHandle(service_handle);
+    return success;
+}
+
+bool ServiceCtrl::isServiceRunning(const std::string& _name, uint32_t& pid)
 {
     std::wstring name = utf8_to_utf16(_name);
     auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_QUERY_LOCK_STATUS);

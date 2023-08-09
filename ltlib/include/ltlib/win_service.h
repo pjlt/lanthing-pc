@@ -31,6 +31,13 @@ private:
     void run_service();
 };
 
-bool is_service_running(const std::string& name, uint32_t& pid);
+class LT_API ServiceCtrl
+{
+public:
+    static bool createService(const std::string& service_name, const std::string& display_name, const std::string& bin_path);
+    static bool startService(const std::string& service_name);
+    static bool stopService(const std::string& service_name);
+    static bool isServiceRunning(const std::string& name, uint32_t& pid);
+};
 
 } // namespace ltlib

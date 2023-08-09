@@ -23,6 +23,11 @@
 
 #include "firewall.h"
 
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+//不显示命令行窗口.
+#pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
+#endif
+
 namespace {
 
 enum class Role {
