@@ -68,7 +68,7 @@ void init_log_and_minidump(Role role) {
 
     std::string bin_path = ltlib::get_program_fullpath<char>();
     std::string bin_dir = ltlib::get_program_path<char>();
-    std::string appdata_dir = ltlib::get_appdata_path(ltlib::is_run_as_service());
+    std::string appdata_dir = ltlib::get_appdata_path(true);
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
         log_dir /= "lanthing";

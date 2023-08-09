@@ -32,6 +32,7 @@ public:
 
     struct InitParams {
         Backend backend = Backend::Unknown;
+        std::optional<int64_t> luid;
         rtc::VideoCodecType codec_type = rtc::VideoCodecType::H264;
         uint32_t width = 0;
         uint32_t height = 0;
@@ -58,14 +59,12 @@ public:
                         bool force_idr);
 
     static std::vector<Ability> check_encode_abilities(uint32_t width, uint32_t height);
+    static std::vector<Ability> check_encode_abilities_with_luid(int64_t luid, uint32_t width,
+                                                                 uint32_t height);
 
 protected:
     VideoEncoder(void* d3d11_dev, void* d3d11_ctx);
     virtual EncodedFrame encode_one_frame(void* input_frame, bool force_idr) = 0;
-
-private:
-    static std::unique_ptr<VideoEncoder> do_create_encoder(const InitParams& params,
-                                                           void* d3d11_dev, void* d3d11_ctx);
 
 private:
     void* d3d11_dev_ = nullptr;

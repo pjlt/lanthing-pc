@@ -39,7 +39,7 @@ private:
     Worker(const Params& params);
     bool init();
     bool init_pipe_client();
-    void negotiate_parameters();
+    bool negotiate_parameters();
     void main_loop(const std::function<void()>& i_am_alive);
     void stop();
     bool register_message_handler(uint32_t type, const MessageHandler& msg);

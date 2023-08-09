@@ -14,6 +14,8 @@ public:
     std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> capture_one_frame() override;
     // void done_with_frame() override;
     void wait_for_vblank() override;
+    Backend backend() const override;
+    int64_t luid() override;
 
 private:
     bool init_d3d11();
@@ -27,6 +29,8 @@ private:
     size_t index_ = 0;
     std::vector<ID3D11Texture2D*> texture_pool_;
     std::vector<uint64_t> shared_handles_;
+    int64_t luid_low_;
+    int64_t luid_high_;
 };
 
 } // namespace lt

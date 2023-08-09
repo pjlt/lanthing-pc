@@ -55,7 +55,6 @@ auto create_d3d11() -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceConte
     DXGI_ADAPTER_DESC1 adapter_desc{};
     hr = dxgi_factory->EnumAdapters1(0, &adapter);
     if (hr == DXGI_ERROR_NOT_FOUND) {
-        // Expected at the end of enumeration
         return {nullptr, nullptr, vendor_id};
     }
     DXGI_ADAPTER_DESC desc;
@@ -77,27 +76,70 @@ auto create_d3d11() -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceConte
         LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
         return {nullptr, nullptr, vendor_id};
     }
+    LOGF(INFO, "D3D11Device(index:0, %x:%x) created", desc.VendorId, desc.DeviceId);
     return {device, context, vendor_id};
 }
 
-} // namespace
-
-namespace lt {
-
-std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params) {
-    if (!params.validate()) {
-        LOG(WARNING) << "Create VideoEncoder failed: invalid parameters";
-        return nullptr;
+auto create_d3d11_with_luid(int64_t luid)
+    -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t> {
+    uint32_t vendor_id = 0;
+    ComPtr<ID3D11Device> device;
+    ComPtr<ID3D11DeviceContext> context;
+    ComPtr<IDXGIFactory2> dxgi_factory;
+    auto hr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory2), (void**)dxgi_factory.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create dxgi factory2, hr:0x%08x", hr);
+        return {nullptr, nullptr, vendor_id};
     }
-    auto [device, context, vendor_id] = create_d3d11();
-    if (device == nullptr || context == nullptr) {
-        return nullptr;
+    ComPtr<IDXGIAdapter1> adapter;
+    DXGI_ADAPTER_DESC desc;
+    int32_t index = -1;
+    while (true) {
+        index += 1;
+        hr = dxgi_factory->EnumAdapters1(static_cast<UINT>(index), adapter.GetAddressOf());
+        if (FAILED(hr)) {
+            return {nullptr, nullptr, vendor_id};
+        }
+        hr = adapter->GetDesc(&desc);
+        if (hr != S_OK) {
+            LOGF(WARNING, "Failed to GetDesc, err:%0x8lx", hr);
+            continue;
+        }
+        if (desc.AdapterLuid.LowPart == luid) {
+            break;
+        }
     }
-    return do_create_encoder(params, device.Get(), context.Get());
+    UINT flag = 0;
+#ifdef _DEBUG
+    flag |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+    hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, flag, nullptr, 0,
+                           D3D11_SDK_VERSION, device.GetAddressOf(), nullptr,
+                           context.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
+        return {nullptr, nullptr, vendor_id};
+    }
+    vendor_id = desc.VendorId;
+    LOGF(INFO, "D3D11Device(index:0, %x:%x, %x) created", desc.VendorId, desc.DeviceId,
+         desc.AdapterLuid.LowPart);
+    return {device, context, vendor_id};
 }
 
-std::unique_ptr<VideoEncoder> VideoEncoder::do_create_encoder(const InitParams& params,
-                                                              void* d3d11_dev, void* d3d11_ctx) {
+auto create_d3d11(std::optional<int64_t> luid)
+    -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t> {
+
+    if (luid.has_value()) {
+        return create_d3d11_with_luid(luid.value());
+    }
+    else {
+        return create_d3d11();
+    }
+}
+
+std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::InitParams& params,
+                                                    void* d3d11_dev, void* d3d11_ctx) {
+    using namespace lt;
     switch (params.backend) {
     case VideoEncoder::Backend::NvEnc:
     {
@@ -129,6 +171,99 @@ std::unique_ptr<VideoEncoder> VideoEncoder::do_create_encoder(const InitParams& 
         LOG(WARNING) << "Unsupport encoder backend " << backend_to_string(params.backend);
         return nullptr;
     }
+}
+
+std::vector<lt::VideoEncoder::Ability>
+do_check_encode_abilities(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContext> context,
+                          uint32_t vendor_id, uint32_t width, uint32_t height) {
+    using namespace lt;
+    constexpr uint32_t kAMDVendorID = 0x1002;
+    constexpr uint32_t kIntelVendorID = 0x8086;
+    constexpr uint32_t kNvidiaVendorID = 0x10DE;
+    auto check_with_backend_and_codec = [width, height, dev = device.Get(),
+                                         ctx = context.Get()](VideoEncoder::Backend backend,
+                                                              rtc::VideoCodecType codec) -> bool {
+        VideoEncoder::InitParams params;
+        params.backend = backend;
+        params.codec_type = codec;
+        params.width = width;
+        params.height = height;
+        params.bitrate_bps = 10'000;
+        auto encoder = do_create_encoder(params, dev, ctx);
+        return encoder != nullptr;
+    };
+
+    auto check_with_order =
+        [width, height, dev = device.Get(), ctx = context.Get(), check_with_backend_and_codec](
+            std::vector<VideoEncoder::Backend> backend_order,
+            std::vector<rtc::VideoCodecType> codec_order) -> std::vector<VideoEncoder::Ability> {
+        std::vector<VideoEncoder::Ability> abilities;
+        for (auto backend : backend_order) {
+            for (auto codec_type : codec_order) {
+                if (check_with_backend_and_codec(backend, codec_type)) {
+                    abilities.push_back({backend, codec_type});
+                }
+            }
+            // 某一backend下，如果检测成功，则立马返回，因为一块显卡不可能支持NvEnc的同时，又支持IntelMediaSDK
+            if (!abilities.empty()) {
+                return abilities;
+            }
+        }
+        return abilities;
+    };
+
+    std::vector<VideoEncoder::Ability> abilities;
+    switch (vendor_id) {
+    case kIntelVendorID:
+        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK,
+                                         rtc::VideoCodecType::H265)) {
+            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H265});
+        }
+        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK,
+                                         rtc::VideoCodecType::H264)) {
+            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H264});
+        }
+        break;
+    case kNvidiaVendorID:
+        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265)) {
+            abilities.push_back({VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265});
+        }
+        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264)) {
+            abilities.push_back({VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264});
+        }
+        break;
+    case kAMDVendorID:
+        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265)) {
+            abilities.push_back({VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265});
+        }
+        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264)) {
+            abilities.push_back({VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264});
+        }
+        break;
+    default:
+        abilities =
+            check_with_order({VideoEncoder::Backend::NvEnc, VideoEncoder::Backend::IntelMediaSDK,
+                              VideoEncoder::Backend::Amf},
+                             {rtc::VideoCodecType::H265, rtc::VideoCodecType::H264});
+        break;
+    }
+    return abilities;
+}
+
+} // namespace
+
+namespace lt {
+
+std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params) {
+    if (!params.validate()) {
+        LOG(WARNING) << "Create VideoEncoder failed: invalid parameters";
+        return nullptr;
+    }
+    auto [device, context, vendor_id] = create_d3d11(params.luid);
+    if (device == nullptr || context == nullptr) {
+        return nullptr;
+    }
+    return do_create_encoder(params, device.Get(), context.Get());
 }
 
 VideoEncoder::VideoEncoder(void* d3d11_dev, void* d3d11_ctx)
@@ -199,82 +334,20 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
 
 std::vector<VideoEncoder::Ability> VideoEncoder::check_encode_abilities(uint32_t width,
                                                                         uint32_t height) {
-    constexpr uint32_t kAMDVendorID = 0x1002;
-    constexpr uint32_t kIntelVendorID = 0x8086;
-    constexpr uint32_t kNvidiaVendorID = 0x10DE;
-
     auto [device, context, vendor_id] = create_d3d11();
     if (device == nullptr || context == nullptr) {
         return {};
     }
+    return do_check_encode_abilities(device, context, vendor_id, width, height);
+}
 
-    auto check_with_backend_and_codec = [width, height, dev = device.Get(), ctx = context.Get()](
-                                            Backend backend, rtc::VideoCodecType codec) -> bool {
-        InitParams params;
-        params.backend = backend;
-        params.codec_type = codec;
-        params.width = width;
-        params.height = height;
-        params.bitrate_bps = 10'000;
-        auto encoder = do_create_encoder(params, dev, ctx);
-        return encoder != nullptr;
-    };
-
-    auto check_with_order =
-        [width, height, dev = device.Get(), ctx = context.Get(), check_with_backend_and_codec](
-            std::vector<Backend> backend_order,
-            std::vector<rtc::VideoCodecType> codec_order) -> std::vector<Ability> {
-        std::vector<Ability> abilities;
-        for (auto backend : backend_order) {
-            for (auto codec_type : codec_order) {
-                if (check_with_backend_and_codec(backend, codec_type)) {
-                    abilities.push_back({backend, codec_type});
-                }
-            }
-            // 某一backend下，如果检测成功，则立马返回，因为一块显卡不可能支持NvEnc的同时，又支持IntelMediaSDK
-            if (!abilities.empty()) {
-                return abilities;
-            }
-        }
-        return abilities;
-    };
-
-    std::vector<Ability> abilities;
-    switch (vendor_id) {
-    case kIntelVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK,
-                                         rtc::VideoCodecType::H265)) {
-            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H265});
-        }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK,
-                                         rtc::VideoCodecType::H264)) {
-            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H264});
-        }
-        break;
-    case kNvidiaVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265)) {
-            abilities.push_back({VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265});
-        }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264)) {
-            abilities.push_back({VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264});
-        }
-        break;
-    case kAMDVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265)) {
-            abilities.push_back({VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265});
-        }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264)) {
-            abilities.push_back({VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264});
-        }
-        break;
-    default:
-        abilities =
-            check_with_order({VideoEncoder::Backend::NvEnc, VideoEncoder::Backend::IntelMediaSDK,
-                              VideoEncoder::Backend::Amf},
-                             {rtc::VideoCodecType::H265, rtc::VideoCodecType::H264});
-        break;
+std::vector<VideoEncoder::Ability>
+VideoEncoder::check_encode_abilities_with_luid(int64_t luid, uint32_t width, uint32_t height) {
+    auto [device, context, vendor_id] = create_d3d11_with_luid(luid);
+    if (device == nullptr || context == nullptr) {
+        return {};
     }
-    return abilities;
+    return do_check_encode_abilities(device, context, vendor_id, width, height);
 }
 
 bool VideoEncoder::InitParams::validate() const {

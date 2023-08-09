@@ -3,8 +3,6 @@
 #include <functional>
 #include <future>
 #include <memory>
-// #include <mutex>
-// #include <condition_variable>
 
 #include <ltproto/peer2peer/capture_video_frame.pb.h>
 
@@ -27,7 +25,10 @@ public:
 public:
     static std::unique_ptr<VideoCapturer> create(const Params& params);
     virtual ~VideoCapturer();
+    void start();
     void stop();
+    virtual Backend backend() const = 0;
+    virtual int64_t luid() { return -1; }
 
 protected:
     VideoCapturer();

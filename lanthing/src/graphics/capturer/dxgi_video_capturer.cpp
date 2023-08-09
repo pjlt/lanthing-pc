@@ -27,40 +27,51 @@ bool DxgiVideoCapturer::pre_init() {
 }
 
 bool DxgiVideoCapturer::init_d3d11() {
-    // 第一块显卡
-    const uint32_t index = 0;
-    HRESULT hr;
-    do {
-        hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)dxgi_factory_.GetAddressOf());
-        if (FAILED(hr)) {
-            LOGF(WARNING, "Failed to create dxgi factory, er:%08x", hr);
-            break;
-        }
-        IDXGIAdapter1* adapter = nullptr;
-        DXGI_ADAPTER_DESC1 adapter_desc;
-        hr = dxgi_factory_->EnumAdapters1(index, &adapter);
+    HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)dxgi_factory_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create dxgi factory, er:%08x", hr);
+        return false;
+    }
+    bool out_of_bound = false;
+    int32_t index = -1;
+    while (true) {
+        index += 1;
+        Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
+        DXGI_ADAPTER_DESC adapter_desc;
+        hr = dxgi_factory_->EnumAdapters(static_cast<UINT>(index), adapter.GetAddressOf());
         if (hr == DXGI_ERROR_NOT_FOUND) {
             LOGF(WARNING, "Failed to find no %u adapter", index);
+            out_of_bound = true;
             break;
         }
-        hr = adapter->GetDesc1(&adapter_desc);
+        if (hr == DXGI_ERROR_INVALID_CALL) {
+            LOG(FATAL) << "DXGI Factory == nullptr";
+            return false;
+        }
+        hr = adapter->GetDesc(&adapter_desc);
         if (FAILED(hr)) {
-            break;
+            LOGF(WARNING, "Adapter %d GetDesc failed", index);
+            continue;
         }
         UINT flag = 0;
 #ifdef _DEBUG
         flag |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-        hr = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flag, nullptr, 0,
+        hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, flag, nullptr, 0,
                                D3D11_SDK_VERSION, d3d11_dev_.GetAddressOf(), nullptr,
                                d3d11_ctx_.GetAddressOf());
         if (FAILED(hr)) {
-            LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
-            break;
+            LOGF(WARNING, "Adapter(%x:%x) failed to create d3d11 device, err:%08lx",
+                 adapter_desc.VendorId, adapter_desc.DeviceId, hr);
+            continue;
         }
-    } while (false);
-
-    return SUCCEEDED(hr);
+        luid_low_ = adapter_desc.AdapterLuid.LowPart;
+        luid_high_ = adapter_desc.AdapterLuid.HighPart;
+        LOGF(INFO, "DxgiVideoCapturer using adapter(index:%d, %x:%x, %x)", index,
+             adapter_desc.VendorId, adapter_desc.DeviceId, adapter_desc.AdapterLuid.LowPart);
+        return true;
+    }
+    return false;
 }
 
 std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::capture_one_frame() {
@@ -154,6 +165,14 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
 
 void DxgiVideoCapturer::wait_for_vblank() {
     impl_->WaitForVBlank();
+}
+
+VideoCapturer::Backend DxgiVideoCapturer::backend() const {
+    return Backend::Dxgi;
+}
+
+int64_t DxgiVideoCapturer::luid() {
+    return luid_low_;
 }
 
 } // namespace lt

@@ -185,11 +185,11 @@ bool WorkerSession::init_rtc_server() {
     std::vector<const char*> relay_servers;
     for (auto& svr : reflex_servers_) {
         reflex_servers.push_back(svr.data());
-        //LOG(DEBUG) << "Reflex: " << svr;
+        // LOG(DEBUG) << "Reflex: " << svr;
     }
     for (auto& svr : relay_servers_) {
         relay_servers.push_back(svr.data());
-        //LOG(DEBUG) << "Relay: " << svr;
+        // LOG(DEBUG) << "Relay: " << svr;
     }
     if (cfg.use_nbp2p) {
         cfg.nbp2p_params.disable_ipv6 = false;
@@ -311,6 +311,9 @@ bool WorkerSession::create_video_encoder() {
     init_params.bitrate_bps = 10'000'000; // TODO: 修改更合理的值，或者协商
     init_params.width = params->video_width();
     init_params.height = params->video_height();
+    if (params->has_luid()) {
+        init_params.luid = params->luid();
+    }
     video_encoder_ = lt::VideoEncoder::create(init_params);
     return video_encoder_ != nullptr;
 }
@@ -520,6 +523,7 @@ void WorkerSession::send_to_worker(uint32_t type,
 }
 
 void WorkerSession::on_worker_stoped() {
+    // FIXME: worker退出不代表关闭，也可能是session改变
     ioloop_->post(std::bind(&WorkerSession::on_closed, this, CloseReason::HostClose));
 }
 

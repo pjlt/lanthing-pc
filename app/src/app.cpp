@@ -150,14 +150,16 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         case ltproto::peer2peer::AVC:
             if (h264_decodable) {
                 auto video_codec = params->add_video_codecs();
-                video_codec->set_backend(Backend::StreamingParams_VideoEncodeBackend_Unknown);
+                video_codec->set_backend(
+                    Backend::StreamingParams_VideoEncodeBackend_UnknownVideoEncode);
                 video_codec->set_codec_type(CodecType::AVC);
             }
             break;
         case ltproto::peer2peer::HEVC:
             if (h265_decodable) {
                 auto video_codec = params->add_video_codecs();
-                video_codec->set_backend(Backend::StreamingParams_VideoEncodeBackend_Unknown);
+                video_codec->set_backend(
+                    Backend::StreamingParams_VideoEncodeBackend_UnknownVideoEncode);
                 video_codec->set_codec_type(CodecType::HEVC);
             }
             break;

@@ -32,7 +32,7 @@ to_protobuf(lt::VideoEncoder::Backend backend) {
     case lt::VideoEncoder::Backend::Amf:
         return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_AMF;
     default:
-        return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_Unknown;
+        return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_UnknownVideoEncode;
     }
 }
 
@@ -204,11 +204,30 @@ bool Worker::init_pipe_client() {
     return pipe_client_ != nullptr;
 }
 
-void Worker::negotiate_parameters() {
-    // TODO: 检测抓屏能力
-    std::vector<VideoEncoder::Ability> encode_abilities =
-        VideoEncoder::check_encode_abilities(client_width_, client_height_);
+bool Worker::negotiate_parameters() {
     auto negotiated_params = std::make_shared<ltproto::peer2peer::StreamingParams>();
+    lt::VideoCapturer::Params capturer_params{};
+    capturer_params.backend = lt::VideoCapturer::Backend::Dxgi;
+    capturer_params.on_frame =
+        std::bind(&Worker::on_captured_video_frame, this, std::placeholders::_1);
+    video_capturer_ = lt::VideoCapturer::create(capturer_params);
+    if (video_capturer_ == nullptr) {
+        LOGF(WARNING, "Create VideoCapturer with(backend:%d) failed", capturer_params.backend);
+        return false;
+    }
+    std::vector<VideoEncoder::Ability> encode_abilities;
+    if (capturer_params.backend == VideoCapturer::Backend::Dxgi) {
+        negotiated_params->set_video_capture_backend(
+            ltproto::peer2peer::StreamingParams_VideoCaptureBackend_Dxgi);
+        negotiated_params->set_luid(video_capturer_->luid());
+        encode_abilities = VideoEncoder::check_encode_abilities_with_luid(
+            video_capturer_->luid(), client_width_, client_height_);
+    }
+    else {
+        negotiated_params->set_video_capture_backend(
+            ltproto::peer2peer::StreamingParams_VideoCaptureBackend_UnknownVideoCapture);
+        encode_abilities = VideoEncoder::check_encode_abilities(client_width_, client_height_);
+    }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
     negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
@@ -246,6 +265,7 @@ void Worker::negotiate_parameters() {
         LOG(WARNING) << ss.str();
     }
     negotiated_params_ = negotiated_params;
+    return true;
 }
 
 void Worker::main_loop(const std::function<void()>& i_am_alive) {
@@ -339,17 +359,9 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
     auto msg = std::static_pointer_cast<ltproto::peer2peer::StartWorking>(_msg);
     auto ack = std::make_shared<ltproto::peer2peer::StartWorkingAck>();
     do {
+        video_capturer_->start();
         auto negotiated_params =
             std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_params_);
-        lt::VideoCapturer::Params video_params{};
-        video_params.backend = lt::VideoCapturer::Backend::Dxgi;
-        video_params.on_frame =
-            std::bind(&Worker::on_captured_video_frame, this, std::placeholders::_1);
-        video_capturer_ = lt::VideoCapturer::create(video_params);
-        if (video_capturer_ == nullptr) {
-            ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_VideoFailed);
-            break;
-        }
 
         Input::Params input_params{};
         input_params.types = static_cast<uint8_t>(Input::Type::WIN32_MESSAGE) |

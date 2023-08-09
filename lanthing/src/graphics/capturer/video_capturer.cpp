@@ -30,13 +30,16 @@ VideoCapturer::~VideoCapturer() {
     stop();
 }
 
+void VideoCapturer::start() {
+    thread_ = ltlib::BlockingThread::create(
+        "video_capture",
+        [this](const std::function<void()>& i_am_alive, void*) { main_loop(i_am_alive); }, nullptr);
+}
+
 bool VideoCapturer::init() {
     if (!pre_init()) {
         return false;
     }
-    thread_ = ltlib::BlockingThread::create(
-        "video_capture",
-        [this](const std::function<void()>& i_am_alive, void*) { main_loop(i_am_alive); }, nullptr);
     return true;
 }
 
