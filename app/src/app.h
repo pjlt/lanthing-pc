@@ -36,6 +36,9 @@ private:
     void onClientExitedThreadSafe(int64_t device_id);
     void createAndStartService();
     void stopService();
+    void loadHistoryIDs();
+    void saveHistoryIDs();
+    void insertNewestHistoryID(const std::string& device_id);
 
     // tcp client
     bool initTcpClient();
@@ -61,6 +64,7 @@ private:
     std::mutex mutex_;
     int64_t device_id_ = 0;
     std::string access_token_;
+    std::vector<std::string> history_ids_;
 
     UiCallback* ui_;
 };

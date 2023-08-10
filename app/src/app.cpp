@@ -106,6 +106,7 @@ bool App::init() {
     if (ioloop_ == nullptr) {
         return false;
     }
+    loadHistoryIDs();
     return true;
 }
 
@@ -236,7 +237,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
 }
 
 std::vector<std::string> App::getHistoryDeviceIDs() {
-    return {"1234568", "1234567"};
+    return history_ids_;
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -301,6 +302,66 @@ void App::stopService() {
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
     ltlib::ServiceCtrl::stopService(service_name);
 #endif // if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+}
+
+void App::loadHistoryIDs() {
+    std::string appdata_dir = ltlib::get_appdata_path(/*is_win_service=*/false);
+    std::filesystem::path filepath{appdata_dir};
+    filepath /= "lanthing";
+    filepath /= "historyids";
+    std::fstream file{filepath.c_str(), std::ios::in | std::ios::out};
+    if (!file.good()) {
+        LOGF(WARNING, "Open history ids file(%s) failed", filepath.string().c_str());
+        return;
+    }
+    std::string id;
+    uint32_t count = 0;
+    while (std::getline(file, id, ';')) {
+        if (count >= 20) {
+            break;
+        }
+        history_ids_.push_back(id);
+        count++;
+        LOG(DEBUG) << "Loaded id " << id;
+    }
+}
+
+void App::saveHistoryIDs() {
+    if (history_ids_.size() > 20) {
+        history_ids_.resize(20);
+    }
+    std::stringstream ss;
+    for (const auto& id : history_ids_) {
+        ss << id << ';';
+    }
+    std::string appdata_dir = ltlib::get_appdata_path(/*is_win_service=*/false);
+    std::filesystem::path filepath{appdata_dir};
+    filepath /= "lanthing";
+    filepath /= "historyids";
+    std::fstream file{filepath.c_str(), std::ios::out};
+    if (!file.good()) {
+        LOGF(WARNING, "Open history ids file(%s) failed", filepath.string().c_str());
+        return;
+    }
+    std::string content;
+    ss >> content;
+    file.write(content.c_str(), content.size());
+}
+
+void App::insertNewestHistoryID(const std::string& device_id) {
+    if (device_id.empty()) {
+        return;
+    }
+    size_t i = 0;
+    while (i < history_ids_.size()) {
+        if (history_ids_[i] == device_id) {
+            history_ids_.erase(history_ids_.begin() + i);
+        }
+        else {
+            i++;
+        }
+    }
+    history_ids_.insert(history_ids_.begin(), device_id);
 }
 
 #define MACRO_TO_STRING_HELPER(str) #str
@@ -454,6 +515,9 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         std::lock_guard<std::mutex> lock{mutex_};
         sessions_.erase(ack->device_id());
     }
+    //只将“合法”的device id加入历史列表
+    insertNewestHistoryID(std::to_string(ack->device_id()));
+    saveHistoryIDs();
 }
 
 } // namespace lt
