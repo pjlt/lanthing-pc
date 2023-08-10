@@ -485,7 +485,16 @@ bool D3D11Pipeline::render(int64_t resouce) {
 }
 
 bool D3D11Pipeline::setupDecoder(Format format) {
-    codec_ = Codec::VIDEO_H265;
+    switch (format) {
+    case Format::H264_NV12:
+        codec_ = Codec::VIDEO_H264;
+        break;
+    case Format::H265_NV12:
+        codec_ = Codec::VIDEO_H265;
+        break;
+    default:
+        return false;
+    }
     format_ = format;
     assert(codec_ == Codec::VIDEO_H264 || codec_ == Codec::VIDEO_H265);
     auto codec_id = codec_ == Codec::VIDEO_H264 ? AV_CODEC_ID_H264 : AV_CODEC_ID_H265;

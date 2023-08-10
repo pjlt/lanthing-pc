@@ -161,6 +161,11 @@ bool Worker::init() {
         negotiated_display_setting_.width = 1920;
         negotiated_display_setting_.height = 1080;
     }
+    else {
+        LOGF(DEBUG, "Negotiate display setting(width:%d, height:%d, refresh_rate:%d)",
+             negotiated_display_setting_.width, negotiated_display_setting_.height,
+             negotiated_display_setting_.refrash_rate);
+    }
     negotiate_parameters();
 
     namespace ltype = ltproto::type;
@@ -221,7 +226,8 @@ bool Worker::negotiate_parameters() {
             ltproto::peer2peer::StreamingParams_VideoCaptureBackend_Dxgi);
         negotiated_params->set_luid(video_capturer_->luid());
         encode_abilities = VideoEncoder::check_encode_abilities_with_luid(
-            video_capturer_->luid(), client_width_, client_height_);
+            video_capturer_->luid(), negotiated_display_setting_.width,
+            negotiated_display_setting_.height);
     }
     else {
         negotiated_params->set_video_capture_backend(

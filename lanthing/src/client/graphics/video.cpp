@@ -95,8 +95,17 @@ VideoImpl::~VideoImpl() {
 
 bool VideoImpl::init() {
     uint64_t target_adapter = 0;
-    // TODO: codec 选择的逻辑
-    Format target_format = Format::H265_NV12;
+    Format target_format;
+    switch (codec_type_) {
+    case rtc::VideoCodecType::H264:
+        target_format = Format::H264_NV12;
+        break;
+    case rtc::VideoCodecType::H265:
+        target_format = Format::H265_NV12;
+        break;
+    default:
+        return false;
+    }
     if (gpu_info_.init()) {
         std::map<uint32_t, GpuInfo::Ability> sorted_by_memory;
         for (auto& ability : gpu_info_.get()) {

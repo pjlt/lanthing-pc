@@ -10,6 +10,8 @@
 
 #include <mfxvideo.h>
 
+#include <g3log/g3log.hpp>
+
 #include <ltlib/times.h>
 
 // https://github.com/Intel-Media-SDK/samples/blob/master/samples/sample_encode/src/pipeline_region_encode.cpp
@@ -315,14 +317,14 @@ mfxVideoParam IntelEncoderImpl::gen_encode_param() {
     memset(&params, 0, sizeof(params));
     params.mfx.CodecId = codec_type_ == rtc::VideoCodecType::H264 ? MFX_CODEC_AVC : MFX_CODEC_HEVC;
     params.mfx.TargetUsage = MFX_TARGETUSAGE_BEST_SPEED;
-    params.mfx.TargetKbps = 3 * 1024 * 8;
+    params.mfx.TargetKbps = 3 * 1024;
     params.mfx.RateControlMethod = MFX_RATECONTROL_VBR;
     params.mfx.GopRefDist = 1;
     params.mfx.GopPicSize = static_cast<mfxU16>(1000000);
     params.mfx.NumRefFrame = 1;
     params.mfx.IdrInterval = 0; // 未填
     params.mfx.CodecProfile = static_cast<mfxU16>(
-        codec_type_ == rtc::VideoCodecType::H265 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN);
+        codec_type_ == rtc::VideoCodecType::H264 ? MFX_PROFILE_AVC_MAIN : MFX_PROFILE_HEVC_MAIN);
     params.mfx.CodecLevel = 0; // 未填
     params.mfx.MaxKbps = 20 * 1024;
     params.mfx.InitialDelayInKB = 0; // 未填

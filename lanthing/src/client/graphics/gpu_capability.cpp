@@ -84,7 +84,9 @@ bool GpuInfo::init() {
             ability.formats.push_back(Format::H265_NV12);
         }
         // TODO: check DXGI_FORMAT_AYUV;
-        abilities_.push_back(ability);
+        if (!ability.formats.empty()) {
+            abilities_.push_back(ability);
+        }
 
         video_device->Release();
         d3d11_dev->Release();
