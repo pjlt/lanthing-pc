@@ -19,12 +19,23 @@ namespace lt {
 
 class App {
 public:
+    struct Settings {
+        bool run_as_daemon;
+        bool auto_refresh_access_token;
+        std::string relay_server;
+    };
+
+public:
     static std::unique_ptr<App> create();
     ~App();
     int exec(int argc, char** argv);
     void loginUser();
     void connect(int64_t deviceID, const std::string& accessToken);
-    std::vector<std::string> getHistoryDeviceIDs();
+    std::vector<std::string> getHistoryDeviceIDs() const;
+    Settings getSettings() const;
+    void enableRefreshAccessToken(bool enable);
+    void enableRunAsDaemon(bool enable);
+    void setRelayServer(const std::string& svr);
 
 private:
     App();
@@ -65,6 +76,9 @@ private:
     int64_t device_id_ = 0;
     std::string access_token_;
     std::vector<std::string> history_ids_;
+    bool run_as_daemon_;
+    bool auto_refresh_access_token_;
+    std::string relay_server_;
 
     UiCallback* ui_;
 };

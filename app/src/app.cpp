@@ -17,9 +17,9 @@
 #include <ltlib/win_service.h>
 #include <ltproto/ltproto.h>
 
-#include <QtWidgets/qwidget.h>
-#include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qmenu.h>
+#include <QtWidgets/qsystemtrayicon.h>
+#include <QtWidgets/qwidget.h>
 
 using namespace ltlib::time;
 
@@ -90,8 +90,11 @@ bool App::init() {
     if (!initSettings()) {
         return false;
     }
-    std::optional<int64_t> device_id = settings_->get_integer("device_id");
-    device_id_ = device_id.value_or(0);
+    device_id_ = settings_->get_integer("device_id").value_or(0);
+    run_as_daemon_ = settings_->get_boolean("daemon").value_or(false);
+    auto_refresh_access_token_ = settings_->get_boolean("auto_refresh").value_or(false);
+    relay_server_ = settings_->get_string("relay").value_or("");
+
     std::optional<std::string> access_token = settings_->get_string("access_token");
     if (access_token.has_value()) {
         access_token_ = access_token.value();
@@ -154,7 +157,7 @@ int App::exec(int argc, char** argv) {
                          default:
                              break;
                          }
-        });
+                     });
     menu->addAction(a0);
     menu->addAction(a1);
     menu->addAction(a2);
@@ -236,8 +239,31 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     tryRemoveSessionAfter10s(peerDeviceID);
 }
 
-std::vector<std::string> App::getHistoryDeviceIDs() {
+std::vector<std::string> App::getHistoryDeviceIDs() const {
     return history_ids_;
+}
+
+App::Settings App::getSettings() const {
+    Settings settings{};
+    settings.auto_refresh_access_token = auto_refresh_access_token_;
+    settings.run_as_daemon = run_as_daemon_;
+    settings.relay_server = relay_server_;
+    return settings;
+}
+
+void App::enableRefreshAccessToken(bool enable) {
+    auto_refresh_access_token_ = enable;
+    settings_->set_boolean("auto_refresh", enable);
+}
+
+void App::enableRunAsDaemon(bool enable) {
+    run_as_daemon_ = enable;
+    settings_->set_boolean("daemon", enable);
+}
+
+void App::setRelayServer(const std::string& svr) {
+    relay_server_ = svr;
+    settings_->set_string("relay", svr);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -287,7 +313,7 @@ void App::createAndStartService() {
     bin_path /= "lanthing.exe";
     if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
         LOGF(WARNING, "Create service failed (name:%s, path:%s)", service_name.c_str(),
-            bin_path.string().c_str());
+             bin_path.string().c_str());
         return;
     }
     if (!ltlib::ServiceCtrl::startService(service_name)) {
@@ -515,7 +541,7 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         std::lock_guard<std::mutex> lock{mutex_};
         sessions_.erase(ack->device_id());
     }
-    //只将“合法”的device id加入历史列表
+    // 只将“合法”的device id加入历史列表
     insertNewestHistoryID(std::to_string(ack->device_id()));
     saveHistoryIDs();
 }

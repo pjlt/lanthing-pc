@@ -24,18 +24,72 @@
    </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QCheckBox" name="checkBox_2">
+     <widget class="QCheckBox" name="checkbox_daemon">
       <property name="text">
        <string>常驻后台</string>
       </property>
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QCheckBox" name="checkBox_5">
+     <widget class="QCheckBox" name="checkbox_refresh_passwd">
       <property name="text">
        <string>密码自动更新</string>
       </property>
      </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="verticalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>270</y>
+     <width>391</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="label_relay">
+        <property name="text">
+         <string>中继服务器</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineedit_relay"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_relay">
+        <property name="text">
+         <string>确认</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_2"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="text">
+         <string>PushButton</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

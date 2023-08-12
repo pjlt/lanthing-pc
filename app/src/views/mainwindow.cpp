@@ -37,7 +37,7 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
     auto* pages_layout = new QStackedLayout();
     auto* main_page = new QWidget();
     auto* setting_page = new QWidget();
-    pages_layout->addWidget(main_page); // index 0
+    pages_layout->addWidget(main_page);    // index 0
     pages_layout->addWidget(setting_page); // index 1
     switch_to_main_page_ = [pages_layout]() { pages_layout->setCurrentIndex(0); };
     switch_to_setting_page_ = [pages_layout]() { pages_layout->setCurrentIndex(1); };
@@ -46,13 +46,25 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
 
     menu_ui = new Menu(menu);
     main_page_ui = new MainPage(app->getHistoryDeviceIDs(), main_page);
-    setting_page_ui = new SettingPage(setting_page);
+
+    auto loadded_settigns = a->getSettings();
+    PreloadSettings settings;
+    settings.refresh_access_token = loadded_settigns.auto_refresh_access_token;
+    settings.run_as_daemon = loadded_settigns.run_as_daemon;
+    settings.relay_server = loadded_settigns.relay_server;
+    setting_page_ui = new SettingPage(settings, setting_page);
 
     connect(menu_ui, &Menu::pageSelect,
             [pages_layout](const int index) { pages_layout->setCurrentIndex(index); });
     connect(
         main_page_ui, &MainPage::onConnectBtnPressed1,
         [this](const std::string& dev_id, const std::string& token) { doInvite(dev_id, token); });
+    connect(setting_page_ui, &SettingPage::refreshAccessTokenStateChanged,
+            [this](bool checked) { app->enableRefreshAccessToken(checked); });
+    connect(setting_page_ui, &SettingPage::runAsDaemonStateChanged,
+            [this](bool checked) { app->enableRunAsDaemon(checked); });
+    connect(setting_page_ui, &SettingPage::relayServerChanged,
+            [this](const std::string& svr) { app->setRelayServer(svr); });
 
     // FIXME: 还没有实现"登录逻辑"
     menu_ui->setLoginStatus(Menu::LoginStatus::LOGINING);
