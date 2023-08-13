@@ -24,7 +24,7 @@
 #include "firewall.h"
 
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
-//不显示命令行窗口.
+// 不显示命令行窗口.
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #endif
 
@@ -198,6 +198,7 @@ int run_as_worker(std::map<std::string, std::string> options) {
 } // namespace
 
 int main(int argc, char* argv[]) {
+    ::srand(static_cast<unsigned int>(::time(nullptr)));
     auto options = parse_options(argc, argv);
     auto iter = options.find("-type");
     if (iter == options.end() || iter->second == "service") {

@@ -50,6 +50,7 @@ private:
     void loadHistoryIDs();
     void saveHistoryIDs();
     void insertNewestHistoryID(const std::string& device_id);
+    void maybeRefreshAccessToken();
 
     // tcp client
     bool initTcpClient();

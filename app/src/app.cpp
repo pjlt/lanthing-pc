@@ -52,11 +52,12 @@ std::string generateAccessToken() {
     std::string str(kNumLen + kAlphaLen, '*');
 
     for (size_t i = 0; i < kAlphaLen; i++) {
-        str[i] = alphabet[rand() % sizeof(alphabet)];
+        str[i] = alphabet[rand() % (sizeof(alphabet) - 1)];
     }
     for (size_t i = kAlphaLen; i < kAlphaLen + kNumLen; i++) {
-        str[i] = numbers[rand() % sizeof(numbers)];
+        str[i] = numbers[rand() % (sizeof(numbers) - 1)];
     }
+    LOG(DEBUG) << "Generated access token: " << str.c_str();
     return str;
 }
 
@@ -65,7 +66,6 @@ std::string generateAccessToken() {
 namespace lt {
 
 std::unique_ptr<App> lt::App::create() {
-    ::srand(time(nullptr));
     std::unique_ptr<App> app{new App};
     if (!app->init()) {
         return nullptr;
@@ -83,7 +83,9 @@ App::~App() {
         ioloop_->stop();
     }
     thread_.reset();
-    stopService();
+    if (!run_as_daemon_) {
+        stopService();
+    }
 }
 
 bool App::init() {
@@ -390,6 +392,15 @@ void App::insertNewestHistoryID(const std::string& device_id) {
     history_ids_.insert(history_ids_.begin(), device_id);
 }
 
+void App::maybeRefreshAccessToken() {
+    if (!auto_refresh_access_token_) {
+        return;
+    }
+    access_token_ = generateAccessToken();
+    settings_->set_string("access_token", access_token_);
+    ui_->onLocalAccessToken(access_token_);
+}
+
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
 #include <lanthing.cert>
@@ -544,6 +555,7 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     // 只将“合法”的device id加入历史列表
     insertNewestHistoryID(std::to_string(ack->device_id()));
     saveHistoryIDs();
+    maybeRefreshAccessToken();
 }
 
 } // namespace lt

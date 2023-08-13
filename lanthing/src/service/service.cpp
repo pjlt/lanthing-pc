@@ -19,7 +19,9 @@ Service::Service() = default;
 
 Service::~Service() {
     assert(ioloop_->is_not_current_thread());
-    ioloop_->stop();
+    if (ioloop_) {
+        ioloop_->stop();
+    }
 }
 
 bool Service::init() {
@@ -31,13 +33,15 @@ bool Service::init() {
         LOG(WARNING) << "Get device_id from local settings failed";
         return false;
     }
-    std::optional<std::string> access_token = settings_->get_string("access_token");
-    if (!access_token.has_value() || access_token.value().empty()) {
-        LOG(WARNING) << "Get access_token from local settings failed";
-        return false;
-    }
     device_id_ = device_id.value();
-    access_token_ = access_token.value();
+
+    // std::optional<std::string> access_token = settings_->get_string("access_token");
+    // if (!access_token.has_value() || access_token.value().empty()) {
+    //     LOG(WARNING) << "Get access_token from local settings failed";
+    //     return false;
+    // }
+    // access_token_ = access_token.value();
+
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         return false;
@@ -149,7 +153,12 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
     LOG(INFO) << "Received OpenConnection";
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-    if (msg->access_token() != access_token_) {
+    std::optional<std::string> access_token = settings_->get_string("access_token");
+    if (!access_token.has_value() || access_token.value().empty()) {
+        LOG(WARNING) << "Get access_token from local settings failed";
+        return;
+    }
+    if (msg->access_token() != access_token.value()) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(WARNING) << "Received connection with invalid access_token: " << msg->access_token();
@@ -168,12 +177,17 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
             worker_sessions_[session_name] = nullptr;
         }
     }
-    auto session = WorkerSession::create(
-        session_name, msg,
+    WorkerSession::Params worker_params{};
+    worker_params.name = session_name;
+    worker_params.user_defined_relay_server = settings_->get_string("relay").value_or("");
+    worker_params.msg = msg;
+    worker_params.on_create_completed =
         std::bind(&Service::on_create_session_completed_thread_safe, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3),
+                  std::placeholders::_2, std::placeholders::_3);
+    worker_params.on_closed =
         std::bind(&Service::on_session_closed_thread_safe, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3));
+                  std::placeholders::_2, std::placeholders::_3);
+    auto session = WorkerSession::create(worker_params);
     if (session != nullptr) {
         std::lock_guard<std::mutex> lock{mutex_};
         worker_sessions_[session_name] = session;

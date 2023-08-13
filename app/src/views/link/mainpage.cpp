@@ -12,7 +12,7 @@ class AccesstokenValidator : public QValidator {
 public:
     AccesstokenValidator(QWidget* parent);
     State validate(QString&, int&) const override;
-    // void fixup(QString&) const override;
+    void fixup(QString&) const override;
 };
 
 AccesstokenValidator::AccesstokenValidator(QWidget* parent)
@@ -38,7 +38,9 @@ QValidator::State AccesstokenValidator::validate(QString& input, int& pos) const
     return State::Acceptable;
 }
 
-// void AccesstokenValidator::fixup(QString&) const {}
+void AccesstokenValidator::fixup(QString& input) const {
+    input = input.toUpper();
+}
 
 } // namespace
 
@@ -51,8 +53,8 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
 
     QIcon pc_icon{":/icons/icons/pc.png"};
     if (history_device_ids_.empty()) {
-        //ui->device_id->insertItem(0, "");
-        //ui->device_id->setItemIcon(0, QIcon(":/icons/icons/pc.png"));
+        // ui->device_id->insertItem(0, "");
+        // ui->device_id->setItemIcon(0, QIcon(":/icons/icons/pc.png"));
         ui->device_id->addItem(pc_icon, "");
     }
     else {

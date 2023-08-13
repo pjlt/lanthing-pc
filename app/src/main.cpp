@@ -11,7 +11,6 @@
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
-
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 // 不显示命令行窗口.
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
@@ -66,6 +65,7 @@ void initLogging() {
 } // namespace
 
 int main(int argc, char** argv) {
+    ::srand(time(nullptr)); // 为什么这个srand不生效?
     initLogging();
     std::unique_ptr<lt::App> app = lt::App::create();
     if (app == nullptr) {

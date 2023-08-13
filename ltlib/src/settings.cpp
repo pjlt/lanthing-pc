@@ -172,6 +172,8 @@ void LockedFile::write_str(const std::string& str)
     SetFilePointer(handle_, 0, nullptr, FILE_BEGIN);
     BOOL ret = WriteFile(handle_, str.data(), static_cast<DWORD>(str.size()), &written_size, nullptr);
     (void)ret; // FIXME: error handling??
+    ret = SetEndOfFile(handle_);
+    (void)ret;
 #elif defined(LT_LINUX)
     // Linux implementation
 #else

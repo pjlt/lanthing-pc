@@ -26,18 +26,23 @@ public:
         TimeoutClose,
     };
 
+    struct Params {
+        std::string name;
+        std::string user_defined_relay_server;
+        std::shared_ptr<google::protobuf::MessageLite> msg;
+        std::function<void(bool, const std::string&,
+                           std::shared_ptr<google::protobuf::MessageLite>)>
+            on_create_completed;
+        std::function<void(CloseReason, const std::string&, const std::string&)> on_closed;
+    };
+
 public:
-    static std::shared_ptr<WorkerSession>
-    create(const std::string& name, std::shared_ptr<google::protobuf::MessageLite> msg,
-           std::function<void(bool, const std::string&,
-                              std::shared_ptr<google::protobuf::MessageLite>)>
-               on_create_completed,
-           std::function<void(CloseReason, const std::string&, const std::string&)> on_closed);
+    static std::shared_ptr<WorkerSession> create(const Params& params);
     ~WorkerSession();
 
 private:
     WorkerSession(
-        const std::string& name,
+        const std::string& name, const std::string& relay_server,
         std::function<void(bool, const std::string&,
                            std::shared_ptr<google::protobuf::MessageLite>)>
             on_create_completed,
@@ -102,6 +107,7 @@ private:
 
 private:
     std::string session_name_;
+    std::string user_defined_relay_server_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;

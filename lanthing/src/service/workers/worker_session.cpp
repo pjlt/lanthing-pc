@@ -64,27 +64,25 @@ namespace svc {
 // 5. 主控端连接信令服务器.
 // 6. 主控端连接信令成功，发起rtc连接.
 
-std::shared_ptr<WorkerSession> svc::WorkerSession::create(
-    const std::string& name, std::shared_ptr<google::protobuf::MessageLite> msg,
-    std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
-        on_create_completed,
-    std::function<void(CloseReason, const std::string&, const std::string&)> on_closed) {
-    std::shared_ptr<WorkerSession> session{new WorkerSession(name, on_create_completed, on_closed)};
-    if (!session->init(msg)) {
+std::shared_ptr<WorkerSession> svc::WorkerSession::create(const Params& params) {
+    std::shared_ptr<WorkerSession> session{
+        new WorkerSession(params.name, params.user_defined_relay_server, params.on_create_completed,
+                          params.on_closed)};
+    if (!session->init(params.msg)) {
         return nullptr;
     }
     return session;
 }
 
 WorkerSession::WorkerSession(
-    const std::string& name,
+    const std::string& name, const std::string& relay_server,
     std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
         on_create_completed,
     std::function<void(CloseReason, const std::string&, const std::string&)> on_closed)
     : session_name_(name)
+    , user_defined_relay_server_(relay_server)
     , on_create_session_completed_(on_create_completed)
     , on_closed_(on_closed) {
-    ::srand(static_cast<unsigned int>(::time(nullptr)));
     constexpr int kRandLength = 4;
     // 是否需要global?
     pipe_name_ = "Lanthing_worker_";
@@ -108,12 +106,20 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     p2p_password_ = msg->p2p_password();
     signaling_addr_ = msg->signaling_addr();
     signaling_port_ = static_cast<uint16_t>(msg->signaling_port());
+
     for (int i = 0; i < msg->reflex_servers_size(); i++) {
         reflex_servers_.push_back(msg->reflex_servers(i));
     }
-    for (int i = 0; i < msg->relay_servers_size(); i++) {
-        relay_servers_.push_back(msg->relay_servers(i));
+
+    if (user_defined_relay_server_.empty()) {
+        for (int i = 0; i < msg->relay_servers_size(); i++) {
+            relay_servers_.push_back(msg->relay_servers(i));
+        }
     }
+    else {
+        relay_servers_.push_back(user_defined_relay_server_);
+    }
+
     if (!msg->has_streaming_params()) {
         // 当前只支持串流，未来有可能支持串流以外的功能，所以这个streaming_params是optional的.
         LOG(WARNING) << "Received OpenConnection without streaming params";
