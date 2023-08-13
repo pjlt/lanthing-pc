@@ -15,6 +15,7 @@ class NvD3d11Encoder : public VideoEncoder {
 public:
     NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx);
     ~NvD3d11Encoder() override;
+
     bool init(const InitParams& params);
     void reconfigure(const ReconfigureParams& params) override;
     EncodedFrame encode_one_frame(void* input_frame, bool request_iframe) override;

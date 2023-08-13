@@ -1,20 +1,21 @@
 project(nvcodec)
 
+if (NOT NVCODEC_VERSION)
+    set(NVCODEC_VERSION 9)
+endif()
 
 
-set(LIB_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/nvcodec/nvEncodeAPI.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/nvcodec/NvEncoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/nvcodec/NvEncoderCLIOptions.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/nvcodec/NvEncoderD3D9.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/nvcodec/NvEncoderD3D11.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/NvEncoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/NvEncoderD3D9.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/NvEncoderD3D11.cpp
-)
+add_library(${PROJECT_NAME} STATIC IMPORTED GLOBAL)
 
-add_library(${PROJECT_NAME} ${LIB_SRCS})
-
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${LIB_SRCS})
+if (NVCODEC_VERSION EQUAL 9)
+    set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_LINK_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/v9.0.20/lib/win")
+    set_target_properties(${PROJECT_NAME} PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/v9.0.20/lib/win/nvcuvid.lib")
+    target_include_directories(${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/v9.0.20/include")
+elseif(NVCODEC_VERSION EQUAL 11)
+    set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_LINK_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/v11.0.10/lib/win")
+    set_target_properties(${PROJECT_NAME} PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/v11.0.10/lib/win/nvcuvid.lib")
+    set_target_properties(${PROJECT_NAME} PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/v11.0.10/lib/win/nvencodeapi.lib")
+    target_include_directories(${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/v11.0.10/include")
+else()
+    message(FATAL_ERROR "Unsupported NVCODEC_VERSION ${NVCODEC_VERSION}")
+endif()
