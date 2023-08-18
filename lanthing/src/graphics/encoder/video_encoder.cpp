@@ -7,8 +7,10 @@
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
 
+#include "amd_encoder.h"
 #include "intel_encoder.h"
 #include "nvidia_encoder.h"
+#include "params_helper.h"
 #include "video_encoder.h"
 
 using Microsoft::WRL::ComPtr;
@@ -140,11 +142,13 @@ auto create_d3d11(std::optional<int64_t> luid)
 std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::InitParams& params,
                                                     void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt;
+    VideoEncodeParamsHelper params_helper{params.codec_type, params.width, params.height, 60,
+                                          1024 * 5,          false};
     switch (params.backend) {
     case VideoEncoder::Backend::NvEnc:
     {
         auto encoder = std::make_unique<NvD3d11Encoder>(d3d11_dev, d3d11_ctx);
-        if (encoder->init(params)) {
+        if (encoder->init(params_helper)) {
             LOG(INFO) << "NvidiaEncoder created";
             return encoder;
         }
@@ -163,6 +167,19 @@ std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::Init
         }
         else {
             LOGF(INFO, "Create IntelEncoder(w:%u,h:%u,c:%d) failed", params.width, params.height,
+                 params.codec_type);
+            return nullptr;
+        }
+    }
+    case VideoEncoder::Backend::Amf:
+    {
+        auto encoder = std::make_unique<AmdEncoder>(d3d11_dev, d3d11_ctx);
+        if (encoder->init(params_helper)) {
+            LOG(INFO) << "AmdEncoder created";
+            return encoder;
+        }
+        else {
+            LOGF(INFO, "Create AmdEncoder(w:%u,h:%u,c:%d) failed", params.width, params.height,
                  params.codec_type);
             return nullptr;
         }

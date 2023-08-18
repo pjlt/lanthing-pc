@@ -68,6 +68,10 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_allocator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/amd_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/amd_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/params_helper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/params_helper.cpp
     # graphics->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.cpp
@@ -123,6 +127,7 @@ target_link_libraries(${PROJECT_NAME}
     ffmpeg
     nvcodec
     mfx
+    amf
     uv
     breakpad
     ltlib

@@ -67,6 +67,7 @@ add_subdirectory(third_party/tomlplusplus)
 add_subdirectory(third_party/utfcpp)
 add_subdirectory(third_party/nvcodec)
 add_subdirectory(third_party/mfx_builder)
+add_subdirectory(third_party/amf)
 add_subdirectory(third_party/ffmpeg)
 add_subdirectory(third_party/breakpad_builder)
 
