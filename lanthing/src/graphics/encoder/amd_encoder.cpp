@@ -26,12 +26,13 @@ public:
 
     std::wstring codec() const;
     int fps() const { return params_.fps(); }
-    int64_t gop() const { return params_.gop(); }
+    int64_t gop() const { return params_.gop() < 0 ? 0 : params_.gop(); }
     int64_t bitrate() const { return params_.bitrate(); }
     int64_t qmin() const { return params_.qmin()[0]; }
     int64_t qmax() const { return params_.qmax()[0]; }
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM rc() const;
-    AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM preset() const;
+    AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM presetAvc() const;
+    AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM presetHevc() const;
 
 private:
     const lt::VideoEncodeParamsHelper params_;
@@ -49,7 +50,7 @@ std::wstring AmfParamsHelper::codec() const {
     }
 }
 
-AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM AmfParamsHelper::preset() const {
+AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM AmfParamsHelper::presetAvc() const {
     switch (params_.preset()) {
     case lt::VideoEncodeParamsHelper::Preset::Balanced:
         return AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED;
@@ -60,6 +61,20 @@ AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM AmfParamsHelper::preset() const {
     default:
         assert(false);
         return AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED;
+    }
+}
+
+AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM AmfParamsHelper::presetHevc() const {
+    switch (params_.preset()) {
+    case lt::VideoEncodeParamsHelper::Preset::Balanced:
+        return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED;
+    case lt::VideoEncodeParamsHelper::Preset::Speed:
+        return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED;
+    case lt::VideoEncodeParamsHelper::Preset::Quality:
+        return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY;
+    default:
+        assert(false);
+        return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED;
     }
 }
 
@@ -89,7 +104,8 @@ public:
 
 private:
     bool loadAmdApi();
-    bool setEncodeParams(const AmfParamsHelper& params);
+    bool setAvcEncodeParams(const AmfParamsHelper& params);
+    bool setHevcEncodeParams(const AmfParamsHelper& params);
     bool isKeyFrame(amf::AMFDataPtr data);
 
 private:
@@ -138,7 +154,19 @@ bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
         LOG(WARNING) << "AMFFactory::CreateComponent failed with " << result;
         return false;
     }
-    if (!setEncodeParams(params_helper)) {
+    if (codec_type_ == rtc::VideoCodecType::H264) {
+        if (!setAvcEncodeParams(params_helper)) {
+            return false;
+        }
+    }
+    else {
+        if (!setHevcEncodeParams(params_helper)) {
+            return false;
+        }
+    }
+    result = encoder_->Init(amf::AMF_SURFACE_BGRA, width_, height_);
+    if (result != AMF_OK) {
+        LOG(WARNING) << "AMFComponent::Init failed with " << result;
         return false;
     }
     return true;
@@ -238,7 +266,7 @@ bool AmdEncoderImpl::loadAmdApi() {
     return true;
 }
 
-bool AmdEncoderImpl::setEncodeParams(const AmfParamsHelper& params) {
+bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
     AMF_RESULT result =
         encoder_->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
     if (result != AMF_OK) {
@@ -265,7 +293,7 @@ bool AmdEncoderImpl::setEncodeParams(const AmfParamsHelper& params) {
         LOG(WARNING) << "Set AMF_VIDEO_ENCODER_MAX_QP failed with " << result;
         return false;
     }
-    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, params.preset());
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, params.presetAvc());
     if (result != AMF_OK) {
         LOG(WARNING) << "Set AMF_VIDEO_ENCODER_QUALITY_PRESET failed with " << result;
         return false;
@@ -300,6 +328,73 @@ bool AmdEncoderImpl::setEncodeParams(const AmfParamsHelper& params) {
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
     if (result != AMF_OK) {
         LOG(WARNING) << "Set AMF_VIDEO_ENCODER_LOWLATENCY_MODE failed with " << result;
+        return false;
+    }
+    return true;
+}
+
+bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
+    AMF_RESULT result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE,
+                                              AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY);
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_USAGE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_GOP_SIZE, params.gop());
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_GOP_SIZE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, params.bitrate());
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MIN_QP_P, params.qmin());
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_MIN_QP_P failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MAX_QP_P, params.qmax());
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_MAX_QP_P failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, params.presetHevc());
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET failed with " << result;
+        return false;
+    }
+    //result = encoder_->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+    //if (result != AMF_OK) {
+    //    LOG(WARNING) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
+    //    return false;
+    //}
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE,
+                                   ::AMFConstructSize(width_, height_));
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMESIZE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE,
+                                   ::AMFConstructRate(params.fps(), 1));
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMERATE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_ENFORCE_HRD, true); // ??
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_ENFORCE_HRD failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, params.rc());
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
+    if (result != AMF_OK) {
+        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE failed with " << result;
         return false;
     }
     return true;
