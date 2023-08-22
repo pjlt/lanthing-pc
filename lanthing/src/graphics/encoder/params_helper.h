@@ -35,6 +35,8 @@ public:
     uint32_t height() const { return height_; }
     int fps() const { return fps_; }
     uint32_t bitrate() const { return bitrate_kbps_ * 1024; }
+    uint32_t bitrate_kbps() const { return bitrate_kbps_; }
+    uint32_t maxbitrate_kbps() const { return static_cast<uint32_t>(bitrate_kbps_ * 1.05f); }
     uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate_kbps_ * 1024 * 1.05f); }
     std::array<uint32_t, 3> qmin() const { return qmin_; }
     std::array<uint32_t, 3> qmax() const { return qmax_; }

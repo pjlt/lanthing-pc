@@ -152,11 +152,11 @@ MfxEncoderFrameAllocator::MfxEncoderFrameAllocator(
 
 mfxStatus MfxEncoderFrameAllocator::alloc(mfxFrameAllocRequest* request,
                                           mfxFrameAllocResponse* response) {
+    LOGF(DEBUG, "MfxEncoderFrameAllocator::alloc width:%u, height:%u", request->Info.Width, request->Info.Height);
     FrameBuffer fb;
-    D3D11_TEXTURE2D_DESC desc;
-    memset(&desc, 0, sizeof(desc));
-    desc.Width = 1920;
-    desc.Height = 1080;
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = request->Info.Width;
+    desc.Height = request->Info.Height;
     desc.MipLevels = 1;
     desc.ArraySize = 1;
     desc.Format = DXGI_FORMAT_NV12;

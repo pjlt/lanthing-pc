@@ -65,10 +65,9 @@ bool DxgiVideoCapturer::init_d3d11() {
                  adapter_desc.VendorId, adapter_desc.DeviceId, hr);
             continue;
         }
-        luid_low_ = adapter_desc.AdapterLuid.LowPart;
-        luid_high_ = adapter_desc.AdapterLuid.HighPart;
+        luid_ = ((uint64_t)adapter_desc.AdapterLuid.HighPart << 32) + adapter_desc.AdapterLuid.LowPart;
         LOGF(INFO, "DxgiVideoCapturer using adapter(index:%d, %x:%x, %x)", index,
-             adapter_desc.VendorId, adapter_desc.DeviceId, adapter_desc.AdapterLuid.LowPart);
+             adapter_desc.VendorId, adapter_desc.DeviceId, luid_);
         return true;
     }
     return false;
@@ -172,7 +171,7 @@ VideoCapturer::Backend DxgiVideoCapturer::backend() const {
 }
 
 int64_t DxgiVideoCapturer::luid() {
-    return luid_low_;
+    return luid_;
 }
 
 } // namespace lt

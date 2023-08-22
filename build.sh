@@ -104,6 +104,17 @@ clear_sdl() {
     exit_if_fail
 }
 
+build_onevpl() {
+    echo -e "\033[32m building oneVPL\033[0m"
+    cd third_party/oneVPL
+    mkdir -p build/; cd build;
+    $CMAKE .. -DBUILD_DEV=ON -DBUILD_DISPATCHER=ON -DBUILD_TOOLS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PREVIEW=OFF -DINSTALL_EXAMPLE_CODE=OFF -DBUILD_DISPATCHER_ONEVPL_EXPERIMENTAL=ON -DBUILD_TOOLS_ONEVPL_EXPERIMENTAL=OFF -DCMAKE_INSTALL_PREFIX=install/Debug
+    $CMAKE --build . --config Debug --target install
+    $CMAKE .. -DBUILD_DEV=ON -DBUILD_DISPATCHER=ON -DBUILD_TOOLS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PREVIEW=OFF -DINSTALL_EXAMPLE_CODE=OFF -DBUILD_DISPATCHER_ONEVPL_EXPERIMENTAL=ON -DBUILD_TOOLS_ONEVPL_EXPERIMENTAL=OFF -DCMAKE_INSTALL_PREFIX=install/Release
+    $CMAKE --build . --config Release --target install
+    cd $root_dir;
+}
+
 build_g3log() {
     echo -e "\033[32m building g3log\033[0m"
     cd third_party/g3log

@@ -33,7 +33,7 @@ public:
 
     struct InitParams {
         Backend backend = Backend::Unknown;
-        std::optional<int64_t> luid;
+        int64_t luid;
         rtc::VideoCodecType codec_type = rtc::VideoCodecType::H264;
         uint32_t width = 0;
         uint32_t height = 0;

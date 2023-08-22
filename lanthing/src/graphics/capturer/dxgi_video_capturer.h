@@ -29,8 +29,7 @@ private:
     size_t index_ = 0;
     std::vector<ID3D11Texture2D*> texture_pool_;
     std::vector<uint64_t> shared_handles_;
-    int64_t luid_low_;
-    int64_t luid_high_;
+    int64_t luid_;
 };
 
 } // namespace lt

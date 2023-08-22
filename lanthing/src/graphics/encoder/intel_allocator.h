@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-#include <mfxvideo.h>
+#include <vpl/mfx.h>
 
 namespace lt {
 
@@ -56,6 +56,7 @@ private:
     std::map<mfxMemId*, FrameBuffer> frame_buffers_;
 };
 
+// MfxDecoderFrameAllocator没测过，别用
 class MfxDecoderFrameAllocator : public MfxFrameAllocator {
 public:
     MfxDecoderFrameAllocator(Microsoft::WRL::ComPtr<ID3D11Device> device);

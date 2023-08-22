@@ -126,7 +126,7 @@ target_link_libraries(${PROJECT_NAME}
     SDL2::SDL2
     ffmpeg
     nvcodec
-    mfx
+    VPL::dispatcher
     amf
     uv
     breakpad
