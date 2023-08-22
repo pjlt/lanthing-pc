@@ -35,7 +35,6 @@ public:
     virtual void reconnect() = 0;
 };
 
-
 class LibuvCTransport : public CTransport
 {
 public:
@@ -47,6 +46,8 @@ public:
     bool is_tcp() const;
     const std::string& pipe_name();
     const std::string& host();
+    std::string ip() const;
+    uint16_t port() const;
 
 private:
     bool init_tcp();
@@ -69,6 +70,8 @@ private:
     std::string pipe_name_;
     std::string host_;
     uint16_t port_;
+    std::string local_ip_;
+    uint16_t local_port_ = 0;
     std::unique_ptr<uv_tcp_t> tcp_;
     std::unique_ptr<uv_pipe_t> pipe_;
     std::unique_ptr<uv_connect_t> conn_req_;

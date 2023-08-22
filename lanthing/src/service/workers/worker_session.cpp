@@ -20,20 +20,25 @@
 #include <ltlib/system.h>
 #include <ltlib/times.h>
 
-#include <string_keys.h>
-// #include <graphics/encoder/video_encoder.h>
+#if LT_USE_LTRTC
+#include <rtc/rtc.h>
+#else // LT_USE_LTRTC
+#include <transport/transport_tcp.h>
+#endif // LT_USE_LTRTC
+
 #include "worker_process.h"
+#include <string_keys.h>
 
 namespace {
 
-rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type) {
+lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type) {
     switch (type) {
     case ltproto::peer2peer::VideoCodecType::AVC:
-        return rtc::VideoCodecType::H264;
+        return lt::VideoCodecType::H264;
     case ltproto::peer2peer::VideoCodecType::HEVC:
-        return rtc::VideoCodecType::H265;
+        return lt::VideoCodecType::H265;
     default:
-        return rtc::VideoCodecType::Unknown;
+        return lt::VideoCodecType::Unknown;
     }
 }
 
@@ -133,14 +138,14 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         LOG(WARNING) << "Received OpenConnection with invalid streaming params";
         return false;
     }
-    std::vector<rtc::VideoCodecType> client_codecs;
+    std::vector<lt::VideoCodecType> client_codecs;
     for (auto codec : msg->streaming_params().video_codecs()) {
         switch (ltproto::peer2peer::VideoCodecType(codec.codec_type())) {
         case ltproto::peer2peer::VideoCodecType::AVC:
-            client_codecs.push_back(rtc::VideoCodecType::H264);
+            client_codecs.push_back(lt::VideoCodecType::H264);
             break;
         case ltproto::peer2peer::VideoCodecType::HEVC:
-            client_codecs.push_back(rtc::VideoCodecType::H265);
+            client_codecs.push_back(lt::VideoCodecType::H265);
             break;
         default:
             break;
@@ -185,8 +190,9 @@ bool WorkerSession::init_rtc_server() {
     auto negotiated_params =
         std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
     namespace ph = std::placeholders;
-    rtc::Server::Params cfg;
-    cfg.use_nbp2p = true;
+#if LT_USE_LTRTC
+    rtc::Server::Params params{};
+    params.use_nbp2p = true;
     std::vector<const char*> reflex_servers;
     std::vector<const char*> relay_servers;
     for (auto& svr : reflex_servers_) {
@@ -197,29 +203,41 @@ bool WorkerSession::init_rtc_server() {
         relay_servers.push_back(svr.data());
         // LOG(DEBUG) << "Relay: " << svr;
     }
-    if (cfg.use_nbp2p) {
-        cfg.nbp2p_params.disable_ipv6 = false;
-        cfg.nbp2p_params.disable_lan_udp = false;
-        cfg.nbp2p_params.disable_mapping = false;
-        cfg.nbp2p_params.disable_reflex = false;
-        cfg.nbp2p_params.disable_relay = false;
-        cfg.nbp2p_params.username = p2p_username_.c_str();
-        cfg.nbp2p_params.password = p2p_password_.c_str();
-        cfg.nbp2p_params.reflex_servers = reflex_servers.data();
-        cfg.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
-        cfg.nbp2p_params.relay_servers = relay_servers.data();
-        cfg.nbp2p_params.relay_servers_count = static_cast<uint32_t>(relay_servers.size());
+    if (params.use_nbp2p) {
+        params.nbp2p_params.disable_ipv6 = false;
+        params.nbp2p_params.disable_lan_udp = false;
+        params.nbp2p_params.disable_mapping = false;
+        params.nbp2p_params.disable_reflex = false;
+        params.nbp2p_params.disable_relay = false;
+        params.nbp2p_params.username = p2p_username_.c_str();
+        params.nbp2p_params.password = p2p_password_.c_str();
+        params.nbp2p_params.reflex_servers = reflex_servers.data();
+        params.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
+        params.nbp2p_params.relay_servers = relay_servers.data();
+        params.nbp2p_params.relay_servers_count = static_cast<uint32_t>(relay_servers.size());
     }
-    cfg.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
-    cfg.on_failed = std::bind(&WorkerSession::on_ltrtc_failed_thread_safe, this);
-    cfg.on_disconnected = std::bind(&WorkerSession::on_ltrtc_disconnected_thread_safe, this);
-    cfg.on_accepted = std::bind(&WorkerSession::on_ltrtc_accepted_thread_safe, this);
-    cfg.on_conn_changed = std::bind(&WorkerSession::on_ltrtc_conn_changed, this);
-    cfg.on_data = std::bind(&WorkerSession::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
-    cfg.on_signaling_message =
+    params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
+    params.on_failed = std::bind(&WorkerSession::on_ltrtc_failed_thread_safe, this);
+    params.on_disconnected = std::bind(&WorkerSession::on_ltrtc_disconnected_thread_safe, this);
+    params.on_accepted = std::bind(&WorkerSession::on_ltrtc_accepted_thread_safe, this);
+    params.on_conn_changed = std::bind(&WorkerSession::on_ltrtc_conn_changed, this);
+    params.on_data = std::bind(&WorkerSession::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
+    params.on_signaling_message =
         std::bind(&WorkerSession::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
-    rtc_server_ = rtc::Server::create(std::move(cfg));
-    if (rtc_server_ == nullptr) {
+    tp_server_ = rtc::Server::create(std::move(params));
+#else  // LT_USE_LTRTC
+    lt::tp::ServerTCP::Params params{};
+    params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
+    params.on_failed = std::bind(&WorkerSession::on_ltrtc_failed_thread_safe, this);
+    params.on_disconnected = std::bind(&WorkerSession::on_ltrtc_disconnected_thread_safe, this);
+    params.on_accepted = std::bind(&WorkerSession::on_ltrtc_accepted_thread_safe, this);
+    params.on_data = std::bind(&WorkerSession::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
+    params.on_signaling_message =
+        std::bind(&WorkerSession::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
+    tp_server_ = lt::tp::ServerTCP::create(params);
+#endif // LT_USE_LTRTC
+
+    if (tp_server_ == nullptr) {
         LOG(WARNING) << "Create rtc server failed";
         return false;
     }
@@ -236,7 +254,7 @@ void WorkerSession::main_loop(const std::function<void()>& i_am_alive) {
 
 void WorkerSession::create_worker_process(uint32_t client_width, uint32_t client_height,
                                           uint32_t client_refresh_rate,
-                                          std::vector<rtc::VideoCodecType> client_codecs) {
+                                          std::vector<lt::VideoCodecType> client_codecs) {
     WorkerProcess::Params params{};
     params.pipe_name = pipe_name_;
     params.on_stoped = std::bind(&WorkerSession::on_worker_stoped, this);
@@ -264,7 +282,7 @@ void WorkerSession::on_closed(CloseReason reason) {
         break;
     }
     if (!rtc_closed_) {
-        rtc_server_->close();
+        tp_server_->close();
         rtc_closed_ = true;
     }
     if (!worker_process_stoped_) {
@@ -423,8 +441,8 @@ void WorkerSession::on_signaling_message_ack(std::shared_ptr<google::protobuf::M
 void WorkerSession::dispatch_signaling_message_rtc(
     std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
-    rtc_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
-                                    msg->rtc_message().value().c_str());
+    tp_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
+                                   msg->rtc_message().value().c_str());
 }
 
 void WorkerSession::dispatch_signaling_message_core(
@@ -458,6 +476,7 @@ void WorkerSession::on_pipe_accepted(uint32_t fd) {
     if (pipe_client_fd_ != std::numeric_limits<uint32_t>::max()) {
         LOG(WARNING) << "New worker(" << fd << ") connected to service, but another worker(" << fd
                      << ") already being serve";
+        pipe_server_->close(fd);
         return;
     }
     pipe_client_fd_ = fd;
@@ -604,7 +623,7 @@ void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageL
     if (encoded_frame.is_black_frame) {
         //???
     }
-    rtc_server_->sendVideo(encoded_frame);
+    tp_server_->sendVideo(encoded_frame);
     // static std::ofstream out{"./service_stream", std::ios::binary};
     // out.write(reinterpret_cast<const char*>(encoded_frame.data), encoded_frame.size);
     // out.flush();
@@ -660,7 +679,7 @@ void WorkerSession::check_timeout() {
     constexpr auto kTimeoutUS = 3000'000;
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
-        rtc_server_->close();
+        tp_server_->close();
         // FIXME: on_closed必须在ioloop线程调用，这里用错了
         on_closed(CloseReason::TimeoutClose);
     }
@@ -679,7 +698,7 @@ bool WorkerSession::send_message_to_remote_client(
     }
     const auto& pkt = packet.value();
     // rtc的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
-    bool success = rtc_server_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
+    bool success = tp_server_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
 }
 

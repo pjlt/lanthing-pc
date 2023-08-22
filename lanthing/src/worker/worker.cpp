@@ -11,14 +11,14 @@
 
 namespace {
 
-rtc::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type) {
+lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type) {
     switch (codec_type) {
     case ltproto::peer2peer::AVC:
-        return rtc::VideoCodecType::H264;
+        return lt::VideoCodecType::H264;
     case ltproto::peer2peer::HEVC:
-        return rtc::VideoCodecType::H265;
+        return lt::VideoCodecType::H265;
     default:
-        return rtc::VideoCodecType::Unknown;
+        return lt::VideoCodecType::Unknown;
     }
 }
 
@@ -36,22 +36,22 @@ to_protobuf(lt::VideoEncoder::Backend backend) {
     }
 }
 
-ltproto::peer2peer::VideoCodecType to_protobuf(rtc::VideoCodecType codec_type) {
+ltproto::peer2peer::VideoCodecType to_protobuf(lt::VideoCodecType codec_type) {
     switch (codec_type) {
-    case rtc::VideoCodecType::H264:
+    case lt::VideoCodecType::H264:
         return ltproto::peer2peer::VideoCodecType::AVC;
-    case rtc::VideoCodecType::H265:
+    case lt::VideoCodecType::H265:
         return ltproto::peer2peer::VideoCodecType::HEVC;
     default:
         return ltproto::peer2peer::VideoCodecType::Unknown;
     }
 }
 
-std::string to_string(rtc::VideoCodecType type) {
+std::string to_string(lt::VideoCodecType type) {
     switch (type) {
-    case rtc::VideoCodecType::H264:
+    case lt::VideoCodecType::H264:
         return "AVC";
-    case rtc::VideoCodecType::H265:
+    case lt::VideoCodecType::H265:
         return "HEVC";
     default:
         return "Unknown Codec";
@@ -100,10 +100,10 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
     std::string codec;
     while (std::getline(ss, codec, ',')) {
         if (codec == "avc") {
-            params.codecs.push_back(rtc::VideoCodecType::H264);
+            params.codecs.push_back(lt::VideoCodecType::H264);
         }
         else if (codec == "hevc") {
-            params.codecs.push_back(rtc::VideoCodecType::H265);
+            params.codecs.push_back(lt::VideoCodecType::H265);
         }
     }
     if (params.codecs.empty()) {

@@ -4,7 +4,7 @@
 #include <sstream>
 
 namespace lt {
-VideoEncodeParamsHelper::VideoEncodeParamsHelper(rtc::VideoCodecType c, uint32_t width,
+VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t width,
                                                  uint32_t height, int fps, uint32_t bitrate_kbps,
                                                  bool enable_vbv)
     : codec_type_{c}
@@ -13,8 +13,8 @@ VideoEncodeParamsHelper::VideoEncodeParamsHelper(rtc::VideoCodecType c, uint32_t
     , fps_{fps}
     , bitrate_kbps_{bitrate_kbps}
     , enable_vbv_{enable_vbv}
-    , profile_{c == rtc::VideoCodecType::H264 ? Profile::AvcMain : Profile::HevcMain} {
-    assert(c == rtc::VideoCodecType::H264 || c == rtc::VideoCodecType::H265);
+    , profile_{c == lt::VideoCodecType::H264 ? Profile::AvcMain : Profile::HevcMain} {
+    assert(c == lt::VideoCodecType::H264 || c == lt::VideoCodecType::H265);
     uint32_t bitrate_bps = bitrate_kbps_ * 1024;
     if (enable_vbv) {
         float vbv = 0.f;
@@ -61,7 +61,7 @@ VideoEncodeParamsHelper::VideoEncodeParamsHelper(rtc::VideoCodecType c, uint32_t
     ssQmax << qmax_[0] << ',' << qmax_[1] << ',' << qmax_[2];
     params_["-bitrate"] = std::to_string(bitrate_bps);
     params_["-maxbitrate"] = std::to_string(bitrate_bps * 1.05f);
-    params_["-codec"] = c == rtc::VideoCodecType::H264 ? "h264" : "hevc";
+    params_["-codec"] = c == lt::VideoCodecType::H264 ? "h264" : "hevc";
     params_["-gop"] = std::to_string(gop_);
     params_["-rc"] = std::to_string((int)rc_);
     params_["-preset"] = std::to_string((int)preset_);

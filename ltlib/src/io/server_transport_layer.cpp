@@ -118,7 +118,7 @@ bool LibuvSTransport::init_tcp()
     struct sockaddr_in addr;
     ret = uv_ip4_addr(bind_ip_.c_str(), bind_port_, &addr);
     if (ret != 0) {
-        LOG(WARNING) << "TCP bind to '" << bind_ip_ << ":" << bind_port_ << "' failed: " << ret;
+        LOGF(WARNING, "Create uv_ip4_addr(%s:%u) failed with %d", bind_ip_.c_str(), bind_port_, ret);
         server_tcp_.reset();
         return false;
     }
@@ -128,6 +128,14 @@ bool LibuvSTransport::init_tcp()
         server_tcp_.reset();
         return false;
     }
+    int name_len = sizeof(addr);
+    ret = uv_tcp_getsockname(server_tcp_.get(), reinterpret_cast<sockaddr*>(&addr), &name_len);
+    if (ret != 0) {
+        LOG(WARNING) << "getsockname failed with " << ret;
+        return false;
+    }
+    listen_port_ = ntohs(addr.sin_port);
+    LOGF(DEBUG, "Listening on %s:%u", bind_ip_.c_str(), listen_port_);
     server_tcp_->data = this;
     constexpr int kBacklog = 4;
     ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_tcp_.get()), kBacklog, &LibuvSTransport::on_new_client);
@@ -171,6 +179,22 @@ void LibuvSTransport::close(uint32_t fd)
     conn->closing = true;
     on_closed_(fd);
     uv_close(reinterpret_cast<uv_handle_t*>(conn->handle), &LibuvSTransport::on_conn_closed);
+}
+
+std::string LibuvSTransport::ip() const
+{
+    if (stype_ != StreamType::TCP) {
+        return "";
+    }
+    return bind_ip_;
+}
+
+uint16_t LibuvSTransport::port() const
+{
+    if (stype_ != StreamType::TCP) {
+        return 0;
+    }
+    return listen_port_;
 }
 
 void LibuvSTransport::on_conn_closed(uv_handle_t* handle)
@@ -281,9 +305,9 @@ std::shared_ptr<LibuvSTransport::Conn> LibuvSTransport::Conn::create(StreamType 
     } else {
         int ret = uv_tcp_init(uvloop, reinterpret_cast<uv_tcp_t*>(conn->handle));
         if (ret != 0) {
-            return conn;
+            return nullptr;
         }
-        return nullptr;
+        return conn;
     }
 }
 

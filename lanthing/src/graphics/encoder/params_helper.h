@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 
-#include <rtc/rtc.h>
+#include <transport/transport.h>
 
 namespace lt {
 
@@ -28,7 +28,7 @@ public:
     };
 
 public:
-    VideoEncodeParamsHelper(rtc::VideoCodecType c, uint32_t width, uint32_t height, int fps,
+    VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uint32_t height, int fps,
                             uint32_t bitrate_kbps, bool enable_vbv);
 
     uint32_t width() const { return width_; }
@@ -45,13 +45,13 @@ public:
     int gop() const { return gop_; }
     RcMode rc() const { return rc_; }
     Preset preset() const { return preset_; }
-    rtc::VideoCodecType codec() const { return codec_type_; }
+    lt::VideoCodecType codec() const { return codec_type_; }
     Profile profile() const { return profile_; }
 
     std::string params() const;
 
 private:
-    const rtc::VideoCodecType codec_type_;
+    const lt::VideoCodecType codec_type_;
     const uint32_t width_;
     const uint32_t height_;
     const int fps_;

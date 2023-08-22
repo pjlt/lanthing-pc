@@ -33,14 +33,14 @@ constexpr ltproto::peer2peer::VideoCodecType kCodecPriority[] = {
     ltproto::peer2peer::VideoCodecType::AVC,
 };
 
-rtc::VideoCodecType toLtrtc(ltproto::peer2peer::VideoCodecType codec) {
+lt::VideoCodecType toLtrtc(ltproto::peer2peer::VideoCodecType codec) {
     switch (codec) {
     case ltproto::peer2peer::AVC:
-        return rtc::VideoCodecType::H264;
+        return lt::VideoCodecType::H264;
     case ltproto::peer2peer::HEVC:
-        return rtc::VideoCodecType::H265;
+        return lt::VideoCodecType::H265;
     default:
-        return rtc::VideoCodecType::Unknown;
+        return lt::VideoCodecType::Unknown;
     }
 }
 

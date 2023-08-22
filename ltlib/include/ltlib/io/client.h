@@ -29,9 +29,11 @@ public:
         std::function<void()> on_reconnecting;
         std::function<void(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>&)> on_message;
     };
+
 public:
     static std::unique_ptr<Client> create(const Params& params);
     bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback = nullptr);
+    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback = nullptr);
     // 重连有两种
     // 1. 第一种是内部发生错误，自发重连
     // 2. 第二种是上层调用bool send()我们返回false，后续由上层主动调reconnect()

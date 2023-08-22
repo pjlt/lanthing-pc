@@ -92,7 +92,7 @@ private:
 };
 
 mfxU32 VplParamsHelper::codec() const {
-    return params_.codec() == rtc::VideoCodecType::H264 ? MFX_CODEC_AVC : MFX_CODEC_HEVC;
+    return params_.codec() == lt::VideoCodecType::H264 ? MFX_CODEC_AVC : MFX_CODEC_HEVC;
 }
 
 mfxU16 VplParamsHelper::rc() const {
@@ -162,7 +162,7 @@ private:
     int32_t impl_index_ = -1;
     uint32_t width_;
     uint32_t height_;
-    rtc::VideoCodecType codec_type_;
+    lt::VideoCodecType codec_type_;
     mfxLoader mfxloader_ = nullptr;
     mfxSession mfxsession_ = nullptr;
     mfxVideoParam encode_param_{};
@@ -172,7 +172,7 @@ private:
 };
 
 IntelEncoderImpl::IntelEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx,
-                                         int64_t luid)
+                                   int64_t luid)
     : d3d11_dev_{d3d11_dev}
     , d3d11_ctx_{d3d11_ctx}
     , luid_{luid} {}
@@ -205,8 +205,9 @@ bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     if (!createMfxSession()) {
         return false;
     }
-    mfxStatus status = MFXVideoCORE_SetHandle(mfxsession_, MFX_HANDLE_D3D11_DEVICE, d3d11_dev_.Get());
-     if (status != MFX_ERR_NONE) {
+    mfxStatus status =
+        MFXVideoCORE_SetHandle(mfxsession_, MFX_HANDLE_D3D11_DEVICE, d3d11_dev_.Get());
+    if (status != MFX_ERR_NONE) {
         LOGF(WARNING, "MFXVideoCORE_SetHandle(MFX_HANDLE_D3D11_DEVICE, %p) failed with %d",
              d3d11_dev_.Get(), status);
         return false;
@@ -256,7 +257,7 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
 }
 
 VideoEncoder::EncodedFrame IntelEncoderImpl::encodeOneFrame(void* input_frame,
-                                                               bool request_iframe) {
+                                                            bool request_iframe) {
     VideoEncoder::EncodedFrame out_frame{};
     mfxSyncPoint sync_point{};
     std::shared_ptr<uint8_t> buffer(new uint8_t[encode_param_.mfx.BufferSizeInKB * 1000]);
@@ -285,7 +286,7 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encodeOneFrame(void* input_frame,
         }
         else if (status == MFX_ERR_NOT_ENOUGH_BUFFER) {
             LOG(WARNING) << "MFXVideoENCODE_EncodeFrameAsync failed with MFX_ERR_NOT_ENOUGH_BUFFER";
-            assert(fasle);
+            assert(false);
             break;
         }
         else {
@@ -505,9 +506,9 @@ mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_he
 
 IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid)
     : VideoEncoder{d3d11_dev, d3d11_ctx}
-    , impl_{std::make_shared<IntelEncoderImpl>(
-          reinterpret_cast<ID3D11Device*>(d3d11_dev),
-          reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx), luid)} {}
+    , impl_{std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
+                                               reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx),
+                                               luid)} {}
 
 bool IntelEncoder::init(const VideoEncodeParamsHelper& params) {
     return impl_->init(params);

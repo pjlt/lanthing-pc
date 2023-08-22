@@ -35,7 +35,7 @@ public:
     int fps() const { return params_.fps(); }
 
     uint32_t bitrate() const { return params_.bitrate(); }
-    uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate() * 1024 * 1.05f); }
+    uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate() * 1.05f); }
     NV_ENC_QP qmin() const { return {params_.qmin()[0], params_.qmin()[1], params_.qmin()[2]}; }
     NV_ENC_QP qmax() const { return {params_.qmax()[0], params_.qmax()[1], params_.qmax()[2]}; }
     std::optional<int> vbvbufsize() const { return params_.vbvbufsize(); }
@@ -78,9 +78,9 @@ GUID NvEncParamsHelper::preset() const {
 
 GUID NvEncParamsHelper::codec() const {
     switch (params_.codec()) {
-    case rtc::VideoCodecType::H264:
+    case lt::VideoCodecType::H264:
         return NV_ENC_CODEC_H264_GUID;
-    case rtc::VideoCodecType::H265:
+    case lt::VideoCodecType::H265:
         return NV_ENC_CODEC_HEVC_GUID;
     default:
         assert(false);
@@ -125,7 +125,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
     uint32_t width_;
     uint32_t height_;
-    rtc::VideoCodecType codec_type_;
+    lt::VideoCodecType codec_type_;
     std::unique_ptr<ltlib::DynamicLibrary> nvapi_;
     NV_ENCODE_API_FUNCTION_LIST nvfuncs_;
     void* nvencoder_;
@@ -148,7 +148,7 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
     width_ = params.width();
     height_ = params.height();
     codec_type_ = params.codec();
-    if (codec_type_ == rtc::VideoCodecType::H264 &&
+    if (codec_type_ == lt::VideoCodecType::H264 &&
         (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV420_10BIT ||
          buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT)) {
         LOG(WARNING) << "Unsupported buffer format " << buffer_format_ << " when using h264";

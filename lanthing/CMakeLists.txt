@@ -133,6 +133,7 @@ target_link_libraries(${PROJECT_NAME}
     ltlib
     ltproto
     rtc
+    transport
 )
 
 install(TARGETS ${PROJECT_NAME})

@@ -40,9 +40,9 @@ private:
 
 std::wstring AmfParamsHelper::codec() const {
     switch (params_.codec()) {
-    case rtc::VideoCodecType::H264:
+    case lt::VideoCodecType::H264:
         return AMFVideoEncoderVCE_AVC;
-    case rtc::VideoCodecType::H265:
+    case lt::VideoCodecType::H265:
         return AMFVideoEncoder_HEVC;
     default:
         assert(false);
@@ -113,7 +113,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_;
     uint32_t width_;
     uint32_t height_;
-    rtc::VideoCodecType codec_type_;
+    lt::VideoCodecType codec_type_;
     std::unique_ptr<ltlib::DynamicLibrary> amdapi_;
     amf::AMFFactory* factory_ = nullptr;
     amf::AMFContextPtr context_ = nullptr;
@@ -128,8 +128,7 @@ AmdEncoderImpl::~AmdEncoderImpl() {}
 
 bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     AmfParamsHelper params_helper{params};
-    if (params.codec() != rtc::VideoCodecType::H264 &&
-        params.codec() != rtc::VideoCodecType::H265) {
+    if (params.codec() != lt::VideoCodecType::H264 && params.codec() != lt::VideoCodecType::H265) {
         LOG(FATAL) << "Unknown video codec type " << (int)params.codec();
         return false;
     }
@@ -154,7 +153,7 @@ bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
         LOG(WARNING) << "AMFFactory::CreateComponent failed with " << result;
         return false;
     }
-    if (codec_type_ == rtc::VideoCodecType::H264) {
+    if (codec_type_ == lt::VideoCodecType::H264) {
         if (!setAvcEncodeParams(params_helper)) {
             return false;
         }
@@ -176,11 +175,11 @@ void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) 
     // FIXME: 是否可以动态设置fps?
     AMF_RESULT result = AMF_OK;
     if (params.bitrate_bps.has_value()) {
-        if (codec_type_ == rtc::VideoCodecType::H264) {
+        if (codec_type_ == lt::VideoCodecType::H264) {
             result =
                 encoder_->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, params.bitrate_bps.value());
         }
-        else if (codec_type_ == rtc::VideoCodecType::H265) {
+        else if (codec_type_ == lt::VideoCodecType::H265) {
             result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE,
                                            params.bitrate_bps.value());
         }
@@ -206,12 +205,12 @@ VideoEncoder::EncodedFrame AmdEncoderImpl::encodeOneFrame(void* input_frame, boo
         return out_frame;
     }
     if (request_iframe) {
-        if (codec_type_ == rtc::VideoCodecType::H264) {
+        if (codec_type_ == lt::VideoCodecType::H264) {
             result = surface->SetProperty(
                 AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE,
                 AMF_VIDEO_ENCODER_PICTURE_TYPE_ENUM::AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR);
         }
-        else if (codec_type_ == rtc::VideoCodecType::H265) {
+        else if (codec_type_ == lt::VideoCodecType::H265) {
             result = surface->SetProperty(
                 AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE,
                 AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_ENUM::AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_IDR);
@@ -365,11 +364,11 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
         LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET failed with " << result;
         return false;
     }
-    //result = encoder_->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
-    //if (result != AMF_OK) {
-    //    LOG(WARNING) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
-    //    return false;
-    //}
+    // result = encoder_->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+    // if (result != AMF_OK) {
+    //     LOG(WARNING) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
+    //     return false;
+    // }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE,
                                    ::AMFConstructSize(width_, height_));
     if (result != AMF_OK) {
@@ -401,7 +400,7 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
 }
 
 bool AmdEncoderImpl::isKeyFrame(amf::AMFDataPtr data) {
-    if (codec_type_ == rtc::VideoCodecType::H264) {
+    if (codec_type_ == lt::VideoCodecType::H264) {
         amf_int64 type;
         AMF_RESULT result = data->GetProperty(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE, &type);
         if (result == AMF_OK) {

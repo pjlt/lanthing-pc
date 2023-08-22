@@ -5,7 +5,7 @@
 
 #include <ltlib/threads.h>
 
-#include <rtc/rtc.h>
+#include <transport/transport.h>
 
 namespace lt {
 
@@ -19,7 +19,7 @@ public:
         std::string p2p_password;
         std::string signaling_addr;
         int32_t signaling_port;
-        rtc::VideoCodecType video_codec_type;
+        lt::VideoCodecType video_codec_type;
         uint32_t width;
         uint32_t height;
         uint32_t refresh_rate;

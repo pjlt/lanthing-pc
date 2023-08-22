@@ -32,7 +32,10 @@ public:
     ServerImpl(const Server::Params& params);
     bool init();
     bool send(uint32_t fd, uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback);
+    bool send(uint32_t fd, const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback);
     void close(uint32_t fd);
+    std::string ip();
+    uint16_t port();
 
 private:
     LibuvSTransport::Params make_uv_params(const Server::Params& params);
@@ -82,9 +85,34 @@ bool ServerImpl::send(uint32_t fd, uint32_t type, const std::shared_ptr<google::
         LOG(WARNING) << "Send data to invalid fd:" << fd;
         return false;
     }
-    auto packet = ltproto::Packet::create({ type, msg }, true);
+    auto packet = ltproto::Packet::create({ type, msg }, false);
     if (!packet.has_value()) {
         LOG(WARNING) << "Create net packet failed, type:" << type;
+        return false;
+    }
+    const auto& pkt = packet.value();
+    Buffer buffs[2] = {
+        { (char*)&pkt.header, sizeof(pkt.header) },
+        { (char*)pkt.payload.get(), pkt.header.payload_size }
+    };
+    return transport_->send(fd, buffs, 2, [packet, callback]() {
+        // 把packet capture进来，是为了延续内部shared_ptr的生命周期
+        if (callback != nullptr) {
+            callback();
+        }
+    });
+}
+
+bool ServerImpl::send(uint32_t fd, const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback)
+{
+    auto iter = conns_.find(fd);
+    if (iter == conns_.cend()) {
+        LOG(WARNING) << "Send data to invalid fd:" << fd;
+        return false;
+    }
+    auto packet = ltproto::Packet::create(data, len, false);
+    if (!packet.has_value()) {
+        LOG(WARNING) << "Create net packet failed";
         return false;
     }
     const auto& pkt = packet.value();
@@ -103,6 +131,16 @@ bool ServerImpl::send(uint32_t fd, uint32_t type, const std::shared_ptr<google::
 void ServerImpl::close(uint32_t fd)
 {
     transport_->close(fd);
+}
+
+std::string ServerImpl::ip()
+{
+    return transport_->ip();
+}
+
+uint16_t ServerImpl::port()
+{
+    return transport_->port();
 }
 
 void ServerImpl::on_transport_accepted(uint32_t fd)
@@ -153,9 +191,24 @@ bool Server::send(uint32_t fd, uint32_t type, const std::shared_ptr<google::prot
     return impl_->send(fd, type, msg, callback);
 }
 
+bool Server::send(uint32_t fd, const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback)
+{
+    return impl_->send(fd, data, len, callback);
+}
+
 void Server::close(uint32_t fd)
 {
     impl_->close(fd);
+}
+
+std::string Server::ip()
+{
+    return impl_->ip();
+}
+
+uint16_t Server::port()
+{
+    return impl_->port();
 }
 
 } // namespace ltlib

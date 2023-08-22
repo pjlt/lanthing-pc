@@ -11,11 +11,11 @@
 
 namespace {
 
-std::string to_string(rtc::VideoCodecType codec) {
+std::string to_string(lt::VideoCodecType codec) {
     switch (codec) {
-    case rtc::VideoCodecType::H264:
+    case lt::VideoCodecType::H264:
         return "avc";
-    case rtc::VideoCodecType::H265:
+    case lt::VideoCodecType::H265:
         return "hevc";
     default:
         return "unknown";

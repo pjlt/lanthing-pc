@@ -49,6 +49,8 @@ add_definitions(-DLT_SERVER_USE_SSL=$<IF:$<BOOL:${LT_SERVER_USE_SSL}>,true,false
 add_definitions(-DLT_RUN_AS_SERVICE=$<IF:$<BOOL:${LT_RUN_AS_SERVICE}>,true,false>)
 add_definitions(-DLT_WIN_SERVICE_NAME=${LT_WIN_SERVICE_NAME})
 add_definitions(-DLT_WIN_SERVICE_DISPLAY_NAME=${LT_WIN_SERVICE_DISPLAY_NAME})
+#
+add_definitions(-DLT_USE_LTRTC=$<IF:$<BOOL:${LT_USE_LTRTC}>,true,false>)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
 
@@ -80,5 +82,6 @@ find_package(VPL REQUIRED PATHS third_party/oneVPL/build/install/${THIRD_PARTY_B
 add_subdirectory(rtc)
 add_subdirectory(ltproto)
 add_subdirectory(ltlib)
+add_subdirectory(transport)
 add_subdirectory(lanthing)
 add_subdirectory(app)

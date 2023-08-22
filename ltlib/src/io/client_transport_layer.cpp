@@ -159,6 +159,16 @@ const std::string& LibuvCTransport::host()
     return host_;
 }
 
+std::string LibuvCTransport::ip() const
+{
+    return local_ip_;
+}
+
+uint16_t LibuvCTransport::port() const
+{
+    return local_port_;
+}
+
 uv_stream_t* LibuvCTransport::uvstream()
 {
     uv_stream_t* stream_handle = is_tcp() ? reinterpret_cast<uv_stream_t*>(tcp_.get()) : reinterpret_cast<uv_stream_t*>(pipe_.get());
@@ -218,6 +228,22 @@ void LibuvCTransport::on_connected(uv_connect_t* req, int status)
     auto that = reinterpret_cast<LibuvCTransport*>(req->data);
     if (status == 0) {
         that->intervals_.reset();
+        if (that->stype_ == StreamType::TCP) {
+            sockaddr_in addr {};
+            int name_len = sizeof(addr);
+            int ret = uv_tcp_getsockname(that->tcp_.get(), reinterpret_cast<sockaddr*>(&addr), &name_len);
+            if (ret == 0) {
+                that->local_port_ = ntohs(addr.sin_port);
+                char buffer[64] = { 0 };
+                if (inet_ntop(AF_INET, &addr, buffer, 64) == 0) {
+                    LOG(WARNING) << "inet_pton failed with " << WSAGetLastError();
+                } else {
+                    that->local_ip_ = buffer;
+                }
+            } else {
+                LOG(WARNING) << "getsockname failed with " << ret;
+            }
+        }
         that->on_connected_();
         uv_read_start(that->uvstream(), &LibuvCTransport::on_alloc_memory, &LibuvCTransport::on_read);
     } else {
@@ -283,7 +309,6 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     }
     addrinfo* addr = res;
     while (addr != nullptr) {
-        // NOTE: 以后支持IPv6改这里
         if (addr->ai_family == AF_INET) {
             break;
         }

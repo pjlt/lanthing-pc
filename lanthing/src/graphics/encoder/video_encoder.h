@@ -8,7 +8,7 @@
 
 #include <ltproto/peer2peer/capture_video_frame.pb.h>
 
-#include <rtc/rtc.h>
+#include <transport/transport.h>
 
 namespace lt {
 
@@ -26,7 +26,7 @@ public:
         PFrame,
     };
 
-    struct EncodedFrame : rtc::VideoFrame {
+    struct EncodedFrame : lt::VideoFrame {
         bool is_black_frame = false;
         std::shared_ptr<uint8_t> internal_data;
     };
@@ -34,7 +34,7 @@ public:
     struct InitParams {
         Backend backend = Backend::Unknown;
         int64_t luid;
-        rtc::VideoCodecType codec_type = rtc::VideoCodecType::H264;
+        lt::VideoCodecType codec_type = lt::VideoCodecType::H264;
         uint32_t width = 0;
         uint32_t height = 0;
         uint32_t bitrate_bps = 0;
@@ -49,7 +49,7 @@ public:
 
     struct Ability {
         Backend backend;
-        rtc::VideoCodecType codec_type;
+        lt::VideoCodecType codec_type;
     };
 
 public:

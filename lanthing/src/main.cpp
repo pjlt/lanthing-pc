@@ -11,7 +11,6 @@
 #include <ltlib/event.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
-#include <rtc/rtc.h>
 
 #include <client/client.h>
 #include <worker/worker.h>
@@ -20,6 +19,10 @@
 #else
 #include <service/service.h>
 #endif
+
+#if LT_USE_LTRTC
+#include <rtc/rtc.h>
+#endif // LT_USE_LTRTC
 
 #include "firewall.h"
 
@@ -94,7 +97,9 @@ void init_log_and_minidump(Role role) {
     ltlib::ThreadWatcher::instance()->register_terminate_callback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
+#if LT_USE_LTRTC
         rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
+#endif // LT_USE_LTRTC
     }
     LOG(INFO) << "Log system initialized";
 

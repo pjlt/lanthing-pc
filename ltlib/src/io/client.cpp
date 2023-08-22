@@ -14,6 +14,7 @@ public:
     ~ClientImpl();
     bool init();
     bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback);
+    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback);
     void reconnect();
 
 private:
@@ -133,6 +134,33 @@ bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::Mes
     });
 }
 
+bool ClientImpl::send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback)
+{
+    if (!ioloop_->is_current_thread()) {
+        LOG(FATAL) << "Send data in wrong thread!";
+        return false;
+    }
+    if (!connected_) {
+        return false;
+    }
+    auto packet = ltproto::Packet::create(data, len, true);
+    if (!packet.has_value()) {
+        LOG(WARNING) << "Create net packet failed";
+        return false;
+    }
+    const auto& pkt = packet.value();
+    Buffer buff[2] = {
+        { (char*)&pkt.header, sizeof(pkt.header) },
+        { (char*)pkt.payload.get(), pkt.header.payload_size }
+    };
+    return transport_->send(buff, 2, [packet, callback]() {
+        // 把packet capture进来，是为了延续内部shared_ptr的生命周期
+        if (callback != nullptr) {
+            callback();
+        }
+    });
+}
+
 void ClientImpl::reconnect()
 {
     transport_->reconnect();
@@ -152,6 +180,11 @@ std::unique_ptr<Client> Client::create(const Params& params)
 bool Client::send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback)
 {
     return impl_->send(type, msg, callback);
+}
+
+bool Client::send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback)
+{
+    return impl_->send(data, len, callback);
 }
 
 void Client::reconnect()

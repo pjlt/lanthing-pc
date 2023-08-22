@@ -18,12 +18,12 @@ using Microsoft::WRL::ComPtr;
 namespace {
 
 bool is_black_frame(const lt::VideoEncoder::EncodedFrame& encoded_frame) {
-    //if (!encoded_frame.is_keyframe && encoded_frame.size < 1000) {
-    //    return true;
-    //}
-    //if (encoded_frame.is_keyframe && encoded_frame.size < 2000) {
-    //    return true;
-    //}
+    // if (!encoded_frame.is_keyframe && encoded_frame.size < 1000) {
+    //     return true;
+    // }
+    // if (encoded_frame.is_keyframe && encoded_frame.size < 2000) {
+    //     return true;
+    // }
     (void)encoded_frame;
     return false;
 }
@@ -43,7 +43,8 @@ std::string backend_to_string(lt::VideoEncoder::Backend backend) {
     }
 }
 
-auto create_d3d11() -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
+auto create_d3d11()
+    -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
     // TODO: 遍历每个GPU
     uint32_t vendor_id = 0;
     int64_t luid = 0;
@@ -146,7 +147,7 @@ std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::Init
                                                     void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt;
     VideoEncodeParamsHelper params_helper{params.codec_type, params.width, params.height, 60,
-                                          1024 * 5,          false};
+                                          params.bitrate_bps / 1024,          false};
     switch (params.backend) {
     case VideoEncoder::Backend::NvEnc:
     {
@@ -202,7 +203,7 @@ do_check_encode_abilities(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContex
     constexpr uint32_t kNvidiaVendorID = 0x10DE;
     auto check_with_backend_and_codec = [luid, width, height, dev = device.Get(),
                                          ctx = context.Get()](VideoEncoder::Backend backend,
-                                                              rtc::VideoCodecType codec) -> bool {
+                                                              lt::VideoCodecType codec) -> bool {
         VideoEncoder::InitParams params;
         params.backend = backend;
         params.codec_type = codec;
@@ -217,7 +218,7 @@ do_check_encode_abilities(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContex
     auto check_with_order =
         [width, height, dev = device.Get(), ctx = context.Get(), check_with_backend_and_codec](
             std::vector<VideoEncoder::Backend> backend_order,
-            std::vector<rtc::VideoCodecType> codec_order) -> std::vector<VideoEncoder::Ability> {
+            std::vector<lt::VideoCodecType> codec_order) -> std::vector<VideoEncoder::Ability> {
         std::vector<VideoEncoder::Ability> abilities;
         for (auto backend : backend_order) {
             for (auto codec_type : codec_order) {
@@ -237,35 +238,35 @@ do_check_encode_abilities(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContex
     switch (vendor_id) {
     case kIntelVendorID:
         if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK,
-                                         rtc::VideoCodecType::H265)) {
-            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H265});
+                                         lt::VideoCodecType::H265)) {
+            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, lt::VideoCodecType::H265});
         }
         if (check_with_backend_and_codec(VideoEncoder::Backend::IntelMediaSDK,
-                                         rtc::VideoCodecType::H264)) {
-            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, rtc::VideoCodecType::H264});
+                                         lt::VideoCodecType::H264)) {
+            abilities.push_back({VideoEncoder::Backend::IntelMediaSDK, lt::VideoCodecType::H264});
         }
         break;
     case kNvidiaVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265)) {
-            abilities.push_back({VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H265});
+        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, lt::VideoCodecType::H265)) {
+            abilities.push_back({VideoEncoder::Backend::NvEnc, lt::VideoCodecType::H265});
         }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264)) {
-            abilities.push_back({VideoEncoder::Backend::NvEnc, rtc::VideoCodecType::H264});
+        if (check_with_backend_and_codec(VideoEncoder::Backend::NvEnc, lt::VideoCodecType::H264)) {
+            abilities.push_back({VideoEncoder::Backend::NvEnc, lt::VideoCodecType::H264});
         }
         break;
     case kAMDVendorID:
-        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265)) {
-            abilities.push_back({VideoEncoder::Backend::Amf, rtc::VideoCodecType::H265});
+        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, lt::VideoCodecType::H265)) {
+            abilities.push_back({VideoEncoder::Backend::Amf, lt::VideoCodecType::H265});
         }
-        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264)) {
-            abilities.push_back({VideoEncoder::Backend::Amf, rtc::VideoCodecType::H264});
+        if (check_with_backend_and_codec(VideoEncoder::Backend::Amf, lt::VideoCodecType::H264)) {
+            abilities.push_back({VideoEncoder::Backend::Amf, lt::VideoCodecType::H264});
         }
         break;
     default:
         abilities =
             check_with_order({VideoEncoder::Backend::NvEnc, VideoEncoder::Backend::IntelMediaSDK,
                               VideoEncoder::Backend::Amf},
-                             {rtc::VideoCodecType::H265, rtc::VideoCodecType::H264});
+                             {lt::VideoCodecType::H265, lt::VideoCodecType::H264});
         break;
     }
     return abilities;
@@ -375,7 +376,7 @@ bool VideoEncoder::InitParams::validate() const {
     if (this->width == 0 || this->height == 0 || this->bitrate_bps == 0) {
         return false;
     }
-    if (codec_type != rtc::VideoCodecType::H264 && codec_type != rtc::VideoCodecType::H265) {
+    if (codec_type != lt::VideoCodecType::H264 && codec_type != lt::VideoCodecType::H265) {
         return false;
     }
     return true;

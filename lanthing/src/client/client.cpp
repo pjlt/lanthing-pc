@@ -15,20 +15,26 @@
 
 #include <string_keys.h>
 
+#if LT_USE_LTRTC
+#include <rtc/rtc.h>
+#else // LT_USE_LTRTC
+#include <transport/transport_tcp.h>
+#endif // LT_USE_LTRTC
+
 namespace {
 
-rtc::VideoCodecType to_ltrtc(std::string codec_str) {
+lt::VideoCodecType to_ltrtc(std::string codec_str) {
     static const std::string kAVC = "avc";
     static const std::string kHEVC = "hevc";
     std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(), std::tolower);
     if (codec_str == kAVC) {
-        return rtc::VideoCodecType::H264;
+        return lt::VideoCodecType::H264;
     }
     else if (codec_str == kHEVC) {
-        return rtc::VideoCodecType::H265;
+        return lt::VideoCodecType::H265;
     }
     else {
-        return rtc::VideoCodecType::Unknown;
+        return lt::VideoCodecType::Unknown;
     }
 }
 
@@ -258,7 +264,7 @@ void Client::on_signaling_message(std::shared_ptr<google::protobuf::MessageLite>
     case ltproto::signaling::SignalingMessage::Rtc:
     {
         auto& rtc_msg = msg->rtc_message();
-        rtc_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
+        tp_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
         break;
     }
     default:
@@ -283,42 +289,59 @@ void Client::on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageL
 
 bool Client::init_ltrtc() {
     namespace ph = std::placeholders;
-    rtc::Client::Params cfg;
-    cfg.use_nbp2p = true;
+#if LT_USE_LTRTC
+    rtc::Client::Params params{};
+    params.use_nbp2p = true;
     std::vector<const char*> reflex_servers;
     for (auto& svr : reflex_servers_) {
         reflex_servers.push_back(svr.data());
-        //LOG(DEBUG) << "Reflex: " << svr;
+        // LOG(DEBUG) << "Reflex: " << svr;
     }
-    if (cfg.use_nbp2p) {
-        cfg.nbp2p_params.disable_ipv6 = false;
-        cfg.nbp2p_params.disable_lan_udp = false;
-        cfg.nbp2p_params.disable_mapping = false;
-        cfg.nbp2p_params.disable_reflex = false;
-        cfg.nbp2p_params.disable_relay = false;
-        cfg.nbp2p_params.username = p2p_username_.c_str();
-        cfg.nbp2p_params.password = p2p_password_.c_str();
-        cfg.nbp2p_params.reflex_servers = reflex_servers.data();
-        cfg.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
-        cfg.nbp2p_params.relay_servers = nullptr;
-        cfg.nbp2p_params.relay_servers_count = 0;
+    if (params.use_nbp2p) {
+        params.nbp2p_params.disable_ipv6 = false;
+        params.nbp2p_params.disable_lan_udp = false;
+        params.nbp2p_params.disable_mapping = false;
+        params.nbp2p_params.disable_reflex = false;
+        params.nbp2p_params.disable_relay = false;
+        params.nbp2p_params.username = p2p_username_.c_str();
+        params.nbp2p_params.password = p2p_password_.c_str();
+        params.nbp2p_params.reflex_servers = reflex_servers.data();
+        params.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
+        params.nbp2p_params.relay_servers = nullptr;
+        params.nbp2p_params.relay_servers_count = 0;
     }
-    cfg.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
-    cfg.on_video = std::bind(&Client::on_ltrtc_video_frame, this, ph::_1);
-    cfg.on_audio =
+    params.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
+    params.on_video = std::bind(&Client::on_ltrtc_video_frame, this, ph::_1);
+    params.on_audio =
         std::bind(&Client::on_ltrtc_audio_data, this, ph::_1, ph::_2, ph::_3, ph::_4, ph::_5);
-    cfg.on_connected = std::bind(&Client::on_ltrtc_connected, this);
-    cfg.on_conn_changed = std::bind(&Client::on_ltrtc_conn_changed, this);
-    cfg.on_failed = std::bind(&Client::on_ltrtc_failed, this);
-    cfg.on_disconnected = std::bind(&Client::on_ltrtc_disconnected, this);
-    cfg.on_signaling_message = std::bind(&Client::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
-    cfg.video_codec_type = video_params_.codec_type;
-    rtc_client_ = rtc::Client::create(std::move(cfg));
-    if (rtc_client_ == nullptr) {
+    params.on_connected = std::bind(&Client::on_ltrtc_connected, this);
+    params.on_conn_changed = std::bind(&Client::on_ltrtc_conn_changed, this);
+    params.on_failed = std::bind(&Client::on_ltrtc_failed, this);
+    params.on_disconnected = std::bind(&Client::on_ltrtc_disconnected, this);
+    params.on_signaling_message =
+        std::bind(&Client::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
+    params.video_codec_type = video_params_.codec_type;
+    tp_client_ = rtc::Client::create(std::move(params));
+#else  // LT_USE_LTRTC
+    lt::tp::ClientTCP::Params params{};
+    params.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
+    params.on_video = std::bind(&Client::on_ltrtc_video_frame, this, ph::_1);
+    params.on_audio =
+        std::bind(&Client::on_ltrtc_audio_data, this, ph::_1, ph::_2, ph::_3, ph::_4, ph::_5);
+    params.on_connected = std::bind(&Client::on_ltrtc_connected, this);
+    params.on_failed = std::bind(&Client::on_ltrtc_failed, this);
+    params.on_disconnected = std::bind(&Client::on_ltrtc_disconnected, this);
+    params.on_signaling_message =
+        std::bind(&Client::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
+    params.video_codec_type = video_params_.codec_type;
+    tp_client_ = lt::tp::ClientTCP::create(params);
+#endif // LT_USE_LTRTC
+
+    if (tp_client_ == nullptr) {
         LOG(INFO) << "Create rtc client failed";
         return false;
     }
-    if (!rtc_client_->connect()) {
+    if (!tp_client_->connect()) {
         LOG(INFO) << "LTClient connect failed";
         return false;
     }
@@ -340,7 +363,7 @@ void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable)
     dispatch_remote_message(*type, msg);
 }
 
-void Client::on_ltrtc_video_frame(const rtc::VideoFrame& frame) {
+void Client::on_ltrtc_video_frame(const lt::VideoFrame& frame) {
     Video::Action action = video_module_->submit(frame);
     switch (action) {
     case Video::Action::REQUEST_KEY_FRAME:
@@ -445,7 +468,7 @@ bool Client::send_message_to_host(uint32_t type,
     const auto& pkt = packet.value();
     // WebRTC的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet
     // header一起传过去.
-    bool success = rtc_client_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
+    bool success = tp_client_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
 }
 

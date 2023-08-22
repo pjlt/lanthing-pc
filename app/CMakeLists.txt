@@ -67,6 +67,7 @@ target_link_libraries(${PROJECT_NAME}
         protobuf::libprotobuf-lite
         breakpad
         ltlib
+        transport
         ltproto
         rtc
 )

@@ -15,6 +15,8 @@
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
 
+#include <transport/transport.h>
+
 #include "ct_smoother.h"
 #include "d3d11_pipeline.h"
 #include "gpu_capability.h"
@@ -27,7 +29,7 @@ using namespace std::chrono_literals;
 
 class VideoImpl {
 public:
-    struct VideoFrameInternal : rtc::VideoFrame {
+    struct VideoFrameInternal : lt::VideoFrame {
         std::shared_ptr<uint8_t> data_internal;
     };
 
@@ -36,7 +38,7 @@ public:
     ~VideoImpl();
     bool init();
     void reset_deocder_renderer();
-    Video::Action submit(const rtc::VideoFrame& frame);
+    Video::Action submit(const lt::VideoFrame& frame);
 
 private:
     void decode_loop(const std::function<void()>& i_am_alive);
@@ -50,7 +52,7 @@ private:
     const uint32_t width_;
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
-    const rtc::VideoCodecType codec_type_;
+    const lt::VideoCodecType codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
     HWND hwnd_;
@@ -97,10 +99,10 @@ bool VideoImpl::init() {
     uint64_t target_adapter = 0;
     Format target_format;
     switch (codec_type_) {
-    case rtc::VideoCodecType::H264:
+    case lt::VideoCodecType::H264:
         target_format = Format::H264_NV12;
         break;
-    case rtc::VideoCodecType::H265:
+    case lt::VideoCodecType::H265:
         target_format = Format::H265_NV12;
         break;
     default:
@@ -149,7 +151,7 @@ void VideoImpl::reset_deocder_renderer() {
     LOG(FATAL) << "reset_deocder_renderer() not implemented";
 }
 
-Video::Action VideoImpl::submit(const rtc::VideoFrame& _frame) {
+Video::Action VideoImpl::submit(const lt::VideoFrame& _frame) {
     // static std::fstream stream{"./vidoe_stream",
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
@@ -235,7 +237,7 @@ void VideoImpl::render_loop(const std::function<void()>& i_am_alive) {
 }
 
 Video::Params::Params(
-    rtc::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
+    lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
     uint32_t _screen_refresh_rate,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message)
@@ -246,7 +248,7 @@ Video::Params::Params(
     , send_message_to_host(send_message) {}
 
 bool Video::Params::validate() const {
-    if (codec_type == rtc::VideoCodecType::Unknown || sdl == nullptr ||
+    if (codec_type == lt::VideoCodecType::Unknown || sdl == nullptr ||
         send_message_to_host == nullptr) {
         return false;
     }
@@ -273,7 +275,7 @@ void Video::reset_decoder_renderer() {
     impl_->reset_deocder_renderer();
 }
 
-Video::Action Video::submit(const rtc::VideoFrame& frame) {
+Video::Action Video::submit(const lt::VideoFrame& frame) {
     return impl_->submit(frame);
 }
 

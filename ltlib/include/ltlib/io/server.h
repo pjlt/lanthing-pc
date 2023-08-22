@@ -11,30 +11,33 @@ namespace ltlib
 
 class ServerImpl;
 
-//不支持TLS
+// 不支持TLS
 class LT_API Server
 {
 public:
-	struct Params
-	{
-		StreamType stype;
-		IOLoop* ioloop;
-		std::string pipe_name;
-		std::string bind_ip;
-		uint16_t bind_port;
-		std::function<void(uint32_t)> on_accepted;
-		std::function<void(uint32_t)> on_closed;
-		std::function<void(uint32_t/*fd*/, uint32_t/*type*/, const std::shared_ptr<google::protobuf::MessageLite>&)> on_message;
-	};
+    struct Params
+    {
+        StreamType stype;
+        IOLoop* ioloop;
+        std::string pipe_name;
+        std::string bind_ip;
+        uint16_t bind_port;
+        std::function<void(uint32_t)> on_accepted;
+        std::function<void(uint32_t)> on_closed;
+        std::function<void(uint32_t /*fd*/, uint32_t /*type*/, const std::shared_ptr<google::protobuf::MessageLite>&)> on_message;
+    };
 
 public:
-	static std::unique_ptr<Server> create(const Params& params);
-	bool send(uint32_t fd, uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback = nullptr);
-	// 当上层调用send()返回false时，由上层调用close()关闭这个fd。此时on_closed将被回调
-	void close(uint32_t fd);
+    static std::unique_ptr<Server> create(const Params& params);
+    bool send(uint32_t fd, uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback = nullptr);
+    bool send(uint32_t fd, const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback = nullptr);
+    // 当上层调用send()返回false时，由上层调用close()关闭这个fd。此时on_closed将被回调
+    void close(uint32_t fd);
+    std::string ip();
+    uint16_t port();
 
 private:
-	std::shared_ptr<ServerImpl> impl_;
+    std::shared_ptr<ServerImpl> impl_;
 };
 
 } // namespace ltlib

@@ -65,7 +65,7 @@ enum class GraphicsType : uint8_t {
     DXGI = 1,
 };
 
-struct VideoFrame {
+struct VideoFrameInfo {
     int64_t no = 0;
     int64_t time = 0;
 

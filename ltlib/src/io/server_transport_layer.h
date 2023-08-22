@@ -44,6 +44,8 @@ public:
     bool init();
     bool send(uint32_t fd, Buffer buff[], uint32_t buff_count, const std::function<void()>& callback);
     void close(uint32_t fd);
+    std::string ip() const;
+    uint16_t port() const;
 
 private:
     bool init_tcp();
@@ -63,6 +65,7 @@ private:
     std::string pipe_name_;
     std::string bind_ip_;
     uint16_t bind_port_;
+    uint16_t listen_port_;
     std::unique_ptr<uv_tcp_t> server_tcp_;
     std::unique_ptr<uv_pipe_t> server_pipe_;
     std::function<void(uint32_t)> on_accepted_;

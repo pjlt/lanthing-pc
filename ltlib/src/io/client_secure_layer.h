@@ -20,7 +20,8 @@ struct BIO
     size_t available;
     size_t headoffset;
     unsigned int qlen;
-    STAILQ_HEAD(msgq, msg) message_q;
+    STAILQ_HEAD(msgq, msg)
+    message_q;
 };
 
 class MbedtlsCTransport : public CTransport
@@ -59,11 +60,11 @@ private:
 
 private:
     LibuvCTransport uvtransport_;
-    //下面几个是所有connections共有的，但我们这里只有1个connection
+    // 下面几个是所有connections共有的，但我们这里只有1个connection
     mbedtls_ssl_config ssl_cfg_;
     mbedtls_pk_context own_key_;
     mbedtls_x509_crt own_cert_;
-    //下面几个是属于某一个connection
+    // 下面几个是属于某一个connection
     mbedtls_ssl_context ssl_;
     std::unique_ptr<mbedtls_ssl_session> session_;
     mbedtls_ctr_drbg_context drbg_;
