@@ -13,7 +13,11 @@ namespace lt {
 DxgiVideoCapturer::DxgiVideoCapturer()
     : impl_{std::make_unique<DUPLICATIONMANAGER>()} {}
 
-DxgiVideoCapturer::~DxgiVideoCapturer() {}
+DxgiVideoCapturer::~DxgiVideoCapturer() {
+    // 父类持有的线程会调用DxgiVideoCapturer的wait_for_vblank()
+    // 必须让父类的线程先停下，才能析构DxgiVideoCapturer
+    stop();
+}
 
 bool DxgiVideoCapturer::pre_init() {
     if (!init_d3d11()) {
@@ -65,7 +69,8 @@ bool DxgiVideoCapturer::init_d3d11() {
                  adapter_desc.VendorId, adapter_desc.DeviceId, hr);
             continue;
         }
-        luid_ = ((uint64_t)adapter_desc.AdapterLuid.HighPart << 32) + adapter_desc.AdapterLuid.LowPart;
+        luid_ =
+            ((uint64_t)adapter_desc.AdapterLuid.HighPart << 32) + adapter_desc.AdapterLuid.LowPart;
         LOGF(INFO, "DxgiVideoCapturer using adapter(index:%d, %x:%x, %x)", index,
              adapter_desc.VendorId, adapter_desc.DeviceId, luid_);
         return true;
