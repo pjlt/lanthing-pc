@@ -42,9 +42,9 @@ private:
     bool init();
     bool initSettings();
     void ioLoop(const std::function<void()>& i_am_alive);
-    void tryRemoveSessionAfter10s(int64_t device_id);
-    void tryRemoveSession(int64_t device_id);
-    void onClientExitedThreadSafe(int64_t device_id);
+    void tryRemoveSessionAfter10s(int64_t request_id);
+    void tryRemoveSession(int64_t request_id);
+    void onClientExitedThreadSafe(int64_t request_id);
     void createAndStartService();
     void stopService();
     void loadHistoryIDs();
@@ -71,7 +71,7 @@ private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::Settings> settings_;
-    std::map<int64_t /*to_device*/, std::shared_ptr<ClientSession>> sessions_;
+    std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::mutex mutex_;
     int64_t device_id_ = 0;
@@ -80,6 +80,7 @@ private:
     bool run_as_daemon_;
     bool auto_refresh_access_token_;
     std::string relay_server_;
+    std::atomic<int64_t> last_request_id_{0};
 
     UiCallback* ui_;
 };

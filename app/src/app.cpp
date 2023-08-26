@@ -186,7 +186,9 @@ void App::loginUser() {
 }
 
 void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
+    int64_t request_id = last_request_id_.fetch_add(1);
     auto req = std::make_shared<ltproto::server::RequestConnection>();
+    req->set_request_id(request_id);
     req->set_conn_type(ltproto::server::ConnectionType::Control);
     req->set_device_id(peerDeviceID);
     req->set_access_token(accessToken);
@@ -230,7 +232,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     }
     {
         std::lock_guard<std::mutex> lock{mutex_};
-        auto result = sessions_.insert({peerDeviceID, nullptr});
+        auto result = sessions_.insert({request_id, nullptr});
         if (!result.second) {
             LOG(WARNING) << "Another task already connected/connecting to device_id:"
                          << peerDeviceID;
@@ -238,7 +240,8 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         }
     }
     sendMessage(ltproto::id(req), req);
-    tryRemoveSessionAfter10s(peerDeviceID);
+    LOGF(INFO, "RequestConnection(device_id:%d, request_id:%d) sent", peerDeviceID, request_id);
+    tryRemoveSessionAfter10s(request_id);
 }
 
 std::vector<std::string> App::getHistoryDeviceIDs() const {
@@ -273,38 +276,38 @@ void App::ioLoop(const std::function<void()>& i_am_alive) {
     ioloop_->run(i_am_alive);
 }
 
-void App::tryRemoveSessionAfter10s(int64_t device_id) {
-    ioloop_->post_delay(10'000, [device_id, this]() { tryRemoveSession(device_id); });
+void App::tryRemoveSessionAfter10s(int64_t request_id) {
+    ioloop_->post_delay(10'000, [request_id, this]() { tryRemoveSession(request_id); });
 }
 
-void App::tryRemoveSession(int64_t device_id) {
+void App::tryRemoveSession(int64_t request_id) {
     std::lock_guard<std::mutex> lock{mutex_};
-    auto iter = sessions_.find(device_id);
+    auto iter = sessions_.find(request_id);
     if (iter == sessions_.end() || iter->second != nullptr) {
         return;
     }
     else {
         sessions_.erase(iter);
-        LOG(WARNING) << "Remove session(device_id:" << device_id << ") by timeout";
+        LOG(WARNING) << "Remove session(request_id:" << request_id << ") by timeout";
     }
 }
 
-void App::onClientExitedThreadSafe(int64_t device_id) {
+void App::onClientExitedThreadSafe(int64_t request_id) {
     if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&App::onClientExitedThreadSafe, this, device_id));
+        ioloop_->post(std::bind(&App::onClientExitedThreadSafe, this, request_id));
         return;
     }
     size_t size;
     {
         std::lock_guard<std::mutex> lock{mutex_};
-        size = sessions_.erase(device_id);
+        size = sessions_.erase(request_id);
     }
     if (size == 0) {
-        LOG(WARNING) << "Try remove ClientSession due to client exited, but the session("
-                     << device_id << ") doesn't exist.";
+        LOG(WARNING) << "Try remove ClientSession due to client exited, but the session(request_id:"
+                     << request_id << ") doesn't exist.";
     }
     else {
-        LOG(INFO) << "Remove session(" << device_id << ") success";
+        LOG(INFO) << "Remove session(request_id:" << request_id << ") success";
     }
 }
 
@@ -505,9 +508,10 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
 void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::RequestConnectionAck>(_msg);
     if (ack->err_code() != ltproto::server::RequestConnectionAck_ErrCode_Success) {
-        LOG(WARNING) << "RequestConnection failed";
+        LOGF(WARNING, "RequestConnection(device_id:%d, request_id:%d) failed", ack->device_id(),
+             ack->request_id());
         std::lock_guard<std::mutex> lock{mutex_};
-        sessions_.erase(ack->device_id());
+        sessions_.erase(ack->request_id());
         return;
     }
     ClientSession::Params params;
@@ -518,7 +522,7 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     params.p2p_password = ack->p2p_password();
     params.signaling_addr = ack->signaling_addr();
     params.signaling_port = ack->signaling_port();
-    params.on_exited = std::bind(&App::onClientExitedThreadSafe, this, ack->device_id());
+    params.on_exited = std::bind(&App::onClientExitedThreadSafe, this, ack->request_id());
     params.video_codec_type = toLtrtc(ack->streaming_params().video_codecs().Get(0).codec_type());
     params.width = ack->streaming_params().video_width();
     params.height = ack->streaming_params().video_height();
@@ -531,26 +535,29 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     auto session = std::make_shared<ClientSession>(params);
     {
         std::lock_guard<std::mutex> lock{mutex_};
-        auto iter = sessions_.find(ack->device_id());
+        auto iter = sessions_.find(ack->request_id());
         if (iter == sessions_.end()) {
-            LOG(INFO) << "Received RequestConnectionAck(device_id:" << ack->device_id()
-                      << "), but too late";
+            LOGF(INFO, "Received RequestConnectionAck(device_id:%d, request_id:%d), but too late",
+                 ack->device_id(), ack->request_id());
             return;
         }
         else if (iter->second != nullptr) {
-            LOG(INFO) << "Received RequestConnectionAck(device_id:" << ack->device_id()
-                      << "), but another session already started";
+            LOGF(INFO,
+                 "Received RequestConnectionAck(device_id:%d, request_id:%d), but another session "
+                 "already started",
+                 ack->device_id(), ack->request_id());
             return;
         }
         else {
             iter->second = session;
-            LOG(INFO) << "Received RequestConnectionAck(device_id:" << ack->device_id() << ")";
+            LOGF(INFO, "Received RequestConnectionAck(device_id:, request_id:%d)", ack->device_id(),
+                 ack->request_id());
         }
     }
     if (!session->start()) {
-        LOG(INFO) << "Start session(device_id:" << ack->device_id() << ") failed";
+        LOGF(INFO, "Start session(device_id:%d) failed", ack->device_id(), ack->request_id());
         std::lock_guard<std::mutex> lock{mutex_};
-        sessions_.erase(ack->device_id());
+        sessions_.erase(ack->request_id());
     }
     // 只将“合法”的device id加入历史列表
     insertNewestHistoryID(std::to_string(ack->device_id()));
