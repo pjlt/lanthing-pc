@@ -11,9 +11,9 @@
 #include <ltlib/threads.h>
 #include <transport/transport.h>
 
-#include <client/graphics/video.h>
-#include <client/input/input.h>
-#include <client/platforms/pc_sdl.h>
+#include <graphics/decoder/video_decoder.h>
+#include <inputs/capturer/input_capturer.h>
+#include <platforms/pc_sdl.h>
 
 namespace lt {
 
@@ -100,11 +100,11 @@ private:
     std::string p2p_username_;
     std::string p2p_password_;
     SignalingParams signaling_params_;
-    Input::Params input_params_{};
-    Video::Params video_params_;
+    InputCapturer::Params input_params_{};
+    VideoDecoder::Params video_params_;
     std::vector<std::string> reflex_servers_;
-    std::unique_ptr<Video> video_module_;
-    std::unique_ptr<Input> input_module_;
+    std::unique_ptr<VideoDecoder> video_module_;
+    std::unique_ptr<InputCapturer> input_module_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<lt::tp::Client> tp_client_;

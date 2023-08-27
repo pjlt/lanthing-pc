@@ -7,10 +7,6 @@
 
 namespace lt {
 
-namespace worker {
-
 using MessageHandler = std::function<void(const std::shared_ptr<google::protobuf::MessageLite>&)>;
-
-} // namespace worker
 
 } // namespace lt

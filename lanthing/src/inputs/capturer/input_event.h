@@ -4,8 +4,6 @@
 
 namespace lt {
 
-namespace cli {
-
 struct KeyboardEvent {
     KeyboardEvent(uint16_t _code, bool pressed)
         : scan_code{_code}
@@ -148,7 +146,5 @@ struct InputEvent {
 };
 
 using OnInputEvent = std::function<void(const InputEvent&)>;
-
-} // namespace cli
 
 } // namespace lt

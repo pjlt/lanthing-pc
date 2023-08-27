@@ -9,32 +9,11 @@ set(LT_SRCS
     #${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
 
     # Client
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.cpp
-    # Client->graphics
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/ct_smoother.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/ct_smoother.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/d3d11_pipeline.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/d3d11_pipeline.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/gpu_capability.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/gpu_capability.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/pixel_shader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/vertex_shader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/video.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/graphics/video.cpp
-    # Client->input
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input_event.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/input/input_event.cpp
-    # Client->platforms
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl_input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/platforms/pc_sdl_input.cpp
 
     # Service
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.h
@@ -47,17 +26,12 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.cpp
 
     # Worker
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/message_handler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/input.h 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/input.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/send_input.h 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/input/send_input.cpp
 
     # graphics->encoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.h
@@ -80,6 +54,35 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/common_types.h
+    # graphics->decoder
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ct_smoother.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ct_smoother.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/d3d11_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/d3d11_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/gpu_capability.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/gpu_capability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/pixel_shader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/vertex_shader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.cpp
+
+    # input->capturer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_event.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_event.cpp
+    # input->executor
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/send_input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/send_input.cpp
+
+    # platforms
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl_input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl_input.cpp
 )
 
 if(LT_WINDOWS)

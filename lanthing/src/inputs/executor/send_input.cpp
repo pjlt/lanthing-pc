@@ -11,12 +11,12 @@
 #include <ltproto/peer2peer/keyboard_event.pb.h>
 #include <ltproto/peer2peer/mouse_event.pb.h>
 
-namespace
-{
+namespace {
 
 // ret: {win_key, use_scancode, extented, valid}
-constexpr auto scancode_to_winkey(const lt::Scancode scancode) -> std::tuple<WORD, bool, bool, bool> {
-    //FIXME: 有几个键是乱填的
+constexpr auto scancode_to_winkey(const lt::Scancode scancode)
+    -> std::tuple<WORD, bool, bool, bool> {
+    // FIXME: 有几个键是乱填的
     using lt::Scancode;
     if (scancode >= Scancode::SCANCODE_A && scancode <= Scancode::SCANCODE_Z) {
         return {'A' + scancode - Scancode::SCANCODE_A, true, false, true};
@@ -140,7 +140,6 @@ constexpr auto scancode_to_winkey(const lt::Scancode scancode) -> std::tuple<WOR
 } // namespace
 
 namespace lt {
-namespace worker {
 
 void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto keyboard = std::static_pointer_cast<ltproto::peer2peer::KeyboardEvent>(msg);
@@ -238,5 +237,4 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
     SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }
 
-} // namespace worker
 } // namespace lt

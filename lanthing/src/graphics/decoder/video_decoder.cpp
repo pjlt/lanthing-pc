@@ -1,6 +1,6 @@
 // ffmpeg头文件有警告
 #pragma warning(disable : 4244)
-#include "video.h"
+#include "video_decoder.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -23,22 +23,20 @@
 
 namespace lt {
 
-namespace cli {
-
 using namespace std::chrono_literals;
 
-class VideoImpl {
+class VideoDecoderImpl {
 public:
     struct VideoFrameInternal : lt::VideoFrame {
         std::shared_ptr<uint8_t> data_internal;
     };
 
 public:
-    VideoImpl(const Video::Params& params);
-    ~VideoImpl();
+    VideoDecoderImpl(const VideoDecoder::Params& params);
+    ~VideoDecoderImpl();
     bool init();
     void reset_deocder_renderer();
-    Video::Action submit(const lt::VideoFrame& frame);
+    VideoDecoder::Action submit(const lt::VideoFrame& frame);
 
 private:
     void decode_loop(const std::function<void()>& i_am_alive);
@@ -76,7 +74,7 @@ private:
     std::unique_ptr<ltlib::BlockingThread> render_thread_;
 };
 
-VideoImpl::VideoImpl(const Video::Params& params)
+VideoDecoderImpl::VideoDecoderImpl(const VideoDecoder::Params& params)
     : width_{params.width}
     , height_{params.height}
     , screen_refresh_rate_{params.screen_refresh_rate}
@@ -88,14 +86,14 @@ VideoImpl::VideoImpl(const Video::Params& params)
     hwnd_ = info.info.win.window;
 }
 
-VideoImpl::~VideoImpl() {
+VideoDecoderImpl::~VideoDecoderImpl() {
     stoped_ = true;
     decode_thread_.reset();
     render_thread_.reset();
     d3d11_pipe_line_.reset();
 }
 
-bool VideoImpl::init() {
+bool VideoDecoderImpl::init() {
     uint64_t target_adapter = 0;
     Format target_format;
     switch (codec_type_) {
@@ -147,11 +145,11 @@ bool VideoImpl::init() {
     return true;
 }
 
-void VideoImpl::reset_deocder_renderer() {
+void VideoDecoderImpl::reset_deocder_renderer() {
     LOG(FATAL) << "reset_deocder_renderer() not implemented";
 }
 
-Video::Action VideoImpl::submit(const lt::VideoFrame& _frame) {
+VideoDecoder::Action VideoDecoderImpl::submit(const lt::VideoFrame& _frame) {
     // static std::fstream stream{"./vidoe_stream",
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
@@ -176,11 +174,11 @@ Video::Action VideoImpl::submit(const lt::VideoFrame& _frame) {
         waiting_for_decode_.notify_one();
     }
     bool request_i_frame = request_i_frame_.exchange(false);
-    return request_i_frame ? Video::Action::REQUEST_KEY_FRAME : Video::Action::NONE;
+    return request_i_frame ? VideoDecoder::Action::REQUEST_KEY_FRAME : VideoDecoder::Action::NONE;
 }
 
-bool VideoImpl::waitForDecode(std::vector<VideoFrameInternal>& frames,
-                              std::chrono::microseconds max_delay) {
+bool VideoDecoderImpl::waitForDecode(std::vector<VideoFrameInternal>& frames,
+                                     std::chrono::microseconds max_delay) {
     std::unique_lock<std::mutex> lock(decode_mtx_);
     if (encoded_frames_.empty()) {
         waiting_for_decode_.wait_for(lock, max_delay, [this]() { return decode_signal_; });
@@ -190,7 +188,7 @@ bool VideoImpl::waitForDecode(std::vector<VideoFrameInternal>& frames,
     return !frames.empty();
 }
 
-void VideoImpl::decode_loop(const std::function<void()>& i_am_alive) {
+void VideoDecoderImpl::decode_loop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
         std::vector<VideoFrameInternal> frames;
@@ -216,13 +214,13 @@ void VideoImpl::decode_loop(const std::function<void()>& i_am_alive) {
     }
 }
 
-bool VideoImpl::waitForRender(std::chrono::microseconds ms) {
+bool VideoDecoderImpl::waitForRender(std::chrono::microseconds ms) {
     std::unique_lock<std::mutex> lock(render_mtx_);
     bool ret = waiting_for_render_.wait_for(lock, ms, [this]() { return smoother_.size() > 0; });
     return ret;
 }
 
-void VideoImpl::render_loop(const std::function<void()>& i_am_alive) {
+void VideoDecoderImpl::render_loop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
         ltlib::Timestamp cur_time = ltlib::Timestamp::now();
@@ -236,7 +234,7 @@ void VideoImpl::render_loop(const std::function<void()>& i_am_alive) {
     }
 }
 
-Video::Params::Params(
+VideoDecoder::Params::Params(
     lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
     uint32_t _screen_refresh_rate,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
@@ -247,7 +245,7 @@ Video::Params::Params(
     , screen_refresh_rate(_screen_refresh_rate)
     , send_message_to_host(send_message) {}
 
-bool Video::Params::validate() const {
+bool VideoDecoder::Params::validate() const {
     if (codec_type == lt::VideoCodecType::Unknown || sdl == nullptr ||
         send_message_to_host == nullptr) {
         return false;
@@ -257,28 +255,26 @@ bool Video::Params::validate() const {
     }
 }
 
-std::unique_ptr<Video> Video::create(const Params& params) {
+std::unique_ptr<VideoDecoder> VideoDecoder::create(const Params& params) {
     if (!params.validate()) {
         LOG(FATAL) << "Create video module failed: invalid parameter";
         return nullptr;
     }
-    auto impl = std::make_shared<VideoImpl>(params);
+    auto impl = std::make_shared<VideoDecoderImpl>(params);
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<Video> video{new Video};
-    video->impl_ = std::move(impl);
-    return video;
+    std::unique_ptr<VideoDecoder> decoder{new VideoDecoder};
+    decoder->impl_ = std::move(impl);
+    return decoder;
 }
 
-void Video::reset_decoder_renderer() {
+void VideoDecoder::reset_decoder_renderer() {
     impl_->reset_deocder_renderer();
 }
 
-Video::Action Video::submit(const lt::VideoFrame& frame) {
+VideoDecoder::Action VideoDecoder::submit(const lt::VideoFrame& frame) {
     return impl_->submit(frame);
 }
-
-} // namespace cli
 
 } // namespace lt

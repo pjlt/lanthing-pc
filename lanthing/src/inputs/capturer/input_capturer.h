@@ -1,5 +1,5 @@
 #pragma once
-#include <client/input/input_event.h>
+#include <inputs/capturer/input_event.h>
 
 #include <memory>
 
@@ -7,12 +7,10 @@
 
 namespace lt {
 
-namespace cli {
-
 class PcSdl;
-class InputImpl;
+class InputCapturerImpl;
 
-class Input {
+class InputCapturer {
 public:
     struct Params {
         PcSdl* sdl;
@@ -23,15 +21,13 @@ public:
     };
 
 public:
-    static std::unique_ptr<Input> create(const Params& params);
+    static std::unique_ptr<InputCapturer> create(const Params& params);
 
 private:
-    Input() = default;
+    InputCapturer() = default;
 
 private:
-    std::shared_ptr<InputImpl> impl_;
+    std::shared_ptr<InputCapturerImpl> impl_;
 };
-
-} // namespace cli
 
 } // namespace lt

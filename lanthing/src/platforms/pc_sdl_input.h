@@ -7,11 +7,9 @@
 
 #include <SDL.h>
 
-#include <client/input/input_event.h>
+#include <inputs/capturer/input_event.h>
 
 namespace lt {
-
-namespace cli {
 
 constexpr uint8_t kMaxControllers = 4;
 
@@ -56,7 +54,5 @@ private:
     std::function<void(const InputEvent&)> on_input_event_;
     std::array<std::optional<ControllerState>, kMaxControllers> controller_states_;
 };
-
-} // namespace cli
 
 } // namespace lt

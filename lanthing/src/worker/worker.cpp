@@ -370,16 +370,16 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
         auto negotiated_params =
             std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_params_);
 
-        Input::Params input_params{};
-        input_params.types = static_cast<uint8_t>(Input::Type::WIN32_MESSAGE) |
-                             static_cast<uint8_t>(Input::Type::WIN32_DRIVER);
+        InputExecutor::Params input_params{};
+        input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
+                             static_cast<uint8_t>(InputExecutor::Type::WIN32_DRIVER);
         input_params.screen_width = negotiated_display_setting_.width;
         input_params.screen_height = negotiated_display_setting_.height;
         input_params.register_message_handler = std::bind(
             &Worker::register_message_handler, this, std::placeholders::_1, std::placeholders::_2);
         input_params.send_message = std::bind(&Worker::send_pipe_message, this,
                                               std::placeholders::_1, std::placeholders::_2);
-        input_ = Input::create(input_params);
+        input_ = InputExecutor::create(input_params);
         if (input_ == nullptr) {
             ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_InputFailed);
             break;

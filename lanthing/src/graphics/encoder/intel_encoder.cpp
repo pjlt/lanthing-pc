@@ -370,6 +370,9 @@ bool IntelEncoderImpl::findImplIndex() {
         }
         status = MFXEnumImplementations(mfxloader_, index, MFX_IMPLCAPS_DEVICE_ID_EXTENDED,
                                         (mfxHDL*)&ext_devid);
+        if (status != MFX_ERR_NONE) {
+            continue;
+        }
         if (!ext_devid->LUIDValid) {
             continue;
         }

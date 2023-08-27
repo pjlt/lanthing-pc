@@ -1,5 +1,5 @@
-#include "client/input/input.h"
-#include "client/platforms/pc_sdl.h"
+#include <inputs/capturer/input_capturer.h>
+#include <platforms/pc_sdl.h>
 
 #include <array>
 
@@ -62,11 +62,9 @@ Rect scale_src_to_dst_surface(Rect src, Rect dst) {
 
 namespace lt {
 
-namespace cli {
-
-class InputImpl {
+class InputCapturerImpl {
 public:
-    InputImpl(const Input::Params& params);
+    InputCapturerImpl(const InputCapturer::Params& params);
     void init();
 
 private:
@@ -95,32 +93,31 @@ private:
     std::array<std::optional<ControllerState>, 4> cstates_;
 };
 
-std::unique_ptr<Input> Input::create(const Params& params) {
-    std::unique_ptr<Input> input{new Input};
-    auto impl = std::make_unique<InputImpl>(params);
+std::unique_ptr<InputCapturer> InputCapturer::create(const Params& params) {
+    std::unique_ptr<InputCapturer> input{new InputCapturer};
+    auto impl = std::make_unique<InputCapturerImpl>(params);
     impl->init();
     input->impl_ = std::move(impl);
     return input;
 }
 
-InputImpl::InputImpl(const Input::Params& params)
+InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     : sdl_{params.sdl}
     , host_width_{params.host_width}
     , host_height_{params.host_height}
     , send_message_to_host_{params.send_message} {}
 
-void InputImpl::init() {
+void InputCapturerImpl::init() {
     sdl_->set_input_handler(
-        std::bind(&InputImpl::on_platform_input_event, this, std::placeholders::_1));
+        std::bind(&InputCapturerImpl::on_platform_input_event, this, std::placeholders::_1));
 }
 
-void InputImpl::send_message_to_host(uint32_t type,
-                                     const std::shared_ptr<google::protobuf::MessageLite>& msg,
-                                     bool reliable) {
+void InputCapturerImpl::send_message_to_host(
+    uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable) {
     send_message_to_host_(type, msg, reliable);
 }
 
-void InputImpl::on_platform_input_event(const InputEvent& e) {
+void InputCapturerImpl::on_platform_input_event(const InputEvent& e) {
     switch (e.type) {
     case InputEventType::Keyboard:
         handle_keyboard_up_down(std::get<KeyboardEvent>(e.ev));
@@ -149,7 +146,7 @@ void InputImpl::on_platform_input_event(const InputEvent& e) {
     }
 }
 
-void InputImpl::handle_keyboard_up_down(const KeyboardEvent& ev) {
+void InputCapturerImpl::handle_keyboard_up_down(const KeyboardEvent& ev) {
     // TODO: 增加一个reset状态的逻辑，入口在sdl还是input另说。
     key_states_[ev.scan_code] = ev.is_pressed ? 1 : 0;
     if (try_process_key_combos()) {
@@ -163,7 +160,7 @@ void InputImpl::handle_keyboard_up_down(const KeyboardEvent& ev) {
     LOG(DEBUG) << "Key:" << ev.scan_code << ", down:" << ev.is_pressed;
 }
 
-void InputImpl::handle_mouse_button(const MouseButtonEvent& ev) {
+void InputCapturerImpl::handle_mouse_button(const MouseButtonEvent& ev) {
     Rect host_surface{host_width_, host_height_};
     Rect client_surface{ev.window_width, ev.window_height};
     Rect target_rect = ::scale_src_to_dst_surface(host_surface, client_surface);
@@ -204,13 +201,13 @@ void InputImpl::handle_mouse_button(const MouseButtonEvent& ev) {
     send_message_to_host(ltproto::id(msg), msg, true);
 }
 
-void InputImpl::handle_mouse_wheel(const MouseWheelEvent& ev) {
+void InputCapturerImpl::handle_mouse_wheel(const MouseWheelEvent& ev) {
     auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
     msg->set_delta_z(ev.amount);
     send_message_to_host(ltproto::id(msg), msg, true);
 }
 
-void InputImpl::handle_mouse_move(const MouseMoveEvent& ev) {
+void InputCapturerImpl::handle_mouse_move(const MouseMoveEvent& ev) {
     Rect host_surface{host_width_, host_height_};
     Rect client_surface{ev.window_width, ev.window_height};
     Rect target_rect = ::scale_src_to_dst_surface(host_surface, client_surface);
@@ -227,7 +224,7 @@ void InputImpl::handle_mouse_move(const MouseMoveEvent& ev) {
     send_message_to_host(ltproto::id(msg), msg, true);
 }
 
-void InputImpl::handle_controller_added_removed(const ControllerAddedRemovedEvent& ev) {
+void InputCapturerImpl::handle_controller_added_removed(const ControllerAddedRemovedEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -243,7 +240,7 @@ void InputImpl::handle_controller_added_removed(const ControllerAddedRemovedEven
     send_message_to_host(ltproto::id(msg), msg, true);
 }
 
-void InputImpl::handle_controller_button(const ControllerButtonEvent& ev) {
+void InputCapturerImpl::handle_controller_button(const ControllerButtonEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -354,7 +351,7 @@ void InputImpl::handle_controller_button(const ControllerButtonEvent& ev) {
     send_controller_state(ev.index);
 }
 
-void InputImpl::handle_controller_axis(const ControllerAxisEvent& ev) {
+void InputCapturerImpl::handle_controller_axis(const ControllerAxisEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -387,7 +384,7 @@ void InputImpl::handle_controller_axis(const ControllerAxisEvent& ev) {
     send_controller_state(ev.index);
 }
 
-void InputImpl::send_controller_state(uint32_t index) {
+void InputCapturerImpl::send_controller_state(uint32_t index) {
     if (index >= cstates_.size()) {
         return;
     }
@@ -407,9 +404,8 @@ void InputImpl::send_controller_state(uint32_t index) {
     send_message_to_host(ltproto::id(msg), msg, true);
 }
 
-bool InputImpl::try_process_key_combos() {
+bool InputCapturerImpl::try_process_key_combos() {
     return false;
 }
 
-} // namespace cli
 } // namespace lt

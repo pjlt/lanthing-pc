@@ -1,10 +1,10 @@
-#include "client/platforms/pc_sdl.h"
+#include "pc_sdl.h"
 
 #include <g3log/g3log.hpp>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#include "client/platforms/pc_sdl_input.h"
+#include "pc_sdl_input.h"
 #include <ltlib/threads.h>
 
 namespace {
@@ -23,8 +23,6 @@ int sdl_event_watcher(void* userdata, SDL_Event* ev) {
 } // namespace
 
 namespace lt {
-
-namespace cli {
 
 class PcSdlImpl : public PcSdl {
 public:
@@ -365,7 +363,5 @@ PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_touch_event(const SDL_Event& ev)
     (void)ev;
     return DispatchResult::kContinue;
 }
-
-} // namespace cli
 
 } // namespace lt

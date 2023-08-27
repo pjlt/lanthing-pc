@@ -6,13 +6,11 @@
 
 #include <google/protobuf/message_lite.h>
 
-#include <worker/message_handler.h>
+#include <message_handler.h>
 
 namespace lt {
 
-namespace worker {
-
-class Input {
+class InputExecutor {
 public:
     enum class Type : uint8_t {
         WIN32_MESSAGE = 1,
@@ -28,8 +26,8 @@ public:
     };
 
 public:
-    static std::unique_ptr<Input> create(const Params& params);
-    virtual ~Input() = default;
+    static std::unique_ptr<InputExecutor> create(const Params& params);
+    virtual ~InputExecutor() = default;
 
 protected:
     virtual bool initKeyMouse() = 0;
@@ -55,7 +53,5 @@ private:
     // 需要添加第三方库vigem才能使用gamepad
     // std::unique_ptr<Gamepad> gamepad_;
 };
-
-} // namespace worker
 
 } // namespace lt

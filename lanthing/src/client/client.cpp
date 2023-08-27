@@ -364,12 +364,12 @@ void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable)
 }
 
 void Client::on_ltrtc_video_frame(const lt::VideoFrame& frame) {
-    Video::Action action = video_module_->submit(frame);
+    VideoDecoder::Action action = video_module_->submit(frame);
     switch (action) {
-    case Video::Action::REQUEST_KEY_FRAME:
+    case VideoDecoder::Action::REQUEST_KEY_FRAME:
         // TODO: 请求关键帧
         break;
-    case Video::Action::NONE:
+    case VideoDecoder::Action::NONE:
         break;
     default:
         break;
@@ -389,7 +389,7 @@ void Client::on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate,
 }
 
 void Client::on_ltrtc_connected() {
-    video_module_ = Video::create(video_params_);
+    video_module_ = VideoDecoder::create(video_params_);
     if (video_module_ == nullptr) {
         LOG(WARNING) << "Create video module failed";
         return;
@@ -399,7 +399,7 @@ void Client::on_ltrtc_connected() {
                   std::placeholders::_3);
     input_params_.host_height = video_params_.height;
     input_params_.host_width = video_params_.width;
-    input_module_ = Input::create(input_params_);
+    input_module_ = InputCapturer::create(input_params_);
     if (input_module_ == nullptr) {
         LOG(WARNING) << "Create input module failed";
         return;

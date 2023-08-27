@@ -1,4 +1,4 @@
-#include "input.h"
+#include "input_executor.h"
 
 #include <ltproto/ltproto.h>
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
@@ -8,13 +8,12 @@
 #include "send_input.h"
 
 namespace lt {
-namespace worker {
 
-std::unique_ptr<Input> Input::create(const Params& params) {
+std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     if (params.register_message_handler == nullptr || params.send_message == nullptr) {
         return nullptr;
     }
-    std::unique_ptr<Input> input;
+    std::unique_ptr<InputExecutor> input;
     if (params.types & static_cast<uint8_t>(Type::WIN32_MESSAGE)) {
         input = std::make_unique<Win32SendInput>(params.screen_width, params.screen_height);
     }
@@ -29,7 +28,7 @@ std::unique_ptr<Input> Input::create(const Params& params) {
     return input;
 }
 
-bool Input::init() {
+bool InputExecutor::init() {
     if (!registerHandlers()) {
         return false;
     }
@@ -37,7 +36,7 @@ bool Input::init() {
         return false;
     }
     // 需要添加第三方库vigem才能使用
-    // gamepad_ = Gamepad::create(std::bind(&Input::onGamepadResponse, this,
+    // gamepad_ = Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this,
     // std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     // if (gamepad_ == nullptr) {
     //    return false;
@@ -45,14 +44,15 @@ bool Input::init() {
     return true;
 }
 
-bool Input::registerHandlers() {
+bool InputExecutor::registerHandlers() {
     namespace ltype = ltproto::type;
     namespace ph = std::placeholders;
     const std::pair<uint32_t, MessageHandler> handlers[] = {
-        {ltype::kMouseEvent, std::bind(&Input::onMouseEvent, this, ph::_1)},
-        {ltype::kKeyboardEvent, std::bind(&Input::onKeyboardEvent, this, ph::_1)},
-        {ltype::kControllerAddedRemoved, std::bind(&Input::onControllerAddedRemoved, this, ph::_1)},
-        {ltype::kControllerStatus, std::bind(&Input::onControllerStatus, this, ph::_1)}};
+        {ltype::kMouseEvent, std::bind(&InputExecutor::onMouseEvent, this, ph::_1)},
+        {ltype::kKeyboardEvent, std::bind(&InputExecutor::onKeyboardEvent, this, ph::_1)},
+        {ltype::kControllerAddedRemoved,
+         std::bind(&InputExecutor::onControllerAddedRemoved, this, ph::_1)},
+        {ltype::kControllerStatus, std::bind(&InputExecutor::onControllerStatus, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler_(handler.first, handler.second)) {
             return false;
@@ -61,15 +61,17 @@ bool Input::registerHandlers() {
     return true;
 };
 
-void Input::sendMessagte(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void InputExecutor::sendMessagte(uint32_t type,
+                                 const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     send_message_(type, msg);
 }
 
-bool Input::isAbsoluteMouse() const {
+bool InputExecutor::isAbsoluteMouse() const {
     return is_absolute_mouse_;
 }
 
-void Input::onControllerAddedRemoved(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void InputExecutor::onControllerAddedRemoved(
+    const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerAddedRemoved>(msg);
     // if (controller->is_added()) {
     //     gamepad_->plugin(controller->index());
@@ -79,7 +81,7 @@ void Input::onControllerAddedRemoved(const std::shared_ptr<google::protobuf::Mes
     // }
 }
 
-void Input::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerStatus>(msg);
     // if (controller->gamepad_index() >= XUSER_MAX_COUNT) {
     //     LOG(WARNING) << "Gamepad index exceed limit: " << controller->gamepad_index();
@@ -96,7 +98,7 @@ void Input::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLi
     // gamepad_->submit(controller->gamepad_index(), gamepad_report);
 }
 
-void Input::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor) {
+void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor) {
     auto controller = std::make_shared<ltproto::peer2peer::ControllerResponse>();
     controller->set_gamepad_index(index);
     controller->set_large_motor(large_motor);
@@ -104,5 +106,4 @@ void Input::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t sma
     sendMessagte(ltproto::id(controller), controller);
 }
 
-} // namespace worker
 } // namespace lt

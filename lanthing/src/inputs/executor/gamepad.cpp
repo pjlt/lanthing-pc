@@ -1,31 +1,25 @@
 #include <Windows.h>
 #include <g3log/g3log.hpp>
-#include "host/input/gamepad.h"
+#include <inputs/executor/gamepad.h>
 
-namespace lt
-{
-
-namespace worker
-{
+namespace lt {
 
 std::map<PVIGEM_CLIENT, Gamepad*> Gamepad::map_s;
 
-std::unique_ptr<Gamepad> Gamepad::create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response)
-{
+std::unique_ptr<Gamepad>
+Gamepad::create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response) {
     auto gp = std::make_unique<Gamepad>(gamepad_response);
     if (gp->connect()) {
         return gp;
-    } else {
+    }
+    else {
         return nullptr;
     }
 }
 Gamepad::Gamepad(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response)
-    : gamepad_response_ {gamepad_response}
-{
-}
+    : gamepad_response_{gamepad_response} {}
 
-bool Gamepad::plugin(uint32_t index)
-{
+bool Gamepad::plugin(uint32_t index) {
     if (index >= XUSER_MAX_COUNT) {
         return false;
     }
@@ -42,7 +36,8 @@ bool Gamepad::plugin(uint32_t index)
         return false;
     }
 
-    ret = vigem_target_x360_register_notification(gamepad_driver_, gamepad, &Gamepad::on_gamepad_response);
+    ret = vigem_target_x360_register_notification(gamepad_driver_, gamepad,
+                                                  &Gamepad::on_gamepad_response);
     if (!VIGEM_SUCCESS(ret)) {
         vigem_target_x360_unregister_notification(gamepad);
         LOG(WARNING) << "Register x360 failed";
@@ -54,8 +49,7 @@ bool Gamepad::plugin(uint32_t index)
     return true;
 }
 
-void Gamepad::plugout(uint32_t index)
-{
+void Gamepad::plugout(uint32_t index) {
     if (index >= XUSER_MAX_COUNT) {
         return;
     }
@@ -71,9 +65,7 @@ void Gamepad::plugout(uint32_t index)
     LOG(INFO) << "Plug out gamepad " << index;
 }
 
-
-bool Gamepad::submit(uint32_t index, const XUSB_REPORT& report)
-{
+bool Gamepad::submit(uint32_t index, const XUSB_REPORT& report) {
     if (!plugin(index)) {
         return false;
     }
@@ -86,8 +78,7 @@ bool Gamepad::submit(uint32_t index, const XUSB_REPORT& report)
     return true;
 }
 
-bool Gamepad::connect()
-{
+bool Gamepad::connect() {
     gamepad_driver_ = vigem_alloc();
     auto ret = vigem_connect(gamepad_driver_);
     if (!VIGEM_SUCCESS(ret)) {
@@ -95,14 +86,15 @@ bool Gamepad::connect()
         gamepad_driver_ = nullptr;
         LOG(WARNING) << "Connect to vigem failed";
         return false;
-    } else {
+    }
+    else {
         Gamepad::map_s[gamepad_driver_] = this;
         return true;
     }
 }
 
-void Gamepad::on_gamepad_response(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHAR large_motor, UCHAR small_motor, UCHAR led_number)
-{
+void Gamepad::on_gamepad_response(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHAR large_motor,
+                                  UCHAR small_motor, UCHAR led_number) {
     auto iter = Gamepad::map_s.find(client);
     if (iter == Gamepad::map_s.end()) {
         LOG(WARNING) << "Can not find vigem client " << client;
@@ -115,8 +107,5 @@ void Gamepad::on_gamepad_response(PVIGEM_CLIENT client, PVIGEM_TARGET target, UC
         }
     }
 }
-
-
-} // namespace worker
 
 } // namespace lt

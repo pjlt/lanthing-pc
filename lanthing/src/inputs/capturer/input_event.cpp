@@ -1,8 +1,6 @@
-#include "client/input/input_event.h"
+#include <inputs/capturer/input_event.h>
 
 namespace lt {
-
-namespace cli {
 
 InputEvent::InputEvent(const KeyboardEvent& kb)
     : type{InputEventType::Keyboard}
@@ -31,7 +29,5 @@ InputEvent::InputEvent(const ControllerButtonEvent& controlelr)
 InputEvent::InputEvent(const ControllerAxisEvent& controller)
     : type{InputEventType::ControllerAxis}
     , ev{controller} {}
-
-} // namespace cli
 
 } // namespace lt

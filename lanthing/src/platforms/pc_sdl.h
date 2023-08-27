@@ -4,7 +4,7 @@
 #include <future>
 #include <memory>
 
-#include "client/input/input_event.h"
+#include <inputs/capturer/input_event.h>
 
 extern "C" {
 
@@ -13,8 +13,6 @@ struct SDL_Window;
 } // extern "C"
 
 namespace lt {
-
-namespace cli {
 
 class PcSdl {
 public:
@@ -38,7 +36,5 @@ public:
 protected:
     PcSdl() = default;
 };
-
-} // namespace cli
 
 } // namespace lt

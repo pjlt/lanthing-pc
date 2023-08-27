@@ -10,11 +10,11 @@
 #include <transport/transport.h>
 
 #include "display_setting.h"
-#include "input/input.h"
 #include "message_handler.h"
 #include "session_change_observer.h"
 #include <graphics/capturer/video_capturer.h>
 #include <graphics/encoder/video_encoder.h>
+#include <inputs/executor/input_executor.h>
 
 namespace lt {
 
@@ -78,7 +78,7 @@ private:
     std::unique_ptr<ltlib::BlockingThread> thread_;
     int64_t last_time_received_from_service_;
     std::unique_ptr<lt::VideoCapturer> video_capturer_;
-    std::unique_ptr<lt::worker::Input> input_;
+    std::unique_ptr<lt::InputExecutor> input_;
 };
 
 } // namespace worker

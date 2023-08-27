@@ -10,7 +10,6 @@ constexpr size_t kGUIDLength = 64;
 
 namespace lt {
 
-namespace cli {
 std::unique_ptr<SdlInput> SdlInput::create(const Params& params) {
     std::unique_ptr<SdlInput> input{new SdlInput{params}};
     input->init();
@@ -244,7 +243,5 @@ void SdlInput::on_input_event(const InputEvent& ev) {
         handle_input(ev);
     }
 }
-
-} // namespace cli
 
 } // namespace lt

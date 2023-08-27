@@ -5,15 +5,13 @@
 
 #include <google/protobuf/message_lite.h>
 
-#include <client/platforms/pc_sdl.h>
+#include <platforms/pc_sdl.h>
 #include <transport/transport.h>
 
 namespace lt {
 
-namespace cli {
-
-class VideoImpl;
-class Video {
+class VideoDecoderImpl;
+class VideoDecoder {
 public:
     struct Params {
         Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
@@ -37,17 +35,15 @@ public:
     };
 
 public:
-    static std::unique_ptr<Video> create(const Params& params);
+    static std::unique_ptr<VideoDecoder> create(const Params& params);
     void reset_decoder_renderer();
     Action submit(const lt::VideoFrame& frame);
 
 private:
-    Video() = default;
+    VideoDecoder() = default;
 
 private:
-    std::shared_ptr<VideoImpl> impl_;
+    std::shared_ptr<VideoDecoderImpl> impl_;
 };
-
-} // namespace cli
 
 } // namespace lt
