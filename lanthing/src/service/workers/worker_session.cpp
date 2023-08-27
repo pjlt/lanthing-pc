@@ -4,6 +4,7 @@
 
 #include <g3log/g3log.hpp>
 
+#include <ltproto/peer2peer/audio_data.pb.h>
 #include <ltproto/peer2peer/keep_alive.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
@@ -216,6 +217,8 @@ bool WorkerSession::init_rtc_server() {
         params.nbp2p_params.relay_servers = relay_servers.data();
         params.nbp2p_params.relay_servers_count = static_cast<uint32_t>(relay_servers.size());
     }
+    params.audio_channels = negotiated_params->audio_channels();
+    params.audio_sample_rate = negotiated_params->audio_sample_rate();
     params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
     params.on_failed = std::bind(&WorkerSession::on_ltrtc_failed_thread_safe, this);
     params.on_disconnected = std::bind(&WorkerSession::on_ltrtc_disconnected_thread_safe, this);
@@ -506,10 +509,13 @@ void WorkerSession::on_pipe_message(uint32_t fd, uint32_t type,
         on_start_working_ack(msg);
         break;
     case ltype::kCaptureVideoFrame:
-        on_captured_frame(msg);
+        on_captured_video(msg);
         break;
     case ltype::kStreamingParams:
         on_worker_streaming_params(msg);
+        break;
+    case ltype::kAudioData:
+        on_captured_audio(msg);
         break;
     default:
         LOG(WARNING) << "Unknown message type:" << type;
@@ -616,7 +622,7 @@ void WorkerSession::on_ltrtc_signaling_message(const std::string& key, const std
     });
 }
 
-void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+void WorkerSession::on_captured_video(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     // NOTE: 这是在IOLoop线程
     auto captured_frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_msg);
     auto encoded_frame = video_encoder_->encode(captured_frame, false);
@@ -627,6 +633,14 @@ void WorkerSession::on_captured_frame(std::shared_ptr<google::protobuf::MessageL
     // static std::ofstream out{"./service_stream", std::ios::binary};
     // out.write(reinterpret_cast<const char*>(encoded_frame.data), encoded_frame.size);
     // out.flush();
+}
+
+void WorkerSession::on_captured_audio(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto captured_audio = std::static_pointer_cast<ltproto::peer2peer::AudioData>(_msg);
+    lt::AudioData audio_data{};
+    audio_data.data = reinterpret_cast<const uint8_t*>(captured_audio->data().c_str());
+    audio_data.size = static_cast<uint32_t>(captured_audio->data().size());
+    tp_server_->sendAudio(audio_data);
 }
 
 void WorkerSession::dispatch_dc_message(uint32_t type,

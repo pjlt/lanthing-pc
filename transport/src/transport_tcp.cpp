@@ -8,6 +8,7 @@
 
 #include <ltproto/ltproto.h>
 #include <ltproto/peer2peer/video_frame.pb.h>
+#include <ltproto/peer2peer/audio_data.pb.h>
 
 namespace {
 
@@ -170,7 +171,19 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
         params_.on_video(video_frame);
         break;
     }
-    // case audio
+    case ltype::kAudioData:
+    {
+        auto audio_data = std::static_pointer_cast<ltproto::peer2peer::AudioData>(msg);
+        if (audio_data == nullptr) {
+            LOG(WARNING) << "Cast MessageListe to AudioData failed";
+            break;
+        }
+        lt::AudioData ad{};
+        ad.data = audio_data->data().c_str();
+        ad.size = static_cast<uint32_t>(audio_data->data().size());
+        params_.on_audio(ad);
+        break;
+    }
     default:
     {
         // 写的时候偷懒，让运行的时候多绕一圈
@@ -281,10 +294,17 @@ bool ServerTCP::sendData(const uint8_t* data, uint32_t size, bool is_reliable) {
     return tcp_server_->send(client_fd_, _data, size);
 }
 
-bool ServerTCP::sendAudio(const uint8_t* data, uint32_t size) {
-    (void)data;
-    (void)size;
-    return false;
+bool ServerTCP::sendAudio(const AudioData& audio_data) {
+    if (!isNetworkThread()) {
+        std::function<bool()> task = std::bind(&ServerTCP::sendAudio, this, audio_data);
+        return invoke(task);
+    }
+    if (client_fd_ == std::numeric_limits<uint32_t>::max()) {
+        return false;
+    }
+    auto msg = std::make_shared<ltproto::peer2peer::AudioData>();
+    msg->set_data(audio_data.data, audio_data.size);
+    return tcp_server_->send(client_fd_, ltproto::type::kAudioData, msg);
 }
 
 bool ServerTCP::sendVideo(const VideoFrame& frame) {

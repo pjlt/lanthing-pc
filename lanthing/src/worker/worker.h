@@ -12,6 +12,7 @@
 #include "display_setting.h"
 #include "message_handler.h"
 #include "session_change_observer.h"
+#include <audio/capturer/audio_capturer.h>
 #include <graphics/capturer/video_capturer.h>
 #include <graphics/encoder/video_encoder.h>
 #include <inputs/executor/input_executor.h>
@@ -50,6 +51,7 @@ private:
     void print_stats();
     void check_timeout();
     void on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> frame);
+    void on_captured_audio_data(std::shared_ptr<google::protobuf::MessageLite> audio_data);
 
     // pipe message handlers
     void on_pipe_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -79,6 +81,7 @@ private:
     int64_t last_time_received_from_service_;
     std::unique_ptr<lt::VideoCapturer> video_capturer_;
     std::unique_ptr<lt::InputExecutor> input_;
+    std::unique_ptr<lt::AudioCapturer> audio_capturer_;
 };
 
 } // namespace worker

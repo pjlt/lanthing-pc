@@ -78,6 +78,7 @@ find_package(MbedTLS REQUIRED PATHS third_party/mbedtls/build/install/${THIRD_PA
 find_package(libuv REQUIRED PATHS third_party/libuv/build/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(SDL2 REQUIRED PATHS third_party/SDL/build/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(VPL REQUIRED PATHS third_party/oneVPL/build/install/${THIRD_PARTY_BUILD_TYPE})
+find_package(Opus REQUIRED PATHS third_party/opus/build/install/${THIRD_PARTY_BUILD_TYPE})
 
 add_subdirectory(rtc)
 add_subdirectory(ltproto)

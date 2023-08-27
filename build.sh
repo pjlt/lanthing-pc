@@ -115,6 +115,22 @@ build_onevpl() {
     cd $root_dir;
 }
 
+build_opus() {
+    echo -e "\033[32m building opus\033[0m"
+    cd third_party/opus
+    mkdir -p build/; cd build;
+    $CMAKE .. -DCMAKE_INSTALL_PREFIX=install/Debug
+    $CMAKE --build . --config Debug --target install
+    $CMAKE .. -DCMAKE_INSTALL_PREFIX=install/Release
+    $CMAKE --build . --config Release --target install
+    cd $root_dir;
+}
+
+clear_opus() {
+    rm third_party/opus/build/* -rf
+    exit_if_fail
+}
+
 build_g3log() {
     echo -e "\033[32m building g3log\033[0m"
     cd third_party/g3log
@@ -162,6 +178,7 @@ if [ "$action" == "prebuild" ]; then
     build_mbedtls
     build_libuv
     build_sdl
+    build_opus
     build_g3log
    
 elif [ "$action" == "clean" ];then
@@ -170,6 +187,7 @@ elif [ "$action" == "clean" ];then
     clear_mbedtls
     clear_libuv
     clear_sdl
+    clear_opus
     clear_g3log
 
 elif [ "$action" == "build" ];then

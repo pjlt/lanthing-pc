@@ -5,7 +5,7 @@
 #include <ltproto/peer2peer/controller_response.pb.h>
 #include <ltproto/peer2peer/controller_status.pb.h>
 
-#include "send_input.h"
+#include "win_send_input.h"
 
 namespace lt {
 

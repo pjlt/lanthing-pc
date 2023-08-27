@@ -11,6 +11,7 @@
 #include <ltlib/threads.h>
 #include <transport/transport.h>
 
+#include <audio/player/audio_player.h>
 #include <graphics/decoder/video_decoder.h>
 #include <inputs/capturer/input_capturer.h>
 #include <platforms/pc_sdl.h>
@@ -46,6 +47,8 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t screen_refresh_rate;
+        uint32_t audio_freq;
+        uint32_t audio_channels;
         bool enable_driver_input;
         bool enable_gamepad;
         std::vector<std::string> reflex_servers;
@@ -74,17 +77,16 @@ private:
     void on_signaling_message(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    // ltrtc::LTClient
-    bool init_ltrtc();
-    void on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable);
-    void on_ltrtc_video_frame(const lt::VideoFrame& frame);
-    void on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate,
-                             uint32_t number_of_channels, const void* audio_data, uint32_t size);
-    void on_ltrtc_connected(/*connection info*/);
-    void on_ltrtc_conn_changed(/*old_conn_info, new_conn_info*/);
-    void on_ltrtc_failed();
-    void on_ltrtc_disconnected();
-    void on_ltrtc_signaling_message(const std::string& key, const std::string& value);
+    // transport
+    bool init_transport();
+    void on_tp_data(const uint8_t* data, uint32_t size, bool is_reliable);
+    void on_tp_video_frame(const lt::VideoFrame& frame);
+    void on_tp_audio_data(const lt::AudioData& audio_data);
+    void on_tp_connected(/*connection info*/);
+    void on_tp_conn_changed(/*old_conn_info, new_conn_info*/);
+    void on_tp_failed();
+    void on_tp_disconnected();
+    void on_tp_signaling_message(const std::string& key, const std::string& value);
 
     // 数据通道.
     void dispatch_remote_message(uint32_t type,
@@ -102,9 +104,11 @@ private:
     SignalingParams signaling_params_;
     InputCapturer::Params input_params_{};
     VideoDecoder::Params video_params_;
+    AudioPlayer::Params audio_params_{};
     std::vector<std::string> reflex_servers_;
-    std::unique_ptr<VideoDecoder> video_module_;
-    std::unique_ptr<InputCapturer> input_module_;
+    std::unique_ptr<VideoDecoder> video_decoder_;
+    std::unique_ptr<InputCapturer> input_capturer_;
+    std::unique_ptr<AudioPlayer> audio_player_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<lt::tp::Client> tp_client_;

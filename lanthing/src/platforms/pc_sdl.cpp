@@ -189,6 +189,11 @@ bool PcSdlImpl::init_sdl_subsystems() {
         LOG(WARNING) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
         return false;
     }
+    ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
+    if (ret != 0) {
+        LOG(WARNING) << "SDL_INIT_AUDIO failed:" << SDL_GetError();
+        return false;
+    }
     ret = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     if (ret != 0) {
         LOG(WARNING) << "SDL_INIT_GAMECONTROLLER failed:" << SDL_GetError();
@@ -199,6 +204,7 @@ bool PcSdlImpl::init_sdl_subsystems() {
 
 void PcSdlImpl::quit_sdl_subsystems() {
     SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 

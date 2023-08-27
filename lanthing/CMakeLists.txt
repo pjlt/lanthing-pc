@@ -67,6 +67,17 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.cpp
 
+    # audio->capturer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.cpp
+    # audio->player
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/audio_player.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/audio_player.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/sdl_audio_player.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/sdl_audio_player.cpp
+
     # input->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.cpp
@@ -75,8 +86,8 @@ set(LT_SRCS
     # input->executor
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/send_input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/send_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.cpp
 
     # platforms
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.h
@@ -128,6 +139,7 @@ target_link_libraries(${PROJECT_NAME}
     protobuf::libprotobuf-lite
     SDL2::SDL2
     ffmpeg
+    Opus::opus
     nvcodec
     VPL::dispatcher
     amf

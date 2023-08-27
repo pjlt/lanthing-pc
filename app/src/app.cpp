@@ -514,7 +514,7 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         sessions_.erase(ack->request_id());
         return;
     }
-    ClientSession::Params params;
+    ClientSession::Params params{};
     params.client_id = ack->client_id();
     params.room_id = ack->room_id();
     params.auth_token = ack->auth_token();
@@ -529,6 +529,8 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     params.refresh_rate = ack->streaming_params().screen_refresh_rate();
     params.enable_driver_input = ack->streaming_params().enable_driver_input();
     params.enable_gamepad = ack->streaming_params().enable_gamepad();
+    params.audio_channels = ack->streaming_params().audio_channels();
+    params.audio_freq = ack->streaming_params().audio_sample_rate();
     for (int i = 0; i < ack->reflex_servers_size(); i++) {
         params.reflex_servers.push_back(ack->reflex_servers(i));
     }

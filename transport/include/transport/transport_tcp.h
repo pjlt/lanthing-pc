@@ -94,7 +94,7 @@ public:
     ~ServerTCP() override;
     void close() override;
     bool sendData(const uint8_t* data, uint32_t size, bool is_reliable) override;
-    bool sendAudio(const uint8_t* data, uint32_t size) override;
+    bool sendAudio(const AudioData& audio_data) override;
     bool sendVideo(const VideoFrame& frame) override;
     void onSignalingMessage(const char* key, const char* value) override;
 

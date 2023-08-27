@@ -38,6 +38,14 @@ lt::VideoCodecType to_ltrtc(std::string codec_str) {
     }
 }
 
+lt::AudioCodecType atype() {
+#if LT_USE_LTRTC
+    return lt::AudioCodecType::PCM;
+#else
+    return lt::AudioCodecType::OPUS;
+#endif
+}
+
 } // namespace
 
 namespace lt {
@@ -51,7 +59,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         options.find("-port") == options.end() || options.find("-codec") == options.end() ||
         options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-dinput") == options.end() ||
-        options.find("-gamepad") == options.end()) {
+        options.find("-gamepad") == options.end() || options.find("-chans") == options.end() ||
+        options.find("-afreq") == options.end()) {
         LOG(WARNING) << "Parameter invalid";
         return nullptr;
     }
@@ -67,6 +76,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     int32_t width = std::atoi(options["-width"].c_str());
     int32_t height = std::atoi(options["-height"].c_str());
     int32_t freq = std::atoi(options["-freq"].c_str());
+    int32_t audio_freq = std::atoi(options["-afreq"].c_str());
+    int32_t audio_channels = std::atoi(options["-chans"].c_str());
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
 
@@ -103,6 +114,18 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     }
     params.screen_refresh_rate = static_cast<uint32_t>(freq);
 
+    if (audio_channels <= 0) {
+        LOG(WARNING) << "Invalid parameter: achans";
+        return nullptr;
+    }
+    params.audio_channels = static_cast<uint32_t>(audio_channels);
+
+    if (audio_freq <= 0) {
+        LOG(WARNING) << "Invalid parameter: afreq";
+        return nullptr;
+    }
+    params.audio_freq = static_cast<uint32_t>(audio_freq);
+
     std::unique_ptr<Client> client{new Client{params}};
     if (!client->init()) {
         return false;
@@ -119,6 +142,7 @@ Client::Client(const Params& params)
     , video_params_{to_ltrtc(params.codec), params.width, params.height, params.screen_refresh_rate,
                     std::bind(&Client::send_message_to_host, this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3)}
+    , audio_params_{atype(), params.audio_freq, params.audio_channels}
     , reflex_servers_{params.reflex_servers} {}
 
 Client::~Client() {
@@ -168,7 +192,7 @@ void Client::main_loop(const std::function<void()>& i_am_alive) {
 }
 
 void Client::on_platform_render_target_reset() {
-    video_module_->reset_decoder_renderer();
+    video_decoder_->reset_decoder_renderer();
 }
 
 void Client::on_platform_exit() {
@@ -248,7 +272,7 @@ void Client::on_join_room_ack(std::shared_ptr<google::protobuf::MessageLite> _ms
     LOG(INFO) << "Initialize SDL success";
     video_params_.sdl = sdl_.get();
     input_params_.sdl = sdl_.get();
-    if (!init_ltrtc()) {
+    if (!init_transport()) {
         LOG(INFO) << "Initialize rtc failed";
         return;
     }
@@ -287,7 +311,7 @@ void Client::on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageL
     }
 }
 
-bool Client::init_ltrtc() {
+bool Client::init_transport() {
     namespace ph = std::placeholders;
 #if LT_USE_LTRTC
     rtc::Client::Params params{};
@@ -310,29 +334,27 @@ bool Client::init_ltrtc() {
         params.nbp2p_params.relay_servers = nullptr;
         params.nbp2p_params.relay_servers_count = 0;
     }
-    params.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
-    params.on_video = std::bind(&Client::on_ltrtc_video_frame, this, ph::_1);
-    params.on_audio =
-        std::bind(&Client::on_ltrtc_audio_data, this, ph::_1, ph::_2, ph::_3, ph::_4, ph::_5);
-    params.on_connected = std::bind(&Client::on_ltrtc_connected, this);
-    params.on_conn_changed = std::bind(&Client::on_ltrtc_conn_changed, this);
-    params.on_failed = std::bind(&Client::on_ltrtc_failed, this);
-    params.on_disconnected = std::bind(&Client::on_ltrtc_disconnected, this);
-    params.on_signaling_message =
-        std::bind(&Client::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
+    params.on_data = std::bind(&Client::on_tp_data, this, ph::_1, ph::_2, ph::_3);
+    params.on_video = std::bind(&Client::on_tp_video_frame, this, ph::_1);
+    params.on_audio = std::bind(&Client::on_tp_audio_data, this, ph::_1);
+    params.on_connected = std::bind(&Client::on_tp_connected, this);
+    params.on_conn_changed = std::bind(&Client::on_tp_conn_changed, this);
+    params.on_failed = std::bind(&Client::on_tp_failed, this);
+    params.on_disconnected = std::bind(&Client::on_tp_disconnected, this);
+    params.on_signaling_message = std::bind(&Client::on_tp_signaling_message, this, ph::_1, ph::_2);
     params.video_codec_type = video_params_.codec_type;
+    params.audio_channels = audio_params_.channels;
+    params.audio_sample_rate = audio_params_.frames_per_second;
     tp_client_ = rtc::Client::create(std::move(params));
 #else  // LT_USE_LTRTC
     lt::tp::ClientTCP::Params params{};
-    params.on_data = std::bind(&Client::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
-    params.on_video = std::bind(&Client::on_ltrtc_video_frame, this, ph::_1);
-    params.on_audio =
-        std::bind(&Client::on_ltrtc_audio_data, this, ph::_1, ph::_2, ph::_3, ph::_4, ph::_5);
-    params.on_connected = std::bind(&Client::on_ltrtc_connected, this);
-    params.on_failed = std::bind(&Client::on_ltrtc_failed, this);
-    params.on_disconnected = std::bind(&Client::on_ltrtc_disconnected, this);
-    params.on_signaling_message =
-        std::bind(&Client::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
+    params.on_data = std::bind(&Client::on_tp_data, this, ph::_1, ph::_2, ph::_3);
+    params.on_video = std::bind(&Client::on_tp_video_frame, this, ph::_1);
+    params.on_audio = std::bind(&Client::on_tp_audio_data, this, ph::_1);
+    params.on_connected = std::bind(&Client::on_tp_connected, this);
+    params.on_failed = std::bind(&Client::on_tp_failed, this);
+    params.on_disconnected = std::bind(&Client::on_tp_disconnected, this);
+    params.on_signaling_message = std::bind(&Client::on_tp_signaling_message, this, ph::_1, ph::_2);
     params.video_codec_type = video_params_.codec_type;
     tp_client_ = lt::tp::ClientTCP::create(params);
 #endif // LT_USE_LTRTC
@@ -348,7 +370,7 @@ bool Client::init_ltrtc() {
     return true;
 }
 
-void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable) {
+void Client::on_tp_data(const uint8_t* data, uint32_t size, bool is_reliable) {
     (void)is_reliable;
     auto type = reinterpret_cast<const uint32_t*>(data);
     auto msg = ltproto::create_by_type(*type);
@@ -363,8 +385,8 @@ void Client::on_ltrtc_data(const uint8_t* data, uint32_t size, bool is_reliable)
     dispatch_remote_message(*type, msg);
 }
 
-void Client::on_ltrtc_video_frame(const lt::VideoFrame& frame) {
-    VideoDecoder::Action action = video_module_->submit(frame);
+void Client::on_tp_video_frame(const lt::VideoFrame& frame) {
+    VideoDecoder::Action action = video_decoder_->submit(frame);
     switch (action) {
     case VideoDecoder::Action::REQUEST_KEY_FRAME:
         // TODO: 请求关键帧
@@ -376,22 +398,17 @@ void Client::on_ltrtc_video_frame(const lt::VideoFrame& frame) {
     }
 }
 
-void Client::on_ltrtc_audio_data(uint32_t bits_per_sample, uint32_t sample_rate,
-                                 uint32_t number_of_channels, const void* audio_data,
-                                 uint32_t size) {
-    (void)bits_per_sample;
-    (void)sample_rate;
-    (void)number_of_channels;
-    (void)audio_data;
-    (void)size;
-    // audio_module_->submit(bits_per_sample, sample_rate, number_of_channels,
-    // reinterpret_cast<const uint8_t*>(audio_data), size);
+void Client::on_tp_audio_data(const lt::AudioData& audio_data) {
+    //FIXME: transport在audio_player_实例化前，不应回调audio数据
+    if (audio_player_) {
+        audio_player_->submit(audio_data.data, audio_data.size);
+    }
 }
 
-void Client::on_ltrtc_connected() {
-    video_module_ = VideoDecoder::create(video_params_);
-    if (video_module_ == nullptr) {
-        LOG(WARNING) << "Create video module failed";
+void Client::on_tp_connected() {
+    video_decoder_ = VideoDecoder::create(video_params_);
+    if (video_decoder_ == nullptr) {
+        LOG(WARNING) << "Create VideoDecoder failed";
         return;
     }
     input_params_.send_message =
@@ -399,16 +416,16 @@ void Client::on_ltrtc_connected() {
                   std::placeholders::_3);
     input_params_.host_height = video_params_.height;
     input_params_.host_width = video_params_.width;
-    input_module_ = InputCapturer::create(input_params_);
-    if (input_module_ == nullptr) {
-        LOG(WARNING) << "Create input module failed";
+    input_capturer_ = InputCapturer::create(input_params_);
+    if (input_capturer_ == nullptr) {
+        LOG(WARNING) << "Create InputCapturer failed";
         return;
     }
-    //  audio_ = client::Audio::create(sdl_.get());
-    //  if (audio_ == nullptr) {
-    //      LOG(INFO) << "Create audio module failed";
-    //      return;
-    //  }
+    audio_player_ = AudioPlayer::create(audio_params_);
+    if (audio_player_ == nullptr) {
+        LOG(INFO) << "Create AudioPlayer failed";
+        return;
+    }
     hb_thread_->post(std::bind(&Client::send_keep_alive, this));
     // 如果未来有“串流”以外的业务，在这个StartTransmission添加字段.
     auto start = std::make_shared<ltproto::peer2peer::StartTransmission>();
@@ -417,17 +434,17 @@ void Client::on_ltrtc_connected() {
     send_message_to_host(ltproto::id(start), start, true);
 }
 
-void Client::on_ltrtc_conn_changed() {}
+void Client::on_tp_conn_changed() {}
 
-void Client::on_ltrtc_failed() {
+void Client::on_tp_failed() {
     stop_wait();
 }
 
-void Client::on_ltrtc_disconnected() {
+void Client::on_tp_disconnected() {
     stop_wait();
 }
 
-void Client::on_ltrtc_signaling_message(const std::string& key, const std::string& value) {
+void Client::on_tp_signaling_message(const std::string& key, const std::string& value) {
     // 将key和value封装在proto里.
     auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
     msg->set_level(ltproto::signaling::SignalingMessage::Rtc);

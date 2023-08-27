@@ -25,6 +25,8 @@ public:
         uint32_t refresh_rate;
         bool enable_gamepad;
         bool enable_driver_input;
+        uint32_t audio_channels;
+        uint32_t audio_freq;
         std::vector<std::string> reflex_servers;
         std::function<void()> on_exited;
     };

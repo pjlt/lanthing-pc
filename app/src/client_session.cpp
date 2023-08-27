@@ -53,7 +53,9 @@ bool ClientSession::start() {
        << " -height " << params_.height
        << " -freq " << params_.refresh_rate
        << " -dinput " << (params_.enable_driver_input ? 1 : 0)
-       << " -gamepad " << (params_.enable_gamepad ? 1 : 0);
+       << " -gamepad " << (params_.enable_gamepad ? 1 : 0)
+        << " -chans " << params_.audio_channels
+        << " -afreq " << params_.audio_freq;
     // clang-format on
     if (!params_.reflex_servers.empty()) {
         ss << " -reflexs ";

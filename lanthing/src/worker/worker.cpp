@@ -5,6 +5,7 @@
 #include <ltlib/times.h>
 #include <ltproto/ltproto.h>
 
+#include <ltproto/peer2peer/audio_data.pb.h>
 #include <ltproto/peer2peer/start_working.pb.h>
 #include <ltproto/peer2peer/start_working_ack.pb.h>
 #include <ltproto/peer2peer/streaming_params.pb.h>
@@ -43,7 +44,7 @@ ltproto::peer2peer::VideoCodecType to_protobuf(lt::VideoCodecType codec_type) {
     case lt::VideoCodecType::H265:
         return ltproto::peer2peer::VideoCodecType::HEVC;
     default:
-        return ltproto::peer2peer::VideoCodecType::Unknown;
+        return ltproto::peer2peer::VideoCodecType::UnknownVCT;
     }
 }
 
@@ -167,7 +168,9 @@ bool Worker::init() {
              negotiated_display_setting_.width, negotiated_display_setting_.height,
              negotiated_display_setting_.refrash_rate);
     }
-    negotiate_parameters();
+    if (!negotiate_parameters()) {
+        return false;
+    }
 
     namespace ltype = ltproto::type;
     namespace ph = std::placeholders;
@@ -212,22 +215,38 @@ bool Worker::init_pipe_client() {
 
 bool Worker::negotiate_parameters() {
     auto negotiated_params = std::make_shared<ltproto::peer2peer::StreamingParams>();
-    lt::VideoCapturer::Params capturer_params{};
-    capturer_params.backend = lt::VideoCapturer::Backend::Dxgi;
-    capturer_params.on_frame =
+
+    lt::AudioCapturer::Params audio_params{};
+#if LT_USE_LTRTC
+    audio_params.type = AudioCodecType::PCM;
+#else
+    audio_params.type = AudioCodecType::OPUS;
+#endif
+    audio_params.on_audio_data =
+        std::bind(&Worker::on_captured_audio_data, this, std::placeholders::_1);
+    auto audio_capturer = AudioCapturer::create(audio_params);
+    if (audio_capturer == nullptr) {
+        return false;
+    }
+    negotiated_params->set_audio_channels(audio_capturer->channels());
+    negotiated_params->set_audio_sample_rate(audio_capturer->framesPerSec());
+
+    lt::VideoCapturer::Params video_params{};
+    video_params.backend = lt::VideoCapturer::Backend::Dxgi;
+    video_params.on_frame =
         std::bind(&Worker::on_captured_video_frame, this, std::placeholders::_1);
-    video_capturer_ = lt::VideoCapturer::create(capturer_params);
-    if (video_capturer_ == nullptr) {
-        LOGF(WARNING, "Create VideoCapturer with(backend:%d) failed", capturer_params.backend);
+    auto video_capturer = lt::VideoCapturer::create(video_params);
+    if (video_capturer == nullptr) {
+        LOGF(WARNING, "Create VideoCapturer with(backend:%d) failed", video_params.backend);
         return false;
     }
     std::vector<VideoEncoder::Ability> encode_abilities;
-    if (capturer_params.backend == VideoCapturer::Backend::Dxgi) {
+    if (video_params.backend == VideoCapturer::Backend::Dxgi) {
         negotiated_params->set_video_capture_backend(
             ltproto::peer2peer::StreamingParams_VideoCaptureBackend_Dxgi);
-        negotiated_params->set_luid(video_capturer_->luid());
+        negotiated_params->set_luid(video_capturer->luid());
         encode_abilities = VideoEncoder::check_encode_abilities_with_luid(
-            video_capturer_->luid(), negotiated_display_setting_.width,
+            video_capturer->luid(), negotiated_display_setting_.width,
             negotiated_display_setting_.height);
     }
     else {
@@ -272,6 +291,8 @@ bool Worker::negotiate_parameters() {
         LOG(WARNING) << ss.str();
     }
     negotiated_params_ = negotiated_params;
+    video_capturer_ = std::move(video_capturer);
+    audio_capturer_ = std::move(audio_capturer);
     return true;
 }
 
@@ -326,13 +347,20 @@ void Worker::check_timeout() {
     }
 }
 
-void Worker::on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> _frame) {
+void Worker::on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> frame) {
     if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&Worker::on_captured_video_frame, this, _frame));
+        ioloop_->post(std::bind(&Worker::on_captured_video_frame, this, frame));
         return;
     }
-    auto frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_frame);
-    send_pipe_message(ltproto::id(frame), frame);
+    send_pipe_message(ltproto::type::kCaptureVideoFrame, frame);
+}
+
+void Worker::on_captured_audio_data(std::shared_ptr<google::protobuf::MessageLite> audio_data) {
+    if (ioloop_->is_not_current_thread()) {
+        ioloop_->post(std::bind(&Worker::on_captured_audio_data, this, audio_data));
+        return;
+    }
+    send_pipe_message(ltproto::type::kAudioData, audio_data);
 }
 
 void Worker::on_pipe_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -367,8 +395,7 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
     auto ack = std::make_shared<ltproto::peer2peer::StartWorkingAck>();
     do {
         video_capturer_->start();
-        auto negotiated_params =
-            std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_params_);
+        audio_capturer_->start();
 
         InputExecutor::Params input_params{};
         input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
@@ -394,9 +421,9 @@ void Worker::on_start_working(const std::shared_ptr<google::protobuf::MessageLit
         if (video_capturer_) {
             video_capturer_->stop();
         }
-        // if (audio_capturer_) {
-        //     audio_capturer_->stop();
-        // }
+        if (audio_capturer_) {
+            audio_capturer_->stop();
+        }
         input_ = nullptr;
     }
     send_pipe_message(ltproto::id(ack), ack);
