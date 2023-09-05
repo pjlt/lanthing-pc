@@ -28,7 +28,7 @@ bool SdlAudioPlayer::initPlatform() {
     desired.samples = 4096; // 不是很理解这个参数
 
     SDL_AudioDeviceID device_id =
-        SDL_OpenAudioDevice(nullptr, SDL_FALSE, &desired, &obtained, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+        SDL_OpenAudioDevice(nullptr, SDL_FALSE, &desired, &obtained, 0);
     if (device_id == 0) {
         LOG(WARNING) << "SDL_OpenAudioDevice failed:" << SDL_GetError();
         return false;
