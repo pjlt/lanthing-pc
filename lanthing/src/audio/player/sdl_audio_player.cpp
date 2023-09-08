@@ -25,10 +25,9 @@ bool SdlAudioPlayer::initPlatform() {
     desired.freq = framesPerSec();
     desired.format = AUDIO_S16;
     desired.channels = static_cast<Uint8>(channels());
-    desired.samples = 4096; // 不是很理解这个参数
+    desired.samples = 4096;
 
-    SDL_AudioDeviceID device_id =
-        SDL_OpenAudioDevice(nullptr, SDL_FALSE, &desired, &obtained, 0);
+    SDL_AudioDeviceID device_id = SDL_OpenAudioDevice(nullptr, SDL_FALSE, &desired, &obtained, 0);
     if (device_id == 0) {
         LOG(WARNING) << "SDL_OpenAudioDevice failed:" << SDL_GetError();
         return false;
@@ -41,7 +40,8 @@ bool SdlAudioPlayer::initPlatform() {
 bool SdlAudioPlayer::play(const void* data, uint32_t size) {
     int ret = SDL_QueueAudio(device_id_, data, size);
     if (ret != 0) {
-        LOG(WARNING) << "SDL_QueueAudio faield:" << SDL_GetError();
+        // 这个错误太多了，注释掉
+        // LOG(WARNING) << "SDL_QueueAudio faield:" << SDL_GetError();
         return false;
     }
     return true;

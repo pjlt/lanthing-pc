@@ -12,7 +12,7 @@
 #include <transport/transport.h>
 
 #include <audio/player/audio_player.h>
-#include <graphics/decoder/video_decoder.h>
+#include <graphics/drpipeline/video_decode_render_pipeline.h>
 #include <inputs/capturer/input_capturer.h>
 #include <platforms/pc_sdl.h>
 
@@ -103,10 +103,10 @@ private:
     std::string p2p_password_;
     SignalingParams signaling_params_;
     InputCapturer::Params input_params_{};
-    VideoDecoder::Params video_params_;
+    VideoDecodeRenderPipeline::Params video_params_;
     AudioPlayer::Params audio_params_{};
     std::vector<std::string> reflex_servers_;
-    std::unique_ptr<VideoDecoder> video_decoder_;
+    std::unique_ptr<VideoDecodeRenderPipeline> video_pipeline_;
     std::unique_ptr<InputCapturer> input_capturer_;
     std::unique_ptr<AudioPlayer> audio_player_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;

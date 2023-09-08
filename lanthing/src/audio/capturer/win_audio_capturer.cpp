@@ -4,7 +4,7 @@
 
 #include <g3log/g3log.hpp>
 
-// 参考
+// wasapi的用法参考了下面的链接：
 //  https://learn.microsoft.com/en-us/windows/win32/api/_coreaudio/
 //  https://webrtc.googlesource.com/src/+/refs/heads/main/modules/audio_device/win/audio_device_core_win.cc
 //  https://github.com/obsproject/obs-studio/blob/master/plugins/win-wasapi/win-wasapi.cpp
@@ -149,8 +149,8 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
                 break;
             }
             if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                LOG(WARNING) << "AUDCLNT_BUFFERFLAGS_SILENT";
-                pData = nullptr; // AUDCLNT_BUFFERFLAGS_SILENT情况下pData不是null？
+                // LOG(DEBUG) << "AUDCLNT_BUFFERFLAGS_SILENT";
+                pData = nullptr;
             }
             onCapturedData(pData, framesAvailable);
             hr = capturer_->ReleaseBuffer(framesAvailable);

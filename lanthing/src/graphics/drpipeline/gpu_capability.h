@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "types.h"
+#include <transport/transport.h>
 
 namespace lt {
 class GpuInfo {
@@ -15,7 +15,8 @@ public:
         uint32_t device_id = 0;
         uint32_t video_memory_mb = 0;
         std::string driver;
-        std::vector<Format> formats;
+        // 暂时写死NV12，不然一部分处理像素格式，一部分又不管，很混乱
+        std::vector<lt::VideoCodecType> codecs;
 
         std::string to_str() const;
     };

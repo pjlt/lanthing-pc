@@ -55,17 +55,24 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/common_types.h
     # graphics->decoder
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ct_smoother.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ct_smoother.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/d3d11_pipeline.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/d3d11_pipeline.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/gpu_capability.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/gpu_capability.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/pixel_shader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/vertex_shader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_hard_decoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_hard_decoder.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_soft_decoder.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_soft_decoder.cpp
+    # graphics->renderer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
+    # graphics->drpipeline
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/ct_smoother.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/ct_smoother.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.cpp
 
     # audio->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.h
@@ -126,7 +133,7 @@ target_include_directories(${PROJECT_NAME}
 
 if(LT_WINDOWS)
     set(PLATFORM_LIBS
-            Secur32.lib dmoguids.lib d3d11.lib d3d9.lib
+            Secur32.lib dmoguids.lib d3d11.lib d3dcompiler.lib
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib)
 else()

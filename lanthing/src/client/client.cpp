@@ -192,7 +192,7 @@ void Client::main_loop(const std::function<void()>& i_am_alive) {
 }
 
 void Client::on_platform_render_target_reset() {
-    video_decoder_->reset_decoder_renderer();
+    video_pipeline_->reset();
 }
 
 void Client::on_platform_exit() {
@@ -386,12 +386,12 @@ void Client::on_tp_data(const uint8_t* data, uint32_t size, bool is_reliable) {
 }
 
 void Client::on_tp_video_frame(const lt::VideoFrame& frame) {
-    VideoDecoder::Action action = video_decoder_->submit(frame);
+    VideoDecodeRenderPipeline::Action action = video_pipeline_->submit(frame);
     switch (action) {
-    case VideoDecoder::Action::REQUEST_KEY_FRAME:
+    case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
         // TODO: 请求关键帧
         break;
-    case VideoDecoder::Action::NONE:
+    case VideoDecodeRenderPipeline::Action::NONE:
         break;
     default:
         break;
@@ -399,15 +399,15 @@ void Client::on_tp_video_frame(const lt::VideoFrame& frame) {
 }
 
 void Client::on_tp_audio_data(const lt::AudioData& audio_data) {
-    //FIXME: transport在audio_player_实例化前，不应回调audio数据
+    // FIXME: transport在audio_player_实例化前，不应回调audio数据
     if (audio_player_) {
         audio_player_->submit(audio_data.data, audio_data.size);
     }
 }
 
 void Client::on_tp_connected() {
-    video_decoder_ = VideoDecoder::create(video_params_);
-    if (video_decoder_ == nullptr) {
+    video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+    if (video_pipeline_ == nullptr) {
         LOG(WARNING) << "Create VideoDecoder failed";
         return;
     }

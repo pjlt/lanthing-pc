@@ -84,6 +84,9 @@ bool AudioCapturer::initEncoder() {
 }
 
 void AudioCapturer::onCapturedData(const uint8_t* data, uint32_t frames) {
+    if (data == nullptr) {
+        return;
+    }
     // static std::ofstream out1{"./audio_pcm", std::ios::binary | std::ios::trunc};
     // out1.write(reinterpret_cast<const char*>(data), frames * bytesPerFrame());
     // out1.flush();

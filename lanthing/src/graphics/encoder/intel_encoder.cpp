@@ -187,7 +187,7 @@ bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     width_ = params.width();
     height_ = params.height();
     codec_type_ = params.codec();
-
+    // D3D11需要这样设置吗？
     Microsoft::WRL::ComPtr<ID3D10Multithread> tmp10;
     auto hr = d3d11_ctx_.As(&tmp10);
     if (FAILED(hr)) {

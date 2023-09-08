@@ -28,7 +28,7 @@ void CTSmoother::clear() {
 }
 
 int64_t CTSmoother::get(int64_t at_time) {
-    (void)at_time; // FIXME: at_time要用
+    (void)at_time;
     std::lock_guard<std::mutex> lock(buf_mtx_);
     if (frames_.empty()) {
         return -1;

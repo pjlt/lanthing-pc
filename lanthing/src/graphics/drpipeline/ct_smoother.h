@@ -10,6 +10,7 @@ namespace lt {
 class CTSmoother {
 public:
     struct Frame {
+        // TODO: 考虑软解和硬解，这个在decoder和renderer之间传递、用来指代'视频帧'的变量，要怎么设计
         int64_t no;
 
         int64_t at_time = 0;
