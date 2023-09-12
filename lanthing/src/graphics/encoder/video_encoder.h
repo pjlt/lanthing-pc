@@ -56,8 +56,8 @@ public:
     static std::unique_ptr<VideoEncoder> create(const InitParams& params);
     virtual ~VideoEncoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
-    EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame,
-                        bool force_idr);
+    void requestKeyframe();
+    EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame);
 
     static std::vector<Ability> check_encode_abilities(uint32_t width, uint32_t height);
     static std::vector<Ability> check_encode_abilities_with_luid(int64_t luid, uint32_t width,
@@ -65,12 +65,15 @@ public:
 
 protected:
     VideoEncoder(void* d3d11_dev, void* d3d11_ctx);
-    virtual EncodedFrame encode_one_frame(void* input_frame, bool force_idr) = 0;
+    bool needKeyframe();
+    virtual EncodedFrame encodeFrame(void* input_frame) = 0;
 
 private:
     void* d3d11_dev_ = nullptr;
     void* d3d11_ctx_ = nullptr;
     uint64_t frame_id_ = 0;
+    std::atomic<bool> request_keyframe_{false};
+    bool first_frame_ = false;
 };
 
 } // namespace lt

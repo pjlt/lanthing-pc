@@ -15,7 +15,7 @@ public:
     ~AmdEncoder() override {}
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
-    EncodedFrame encode_one_frame(void* input_frame, bool force_idr) override;
+    EncodedFrame encodeFrame(void* input_frame) override;
 
 private:
     std::shared_ptr<AmdEncoderImpl> impl_;

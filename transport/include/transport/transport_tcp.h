@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include <google/protobuf/message_lite.h>
 
@@ -71,6 +72,7 @@ private:
 
 private:
     Params params_;
+    std::mutex mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::TaskThread> task_thread_;
@@ -126,6 +128,7 @@ private:
 
 private:
     Params params_;
+    std::mutex mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Server> tcp_server_;
     std::unique_ptr<ltlib::TaskThread> task_thread_;

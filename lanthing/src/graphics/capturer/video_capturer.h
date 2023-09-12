@@ -27,6 +27,7 @@ public:
     virtual ~VideoCapturer();
     void start();
     void stop();
+    virtual void release_frame(const std::string& name) = 0;
     virtual Backend backend() const = 0;
     virtual int64_t luid() { return -1; }
 

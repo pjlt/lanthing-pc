@@ -45,8 +45,12 @@ ClientTCP::ClientTCP(const Params& params)
     : params_{params} {}
 
 ClientTCP::~ClientTCP() {
-    tcp_client_.reset();
-    ioloop_->stop();
+    {
+        std::lock_guard lock{ mutex_ };
+        tcp_client_.reset();
+        ioloop_.reset();
+    }
+
 }
 
 bool ClientTCP::connect() {
@@ -208,6 +212,7 @@ void ClientTCP::netLoop(const std::function<void()>& i_am_alive)
 {
     LOG(INFO) << "ClientTCP enter net loop";
     ioloop_->run(i_am_alive);
+    LOG(INFO) << "ClientTCP exit net loop";
 }
 
 void ClientTCP::onSignalingMessage2(const std::string& key, const std::string& value) {
@@ -272,8 +277,11 @@ ServerTCP::ServerTCP(const Params& params)
     : params_{params} {}
 
 ServerTCP::~ServerTCP() {
-    tcp_server_.reset();
-    ioloop_->stop();
+    {
+        std::lock_guard lock{ mutex_ };
+        tcp_server_.reset();
+        ioloop_.reset();
+    }
 }
 
 void ServerTCP::close() {
@@ -441,6 +449,7 @@ void ServerTCP::onMessage(uint32_t fd, uint32_t type,
 void ServerTCP::netLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "ServerTCP enter net loop";
     ioloop_->run(i_am_alive);
+    LOG(INFO) << "ServerTCP exit net loop";
 }
 
 void ServerTCP::onSignalingMessage2(const std::string& key, const std::string& value) {

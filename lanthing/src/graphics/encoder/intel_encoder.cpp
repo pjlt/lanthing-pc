@@ -135,12 +135,12 @@ mfxU16 VplParamsHelper::profile() const {
     }
 }
 
-//void printMfxParams(const mfxVideoParam& p) {
+// void printMfxParams(const mfxVideoParam& p) {
 //
-//    LOG(INFO) << "IOPattern:" << p.IOPattern << ", AsyncDepth:" << p.AsyncDepth
-//              << ", LowPower:" << p.mfx.LowPower
-//              << ", BRCParamMultiplier:" << p.mfx.BRCParamMultiplier;
-//}
+//     LOG(INFO) << "IOPattern:" << p.IOPattern << ", AsyncDepth:" << p.AsyncDepth
+//               << ", LowPower:" << p.mfx.LowPower
+//               << ", BRCParamMultiplier:" << p.mfx.BRCParamMultiplier;
+// }
 
 } // namespace
 
@@ -562,8 +562,8 @@ void IntelEncoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame IntelEncoder::encode_one_frame(void* input_frame, bool force_idr) {
-    return impl_->encodeOneFrame(input_frame, force_idr);
+VideoEncoder::EncodedFrame IntelEncoder::encodeFrame(void* input_frame) {
+    return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 
 } // namespace lt

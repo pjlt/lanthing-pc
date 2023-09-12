@@ -6,6 +6,7 @@
 #include <ltproto/ltproto.h>
 
 #include <ltproto/peer2peer/audio_data.pb.h>
+#include <ltproto/peer2peer/capture_video_frame_ack.pb.h>
 #include <ltproto/peer2peer/start_working.pb.h>
 #include <ltproto/peer2peer/start_working_ack.pb.h>
 #include <ltproto/peer2peer/streaming_params.pb.h>
@@ -128,12 +129,11 @@ Worker::Worker(const Params& params)
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
 
 Worker::~Worker() {
-    video_capturer_.reset();
-    pipe_client_.reset();
-    if (ioloop_) {
-        ioloop_->stop();
+    {
+        std::lock_guard lock{mutex_};
+        pipe_client_.reset();
+        ioloop_.reset();
     }
-    thread_.reset();
 }
 
 void Worker::wait() {
@@ -177,7 +177,8 @@ bool Worker::init() {
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kStartWorking, std::bind(&Worker::on_start_working, this, ph::_1)},
         {ltype::kStopWorking, std::bind(&Worker::on_stop_working, this, ph::_1)},
-        {ltype::kKeepAlive, std::bind(&Worker::on_keep_alive, this, ph::_1)}};
+        {ltype::kKeepAlive, std::bind(&Worker::on_keep_alive, this, ph::_1)},
+        {ltype::kCaptureVideoFrameAck, std::bind(&Worker::on_frame_ack, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -299,10 +300,25 @@ bool Worker::negotiate_parameters() {
 void Worker::main_loop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Worker enter main loop";
     ioloop_->run(i_am_alive);
+    LOG(INFO) << "Worker exit main loop";
 }
 
 void Worker::stop() {
     session_observer_->stop();
+}
+
+void Worker::post_task(const std::function<void()>& task) {
+    std::lock_guard lock{mutex_};
+    if (ioloop_) {
+        ioloop_->post(task);
+    }
+}
+
+void Worker::post_delay_task(int64_t delay_ms, const std::function<void()>& task) {
+    std::lock_guard lock{mutex_};
+    if (ioloop_) {
+        ioloop_->post_delay(delay_ms, task);
+    }
 }
 
 bool Worker::register_message_handler(uint32_t type, const MessageHandler& handler) {
@@ -340,27 +356,27 @@ void Worker::check_timeout() {
     constexpr int64_t kTimeout = 3'000;
     auto now = ltlib::steady_now_ms();
     if (now - last_time_received_from_service_ > kTimeout) {
+        LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_
+                     << "ms, worker exit.";
         stop();
     }
     else {
-        ioloop_->post_delay(500, std::bind(&Worker::check_timeout, this));
+        post_delay_task(500, [this]() {
+            check_timeout();
+        });
     }
 }
 
 void Worker::on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> frame) {
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&Worker::on_captured_video_frame, this, frame));
-        return;
-    }
-    send_pipe_message(ltproto::type::kCaptureVideoFrame, frame);
+    post_task([this, frame]() {
+        send_pipe_message(ltproto::type::kCaptureVideoFrame, frame);
+    });
 }
 
 void Worker::on_captured_audio_data(std::shared_ptr<google::protobuf::MessageLite> audio_data) {
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&Worker::on_captured_audio_data, this, audio_data));
-        return;
-    }
-    send_pipe_message(ltproto::type::kAudioData, audio_data);
+    post_task([this, audio_data]() {
+        send_pipe_message(ltproto::type::kAudioData, audio_data);
+    });
 }
 
 void Worker::on_pipe_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -436,6 +452,13 @@ void Worker::on_stop_working(const std::shared_ptr<google::protobuf::MessageLite
 
 void Worker::on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>&) {
     last_time_received_from_service_ = ltlib::steady_now_ms();
+}
+
+void Worker::on_frame_ack(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+
+    auto ack = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrameAck>(msg);
+    LOG(DEBUG) << "Frame ack " << ack->name();
+    video_capturer_->release_frame(ack->name());
 }
 
 } // namespace worker

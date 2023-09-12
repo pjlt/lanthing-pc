@@ -4,6 +4,7 @@
 #include <ltproto/ltproto.h>
 
 #include <ltproto/peer2peer/keep_alive.pb.h>
+#include <ltproto/peer2peer/request_keyframe.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
 #include <ltproto/server/request_connection.pb.h>
@@ -146,9 +147,11 @@ Client::Client(const Params& params)
     , reflex_servers_{params.reflex_servers} {}
 
 Client::~Client() {
-    assert(ioloop_->is_not_current_thread());
-    signaling_client_.reset();
-    ioloop_->stop();
+    {
+        std::lock_guard lock{ioloop_mutex_};
+        signaling_client_.reset();
+        ioloop_.reset();
+    }
 }
 
 bool Client::init() {
@@ -189,18 +192,22 @@ void Client::wait() {
 void Client::main_loop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Lanthing client enter main loop";
     ioloop_->run(i_am_alive);
+    LOG(INFO) << "Lanthing client exit main loop";
 }
 
 void Client::on_platform_render_target_reset() {
-    video_pipeline_->reset();
+    //FIXME: 这个函数是由SDL线程回调上来的有潜在线程问题
+    if (video_pipeline_) {
+        video_pipeline_->reset();
+    }
 }
 
 void Client::on_platform_exit() {
-    auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
-    msg->set_level(ltproto::signaling::SignalingMessage_Level_Core);
-    auto coremsg = msg->mutable_core_message();
-    coremsg->set_key(kSigCoreClose);
-    ioloop_->post([this, msg]() {
+    post_task([this]() {
+        auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
+        msg->set_level(ltproto::signaling::SignalingMessage_Level_Core);
+        auto coremsg = msg->mutable_core_message();
+        coremsg->set_key(kSigCoreClose);
         signaling_client_->send(ltproto::id(msg), msg, [this]() { stop_wait(); });
     });
 }
@@ -211,6 +218,20 @@ void Client::stop_wait() {
         should_exit_ = true;
     }
     exit_cv_.notify_one();
+}
+
+void Client::post_task(const std::function<void()>& task) {
+    std::lock_guard lock{ioloop_mutex_};
+    if (ioloop_) {
+        ioloop_->post(task);
+    }
+}
+
+void Client::post_delay_task(int64_t delay_ms, const std::function<void()>& task) {
+    std::lock_guard lock{ioloop_mutex_};
+    if (ioloop_) {
+        ioloop_->post_delay(delay_ms, task);
+    }
 }
 
 void Client::on_signaling_net_message(uint32_t type,
@@ -257,11 +278,7 @@ void Client::on_join_room_ack(std::shared_ptr<google::protobuf::MessageLite> _ms
         return;
     }
     LOG(INFO) << "Join signaling room success";
-    PcSdl::Params params;
-    params.video_height = video_params_.height;
-    params.video_width = video_params_.width;
-    params.window_height = 720; // 默认值，后续通过屏幕大小计算.
-    params.window_width = 1280; // 默认值，后续通过屏幕大小计算.
+    PcSdl::Params params{};
     params.on_reset = std::bind(&Client::on_platform_render_target_reset, this);
     params.on_exit = std::bind(&Client::on_platform_exit, this);
     sdl_ = PcSdl::create(params);
@@ -389,8 +406,11 @@ void Client::on_tp_video_frame(const lt::VideoFrame& frame) {
     VideoDecodeRenderPipeline::Action action = video_pipeline_->submit(frame);
     switch (action) {
     case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
-        // TODO: 请求关键帧
+    {
+        auto req = std::make_shared<ltproto::peer2peer::RequestKeyframe>();
+        send_message_to_host(ltproto::id(req), req, true);
         break;
+    }
     case VideoDecodeRenderPipeline::Action::NONE:
         break;
     default:
@@ -451,7 +471,7 @@ void Client::on_tp_signaling_message(const std::string& key, const std::string& 
     auto rtc_msg = msg->mutable_rtc_message();
     rtc_msg->set_key(key);
     rtc_msg->set_value(value);
-    ioloop_->post([this, msg]() { signaling_client_->send(ltproto::id(msg), msg); });
+    post_task([this, msg]() { signaling_client_->send(ltproto::id(msg), msg); });
 }
 
 void Client::dispatch_remote_message(uint32_t type,

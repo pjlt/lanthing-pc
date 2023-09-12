@@ -17,10 +17,6 @@ namespace lt {
 class PcSdl {
 public:
     struct Params {
-        uint32_t window_width = 0;
-        uint32_t window_height = 0;
-        uint32_t video_width = 0;
-        uint32_t video_height = 0;
         std::function<void()> on_reset;
         std::function<void()> on_exit;
     };

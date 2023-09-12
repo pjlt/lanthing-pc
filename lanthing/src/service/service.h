@@ -22,6 +22,8 @@ private:
     void main_loop(const std::function<void()>& i_am_alive);
     bool init_settings();
     void destroy_session(const std::string& session_name);
+    void post_task(const std::function<void()>& task);
+    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
 
     // 服务器
     void on_server_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -39,10 +41,13 @@ private:
     void on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void
-    on_create_session_completed_thread_safe(bool success, const std::string& session_name,
+    void on_create_session_completed_thread_safe(bool success, const std::string& session_name,
+                                            std::shared_ptr<google::protobuf::MessageLite> msg);
+    void on_create_session_completed(bool success, const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_session_closed_thread_safe(WorkerSession::CloseReason close_reason,
+                                       const std::string& session_name, const std::string& room_id);
+    void on_session_closed(WorkerSession::CloseReason close_reason,
                                        const std::string& session_name, const std::string& room_id);
 
 private:

@@ -18,9 +18,10 @@ namespace svc {
 Service::Service() = default;
 
 Service::~Service() {
-    assert(ioloop_->is_not_current_thread());
-    if (ioloop_) {
-        ioloop_->stop();
+    {
+        std::lock_guard lock{mutex_};
+        tcp_client_.reset();
+        ioloop_.reset();
     }
 }
 
@@ -34,13 +35,6 @@ bool Service::init() {
         return false;
     }
     device_id_ = device_id.value();
-
-    // std::optional<std::string> access_token = settings_->get_string("access_token");
-    // if (!access_token.has_value() || access_token.value().empty()) {
-    //     LOG(WARNING) << "Get access_token from local settings failed";
-    //     return false;
-    // }
-    // access_token_ = access_token.value();
 
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
@@ -94,6 +88,7 @@ bool Service::init_tcp_client() {
 void Service::main_loop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Lanthing service enter main loop";
     ioloop_->run(i_am_alive);
+    LOG(INFO) << "Lanthing service exit main loop";
 }
 
 bool Service::init_settings() {
@@ -105,11 +100,20 @@ void Service::destroy_session(const std::string& session_name) {
     // worker_sessions_.erase(session_name)会析构WorkerSession内部的PeerConnection
     // 而当前的destroy_session()很可能是PeerConnection信令线程回调上来的
     // 这里选择放到libuv的线程去做
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&Service::destroy_session, this, session_name));
+    post_task([this, session_name]() { worker_sessions_.erase(session_name); });
+}
+
+void Service::post_task(const std::function<void()>& task) {
+    std::lock_guard lock{mutex_};
+    if (ioloop_) {
+        ioloop_->post(task);
     }
-    else {
-        worker_sessions_.erase(session_name);
+}
+
+void Service::post_delay_task(int64_t delay_ms, const std::function<void()>& task) {
+    std::lock_guard lock{mutex_};
+    if (ioloop_) {
+        ioloop_->post_delay(delay_ms, task);
     }
 }
 
@@ -212,11 +216,13 @@ void Service::on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> m
 void Service::on_create_session_completed_thread_safe(
     bool success, const std::string& session_name,
     std::shared_ptr<google::protobuf::MessageLite> params) {
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&Service::on_create_session_completed_thread_safe, this, success,
-                                session_name, params));
-        return;
-    }
+    post_task(
+        std::bind(&Service::on_create_session_completed, this, success, session_name, params));
+}
+
+void Service::on_create_session_completed(bool success, const std::string& session_name,
+                                          std::shared_ptr<google::protobuf::MessageLite> params) {
+    (void)session_name;
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     if (success) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Success);
@@ -234,11 +240,11 @@ void Service::on_create_session_completed_thread_safe(
 void Service::on_session_closed_thread_safe(WorkerSession::CloseReason close_reason,
                                             const std::string& session_name,
                                             const std::string& room_id) {
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&Service::on_session_closed_thread_safe, this, close_reason,
-                                session_name, room_id));
-        return;
-    }
+    post_task(std::bind(&Service::on_session_closed, this, close_reason, session_name, room_id));
+}
+
+void Service::on_session_closed(WorkerSession::CloseReason close_reason,
+                                const std::string& session_name, const std::string& room_id) {
     report_session_closed(close_reason, room_id);
     destroy_session(session_name);
 }

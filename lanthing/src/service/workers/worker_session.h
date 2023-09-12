@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 #include <google/protobuf/message_lite.h>
 
@@ -56,6 +57,8 @@ private:
     void on_closed(CloseReason reason);
     void maybe_on_create_session_completed();
     bool create_video_encoder();
+    void post_task(const std::function<void()>& task);
+    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
 
     // 信令
     bool init_signling_client();
@@ -79,6 +82,7 @@ private:
     void start_working();
     void on_start_working_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
     void send_to_worker(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void send_to_worker_from_other_thread(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void on_worker_stoped();
     void on_worker_streaming_params(std::shared_ptr<google::protobuf::MessageLite> msg);
     void send_worker_keep_alive();
@@ -90,6 +94,9 @@ private:
     void on_ltrtc_failed_thread_safe();
     void on_ltrtc_disconnected_thread_safe();
     void on_ltrtc_signaling_message(const std::string& key, const std::string& value);
+    void on_ltrtc_request_keyframe();
+    void on_ltrtc_loss_rate_update(float rate);
+    void on_ltrtc_bwe_update(uint32_t bps);
 
     // 数据通道
     void dispatch_dc_message(uint32_t type,
@@ -108,10 +115,10 @@ private:
 private:
     std::string session_name_;
     std::string user_defined_relay_server_;
+    std::mutex mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    std::unique_ptr<ltlib::TaskThread> task_thread_;
     std::unique_ptr<lt::tp::Server> tp_server_;
     std::unique_ptr<ltlib::Server> pipe_server_;
     std::unique_ptr<lt::VideoEncoder> video_encoder_;

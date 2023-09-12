@@ -5,6 +5,7 @@
 #include <g3log/g3log.hpp>
 
 #include <ltproto/peer2peer/audio_data.pb.h>
+#include <ltproto/peer2peer/capture_video_frame_ack.pb.h>
 #include <ltproto/peer2peer/keep_alive.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
@@ -98,9 +99,12 @@ WorkerSession::WorkerSession(
 }
 
 WorkerSession::~WorkerSession() {
-    signaling_client_.reset();
-    pipe_server_.reset();
-    ioloop_->stop();
+    {
+        std::lock_guard lock{mutex_};
+        signaling_client_.reset();
+        pipe_server_.reset();
+        ioloop_.reset();
+    }
 }
 
 bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -172,8 +176,6 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     }
     create_worker_process((uint32_t)client_width, (uint32_t)client_height,
                           (uint32_t)client_refresh_rate, client_codecs);
-    // TODO: 移除这个task_thread_
-    task_thread_ = ltlib::TaskThread::create("check_timeout");
     std::promise<void> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
@@ -227,6 +229,9 @@ bool WorkerSession::init_rtc_server() {
     params.on_data = std::bind(&WorkerSession::on_ltrtc_data, this, ph::_1, ph::_2, ph::_3);
     params.on_signaling_message =
         std::bind(&WorkerSession::on_ltrtc_signaling_message, this, ph::_1, ph::_2);
+    params.on_keyframe_request = std::bind(&WorkerSession::on_ltrtc_request_keyframe, this);
+    params.on_bwe_update = std::bind(&WorkerSession::on_ltrtc_bwe_update, this, ph::_1);
+    params.on_loss_rate_update = std::bind(&WorkerSession::on_ltrtc_loss_rate_update, this, ph::_1);
     tp_server_ = rtc::Server::create(std::move(params));
 #else  // LT_USE_LTRTC
     lt::tp::ServerTCP::Params params{};
@@ -253,6 +258,7 @@ bool WorkerSession::init_rtc_server() {
 void WorkerSession::main_loop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Worker session enter main loop";
     ioloop_->run(i_am_alive);
+    LOG(INFO) << "Worker session exit main loop";
 }
 
 void WorkerSession::create_worker_process(uint32_t client_width, uint32_t client_height,
@@ -271,6 +277,7 @@ void WorkerSession::create_worker_process(uint32_t client_width, uint32_t client
 }
 
 void WorkerSession::on_closed(CloseReason reason) {
+    //NOTE: 运行在ioloop
     switch (reason) {
     case CloseReason::ClientClose:
         rtc_closed_ = true;
@@ -343,6 +350,20 @@ bool WorkerSession::create_video_encoder() {
     }
     video_encoder_ = lt::VideoEncoder::create(init_params);
     return video_encoder_ != nullptr;
+}
+
+void WorkerSession::post_task(const std::function<void()>& task) {
+    std::lock_guard lock{mutex_};
+    if (ioloop_) {
+        ioloop_->post(task);
+    }
+}
+
+void WorkerSession::post_delay_task(int64_t delay_ms, const std::function<void()>& task) {
+    std::lock_guard lock{mutex_};
+    if (ioloop_) {
+        ioloop_->post_delay(delay_ms, task);
+    }
 }
 
 bool WorkerSession::init_signling_client() {
@@ -524,8 +545,9 @@ void WorkerSession::on_pipe_message(uint32_t fd, uint32_t type,
 }
 
 void WorkerSession::start_working() {
+    //NOTE: 这是运行在transport的线程
     auto msg = std::make_shared<ltproto::peer2peer::StartWorking>();
-    send_to_worker(ltproto::id(msg), msg);
+    send_to_worker_from_other_thread(ltproto::id(msg), msg);
 }
 
 void WorkerSession::on_start_working_ack(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -546,16 +568,18 @@ void WorkerSession::on_start_working_ack(std::shared_ptr<google::protobuf::Messa
 
 void WorkerSession::send_to_worker(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&WorkerSession::send_to_worker, this, type, msg));
-        return;
-    }
     pipe_server_->send(pipe_client_fd_, type, msg);
+}
+
+void WorkerSession::send_to_worker_from_other_thread(
+    uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+    post_task([this, type, msg]() { send_to_worker(type, msg); });
 }
 
 void WorkerSession::on_worker_stoped() {
     // FIXME: worker退出不代表关闭，也可能是session改变
-    ioloop_->post(std::bind(&WorkerSession::on_closed, this, CloseReason::HostClose));
+    // NOTE: 这是运行在WorkerProcess线程
+    post_task(std::bind(&WorkerSession::on_closed, this, CloseReason::HostClose));
 }
 
 void WorkerSession::on_worker_streaming_params(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -565,9 +589,10 @@ void WorkerSession::on_worker_streaming_params(std::shared_ptr<google::protobuf:
 }
 
 void WorkerSession::send_worker_keep_alive() {
+    // 运行在ioloop
     auto msg = std::make_shared<ltproto::peer2peer::KeepAlive>();
     send_to_worker(ltproto::id(msg), msg);
-    ioloop_->post_delay(500, std::bind(&WorkerSession::send_worker_keep_alive, this));
+    post_delay_task(500, std::bind(&WorkerSession::send_worker_keep_alive, this));
 }
 
 void WorkerSession::on_ltrtc_data(const uint8_t* data, uint32_t size, bool reliable) {
@@ -587,23 +612,21 @@ void WorkerSession::on_ltrtc_data(const uint8_t* data, uint32_t size, bool relia
 }
 
 void WorkerSession::on_ltrtc_accepted_thread_safe() {
-    if (ioloop_->is_not_current_thread()) {
-        ioloop_->post(std::bind(&WorkerSession::on_ltrtc_accepted_thread_safe, this));
-        return;
-    }
-    LOG(INFO) << "Accepted client";
-    update_last_recv_time();
-    task_thread_->post(std::bind(&WorkerSession::check_timeout, this));
+    post_task([this]() {
+        LOG(INFO) << "Accepted client";
+        update_last_recv_time();
+        post_task(std::bind(&WorkerSession::check_timeout, this));
+    });
 }
 
 void WorkerSession::on_ltrtc_conn_changed() {}
 
 void WorkerSession::on_ltrtc_failed_thread_safe() {
-    ioloop_->post(std::bind(&WorkerSession::on_closed, this, CloseReason::TimeoutClose));
+    post_task(std::bind(&WorkerSession::on_closed, this, CloseReason::TimeoutClose));
 }
 
 void WorkerSession::on_ltrtc_disconnected_thread_safe() {
-    ioloop_->post(std::bind(&WorkerSession::on_closed, this, CloseReason::TimeoutClose));
+    post_task(std::bind(&WorkerSession::on_closed, this, CloseReason::TimeoutClose));
 }
 
 void WorkerSession::on_ltrtc_signaling_message(const std::string& key, const std::string& value) {
@@ -617,19 +640,44 @@ void WorkerSession::on_ltrtc_signaling_message(const std::string& key, const std
         LOG(WARNING) << "Serialize signaling rtc message failed";
         return;
     }
-    ioloop_->post([this, signaling_msg]() {
+    post_task([this, signaling_msg]() {
         signaling_client_->send(ltproto::id(signaling_msg), signaling_msg);
+    });
+}
+
+void WorkerSession::on_ltrtc_request_keyframe() {
+    post_task([this]() {
+        LOG(INFO) << "transport request keyframe";
+        video_encoder_->requestKeyframe();
+    });
+}
+
+void WorkerSession::on_ltrtc_loss_rate_update(float rate) {
+    post_task([this, rate]() {
+        LOG(DEBUG) << "loss rate " << rate;
+    });
+}
+
+void WorkerSession::on_ltrtc_bwe_update(uint32_t bps) {
+    post_task([this, bps]() {
+        LOG(DEBUG) << "BWE " << bps << "bps";
+        VideoEncoder::ReconfigureParams params{};
+        params.bitrate_bps = bps;
+        video_encoder_->reconfigure(params);
     });
 }
 
 void WorkerSession::on_captured_video(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     // NOTE: 这是在IOLoop线程
     auto captured_frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_msg);
-    auto encoded_frame = video_encoder_->encode(captured_frame, false);
+    auto encoded_frame = video_encoder_->encode(captured_frame);
     if (encoded_frame.is_black_frame) {
         //???
     }
     tp_server_->sendVideo(encoded_frame);
+    auto ack = std::make_shared<ltproto::peer2peer::CaptureVideoFrameAck>();
+    ack->set_name(captured_frame->name());
+    send_to_worker(ltproto::id(ack), ack);
     // static std::ofstream out{"./service_stream", std::ios::binary};
     // out.write(reinterpret_cast<const char*>(encoded_frame.data), encoded_frame.size);
     // out.flush();
@@ -656,7 +704,7 @@ void WorkerSession::dispatch_dc_message(uint32_t type,
         break;
     default:
         if (worker_registered_msg_.find(type) != worker_registered_msg_.cend()) {
-            send_to_worker(type, msg);
+            send_to_worker_from_other_thread(type, msg);
         }
         break;
     }
@@ -690,16 +738,16 @@ void WorkerSession::update_last_recv_time() {
 }
 
 void WorkerSession::check_timeout() {
-    constexpr auto kTimeoutUS = 3000'000;
+    // NOTE: 运行在IOLOOP
+    constexpr auto kTimeoutMS = 3000;
+    constexpr auto kTimeoutUS = kTimeoutMS * 1000;
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
         tp_server_->close();
-        // FIXME: on_closed必须在ioloop线程调用，这里用错了
         on_closed(CloseReason::TimeoutClose);
     }
     else {
-        task_thread_->post_delay(ltlib::TimeDelta{kTimeoutUS},
-                                 std::bind(&WorkerSession::check_timeout, this));
+        post_delay_task(kTimeoutMS, std::bind(&WorkerSession::check_timeout, this));
     }
 }
 

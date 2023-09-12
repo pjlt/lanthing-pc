@@ -104,6 +104,9 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
     }
     d3d11_context->CopySubresourceRegion(cpu_texture, 0, 0, 0, 0, texture, static_cast<UINT>(index),
                                          nullptr);
+    static size_t kSize = width * height * 3 / 2;
+    static std::FILE* file = std::fopen("decoded.nv12", "wb");
+    static uint8_t* buffer = new uint8_t[kSize];
     D3D11_MAPPED_SUBRESOURCE resource;
     UINT subresource = D3D11CalcSubresource(0, 0, 0);
     auto ret = d3d11_context->Map(cpu_texture, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
@@ -111,14 +114,11 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
         LOGF(WARNING, "fail to map texture");
         return;
     }
-    uint8_t* dptr = reinterpret_cast<uint8_t*>(resource.pData);
-    // 保存argb数据
-    static std::FILE* file = std::fopen("decoded.nv12", "wb");
-    for (size_t i = 0; i < height * 3 / 2; i++) {
-        std::fwrite(dptr + i * resource.RowPitch, width, 1, file);
-    }
-    std::fflush(file);
+    memcpy(buffer, resource.pData, kSize);
     d3d11_context->Unmap(cpu_texture, subresource);
+
+    std::fwrite(buffer, kSize, 1, file);
+    std::fflush(file);
 }
 
 } // namespace

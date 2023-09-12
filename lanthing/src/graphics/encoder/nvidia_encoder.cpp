@@ -203,7 +203,7 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& para
     if (params.bitrate_bps.has_value()) {
         encode_config_.rcParams.averageBitRate = params.bitrate_bps.value();
         encode_config_.rcParams.maxBitRate =
-            static_cast<uint32_t>(params.bitrate_bps.value() * 1024 * 1.05f);
+            static_cast<uint32_t>(params.bitrate_bps.value() * 1.05f);
         changed = true;
     }
     if (params.fps.has_value()) {
@@ -469,9 +469,8 @@ void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame NvD3d11Encoder::encode_one_frame(void* input_frame,
-                                                            bool request_iframe) {
-    return impl_->encodeOneFrame(input_frame, request_iframe);
+VideoEncoder::EncodedFrame NvD3d11Encoder::encodeFrame(void* input_frame) {
+    return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 
 } // namespace lt

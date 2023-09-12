@@ -432,8 +432,8 @@ void AmdEncoder::reconfigure(const VideoEncoder::ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame AmdEncoder::encode_one_frame(void* input_frame, bool request_iframe) {
-    return impl_->encodeOneFrame(input_frame, request_iframe);
+VideoEncoder::EncodedFrame AmdEncoder::encodeFrame(void* input_frame) {
+    return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 
 } // namespace lt

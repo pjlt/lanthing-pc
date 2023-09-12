@@ -144,7 +144,7 @@ bool VDRPipeline::init() {
 }
 
 void VDRPipeline::reset() {
-    LOG(FATAL) << "VDRPipeline::reset() not implemented";
+    LOG(INFO) << "VDRPipeline::reset() not implemented";
 }
 
 VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _frame) {

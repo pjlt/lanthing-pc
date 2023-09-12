@@ -12,10 +12,9 @@ class IOLoopImpl
 {
 public:
     IOLoopImpl() = default; //??
-    ~IOLoopImpl() = default; //??
+    ~IOLoopImpl();
     bool init();
     void run(const std::function<void()>& i_am_alive);
-    void stop();
     void post(const std::function<void()>& task);
     void post_delay(int64_t delay_ms, const std::function<void()>& task);
     bool is_current_thread() const;
@@ -23,6 +22,7 @@ public:
 
 private:
     static void consume_tasks(uv_async_t* handle);
+    void stop();
 
 private:
     uv_loop_t uvloop_ {};
@@ -52,11 +52,6 @@ void IOLoop::run(const std::function<void()>& i_am_alive)
     impl_->run(i_am_alive);
 }
 
-void IOLoop::stop()
-{
-    impl_->stop();
-}
-
 void IOLoop::post(const std::function<void()>& task)
 {
     impl_->post(task);
@@ -80,6 +75,11 @@ bool IOLoop::is_not_current_thread() const
 void* IOLoop::context()
 {
     return impl_->context();
+}
+
+IOLoopImpl::~IOLoopImpl()
+{
+    stop();
 }
 
 bool IOLoopImpl::init()

@@ -8,10 +8,13 @@
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
 
+using namespace Microsoft::WRL;
+
 namespace lt {
 
 DxgiVideoCapturer::DxgiVideoCapturer()
-    : impl_{std::make_unique<DUPLICATIONMANAGER>()} {}
+    : impl_{std::make_unique<DUPLICATIONMANAGER>()}
+    , texture_pool_(kDefaultPoolSize) {}
 
 DxgiVideoCapturer::~DxgiVideoCapturer() {
     // 父类持有的线程会调用DxgiVideoCapturer的wait_for_vblank()
@@ -96,69 +99,81 @@ std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captur
     return nullptr;
 }
 
+void DxgiVideoCapturer::release_frame(const std::string& name) {
+    for (auto& texture : texture_pool_) {
+        if (texture.name == name) {
+            texture.in_use = false;
+            return;
+        }
+    }
+    LOG(FATAL) << "Should not reach here";
+}
+
 std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
-    std::string name;
-    if (texture_pool_.empty()) {
+    if (!pool_inited_) {
+        pool_inited_ = true;
         D3D11_TEXTURE2D_DESC desc;
         texture1->GetDesc(&desc);
         desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
         desc.MiscFlags =
             D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
-        const size_t kDefaultPoolSize = 2;
         for (size_t i = 0; i < kDefaultPoolSize; i++) {
-            ID3D11Texture2D* texture2 = NULL;
+            ComPtr<IDXGIResource1> resource;
+            ComPtr<ID3D11Texture2D> texture2;
             auto hr = d3d11_dev_->CreateTexture2D(&desc, NULL, &texture2);
             if (FAILED(hr)) {
                 LOGF(WARNING, "failed to create shared texture, hr:0x%08x", hr);
-                continue;
+                return "";
             }
-            texture_pool_.push_back(texture2);
-            shared_handles_.push_back(0);
-        }
-        if (texture_pool_.empty()) {
-            return name;
+            hr = texture2.As(&resource);
+            if (FAILED(hr)) {
+                LOGF(WARNING, "Cast to IDXGIResource1 failed, hr:%#08x", hr);
+                return "";
+            }
+            std::string name = "Global\\lanthing_dxgi_sharedTexture_" + std::to_string(i);
+            HANDLE handle = nullptr;
+            std::wstring w_name = ltlib::utf8_to_utf16(name);
+            hr = resource->CreateSharedHandle(NULL, DXGI_SHARED_RESOURCE_READ, w_name.c_str(),
+                                              &handle);
+            if (FAILED(hr)) {
+                LOGF(WARNING, "failed to create shared handle, hr:0x%08x", hr);
+                return "";
+            }
+            texture_pool_[i].name = name;
+            texture_pool_[i].texture = texture2;
+            texture_pool_[i].handle = handle;
         }
     }
-    IDXGIKeyedMutex* mutex = NULL;
-    texture_pool_[index_]->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&mutex);
-    auto hr = mutex->AcquireSync(0, 0);
+    std::optional<size_t> index = get_free_shared_texture();
+    if (!index.has_value()) {
+        LOG(WARNING) << "No free shared texture";
+        return "";
+    }
+    ComPtr<IDXGIKeyedMutex> mutex;
+    HRESULT hr = texture_pool_[*index].texture.As(&mutex);
     if (FAILED(hr)) {
-        mutex->Release();
+        LOGF(WARNING, "Cast to IDXGIKeyedMutex failed, hr:0x%08x", hr);
+        return "";
+    }
+    hr = mutex->AcquireSync(0, 0);
+    if (FAILED(hr)) {
         LOGF(WARNING, "drop frame, hr:0x%08x", hr);
-        return name;
+        return "";
     }
-    d3d11_ctx_->CopyResource(texture_pool_[index_], texture1);
-
-    IDXGIResource1* resource = NULL;
-    hr = texture_pool_[index_]->QueryInterface(__uuidof(IDXGIResource1), (void**)&resource);
-    if (FAILED(hr)) {
-        LOGF(WARNING, "failed to get resource, hr:0x%08x", hr);
-        mutex->ReleaseSync(1);
-        mutex->Release();
-        return name;
-    }
-    const std::string kSharedName = "Global\\lanthing_dxgi_sharedTexture_";
-    name = kSharedName + std::to_string(index_);
-    HANDLE handle = (HANDLE)shared_handles_[index_];
-    if (handle == 0) {
-        std::wstring w_name = ltlib::utf8_to_utf16(name);
-        hr = resource->CreateSharedHandle(NULL, DXGI_SHARED_RESOURCE_READ, w_name.c_str(), &handle);
-        if (FAILED(hr)) {
-            LOGF(WARNING, "failed to create shared handle, hr:0x%08x", hr);
-            mutex->ReleaseSync(1);
-            mutex->Release();
-            resource->Release();
-            return name;
-        }
-        LOGF(WARNING, "handle: 0x%08x", handle);
-        shared_handles_[index_] = (uint64_t)handle;
-    }
+    d3d11_ctx_->CopyResource(texture_pool_[*index].texture.Get(), texture1);
     // FIXME: 如果没有人打开过handle, 会持续failed
     mutex->ReleaseSync(1);
-    mutex->Release();
-    resource->Release();
-    index_ = (index_ + 1) % texture_pool_.size();
-    return name;
+    return texture_pool_[*index].name;
+}
+
+std::optional<size_t> DxgiVideoCapturer::get_free_shared_texture() {
+    for (size_t index = 0; index < texture_pool_.size(); index++) {
+        bool expected = false;
+        if (texture_pool_[index].in_use.compare_exchange_strong(expected, true)) {
+            return index;
+        }
+    }
+    return {};
 }
 
 // void DxgiVideoCapturer::done_with_frame()

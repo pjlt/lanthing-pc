@@ -9,8 +9,7 @@
 
 namespace {
 
-constexpr int32_t kUserEventResetRender = 1;
-constexpr int32_t kUserEventFlushWindowEventBarrier = 2;
+constexpr int32_t kUserEventResetDRPipeline = 1;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -29,7 +28,6 @@ public:
     PcSdlImpl(const Params& params);
     ~PcSdlImpl() override {}
     bool init();
-    // void set_negotiated_params(uint32_t width, uint32_t height) override;
     SDL_Window* window() override;
 
     void set_input_handler(const OnInputEvent& on_event) override;
@@ -38,7 +36,6 @@ private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
     bool init_sdl_subsystems();
     void quit_sdl_subsystems();
-    void flush_window_events();
 
 private: // 事件处理
     enum class DispatchResult {
@@ -48,7 +45,7 @@ private: // 事件处理
     DispatchResult dispatch_sdl_event(const SDL_Event& ev);
     DispatchResult handle_sdl_user_event(const SDL_Event& ev);
     DispatchResult handle_sdl_window_event(const SDL_Event& ev);
-    DispatchResult reset_renderer_decoder();
+    DispatchResult reset_dr_pipeline();
     DispatchResult handle_sdl_key_up_down(const SDL_Event& ev);
     DispatchResult handle_sdl_mouse_button_event(const SDL_Event& ev);
     DispatchResult handle_sdl_mouse_motion(const SDL_Event& ev);
@@ -62,18 +59,7 @@ private: // 事件处理
 
 private:
     SDL_Window* window_ = nullptr;
-    bool need_idr_ = false;
-    int currentDisplayIndex_ = -1;
-    int display_origin_x_ = 0;
-    int display_origin_y_ = 0;
     bool fullscreen_ = false;
-    int video_width_;
-    int video_height_;
-    const int window_init_width_;
-    const int window_init_height_;
-    int fps_ = 60;
-    int video_format_ = 0;
-    int flushingWindowEventsRef_ = 0;
     std::function<void()> on_reset_;
     std::function<void()> on_exit_;
     std::mutex mutex_;
@@ -82,8 +68,7 @@ private:
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
-    if (params.video_width == 0 || params.video_height == 0 || params.window_width == 0 ||
-        params.window_height == 0 || params.on_reset == nullptr || params.on_exit == nullptr) {
+    if (params.on_reset == nullptr || params.on_exit == nullptr) {
         return nullptr;
     }
     std::unique_ptr<PcSdlImpl> sdl{new PcSdlImpl(params)};
@@ -96,11 +81,7 @@ std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
 }
 
 PcSdlImpl::PcSdlImpl(const Params& params)
-    : video_width_(params.video_width)
-    , video_height_(params.video_height)
-    , window_init_width_(params.window_width)
-    , window_init_height_(params.window_height)
-    , on_reset_(params.on_reset)
+    : on_reset_(params.on_reset)
     , on_exit_(params.on_exit) {}
 
 bool PcSdlImpl::init() {
@@ -128,11 +109,19 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         promise.set_value(false);
         return;
     }
+    int desktop_width = 1920;
+    int desktop_height = 1080;
+    SDL_DisplayMode dm{};
+    int ret = SDL_GetDesktopDisplayMode(0, &dm);
+    if (ret == 0) {
+        desktop_height = dm.h;
+        desktop_width = dm.w;
+    }
     window_ = SDL_CreateWindow("Lanthing",
-                               100, // x
-                               100, // y
-                               960, // width,
-                               600, // height,
+                               desktop_width / 6,  // x
+                               desktop_height / 6, // y
+                               desktop_width * 2 / 3,  // width,
+                               desktop_height *2 / 3, // height,
                                SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (window_ == nullptr) {
@@ -149,12 +138,8 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     }
     // TODO: 这里的promise.set_value()理论上应该等到Client获取到解码能力才设置值
     promise.set_value(true);
-    // TODO: input handler
-    SDL_SetWindowResizable(window_, SDL_TRUE);
     SDL_StopTextInput();
-    SDL_DisableScreenSaver();
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
-    currentDisplayIndex_ = SDL_GetWindowDisplayIndex(window_);
 
     // 在Win10下，长时间点住SDL的窗口拖动，会让SDL_WaitEventTimeout()卡住，SDL_AddEventWatch才能获取到相关事件
     // 但回调似乎是在其它线程执行，这点需要小心
@@ -208,22 +193,10 @@ void PcSdlImpl::quit_sdl_subsystems() {
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-void PcSdlImpl::flush_window_events() {
-    SDL_PumpEvents();
-    {
-        std::lock_guard lk{mutex_};
-        flushingWindowEventsRef_++;
-    }
-    SDL_Event flushEvent = {};
-    flushEvent.type = SDL_USEREVENT;
-    flushEvent.user.code = kUserEventFlushWindowEventBarrier;
-    SDL_PushEvent(&flushEvent);
-}
-
 PcSdlImpl::DispatchResult PcSdlImpl::dispatch_sdl_event(const SDL_Event& ev) {
     switch (ev.type) {
     case SDL_QUIT:
-        LOG(INFO) << "Quit event received";
+        LOG(INFO) << "SDL_QUIT event received";
         return DispatchResult::kStop;
     case SDL_USEREVENT:
         return handle_sdl_user_event(ev);
@@ -231,7 +204,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::dispatch_sdl_event(const SDL_Event& ev) {
         return handle_sdl_window_event(ev);
     case SDL_RENDER_DEVICE_RESET:
     case SDL_RENDER_TARGETS_RESET:
-        return reset_renderer_decoder();
+        return reset_dr_pipeline();
     case SDL_KEYUP:
     case SDL_KEYDOWN:
         return handle_sdl_key_up_down(ev);
@@ -265,11 +238,8 @@ PcSdlImpl::DispatchResult PcSdlImpl::dispatch_sdl_event(const SDL_Event& ev) {
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_user_event(const SDL_Event& ev) {
     // 用户自定义事件
     switch (ev.user.code) {
-    case kUserEventResetRender:
-        return reset_renderer_decoder();
-    case kUserEventFlushWindowEventBarrier:
-        // TODO: 处理FlushWindowEvent事件
-        return DispatchResult::kContinue;
+    case kUserEventResetDRPipeline:
+        return reset_dr_pipeline();
     default:
         SDL_assert(false);
         return DispatchResult::kStop;
@@ -295,28 +265,21 @@ PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_window_event(const SDL_Event& ev
         return DispatchResult::kStop;
     }
 
-    // 如果窗口没有发生变化，同时也没有切换显示器，则不用处理东西了
-    if (ev.window.event != SDL_WINDOWEVENT_SIZE_CHANGED &&
-        ev.window.event != SDL_WINDOWEVENT_SHOWN &&
-        SDL_GetWindowDisplayIndex(window_) == currentDisplayIndex_) {
+    // 如果窗口没有发生变化，则不用处理东西了
+    if (ev.window.event != SDL_WINDOWEVENT_SIZE_CHANGED) {
         return DispatchResult::kContinue;
     }
     // 走到这一步，说明接下来要重置renderer和decoder
-    // LOG(INFO) << "recreate renderer";
-    return DispatchResult::kContinue;
-    // return reset_renderer_decoder();
+    return reset_dr_pipeline();
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::reset_renderer_decoder() {
-    flush_window_events();
-    currentDisplayIndex_ = SDL_GetWindowDisplayIndex(window_);
+PcSdlImpl::DispatchResult PcSdlImpl::reset_dr_pipeline() {
     SDL_PumpEvents();
     // 清除已有的重置信号
     SDL_FlushEvent(SDL_RENDER_DEVICE_RESET);
     SDL_FlushEvent(SDL_RENDER_TARGETS_RESET);
-    { on_reset_(); }
+    on_reset_();
 
-    need_idr_ = true;
     return DispatchResult::kContinue;
 }
 

@@ -146,8 +146,8 @@ auto create_d3d11(std::optional<int64_t> luid)
 std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::InitParams& params,
                                                     void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt;
-    VideoEncodeParamsHelper params_helper{params.codec_type, params.width, params.height, 60,
-                                          params.bitrate_bps / 1024,          false};
+    VideoEncodeParamsHelper params_helper{
+        params.codec_type, params.width, params.height, 60, params.bitrate_bps / 1024, false};
     switch (params.backend) {
     case VideoEncoder::Backend::NvEnc:
     {
@@ -297,6 +297,10 @@ VideoEncoder::VideoEncoder(void* d3d11_dev, void* d3d11_ctx)
     ctx->AddRef();
 }
 
+bool VideoEncoder::needKeyframe() {
+    return request_keyframe_.exchange(false);
+}
+
 VideoEncoder::~VideoEncoder() {
     if (d3d11_dev_) {
         auto dev = reinterpret_cast<ID3D11Device*>(d3d11_dev_);
@@ -308,9 +312,12 @@ VideoEncoder::~VideoEncoder() {
     }
 }
 
+void VideoEncoder::requestKeyframe() {
+    request_keyframe_ = true;
+}
+
 VideoEncoder::EncodedFrame
-VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame,
-                     bool force_idr) {
+VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame) {
     if (input_frame->underlying_type() !=
         ltproto::peer2peer::CaptureVideoFrame_UnderlyingType_DxgiSharedHandle) {
         LOG(FATAL) << "Only support DxgiSharedHandle!";
@@ -340,7 +347,7 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
     }
 
     const int64_t start_encode = ltlib::steady_now_us();
-    auto encoded_frame = this->encode_one_frame(texture.Get(), force_idr);
+    auto encoded_frame = this->encodeFrame(texture.Get());
     const int64_t end_encode = ltlib::steady_now_us();
 
     encoded_frame.is_black_frame = is_black_frame(encoded_frame);
@@ -351,6 +358,10 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
     encoded_frame.width = input_frame->width();
     encoded_frame.height = input_frame->height();
     mutex->ReleaseSync(0);
+    if (!first_frame_) {
+        first_frame_ = true;
+        LOG(INFO) << "First frame encoded";
+    }
     return encoded_frame;
 }
 

@@ -66,6 +66,8 @@ private:
     void on_platform_render_target_reset();
     void on_platform_exit();
     void stop_wait();
+    void post_task(const std::function<void()>& task);
+    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
 
     // 信令.
     void on_signaling_net_message(uint32_t type,
@@ -109,6 +111,7 @@ private:
     std::unique_ptr<VideoDecodeRenderPipeline> video_pipeline_;
     std::unique_ptr<InputCapturer> input_capturer_;
     std::unique_ptr<AudioPlayer> audio_player_;
+    std::mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<lt::tp::Client> tp_client_;

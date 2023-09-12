@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <mutex>
 
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
@@ -43,6 +44,8 @@ private:
     bool negotiate_parameters();
     void main_loop(const std::function<void()>& i_am_alive);
     void stop();
+    void post_task(const std::function<void()>& task);
+    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
     bool register_message_handler(uint32_t type, const MessageHandler& msg);
     void dispatch_service_message(uint32_t type,
                                   const std::shared_ptr<google::protobuf::MessageLite>& msg);
@@ -61,6 +64,7 @@ private:
     void on_start_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void on_frame_ack(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const uint32_t client_width_;
@@ -69,6 +73,7 @@ private:
     const std::vector<lt::VideoCodecType> client_codec_types_;
     const std::string pipe_name_;
     bool connected_to_service_ = false;
+    std::mutex mutex_;
     std::unique_ptr<SessionChangeObserver> session_observer_;
     std::map<uint32_t, MessageHandler> msg_handlers_;
     DisplaySetting negotiated_display_setting_;

@@ -51,10 +51,13 @@ private:
     void saveHistoryIDs();
     void insertNewestHistoryID(const std::string& device_id);
     void maybeRefreshAccessToken();
+    void postTask(const std::function<void()>& task);
+    void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
     // tcp client
     bool initTcpClient();
     void sendMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendMessageFromOtherThread(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void onServerConnected();
     void onServerDisconnected();
     void onServerReconnecting();
@@ -68,12 +71,13 @@ private:
     void handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
+    std::mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::Settings> settings_;
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    std::mutex mutex_;
+    std::mutex session_mutex_;
     int64_t device_id_ = 0;
     std::string access_token_;
     std::vector<std::string> history_ids_;
