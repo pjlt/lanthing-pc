@@ -1,3 +1,33 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "pc_sdl.h"
 
 #include <g3log/g3log.hpp>
@@ -34,28 +64,28 @@ public:
 
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
-    bool init_sdl_subsystems();
-    void quit_sdl_subsystems();
+    bool initSdlSubSystems();
+    void quitSdlSubSystems();
 
 private: // 事件处理
     enum class DispatchResult {
         kContinue,
         kStop,
     };
-    DispatchResult dispatch_sdl_event(const SDL_Event& ev);
-    DispatchResult handle_sdl_user_event(const SDL_Event& ev);
-    DispatchResult handle_sdl_window_event(const SDL_Event& ev);
-    DispatchResult reset_dr_pipeline();
-    DispatchResult handle_sdl_key_up_down(const SDL_Event& ev);
-    DispatchResult handle_sdl_mouse_button_event(const SDL_Event& ev);
-    DispatchResult handle_sdl_mouse_motion(const SDL_Event& ev);
-    DispatchResult handle_sdl_mouse_wheel(const SDL_Event& ev);
-    DispatchResult handle_sdl_controller_axis_motion(const SDL_Event& ev);
-    DispatchResult handle_sdl_controller_button_event(const SDL_Event& ev);
-    DispatchResult handle_sdl_controller_added(const SDL_Event& ev);
-    DispatchResult handle_sdl_controller_removed(const SDL_Event& ev);
-    DispatchResult handle_sdl_joy_device_added(const SDL_Event& ev);
-    DispatchResult handle_sdl_touch_event(const SDL_Event& ev);
+    DispatchResult dispatchSdlEvent(const SDL_Event& ev);
+    DispatchResult handleSdlUserEvent(const SDL_Event& ev);
+    DispatchResult handleSdlWindowEvent(const SDL_Event& ev);
+    DispatchResult resetDrPipeline();
+    DispatchResult handleSdlKeyUpDown(const SDL_Event& ev);
+    DispatchResult handleSdlMouseButtonEvent(const SDL_Event& ev);
+    DispatchResult handleSdlMouseMotion(const SDL_Event& ev);
+    DispatchResult handleSdlMouseWheel(const SDL_Event& ev);
+    DispatchResult handleSdlControllerAxisMotion(const SDL_Event& ev);
+    DispatchResult handleSdlControllerButtonEvent(const SDL_Event& ev);
+    DispatchResult handleSdlControllerAdded(const SDL_Event& ev);
+    DispatchResult handleSdlControllerRemoved(const SDL_Event& ev);
+    DispatchResult handleSdlJoyDeviceAdded(const SDL_Event& ev);
+    DispatchResult handleSdlTouchEvent(const SDL_Event& ev);
 
 private:
     SDL_Window* window_ = nullptr;
@@ -105,7 +135,7 @@ void PcSdlImpl::setInputHandler(const OnInputEvent& on_event) {
 }
 
 void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive) {
-    if (!init_sdl_subsystems()) {
+    if (!initSdlSubSystems()) {
         promise.set_value(false);
         return;
     }
@@ -152,7 +182,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
             continue;
         }
 
-        switch (dispatch_sdl_event(ev)) {
+        switch (dispatchSdlEvent(ev)) {
         case DispatchResult::kContinue:
             continue;
         case DispatchResult::kStop:
@@ -164,11 +194,11 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
 CLEANUP:
     // 回收资源，删除解码器等
     SDL_DestroyWindow(window_);
-    quit_sdl_subsystems();
+    quitSdlSubSystems();
     on_exit_();
 }
 
-bool PcSdlImpl::init_sdl_subsystems() {
+bool PcSdlImpl::initSdlSubSystems() {
     int ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
     if (ret != 0) {
         LOG(WARNING) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
@@ -187,66 +217,66 @@ bool PcSdlImpl::init_sdl_subsystems() {
     return true;
 }
 
-void PcSdlImpl::quit_sdl_subsystems() {
+void PcSdlImpl::quitSdlSubSystems() {
     SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::dispatch_sdl_event(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::dispatchSdlEvent(const SDL_Event& ev) {
     switch (ev.type) {
     case SDL_QUIT:
         LOG(INFO) << "SDL_QUIT event received";
         return DispatchResult::kStop;
     case SDL_USEREVENT:
-        return handle_sdl_user_event(ev);
+        return handleSdlUserEvent(ev);
     case SDL_WINDOWEVENT:
-        return handle_sdl_window_event(ev);
+        return handleSdlWindowEvent(ev);
     case SDL_RENDER_DEVICE_RESET:
     case SDL_RENDER_TARGETS_RESET:
-        return reset_dr_pipeline();
+        return resetDrPipeline();
     case SDL_KEYUP:
     case SDL_KEYDOWN:
-        return handle_sdl_key_up_down(ev);
+        return handleSdlKeyUpDown(ev);
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
-        return handle_sdl_mouse_button_event(ev);
+        return handleSdlMouseButtonEvent(ev);
     case SDL_MOUSEMOTION:
-        return handle_sdl_mouse_motion(ev);
+        return handleSdlMouseMotion(ev);
     case SDL_MOUSEWHEEL:
-        return handle_sdl_mouse_wheel(ev);
+        return handleSdlMouseWheel(ev);
     case SDL_CONTROLLERAXISMOTION:
-        return handle_sdl_controller_axis_motion(ev);
+        return handleSdlControllerAxisMotion(ev);
     case SDL_CONTROLLERBUTTONDOWN:
     case SDL_CONTROLLERBUTTONUP:
-        return handle_sdl_controller_button_event(ev);
+        return handleSdlControllerButtonEvent(ev);
     case SDL_CONTROLLERDEVICEADDED:
-        return handle_sdl_controller_added(ev);
+        return handleSdlControllerAdded(ev);
     case SDL_CONTROLLERDEVICEREMOVED:
-        return handle_sdl_controller_removed(ev);
+        return handleSdlControllerRemoved(ev);
     case SDL_JOYDEVICEADDED:
-        return handle_sdl_joy_device_added(ev);
+        return handleSdlJoyDeviceAdded(ev);
     case SDL_FINGERDOWN:
     case SDL_FINGERMOTION:
     case SDL_FINGERUP:
-        return handle_sdl_touch_event(ev);
+        return handleSdlTouchEvent(ev);
     default:
         return DispatchResult::kContinue;
     }
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_user_event(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
     // 用户自定义事件
     switch (ev.user.code) {
     case kUserEventResetDRPipeline:
-        return reset_dr_pipeline();
+        return resetDrPipeline();
     default:
         SDL_assert(false);
         return DispatchResult::kStop;
     }
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_window_event(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlWindowEvent(const SDL_Event& ev) {
     switch (ev.window.event) {
     case SDL_WINDOWEVENT_FOCUS_LOST:
         // 窗口失焦
@@ -270,10 +300,10 @@ PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_window_event(const SDL_Event& ev
         return DispatchResult::kContinue;
     }
     // 走到这一步，说明接下来要重置renderer和decoder
-    return reset_dr_pipeline();
+    return resetDrPipeline();
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::reset_dr_pipeline() {
+PcSdlImpl::DispatchResult PcSdlImpl::resetDrPipeline() {
     SDL_PumpEvents();
     // 清除已有的重置信号
     SDL_FlushEvent(SDL_RENDER_DEVICE_RESET);
@@ -283,52 +313,52 @@ PcSdlImpl::DispatchResult PcSdlImpl::reset_dr_pipeline() {
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_key_up_down(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlKeyUpDown(const SDL_Event& ev) {
     input_->handleKeyUpDown(ev.key);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_mouse_button_event(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlMouseButtonEvent(const SDL_Event& ev) {
     input_->handleMouseButton(ev.button);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_mouse_motion(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlMouseMotion(const SDL_Event& ev) {
     input_->handleMouseMove(ev.motion);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_mouse_wheel(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlMouseWheel(const SDL_Event& ev) {
     input_->handleMouseWheel(ev.wheel);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_axis_motion(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlControllerAxisMotion(const SDL_Event& ev) {
     input_->handleControllerAxis(ev.caxis);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_button_event(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlControllerButtonEvent(const SDL_Event& ev) {
     input_->handleControllerButton(ev.cbutton);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_added(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlControllerAdded(const SDL_Event& ev) {
     input_->handleControllerAdded(ev.cdevice);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_removed(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlControllerRemoved(const SDL_Event& ev) {
     input_->handleControllerRemoved(ev.cdevice);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_joy_device_added(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlJoyDeviceAdded(const SDL_Event& ev) {
     input_->handleJoystickAdded(ev.jdevice);
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_touch_event(const SDL_Event& ev) {
+PcSdlImpl::DispatchResult PcSdlImpl::handleSdlTouchEvent(const SDL_Event& ev) {
     (void)ev;
     return DispatchResult::kContinue;
 }

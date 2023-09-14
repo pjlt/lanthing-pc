@@ -1,3 +1,33 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <inputs/capturer/input_capturer.h>
 #include <platforms/pc_sdl.h>
 
@@ -68,19 +98,17 @@ public:
     void init();
 
 private:
-    void send_message_to_host(uint32_t type,
-                              const std::shared_ptr<google::protobuf::MessageLite>& msg,
-                              bool reliable);
-    void on_platform_input_event(const InputEvent& ev);
-    bool try_process_key_combos();
-    void handle_keyboard_up_down(const KeyboardEvent& ev);
-    void handle_mouse_button(const MouseButtonEvent& ev);
-    void handle_mouse_wheel(const MouseWheelEvent& ev);
-    void handle_mouse_move(const MouseMoveEvent& ev);
-    void handle_controller_added_removed(const ControllerAddedRemovedEvent& ev);
-    void handle_controller_button(const ControllerButtonEvent& ev);
-    void handle_controller_axis(const ControllerAxisEvent& ev);
-    void send_controller_state(uint32_t index);
+    void sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                           bool reliable);
+    void onPlatformInputEvent(const InputEvent& ev);
+    void handleKeyboardUpDown(const KeyboardEvent& ev);
+    void handleMouseButton(const MouseButtonEvent& ev);
+    void handleMouseWheel(const MouseWheelEvent& ev);
+    void handleMouseMove(const MouseMoveEvent& ev);
+    void handleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev);
+    void handleControllerButton(const ControllerButtonEvent& ev);
+    void handleControllerAxis(const ControllerAxisEvent& ev);
+    void sendControllerState(uint32_t index);
 
 private:
     PcSdl* sdl_;
@@ -109,36 +137,37 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
 
 void InputCapturerImpl::init() {
     sdl_->setInputHandler(
-        std::bind(&InputCapturerImpl::on_platform_input_event, this, std::placeholders::_1));
+        std::bind(&InputCapturerImpl::onPlatformInputEvent, this, std::placeholders::_1));
 }
 
-void InputCapturerImpl::send_message_to_host(
-    uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable) {
+void InputCapturerImpl::sendMessageToHost(uint32_t type,
+                                          const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                                          bool reliable) {
     send_message_to_host_(type, msg, reliable);
 }
 
-void InputCapturerImpl::on_platform_input_event(const InputEvent& e) {
+void InputCapturerImpl::onPlatformInputEvent(const InputEvent& e) {
     switch (e.type) {
     case InputEventType::Keyboard:
-        handle_keyboard_up_down(std::get<KeyboardEvent>(e.ev));
+        handleKeyboardUpDown(std::get<KeyboardEvent>(e.ev));
         break;
     case InputEventType::MouseButton:
-        handle_mouse_button(std::get<MouseButtonEvent>(e.ev));
+        handleMouseButton(std::get<MouseButtonEvent>(e.ev));
         break;
     case InputEventType::MouseMove:
-        handle_mouse_move(std::get<MouseMoveEvent>(e.ev));
+        handleMouseMove(std::get<MouseMoveEvent>(e.ev));
         break;
     case InputEventType::MouseWheel:
-        handle_mouse_wheel(std::get<MouseWheelEvent>(e.ev));
+        handleMouseWheel(std::get<MouseWheelEvent>(e.ev));
         break;
     case InputEventType::ControllerAddedRemoved:
-        handle_controller_added_removed(std::get<ControllerAddedRemovedEvent>(e.ev));
+        handleControllerAddedRemoved(std::get<ControllerAddedRemovedEvent>(e.ev));
         break;
     case InputEventType::ControllerAxis:
-        handle_controller_axis(std::get<ControllerAxisEvent>(e.ev));
+        handleControllerAxis(std::get<ControllerAxisEvent>(e.ev));
         break;
     case InputEventType::ControllerButton:
-        handle_controller_button(std::get<ControllerButtonEvent>(e.ev));
+        handleControllerButton(std::get<ControllerButtonEvent>(e.ev));
         break;
     default:
         LOG(FATAL) << "Unknown InputEventType:" << static_cast<int32_t>(e.type);
@@ -146,21 +175,17 @@ void InputCapturerImpl::on_platform_input_event(const InputEvent& e) {
     }
 }
 
-void InputCapturerImpl::handle_keyboard_up_down(const KeyboardEvent& ev) {
+void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
     // TODO: 增加一个reset状态的逻辑，入口在sdl还是input另说。
     key_states_[ev.scan_code] = ev.is_pressed ? 1 : 0;
-    if (try_process_key_combos()) {
-        // 处理完预设的组合键后，直接返回掉不发给被控端
-        return;
-    }
     auto msg = std::make_shared<ltproto::peer2peer::KeyboardEvent>();
     msg->set_key(ev.scan_code);
     msg->set_down(ev.is_pressed);
-    send_message_to_host(ltproto::id(msg), msg, true);
+    sendMessageToHost(ltproto::id(msg), msg, true);
     LOG(DEBUG) << "Key:" << ev.scan_code << ", down:" << ev.is_pressed;
 }
 
-void InputCapturerImpl::handle_mouse_button(const MouseButtonEvent& ev) {
+void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
     Rect host_surface{host_width_, host_height_};
     Rect client_surface{ev.window_width, ev.window_height};
     Rect target_rect = ::scale_src_to_dst_surface(host_surface, client_surface);
@@ -198,16 +223,16 @@ void InputCapturerImpl::handle_mouse_button(const MouseButtonEvent& ev) {
     msg->set_key_falg(key_flag);
     msg->set_x(x);
     msg->set_y(y);
-    send_message_to_host(ltproto::id(msg), msg, true);
+    sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handle_mouse_wheel(const MouseWheelEvent& ev) {
+void InputCapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
     auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
     msg->set_delta_z(ev.amount);
-    send_message_to_host(ltproto::id(msg), msg, true);
+    sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handle_mouse_move(const MouseMoveEvent& ev) {
+void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
     Rect host_surface{host_width_, host_height_};
     Rect client_surface{ev.window_width, ev.window_height};
     Rect target_rect = ::scale_src_to_dst_surface(host_surface, client_surface);
@@ -221,10 +246,10 @@ void InputCapturerImpl::handle_mouse_move(const MouseMoveEvent& ev) {
     msg->set_y(y);
     msg->set_delta_x(ev.delta_x);
     msg->set_delta_y(ev.delta_y);
-    send_message_to_host(ltproto::id(msg), msg, true);
+    sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handle_controller_added_removed(const ControllerAddedRemovedEvent& ev) {
+void InputCapturerImpl::handleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -237,10 +262,10 @@ void InputCapturerImpl::handle_controller_added_removed(const ControllerAddedRem
     else {
         cstates_[ev.index] = std::nullopt;
     }
-    send_message_to_host(ltproto::id(msg), msg, true);
+    sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handle_controller_button(const ControllerButtonEvent& ev) {
+void InputCapturerImpl::handleControllerButton(const ControllerButtonEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -348,10 +373,10 @@ void InputCapturerImpl::handle_controller_button(const ControllerButtonEvent& ev
             return;
         }
     }
-    send_controller_state(ev.index);
+    sendControllerState(ev.index);
 }
 
-void InputCapturerImpl::handle_controller_axis(const ControllerAxisEvent& ev) {
+void InputCapturerImpl::handleControllerAxis(const ControllerAxisEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -381,10 +406,10 @@ void InputCapturerImpl::handle_controller_axis(const ControllerAxisEvent& ev) {
     default:
         return;
     }
-    send_controller_state(ev.index);
+    sendControllerState(ev.index);
 }
 
-void InputCapturerImpl::send_controller_state(uint32_t index) {
+void InputCapturerImpl::sendControllerState(uint32_t index) {
     if (index >= cstates_.size()) {
         return;
     }
@@ -401,11 +426,7 @@ void InputCapturerImpl::send_controller_state(uint32_t index) {
     msg->set_right_stick_y(state->right_thumb_y);
     msg->set_left_trigger(state->left_trigger);
     msg->set_right_trigger(state->right_trigger);
-    send_message_to_host(ltproto::id(msg), msg, true);
-}
-
-bool InputCapturerImpl::try_process_key_combos() {
-    return false;
+    sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
 } // namespace lt

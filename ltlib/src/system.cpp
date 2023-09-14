@@ -1,4 +1,33 @@
-// #include <process.h>
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <Shlobj.h>
@@ -46,7 +75,7 @@ BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName)
     return (bRet);
 }
 
-bool execute_as_user(const std::function<bool(HANDLE)>& func)
+bool executeAsUser(const std::function<bool(HANDLE)>& func)
 {
     HANDLE hToken = NULL;
     bool res = false;
@@ -79,7 +108,7 @@ bool execute_as_user(const std::function<bool(HANDLE)>& func)
 namespace ltlib
 {
 
-bool get_program_filename(std::string& filename)
+bool getProgramFilename(std::string& filename)
 {
     char the_filename[MAX_PATH];
     DWORD length = ::GetModuleFileNameA(nullptr, the_filename, MAX_PATH);
@@ -90,9 +119,9 @@ bool get_program_filename(std::string& filename)
     return false;
 }
 
-bool get_program_filename(std::wstring& filename)
+bool getProgramFilename(std::wstring& filename)
 {
-    const int kMaxPath = UNICODE_STRING_MAX_CHARS; // unicode支持32767
+    const int kMaxPath = UNICODE_STRING_MAX_CHARS;
     std::vector<wchar_t> the_filename(kMaxPath);
     DWORD length = ::GetModuleFileNameW(nullptr, the_filename.data(), kMaxPath);
     if (length > 0 && length < kMaxPath) {
@@ -105,7 +134,7 @@ bool get_program_filename(std::wstring& filename)
 bool getProgramPath(std::string& path)
 {
     std::string filename;
-    if (get_program_filename(filename)) {
+    if (getProgramFilename(filename)) {
         std::string::size_type pos = filename.rfind('\\');
         if (pos != std::string::npos) {
             path = filename.substr(0, pos);
@@ -118,7 +147,7 @@ bool getProgramPath(std::string& path)
 bool getProgramPath(std::wstring& path)
 {
     std::wstring filename;
-    if (get_program_filename(filename)) {
+    if (getProgramFilename(filename)) {
         std::wstring::size_type pos = filename.rfind(L'\\');
         if (pos != std::wstring::npos) {
             path = filename.substr(0, pos);
@@ -148,7 +177,7 @@ template <>
 std::string getProgramFullpath<char>()
 {
     std::string path;
-    get_program_filename(path);
+    getProgramFilename(path);
     return path;
 }
 
@@ -156,42 +185,8 @@ template <>
 std::wstring getProgramFullpath<wchar_t>()
 {
     std::wstring path;
-    get_program_filename(path);
+    getProgramFilename(path);
     return path;
-}
-
-uint32_t getSessionIdByPid(uint32_t pid)
-{
-    DWORD sid = 0;
-    if (FALSE == ProcessIdToSessionId(pid, &sid)) {
-        // TODO error handling
-        return 0;
-    }
-    return sid;
-}
-
-uint32_t getParentPid(uint32_t curr_pid)
-{
-    HANDLE PHANDLE = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-    if (PHANDLE == INVALID_HANDLE_VALUE) {
-        return 0;
-    }
-
-    PROCESSENTRY32W pe32;
-    pe32.dwSize = sizeof(pe32);
-    pe32.dwFlags = sizeof(pe32);
-    BOOL hProcess = Process32FirstW(PHANDLE, &pe32);
-
-    while (hProcess) {
-        if (pe32.th32ProcessID == curr_pid) {
-            CloseHandle(PHANDLE);
-            return pe32.th32ParentProcessID;
-        }
-        hProcess = Process32NextW(PHANDLE, &pe32);
-    }
-
-    CloseHandle(PHANDLE);
-    return 0;
 }
 
 std::string getAppdataPath(bool is_service)
@@ -221,8 +216,7 @@ std::string getAppdataPath(bool is_service)
     };
 
     if (is_service) {
-        if (!execute_as_user(get_path)) {
-            // log_print(kError, _T("get_path fail"));
+        if (!executeAsUser(get_path)) {
             return "";
         }
         return appdata_path;
@@ -273,57 +267,6 @@ int32_t getScreenHeight()
     int32_t y = GetDeviceCaps(hdc, DESKTOPVERTRES);
     ReleaseDC(0, hdc);
     return y;
-}
-
-bool setThreadDesktop()
-{
-    bool succes = false;
-    HDESK thread_desktop = nullptr;
-    HDESK input_desktop = nullptr;
-
-    do {
-
-        DWORD current_thread_id = GetCurrentThreadId();
-        thread_desktop = GetThreadDesktop(current_thread_id);
-
-        input_desktop = OpenInputDesktop(0, TRUE, DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW | DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL | DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS | DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
-
-        if (!input_desktop) {
-            break;
-        }
-
-        WCHAR cur_thread_desktop_name[1024] = { 0 };
-        WCHAR cur_input_desktop_name[1024] = { 0 };
-        DWORD needLength = 0;
-        if (!GetUserObjectInformationW(thread_desktop, UOI_NAME, cur_thread_desktop_name, sizeof(cur_thread_desktop_name), &needLength)) {
-            break;
-        }
-        if (!GetUserObjectInformationW(input_desktop, UOI_NAME, cur_input_desktop_name, sizeof(cur_input_desktop_name), &needLength)) {
-            break;
-        }
-
-        std::wstring input_desktop_name;
-        input_desktop_name = cur_input_desktop_name;
-
-        if (input_desktop_name != cur_thread_desktop_name) {
-            if (!SetThreadDesktop(input_desktop)) {
-                break;
-            }
-            succes = true;
-        } else {
-            succes = true;
-        }
-    } while (0);
-
-    if (thread_desktop) {
-        CloseDesktop(thread_desktop);
-    }
-
-    if (input_desktop) {
-        CloseDesktop(input_desktop);
-    }
-
-    return succes;
 }
 
 DisplayOutputDesc getDisplayOutputDesc()

@@ -1,11 +1,11 @@
-¥ÀŒƒº˛¡–æŸ¡ÀLanthing÷±Ω” π”√µƒµ⁄»˝∑Ω»Ìº˛£¨“‘º∞’‚–©µ⁄»˝∑Ω»Ìº˛“™«ÛÃ·º∞µƒ…˘√˜ªÚ£®∫Õ£©–≠“È°£
+Ê≠§Êñá‰ª∂Âàó‰∏æ‰∫ÜLanthingÁõ¥Êé•‰ΩøÁî®ÁöÑÁ¨¨‰∏âÊñπËΩØ‰ª∂Ôºå‰ª•ÂèäËøô‰∫õÁ¨¨‰∏âÊñπËΩØ‰ª∂Ë¶ÅÊ±ÇÊèêÂèäÁöÑÂ£∞ÊòéÊàñÔºàÂíåÔºâÂçèËÆÆ„ÄÇ
 
-…œ ˆ…˘√˜∫Õ–≠“È¡–æŸ»Áœ¬£∫
+‰∏äËø∞Â£∞ÊòéÂíåÂçèËÆÆÂàó‰∏æÂ¶Ç‰∏ãÔºö
 
 -------------------------------------------------------------------------------
 ---------------------------1-AMF-----------------------------------------------
 -------------------------------------------------------------------------------
-AMF£®https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git£©
+AMFÔºàhttps://github.com/GPUOpen-LibrariesAndSDKs/AMF.gitÔºâ
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to
 any Intellectual Property Rights relating to any standards, including but not
@@ -43,7 +43,7 @@ THE SOFTWARE.
 -----------------------------------------------------------------------------
 -------------------------2-breakpad------------------------------------------
 -----------------------------------------------------------------------------
-breakpad£®https://chromium.googlesource.com/breakpad/breakpad£©
+breakpadÔºàhttps://chromium.googlesource.com/breakpad/breakpadÔºâ
 
 Copyright (c) 2006, Google Inc.
 All rights reserved.
@@ -182,7 +182,7 @@ SUCH DAMAGE.
 --------------------------------------------------------------------------
 -------------------------3-ffmpeg-----------------------------------------
 --------------------------------------------------------------------------
-ffmpeg£®∂ØÃ¨¡¥Ω”£¨--disable-gpl£©£®https://git.ffmpeg.org/ffmpeg.git£©
+ffmpegÔºàÂä®ÊÄÅÈìæÊé•Ôºå--disable-gplÔºâÔºàhttps://git.ffmpeg.org/ffmpeg.gitÔºâ
 
                    GNU LESSER GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
@@ -354,7 +354,7 @@ Library.
 --------------------------------------------------------------------------
 -------------------------4-googletest-------------------------------------
 --------------------------------------------------------------------------
-googletest£®https://github.com/google/googletest.git£©
+googletestÔºàhttps://github.com/google/googletest.gitÔºâ
 
 Copyright 2008, Google Inc.
 All rights reserved.
@@ -389,7 +389,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------
 -------------------------5-g3log------------------------------------------
 --------------------------------------------------------------------------
-g3log£®https://github.com/KjellKod/g3log.git£©
+g3logÔºàhttps://github.com/KjellKod/g3log.gitÔºâ
 
 This is free and unencumbered software released into the public domain.
 
@@ -420,7 +420,7 @@ For more information, please refer to <http://unlicense.org/>
 --------------------------------------------------------------------------
 -------------------------6-libuv------------------------------------------
 --------------------------------------------------------------------------
-libuv£®https://github.com/libuv/libuv.git£©
+libuvÔºàhttps://github.com/libuv/libuv.gitÔºâ
 
 libuv is licensed for use as follows:
 
@@ -493,7 +493,7 @@ The externally maintained libraries used by libuv are:
 --------------------------------------------------------------------------
 -------------------------7-mbedtls----------------------------------------
 --------------------------------------------------------------------------
-mebdtls£®https://github.com/Mbed-TLS/mbedtls.git£©
+mebdtlsÔºàhttps://github.com/Mbed-TLS/mbedtls.gitÔºâ
 
 
                                  Apache License
@@ -702,7 +702,7 @@ mebdtls£®https://github.com/Mbed-TLS/mbedtls.git£©
 --------------------------------------------------------------------------
 -------------------------8-NVIDIA Video Codec SDK------------------------
 --------------------------------------------------------------------------
-NVIDIA Video Codec SDK£®https://developer.nvidia.com/nvidia-video-codec-sdk£©
+NVIDIA Video Codec SDKÔºàhttps://developer.nvidia.com/nvidia-video-codec-sdkÔºâ
 
 This copyright notice applies to this header file only:
 
@@ -733,7 +733,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 --------------------------------------------------------------------------
 -------------------------9-oneVPL-----------------------------------------
 --------------------------------------------------------------------------
-oneVPL£®https://github.com/oneapi-src/oneVPL.git£©
+oneVPLÔºàhttps://github.com/oneapi-src/oneVPL.gitÔºâ
 
 MIT License
 
@@ -761,7 +761,7 @@ SOFTWARE.
 --------------------------------------------------------------------------
 -------------------------10-opus------------------------------------------
 --------------------------------------------------------------------------
-opus£®œÍœ∏license«ÎµΩopusœÓƒø≤Èø¥£©£®https://github.com/xiph/opus.git£©
+opusÔºàËØ¶ÁªÜlicenseËØ∑Âà∞opusÈ°πÁõÆÊü•ÁúãÔºâÔºàhttps://github.com/xiph/opus.gitÔºâ
 
 Contributions to the collaboration shall not be considered confidential.
 
@@ -790,7 +790,7 @@ https://datatracker.ietf.org/ipr/1526/
 --------------------------------------------------------------------------
 -------------------------11-protobuf--------------------------------------
 --------------------------------------------------------------------------
-protobuf£®https://github.com/protocolbuffers/protobuf.git£©
+protobufÔºàhttps://github.com/protocolbuffers/protobuf.gitÔºâ
 
 Copyright 2008 Google Inc.  All rights reserved.
 
@@ -829,7 +829,7 @@ support library is itself covered by the above license.
 --------------------------------------------------------------------------
 -------------------------12-SDL-------------------------------------------
 --------------------------------------------------------------------------
-SDL£®https://github.com/libsdl-org/SDL.git£©
+SDLÔºàhttps://github.com/libsdl-org/SDL.gitÔºâ
 
 Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
   
@@ -853,7 +853,7 @@ freely, subject to the following restrictions:
 --------------------------------------------------------------------------
 -------------------------13-tomlplusplus----------------------------------
 --------------------------------------------------------------------------
-tomlplusplus£®https://github.com/marzer/tomlplusplus.git£©
+tomlplusplusÔºàhttps://github.com/marzer/tomlplusplus.gitÔºâ
 
 MIT License
 
@@ -876,7 +876,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 --------------------------------------------------------------------------
 -------------------------14-utfcpp----------------------------------------
 --------------------------------------------------------------------------
-utfcpp£®https://github.com/nemtrif/utfcpp.git£©
+utfcppÔºàhttps://github.com/nemtrif/utfcpp.gitÔºâ
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -906,7 +906,7 @@ DEALINGS IN THE SOFTWARE.
 --------------------------------------------------------------------------
 -------------------------15-Windows-classic-samples-----------------------
 --------------------------------------------------------------------------
-Windows-classic-samples£®https://github.com/microsoft/Windows-classic-samples.git£©
+Windows-classic-samplesÔºàhttps://github.com/microsoft/Windows-classic-samples.gitÔºâ
 
 The MIT License (MIT)
 
@@ -937,7 +937,7 @@ See the LICENSE file in individual samples for additional details.
 --------------------------------------------------------------------------
 -------------------------16-WebRTC----------------------------------------
 --------------------------------------------------------------------------
-WebRTC£®https://webrtc.googlesource.com/src£©
+WebRTCÔºàhttps://webrtc.googlesource.com/srcÔºâ
 
 Copyright (c) 2011, The WebRTC project authors. All rights reserved.
 Redistribution and use in source and binary forms, with or without
@@ -963,3 +963,37 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------
+-------------------------17-queue.h---------------------------------------
+--------------------------------------------------------------------------
+
+Copyright (c) 1991, 1993
+The Regents of the University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+@(#)queue.h	8.5 (Berkeley) 8/20/94
