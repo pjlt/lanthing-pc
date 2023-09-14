@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -226,9 +226,12 @@ void Client::mainLoop(const std::function<void()>& i_am_alive) {
 }
 
 void Client::onPlatformRenderTargetReset() {
-    // FIXME: 这个函数是由SDL线程回调上来的有潜在线程问题
-    if (video_pipeline_) {
-        video_pipeline_->reset();
+    // NOTE: 这运行在platform线程
+    std::lock_guard lock{dr_mutex_};
+    video_pipeline_.reset();
+    video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+    if (video_pipeline_ == nullptr) {
+        LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
     }
 }
 
@@ -433,6 +436,10 @@ void Client::onTpData(const uint8_t* data, uint32_t size, bool is_reliable) {
 }
 
 void Client::onTpVideoFrame(const lt::VideoFrame& frame) {
+    std::lock_guard lock{dr_mutex_};
+    if (video_pipeline_ == nullptr) {
+        return;
+    }
     VideoDecodeRenderPipeline::Action action = video_pipeline_->submit(frame);
     switch (action) {
     case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
@@ -458,7 +465,7 @@ void Client::onTpAudioData(const lt::AudioData& audio_data) {
 void Client::onTpConnected() {
     video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
     if (video_pipeline_ == nullptr) {
-        LOG(WARNING) << "Create VideoDecoder failed";
+        LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
         return;
     }
     input_params_.send_message = std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
