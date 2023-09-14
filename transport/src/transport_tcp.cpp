@@ -113,7 +113,7 @@ bool ClientTCP::initTcpClient(const std::string& ip, uint16_t port) {
     }
     net_thread_ = ltlib::BlockingThread::create(
         "ClientTCP_net",
-        [this](const std::function<void()>& i_am_alive, void*) { netLoop(i_am_alive); }, nullptr);
+        [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
     return true;
 }
 
@@ -355,7 +355,7 @@ bool ServerTCP::init() {
     }
     net_thread_ = ltlib::BlockingThread::create(
         "ServerTCP_net",
-        [this](const std::function<void()>& i_am_alive, void*) { netLoop(i_am_alive); }, nullptr);
+        [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
     task_thread_ = ltlib::TaskThread::create("ServerTCP_task");
     if (task_thread_ == nullptr) {
         return false;

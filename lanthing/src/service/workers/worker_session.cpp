@@ -209,12 +209,10 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     std::promise<void> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
-        "worker_session",
-        [this, &promise](const std::function<void()>& i_am_alive, void*) {
+        "worker_session", [this, &promise](const std::function<void()>& i_am_alive) {
             promise.set_value();
             mainLoop(i_am_alive);
-        },
-        nullptr);
+        });
     future.get();
     return true;
 }

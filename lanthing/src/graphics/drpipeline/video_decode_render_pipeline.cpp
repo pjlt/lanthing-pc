@@ -163,12 +163,10 @@ bool VDRPipeline::init() {
     stoped_ = false;
     decode_thread_ = ltlib::BlockingThread::create(
         "video_decode",
-        [this](const std::function<void()>& i_am_alive, void*) { decodeLoop(i_am_alive); },
-        nullptr);
+        [this](const std::function<void()>& i_am_alive) { decodeLoop(i_am_alive); });
     render_thread_ = ltlib::BlockingThread::create(
         "video_render",
-        [this](const std::function<void()>& i_am_alive, void*) { renderLoop(i_am_alive); },
-        nullptr);
+        [this](const std::function<void()>& i_am_alive) { renderLoop(i_am_alive); });
     return true;
 }
 

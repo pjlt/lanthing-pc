@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -41,7 +41,7 @@ namespace
 
 using SetThreadDescriptionFunc = HRESULT(WINAPI*)(HANDLE hThread, PCWSTR lpThreadDescription);
 
-//Credit: WebRTC
+// Credit: WebRTC
 void set_current_thread_name(const char* name)
 {
 #if defined(LT_WINDOWS)
@@ -186,9 +186,8 @@ void ThreadWatcher::reportAlive(const std::string& name)
     }
 }
 
-BlockingThread::BlockingThread(const std::string& prefix, const EntryFunction& func, void* user_data)
+BlockingThread::BlockingThread(const std::string& prefix, const EntryFunction& func)
     : user_func_ { func }
-    , user_data_ { user_data }
     , last_report_time_ { ltlib::steady_now_ms() }
 {
     std::stringstream ss;
@@ -203,12 +202,12 @@ BlockingThread::~BlockingThread()
     }
 }
 
-std::unique_ptr<BlockingThread> BlockingThread::create(const std::string& prefix, const EntryFunction& func, void* user_data)
+std::unique_ptr<BlockingThread> BlockingThread::create(const std::string& prefix, const EntryFunction& func)
 {
     if (prefix.empty() || func == nullptr) {
         return nullptr;
     }
-    std::unique_ptr<BlockingThread> bthread { new BlockingThread { prefix, func, user_data } };
+    std::unique_ptr<BlockingThread> bthread { new BlockingThread { prefix, func } };
     bthread->start();
     return bthread;
 }
@@ -235,7 +234,7 @@ void BlockingThread::main_loop(std::promise<void>& promise)
     set_thread_name();
     register_to_thread_watcher();
     promise.set_value();
-    user_func_(std::bind(&BlockingThread::i_am_alive, this), user_data_);
+    user_func_(std::bind(&BlockingThread::i_am_alive, this));
     unregister_from_thread_watcher();
 }
 
