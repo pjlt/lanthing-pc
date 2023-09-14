@@ -52,7 +52,7 @@ void sigint_handler(int) {
     ::exit(0);
 }
 
-void init_log_and_minidump(Role role) {
+void initLogAndMinidump(Role role) {
     std::string prefix;
     std::string rtc_prefix;
     std::filesystem::path log_dir;
@@ -74,9 +74,9 @@ void init_log_and_minidump(Role role) {
         return;
     }
 
-    std::string bin_path = ltlib::get_program_fullpath<char>();
-    std::string bin_dir = ltlib::get_program_path<char>();
-    std::string appdata_dir = ltlib::get_appdata_path(true);
+    std::string bin_path = ltlib::getProgramFullpath<char>();
+    std::string bin_dir = ltlib::getProgramPath<char>();
+    std::string appdata_dir = ltlib::getAppdataPath(true);
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
         log_dir /= "lanthing";
@@ -95,7 +95,7 @@ void init_log_and_minidump(Role role) {
     g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string(), "lanthing");
     g3::log_levels::disable(DEBUG);
     g3::initializeLogging(g_log_worker.get());
-    ltlib::ThreadWatcher::instance()->register_terminate_callback(
+    ltlib::ThreadWatcher::instance()->registerTerminateCallback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
 #if LT_USE_LTRTC
@@ -110,7 +110,7 @@ void init_log_and_minidump(Role role) {
     // ltlib::ThreadWatcher::instance()->disable_crash_on_timeout();
 }
 
-std::map<std::string, std::string> parse_options(int argc, char* argv[]) {
+std::map<std::string, std::string> parseOptions(int argc, char* argv[]) {
     std::vector<std::string> args;
     std::map<std::string, std::string> options;
     for (int i = 0; i < argc; i++) {
@@ -131,9 +131,9 @@ std::map<std::string, std::string> parse_options(int argc, char* argv[]) {
     return options;
 }
 
-bool is_another_instance_running() {
+bool isAnotherInstanceRunning() {
     namespace fs = std::filesystem;
-    fs::path program_full_path{ltlib::get_program_fullpath<char>()};
+    fs::path program_full_path{ltlib::getProgramFullpath<char>()};
 #ifdef LT_WINDOWS
     std::string event_name =
         std::string{"Global\\"} + program_full_path.filename().string() + ".tsa";
@@ -141,7 +141,7 @@ bool is_another_instance_running() {
     std::string event_name = "xxxx";
 #endif
     ltlib::Event singleton{event_name};
-    if (!singleton.is_owner()) {
+    if (!singleton.isOwner()) {
         LOG(WARNING) << "Another instance is running";
         return true;
     }
@@ -150,9 +150,9 @@ bool is_another_instance_running() {
     }
 }
 
-int run_as_client(std::map<std::string, std::string> options) {
-    init_log_and_minidump(Role::Client);
-    lt::create_inbound_firewall_rule("Lanthing", ltlib::get_program_fullpath<char>());
+int runAsClient(std::map<std::string, std::string> options) {
+    initLogAndMinidump(Role::Client);
+    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
     auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
@@ -163,10 +163,10 @@ int run_as_client(std::map<std::string, std::string> options) {
     }
 }
 
-int run_as_service(std::map<std::string, std::string> options) {
-    init_log_and_minidump(Role::Service);
-    lt::create_inbound_firewall_rule("Lanthing", ltlib::get_program_fullpath<char>());
-    if (is_another_instance_running()) {
+int runAsService(std::map<std::string, std::string> options) {
+    initLogAndMinidump(Role::Service);
+    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
+    if (isAnotherInstanceRunning()) {
         return -1;
     }
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
@@ -188,8 +188,8 @@ int run_as_service(std::map<std::string, std::string> options) {
     return 0;
 }
 
-int run_as_worker(std::map<std::string, std::string> options) {
-    init_log_and_minidump(Role::Worker);
+int runAsWorker(std::map<std::string, std::string> options) {
+    initLogAndMinidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
         worker->wait();
@@ -205,19 +205,19 @@ int run_as_worker(std::map<std::string, std::string> options) {
 
 int main(int argc, char* argv[]) {
     ::srand(static_cast<unsigned int>(::time(nullptr)));
-    auto options = parse_options(argc, argv);
+    auto options = parseOptions(argc, argv);
     auto iter = options.find("-type");
     if (iter == options.end() || iter->second == "service") {
-        return run_as_service(options);
+        return runAsService(options);
     }
     else if (iter->second == "client") {
         // 方便调试attach
         // std::this_thread::sleep_for(std::chrono::seconds { 15 });
-        return run_as_client(options);
+        return runAsClient(options);
     }
     else if (iter->second == "worker") {
         // std::this_thread::sleep_for(std::chrono::seconds { 15 });
-        return run_as_worker(options);
+        return runAsWorker(options);
     }
     else {
         std::cerr << "Unknown type '" << iter->second << "'" << std::endl;

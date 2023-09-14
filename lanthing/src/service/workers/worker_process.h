@@ -38,9 +38,9 @@ public:
 private:
     WorkerProcess(const Params& params);
     void start();
-    void main_loop(std::promise<void>& promise, const std::function<void()>& i_am_alive);
-    bool launch_worker_process();
-    void wait_for_worker_process(const std::function<void()>& i_am_alive);
+    void mainLoop(std::promise<void>& promise, const std::function<void()>& i_am_alive);
+    bool launchWorkerProcess();
+    void waitForWorkerProcess(const std::function<void()>& i_am_alive);
 
 private:
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> on_message_;

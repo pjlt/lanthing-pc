@@ -39,7 +39,7 @@ LibuvSTransport::~LibuvSTransport()
             return;
         }
         auto tcp_handle = server_tcp_.release();
-        if (ioloop_->is_not_current_thread()) {
+        if (ioloop_->isNotCurrentThread()) {
             ioloop_->post([tcp_handle]() {
                 uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
             });
@@ -52,7 +52,7 @@ LibuvSTransport::~LibuvSTransport()
             return;
         }
         auto pipe_conn = server_pipe_.release();
-        if (ioloop_->is_not_current_thread()) {
+        if (ioloop_->isNotCurrentThread()) {
             ioloop_->post([pipe_conn]() {
                 uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
             });

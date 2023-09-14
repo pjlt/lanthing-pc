@@ -27,20 +27,20 @@ public:
     virtual ~VideoCapturer();
     void start();
     void stop();
-    virtual void release_frame(const std::string& name) = 0;
+    virtual void releaseFrame(const std::string& name) = 0;
     virtual Backend backend() const = 0;
     virtual int64_t luid() { return -1; }
 
 protected:
     VideoCapturer();
-    virtual bool pre_init() = 0;
-    virtual std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> capture_one_frame() = 0;
+    virtual bool preInit() = 0;
+    virtual std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> captureOneFrame() = 0;
     // virtual void done_with_frame() = 0;
-    virtual void wait_for_vblank() = 0;
+    virtual void waitForVblank() = 0;
 
 private:
     bool init();
-    void main_loop(const std::function<void()>& i_am_alive);
+    void mainLoop(const std::function<void()>& i_am_alive);
 
 private:
     OnFrame on_frame_;

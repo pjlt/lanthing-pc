@@ -33,6 +33,9 @@ private:
     HANDLE read_ev_ = nullptr;
     HANDLE stop_ev_ = nullptr;
     bool need_co_uninit_ = false;
+    std::condition_variable cv_;
+    std::mutex mtx_;
+    bool running_ = false;
 };
 
 } // namespace lt

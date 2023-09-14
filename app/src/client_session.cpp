@@ -38,7 +38,7 @@ bool ClientSession::start() {
     // clang-format off
     // TODO: 改成跨平台的方式
     std::stringstream ss;
-    ss << ltlib::get_program_path<char>() << "\\"
+    ss << ltlib::getProgramPath<char>() << "\\"
        << "lanthing.exe "
        << " -type client"
        << " -cid " << params_.client_id
@@ -90,7 +90,7 @@ bool ClientSession::start() {
         si.wShowWindow = SW_SHOW;
 
         LOG(INFO) << "Launching client: " << ss.str();
-        std::wstring cmd = ltlib::utf8_to_utf16(ss.str());
+        std::wstring cmd = ltlib::utf8To16(ss.str());
         if (!CreateProcessAsUserW(user_token, NULL, const_cast<LPWSTR>(cmd.c_str()), &sa, &sa,
                                   FALSE, NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi)) {
             break;
@@ -106,7 +106,7 @@ bool ClientSession::start() {
             "client_session",
             [&promise, this](const std::function<void()>& i_am_alive, void*) {
                 promise.set_value();
-                main_loop(i_am_alive);
+                mainLoop(i_am_alive);
             },
             nullptr);
         future.get();
@@ -121,7 +121,7 @@ bool ClientSession::start() {
     return false;
 }
 
-void ClientSession::main_loop(const std::function<void()>& i_am_alive) {
+void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
     // HANDLE some_handle = ::CreateEventW(NULL, FALSE, FALSE, (L"Global\\lanthing_someevent_%lu" +
     // std::to_wstring(process_id_)).c_str());
     constexpr uint32_t k500ms = 500;
@@ -140,7 +140,7 @@ void ClientSession::main_loop(const std::function<void()>& i_am_alive) {
     };
 }
 
-std::string ClientSession::client_id() const {
+std::string ClientSession::clientID() const {
     return params_.client_id;
 }
 

@@ -62,7 +62,7 @@ void crash_me()
     *a = 123;
 }
 
-} // 匿名空间
+} // namespace
 
 namespace ltlib
 {
@@ -76,7 +76,7 @@ ThreadWatcher* ThreadWatcher::instance()
 }
 
 ThreadWatcher::ThreadWatcher()
-    : thread_ { std::bind(&ThreadWatcher::check_loop, this) }
+    : thread_ { std::bind(&ThreadWatcher::checkLoop, this) }
 {
 }
 
@@ -104,23 +104,23 @@ void ThreadWatcher::remove(const std::string& name)
     threads_.erase(name);
 }
 
-void ThreadWatcher::register_terminate_callback(const std::function<void(const std::string&)>& callback)
+void ThreadWatcher::registerTerminateCallback(const std::function<void(const std::string&)>& callback)
 {
     std::lock_guard lock { mutex_ };
     terminate_callback_ = callback;
 }
 
-void ThreadWatcher::enable_crash_on_timeout()
+void ThreadWatcher::enableCrashOnTimeout()
 {
     enable_crash_ = true;
 }
 
-void ThreadWatcher::disable_crash_on_timeout()
+void ThreadWatcher::disableCrashOnTimeout()
 {
     enable_crash_ = false;
 }
 
-void ThreadWatcher::check_loop()
+void ThreadWatcher::checkLoop()
 {
     set_current_thread_name("dead_thread_checker");
     while (true) {
@@ -138,7 +138,7 @@ void ThreadWatcher::check_loop()
                     terminate_callback_(ss.str());
                 }
                 if (enable_crash_) {
-                    //std::terminate();
+                    // std::terminate();
                     crash_me();
                 }
             }
@@ -146,7 +146,7 @@ void ThreadWatcher::check_loop()
     }
 }
 
-void ThreadWatcher::report_alive(const std::string& name)
+void ThreadWatcher::reportAlive(const std::string& name)
 {
     std::lock_guard lock { mutex_ };
     auto iter = threads_.find(name);
@@ -157,7 +157,7 @@ void ThreadWatcher::report_alive(const std::string& name)
 
 BlockingThread::BlockingThread(const std::string& prefix, const EntryFunction& func, void* user_data)
     : user_func_ { func }
-    , user_data_ {user_data}
+    , user_data_ { user_data }
     , last_report_time_ { ltlib::steady_now_ms() }
 {
     std::stringstream ss;
@@ -224,7 +224,7 @@ void BlockingThread::i_am_alive()
     int64_t now = ltlib::steady_now_ms();
     if (now - last_report_time_ > k1Second) {
         last_report_time_ = now;
-        ThreadWatcher::instance()->report_alive(name_);
+        ThreadWatcher::instance()->reportAlive(name_);
     }
 }
 
@@ -232,7 +232,6 @@ void BlockingThread::set_thread_name()
 {
     ::set_current_thread_name(name_.c_str());
 }
-
 
 std::unique_ptr<TaskThread> TaskThread::create(const std::string& prefix)
 {
@@ -251,7 +250,6 @@ TaskThread::TaskThread(const std::string& prefix)
     ss << prefix << '-' << std::hex << (int64_t)this;
     name_ = ss.str();
 }
-
 
 TaskThread::~TaskThread()
 {
@@ -351,7 +349,7 @@ void TaskThread::i_am_alive()
     int64_t now = ltlib::steady_now_ms();
     if (now - last_report_time_ > k1Second) {
         last_report_time_ = now;
-        ThreadWatcher::instance()->report_alive(name_);
+        ThreadWatcher::instance()->reportAlive(name_);
     }
 }
 

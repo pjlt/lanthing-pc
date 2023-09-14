@@ -16,6 +16,16 @@ std::string toHex(const int i) {
 
     return std::string(buffer);
 }
+
+class SimpleGuard {
+public:
+    SimpleGuard(const std::function<void()>& cleanup)
+        : cleanup_{cleanup} {}
+    ~SimpleGuard() { cleanup_(); }
+
+private:
+    std::function<void()> cleanup_;
+};
 } // namespace
 
 namespace lt {
@@ -33,6 +43,11 @@ WinAudioCapturer::WinAudioCapturer(const Params& params)
 }
 
 WinAudioCapturer::~WinAudioCapturer() {
+    ::SetEvent(stop_ev_);
+    {
+        std::unique_lock lock{mtx_};
+        cv_.wait(lock, [this]() { return !running_; });
+    }
     if (stop_ev_) {
         CloseHandle(stop_ev_);
         stop_ev_ = nullptr;
@@ -106,6 +121,13 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
      * ReleaseBuffer until GetNextPacketSize reports a packet size of 0, indicating that the buffer
      * is empty.
      */
+    SimpleGuard guard{[this]() {
+        {
+            std::lock_guard lk{mtx_};
+            running_ = false;
+        }
+        cv_.notify_one();
+    }};
     HANDLE events[2] = {stop_ev_, read_ev_};
     HRESULT hr = S_OK;
     while (true) {

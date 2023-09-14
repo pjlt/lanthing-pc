@@ -220,7 +220,7 @@ bool String::getValue(const std::string& s, uint16_t* t)
     return value_64 <= std::numeric_limits<uint16_t>::max();
 }
 
-std::wstring utf8_to_utf16(const std::string& str)
+std::wstring utf8To16(const std::string& str)
 {
     if (str.empty()) {
         return {};
@@ -230,7 +230,7 @@ std::wstring utf8_to_utf16(const std::string& str)
     return result;
 }
 
-std::string utf16_to_utf8(const std::wstring& str)
+std::string utf16To8(const std::wstring& str)
 {
     if (str.empty()) {
         return {};
@@ -240,7 +240,7 @@ std::string utf16_to_utf8(const std::wstring& str)
     return result;
 }
 
-std::string random_str(size_t len)
+std::string randomStr(size_t len)
 {
     static const char alphanum[] = "0123456789"
                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

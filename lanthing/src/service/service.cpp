@@ -26,10 +26,10 @@ Service::~Service() {
 }
 
 bool Service::init() {
-    if (!init_settings()) {
+    if (!initSettings()) {
         return false;
     }
-    std::optional<int64_t> device_id = settings_->get_integer("device_id");
+    std::optional<int64_t> device_id = settings_->getInteger("device_id");
     if (!device_id.has_value() || device_id.value() == 0) {
         LOG(WARNING) << "Get device_id from local settings failed";
         return false;
@@ -40,7 +40,7 @@ bool Service::init() {
     if (ioloop_ == nullptr) {
         return false;
     }
-    if (!init_tcp_client()) {
+    if (!initTcpClient()) {
         return false;
     }
     std::promise<void> promise;
@@ -49,7 +49,7 @@ bool Service::init() {
         "main_thread",
         [this, &promise](const std::function<void()>& i_am_alive, void*) {
             promise.set_value();
-            main_loop(i_am_alive);
+            mainLoop(i_am_alive);
         },
         nullptr);
     future.get();
@@ -63,7 +63,7 @@ void Service::uninit() {
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
 #include <lanthing.cert>
-bool Service::init_tcp_client() {
+bool Service::initTcpClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
     params.ioloop = ioloop_.get();
@@ -71,11 +71,11 @@ bool Service::init_tcp_client() {
     params.port = LT_SERVER_SVC_PORT;
     params.is_tls = LT_SERVER_USE_SSL;
     params.cert = kLanthingCert;
-    params.on_connected = std::bind(&Service::on_server_connected, this);
-    params.on_closed = std::bind(&Service::on_server_disconnected, this);
-    params.on_reconnecting = std::bind(&Service::on_server_reconnecting, this);
+    params.on_connected = std::bind(&Service::onServerConnected, this);
+    params.on_closed = std::bind(&Service::onServerDisconnected, this);
+    params.on_reconnecting = std::bind(&Service::onServerReconnecting, this);
     params.on_message =
-        std::bind(&Service::on_server_message, this, std::placeholders::_1, std::placeholders::_2);
+        std::bind(&Service::onServerMessage, this, std::placeholders::_1, std::placeholders::_2);
     tcp_client_ = ltlib::Client::create(params);
     if (tcp_client_ == nullptr) {
         return false;
@@ -85,54 +85,54 @@ bool Service::init_tcp_client() {
 #undef MACRO_TO_STRING
 #undef MACRO_TO_STRING_HELPER
 
-void Service::main_loop(const std::function<void()>& i_am_alive) {
+void Service::mainLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Lanthing service enter main loop";
     ioloop_->run(i_am_alive);
     LOG(INFO) << "Lanthing service exit main loop";
 }
 
-bool Service::init_settings() {
+bool Service::initSettings() {
     settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Toml);
     return settings_ != nullptr;
 }
 
-void Service::destroy_session(const std::string& session_name) {
+void Service::destroySession(const std::string& session_name) {
     // worker_sessions_.erase(session_name)会析构WorkerSession内部的PeerConnection
     // 而当前的destroy_session()很可能是PeerConnection信令线程回调上来的
     // 这里选择放到libuv的线程去做
-    post_task([this, session_name]() { worker_sessions_.erase(session_name); });
+    postTask([this, session_name]() { worker_sessions_.erase(session_name); });
 }
 
-void Service::post_task(const std::function<void()>& task) {
+void Service::postTask(const std::function<void()>& task) {
     std::lock_guard lock{mutex_};
     if (ioloop_) {
         ioloop_->post(task);
     }
 }
 
-void Service::post_delay_task(int64_t delay_ms, const std::function<void()>& task) {
+void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
     std::lock_guard lock{mutex_};
     if (ioloop_) {
-        ioloop_->post_delay(delay_ms, task);
+        ioloop_->postDelay(delay_ms, task);
     }
 }
 
-void Service::on_server_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    dispatch_server_message(type, msg);
+void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+    dispatchServerMessage(type, msg);
 }
 
-void Service::dispatch_server_message(uint32_t type,
-                                      std::shared_ptr<google::protobuf::MessageLite> msg) {
+void Service::dispatchServerMessage(uint32_t type,
+                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
     switch (type) {
     case ltype::kLoginDeviceAck:
-        on_login_device_ack(msg);
+        onLoginDeviceAck(msg);
         break;
     case ltype::kLoginUser:
-        on_login_user_ack(msg);
+        onLoginUserAck(msg);
         break;
     case ltype::kOpenConnection:
-        on_open_connection(msg);
+        onOpenConnection(msg);
         break;
     default:
         LOG(WARNING) << "Unknown message from server " << type;
@@ -140,24 +140,24 @@ void Service::dispatch_server_message(uint32_t type,
     }
 }
 
-void Service::on_server_disconnected() {
+void Service::onServerDisconnected() {
     // 怎么办？
 }
 
-void Service::on_server_reconnecting() {
+void Service::onServerReconnecting() {
     LOG(INFO) << "Reconnecting to lanthing server...";
 }
 
-void Service::on_server_connected() {
+void Service::onServerConnected() {
     LOG(INFO) << "Connected to server";
-    login_device();
+    loginDevice();
 }
 
-void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     LOG(INFO) << "Received OpenConnection";
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-    std::optional<std::string> access_token = settings_->get_string("access_token");
+    std::optional<std::string> access_token = settings_->getString("access_token");
     if (!access_token.has_value() || access_token.value().empty()) {
         LOG(WARNING) << "Get access_token from local settings failed";
         return;
@@ -169,7 +169,7 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
         return;
     }
     constexpr size_t kSessionNameLen = 8;
-    const std::string session_name = ltlib::random_str(kSessionNameLen);
+    const std::string session_name = ltlib::randomStr(kSessionNameLen);
     {
         std::lock_guard<std::mutex> lock{mutex_};
         if (!worker_sessions_.empty()) {
@@ -183,13 +183,13 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
     }
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
-    worker_params.user_defined_relay_server = settings_->get_string("relay").value_or("");
+    worker_params.user_defined_relay_server = settings_->getString("relay").value_or("");
     worker_params.msg = msg;
     worker_params.on_create_completed =
-        std::bind(&Service::on_create_session_completed_thread_safe, this, std::placeholders::_1,
+        std::bind(&Service::onCreateSessionCompletedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3);
     worker_params.on_closed =
-        std::bind(&Service::on_session_closed_thread_safe, this, std::placeholders::_1,
+        std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3);
     auto session = WorkerSession::create(worker_params);
     if (session != nullptr) {
@@ -205,23 +205,22 @@ void Service::on_open_connection(std::shared_ptr<google::protobuf::MessageLite> 
     }
 }
 
-void Service::on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> msg) {
+void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     auto ack = std::static_pointer_cast<ltproto::server::LoginDeviceAck>(msg);
     LOG(INFO) << "LoginDeviceAck: "
               << ltproto::server::LoginDeviceAck::ErrCode_Name(ack->err_code());
 }
 
-void Service::on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg) {}
+void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {}
 
-void Service::on_create_session_completed_thread_safe(
+void Service::onCreateSessionCompletedThreadSafe(
     bool success, const std::string& session_name,
     std::shared_ptr<google::protobuf::MessageLite> params) {
-    post_task(
-        std::bind(&Service::on_create_session_completed, this, success, session_name, params));
+    postTask(std::bind(&Service::onCreateSessionCompleted, this, success, session_name, params));
 }
 
-void Service::on_create_session_completed(bool success, const std::string& session_name,
-                                          std::shared_ptr<google::protobuf::MessageLite> params) {
+void Service::onCreateSessionCompleted(bool success, const std::string& session_name,
+                                       std::shared_ptr<google::protobuf::MessageLite> params) {
     (void)session_name;
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     if (success) {
@@ -237,25 +236,25 @@ void Service::on_create_session_completed(bool success, const std::string& sessi
     tcp_client_->send(ltproto::id(ack), ack);
 }
 
-void Service::on_session_closed_thread_safe(WorkerSession::CloseReason close_reason,
-                                            const std::string& session_name,
-                                            const std::string& room_id) {
-    post_task(std::bind(&Service::on_session_closed, this, close_reason, session_name, room_id));
+void Service::onSessionClosedThreadSafe(WorkerSession::CloseReason close_reason,
+                                        const std::string& session_name,
+                                        const std::string& room_id) {
+    postTask(std::bind(&Service::onSessionClosed, this, close_reason, session_name, room_id));
 }
 
-void Service::on_session_closed(WorkerSession::CloseReason close_reason,
-                                const std::string& session_name, const std::string& room_id) {
-    report_session_closed(close_reason, room_id);
-    destroy_session(session_name);
+void Service::onSessionClosed(WorkerSession::CloseReason close_reason,
+                              const std::string& session_name, const std::string& room_id) {
+    reportSessionClosed(close_reason, room_id);
+    destroySession(session_name);
 }
 
-void Service::send_message_to_server(uint32_t type,
-                                     std::shared_ptr<google::protobuf::MessageLite> msg) {
+void Service::sendMessageToServer(uint32_t type,
+                                  std::shared_ptr<google::protobuf::MessageLite> msg) {
     tcp_client_->send(type, msg);
 }
 
-void Service::login_device() {
-    std::optional<bool> allow_control = settings_->get_boolean("allow_control");
+void Service::loginDevice() {
+    std::optional<bool> allow_control = settings_->getBoolean("allow_control");
     auto msg = std::make_shared<ltproto::server::LoginDevice>();
     msg->set_device_id(device_id_);
     if (allow_control.has_value()) {
@@ -267,10 +266,10 @@ void Service::login_device() {
     tcp_client_->send(ltproto::id(msg), msg);
 }
 
-void Service::login_user() {}
+void Service::loginUser() {}
 
-void Service::report_session_closed(WorkerSession::CloseReason close_reason,
-                                    const std::string& room_id) {
+void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
+                                  const std::string& room_id) {
     auto msg = std::make_shared<ltproto::server::CloseConnection>();
     auto reason = ltproto::server::CloseConnection_Reason_TimeoutClose;
     switch (close_reason) {

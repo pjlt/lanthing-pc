@@ -22,8 +22,8 @@ DxgiVideoCapturer::~DxgiVideoCapturer() {
     stop();
 }
 
-bool DxgiVideoCapturer::pre_init() {
-    if (!init_d3d11()) {
+bool DxgiVideoCapturer::preInit() {
+    if (!initD3D11()) {
         return false;
     }
     if (!impl_->InitDupl(d3d11_dev_.Get(), 0)) {
@@ -33,7 +33,7 @@ bool DxgiVideoCapturer::pre_init() {
     return true;
 }
 
-bool DxgiVideoCapturer::init_d3d11() {
+bool DxgiVideoCapturer::initD3D11() {
     HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)dxgi_factory_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create dxgi factory, er:%08x", hr);
@@ -81,12 +81,12 @@ bool DxgiVideoCapturer::init_d3d11() {
     return false;
 }
 
-std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::capture_one_frame() {
+std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captureOneFrame() {
     FRAME_DATA frame;
     bool timeout = false;
     auto hr = impl_->GetFrame(&frame, &timeout);
     if (hr == DUPL_RETURN::DUPL_RETURN_SUCCESS && !timeout) {
-        std::string name = share_texture(frame.Frame);
+        std::string name = shareTexture(frame.Frame);
         if (name.empty()) {
             return nullptr;
         }
@@ -99,7 +99,7 @@ std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captur
     return nullptr;
 }
 
-void DxgiVideoCapturer::release_frame(const std::string& name) {
+void DxgiVideoCapturer::releaseFrame(const std::string& name) {
     for (auto& texture : texture_pool_) {
         if (texture.name == name) {
             texture.in_use = false;
@@ -109,7 +109,7 @@ void DxgiVideoCapturer::release_frame(const std::string& name) {
     LOG(FATAL) << "Should not reach here";
 }
 
-std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
+std::string DxgiVideoCapturer::shareTexture(ID3D11Texture2D* texture1) {
     if (!pool_inited_) {
         pool_inited_ = true;
         D3D11_TEXTURE2D_DESC desc;
@@ -132,7 +132,7 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
             }
             std::string name = "Global\\lanthing_dxgi_sharedTexture_" + std::to_string(i);
             HANDLE handle = nullptr;
-            std::wstring w_name = ltlib::utf8_to_utf16(name);
+            std::wstring w_name = ltlib::utf8To16(name);
             hr = resource->CreateSharedHandle(NULL, DXGI_SHARED_RESOURCE_READ, w_name.c_str(),
                                               &handle);
             if (FAILED(hr)) {
@@ -144,7 +144,7 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
             texture_pool_[i].handle = handle;
         }
     }
-    std::optional<size_t> index = get_free_shared_texture();
+    std::optional<size_t> index = getFreeSharedTexture();
     if (!index.has_value()) {
         LOG(WARNING) << "No free shared texture";
         return "";
@@ -166,7 +166,7 @@ std::string DxgiVideoCapturer::share_texture(ID3D11Texture2D* texture1) {
     return texture_pool_[*index].name;
 }
 
-std::optional<size_t> DxgiVideoCapturer::get_free_shared_texture() {
+std::optional<size_t> DxgiVideoCapturer::getFreeSharedTexture() {
     for (size_t index = 0; index < texture_pool_.size(); index++) {
         bool expected = false;
         if (texture_pool_[index].in_use.compare_exchange_strong(expected, true)) {
@@ -182,7 +182,7 @@ std::optional<size_t> DxgiVideoCapturer::get_free_shared_texture() {
 //     //impl_->DoneWithFrame();
 // }
 
-void DxgiVideoCapturer::wait_for_vblank() {
+void DxgiVideoCapturer::waitForVblank() {
     impl_->WaitForVBlank();
 }
 

@@ -12,8 +12,8 @@ class LT_API WinApp
 {
 public:
     virtual ~WinApp() { }
-    virtual void on_start() = 0;
-    virtual void on_stop() = 0;
+    virtual void onStart() = 0;
+    virtual void onStop() = 0;
     virtual void run() = 0;
 };
 
@@ -25,9 +25,9 @@ public:
     void run();
 
 private:
-    static bool report_status(uint32_t current_state, uint32_t win32_exit_code, uint32_t wait_hint);
-    static void __stdcall service_main();
-    static void __stdcall service_control_handler(unsigned long ctrl_code);
+    static bool reportStatus(uint32_t current_state, uint32_t win32_exit_code, uint32_t wait_hint);
+    static void __stdcall serviceMain();
+    static void __stdcall serviceControlHandler(unsigned long ctrl_code);
     void run_service();
 };
 

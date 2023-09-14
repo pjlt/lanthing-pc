@@ -52,7 +52,7 @@ WorkerProcess::WorkerProcess(const Params& params)
     , client_height_{params.client_height}
     , client_refresh_rate_{params.client_refresh_rate}
     , client_codecs_{params.client_codecs}
-    , run_as_win_service_{ltlib::is_run_as_service()} {}
+    , run_as_win_service_{ltlib::isRunAsService()} {}
 
 WorkerProcess::~WorkerProcess() {}
 
@@ -68,32 +68,31 @@ void WorkerProcess::start() {
     thread_ = ltlib::BlockingThread::create(
         "worker_process",
         [this, &promise](const std::function<void()>& i_am_alive, void*) {
-            main_loop(promise, i_am_alive);
+            mainLoop(promise, i_am_alive);
         },
         nullptr);
     future.get();
 }
 
-void WorkerProcess::main_loop(std::promise<void>& promise,
-                              const std::function<void()>& i_am_alive) {
+void WorkerProcess::mainLoop(std::promise<void>& promise, const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
-        if (!launch_worker_process()) {
+        if (!launchWorkerProcess()) {
             LOG(WARNING) << "Launch worker process failed";
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             continue;
         }
         promise.set_value();
-        wait_for_worker_process(i_am_alive);
+        waitForWorkerProcess(i_am_alive);
     }
 }
 
-bool WorkerProcess::launch_worker_process() {
+bool WorkerProcess::launchWorkerProcess() {
     std::stringstream ss;
     ss << path_ << " -type worker "
        << " -name " << pipe_name_ << " -width " << client_width_ << " -height " << client_height_
        << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_codecs_);
-    std::wstring cmd = ltlib::utf8_to_utf16(ss.str());
+    std::wstring cmd = ltlib::utf8To16(ss.str());
     if (process_handle_) {
         CloseHandle(process_handle_);
         process_handle_ = nullptr;
@@ -157,7 +156,7 @@ bool WorkerProcess::launch_worker_process() {
     return ret;
 }
 
-void WorkerProcess::wait_for_worker_process(const std::function<void()>& i_am_alive) {
+void WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
         DWORD ret = WaitForSingleObject(process_handle_, 100);

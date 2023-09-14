@@ -51,7 +51,7 @@ bool GpuInfo::init() {
         DXGI_ADAPTER_DESC desc;
         adapter->GetDesc(&desc);
         ability.vendor = desc.VendorId;
-        ability.desc = ltlib::utf16_to_utf8(desc.Description);
+        ability.desc = ltlib::utf16To8(desc.Description);
         ability.device_id = desc.DeviceId;
         ability.driver = "0.0.0.0";
         ability.video_memory_mb = static_cast<uint32_t>(desc.DedicatedVideoMemory / 1024 / 1024);

@@ -108,7 +108,7 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     , send_message_to_host_{params.send_message} {}
 
 void InputCapturerImpl::init() {
-    sdl_->set_input_handler(
+    sdl_->setInputHandler(
         std::bind(&InputCapturerImpl::on_platform_input_event, this, std::placeholders::_1));
 }
 

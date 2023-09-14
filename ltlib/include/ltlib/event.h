@@ -28,9 +28,9 @@ public:
 
     bool notify();
     WaitResult wait();
-    WaitResult wait_for(uint32_t ms);
-    inline bool is_owner() const { return is_owner_; }
-    void* get_handle() const;
+    WaitResult waitFor(uint32_t ms);
+    inline bool isOwner() const { return is_owner_; }
+    void* getHandle() const;
 
 private:
     void close();

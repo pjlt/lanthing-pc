@@ -14,8 +14,7 @@
 namespace {
 
 // ret: {win_key, use_scancode, extented, valid}
-constexpr auto scancode_to_winkey(const lt::Scancode scancode)
-    -> std::tuple<WORD, bool, bool, bool> {
+constexpr auto scancodeToWinKey(const lt::Scancode scancode) -> std::tuple<WORD, bool, bool, bool> {
     // FIXME: 有几个键是乱填的
     using lt::Scancode;
     if (scancode >= Scancode::SCANCODE_A && scancode <= Scancode::SCANCODE_Z) {
@@ -144,7 +143,7 @@ namespace lt {
 void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto keyboard = std::static_pointer_cast<ltproto::peer2peer::KeyboardEvent>(msg);
     Scancode sc = static_cast<Scancode>(keyboard->key());
-    auto [key, use_scancode, extented, valid] = scancode_to_winkey(sc);
+    auto [key, use_scancode, extented, valid] = scancodeToWinKey(sc);
     if (!valid) {
         return;
     }

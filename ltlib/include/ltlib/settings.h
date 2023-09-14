@@ -22,12 +22,12 @@ public:
 public:
     virtual ~Settings() = default;
     static std::unique_ptr<Settings> create(Storage type);
-    virtual void set_boolean(const std::string& key, bool value) = 0;
-    virtual auto get_boolean(const std::string& key) -> std::optional<bool> = 0;
-    virtual void set_integer(const std::string& key, int64_t value) = 0;
-    virtual auto get_integer(const std::string& key) -> std::optional<int64_t> = 0;
-    virtual void set_string(const std::string& key, const std::string& value) = 0;
-    virtual auto get_string(const std::string& key) -> std::optional<std::string> = 0;
+    virtual void setBoolean(const std::string& key, bool value) = 0;
+    virtual auto getBoolean(const std::string& key) -> std::optional<bool> = 0;
+    virtual void setInteger(const std::string& key, int64_t value) = 0;
+    virtual auto getInteger(const std::string& key) -> std::optional<int64_t> = 0;
+    virtual void setString(const std::string& key, const std::string& value) = 0;
+    virtual auto getString(const std::string& key) -> std::optional<std::string> = 0;
 
 protected:
     virtual bool init() = 0;

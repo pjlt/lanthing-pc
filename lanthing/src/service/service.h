@@ -18,37 +18,37 @@ public:
     void uninit();
 
 private:
-    bool init_tcp_client();
-    void main_loop(const std::function<void()>& i_am_alive);
-    bool init_settings();
-    void destroy_session(const std::string& session_name);
-    void post_task(const std::function<void()>& task);
-    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
+    bool initTcpClient();
+    void mainLoop(const std::function<void()>& i_am_alive);
+    bool initSettings();
+    void destroySession(const std::string& session_name);
+    void postTask(const std::function<void()>& task);
+    void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
     // 服务器
-    void on_server_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_server_disconnected();
-    void on_server_reconnecting();
-    void on_server_connected();
-    void dispatch_server_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void send_message_to_server(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void login_device();
-    void login_user();
-    void report_session_closed(WorkerSession::CloseReason close_reason, const std::string& room_id);
+    void onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onServerDisconnected();
+    void onServerReconnecting();
+    void onServerConnected();
+    void dispatchServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendMessageToServer(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void loginDevice();
+    void loginUser();
+    void reportSessionClosed(WorkerSession::CloseReason close_reason, const std::string& room_id);
 
     // 消息handler
-    void on_open_connection(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_login_device_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_login_user_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void on_create_session_completed_thread_safe(bool success, const std::string& session_name,
+    void onCreateSessionCompletedThreadSafe(bool success, const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_create_session_completed(bool success, const std::string& session_name,
-                                            std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_session_closed_thread_safe(WorkerSession::CloseReason close_reason,
-                                       const std::string& session_name, const std::string& room_id);
-    void on_session_closed(WorkerSession::CloseReason close_reason,
-                                       const std::string& session_name, const std::string& room_id);
+    void onCreateSessionCompleted(bool success, const std::string& session_name,
+                                  std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSessionClosedThreadSafe(WorkerSession::CloseReason close_reason,
+                                   const std::string& session_name, const std::string& room_id);
+    void onSessionClosed(WorkerSession::CloseReason close_reason, const std::string& session_name,
+                         const std::string& room_id);
 
 private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;

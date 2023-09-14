@@ -62,42 +62,40 @@ public:
 private:
     Client(const Params& params);
     bool init();
-    void main_loop(const std::function<void()>& i_am_alive);
-    void on_platform_render_target_reset();
-    void on_platform_exit();
-    void stop_wait();
-    void post_task(const std::function<void()>& task);
-    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
+    void mainLoop(const std::function<void()>& i_am_alive);
+    void onPlatformRenderTargetReset();
+    void onPlatformExit();
+    void stopWait();
+    void postTask(const std::function<void()>& task);
+    void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
     // 信令.
-    void on_signaling_net_message(uint32_t type,
-                                  std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_signaling_disconnected();
-    void on_signaling_reconnecting();
-    void on_signaling_connected();
-    void on_join_room_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_signaling_message(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingDisconnected();
+    void onSignalingReconnecting();
+    void onSignalingConnected();
+    void onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // transport
-    bool init_transport();
-    void on_tp_data(const uint8_t* data, uint32_t size, bool is_reliable);
-    void on_tp_video_frame(const lt::VideoFrame& frame);
-    void on_tp_audio_data(const lt::AudioData& audio_data);
-    void on_tp_connected(/*connection info*/);
-    void on_tp_conn_changed(/*old_conn_info, new_conn_info*/);
-    void on_tp_failed();
-    void on_tp_disconnected();
-    void on_tp_signaling_message(const std::string& key, const std::string& value);
+    bool initTransport();
+    void onTpData(const uint8_t* data, uint32_t size, bool is_reliable);
+    void onTpVideoFrame(const lt::VideoFrame& frame);
+    void onTpAudioData(const lt::AudioData& audio_data);
+    void onTpConnected(/*connection info*/);
+    void onTpConnChanged(/*old_conn_info, new_conn_info*/);
+    void onTpFailed();
+    void onTpDisconnected();
+    void onTpSignalingMessage(const std::string& key, const std::string& value);
 
     // 数据通道.
-    void dispatch_remote_message(uint32_t type,
-                                 const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void send_keep_alive();
-    bool send_message_to_host(uint32_t type,
-                              const std::shared_ptr<google::protobuf::MessageLite>& msg,
-                              bool reliable);
-    void on_start_transmission_ack(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void dispatchRemoteMessage(uint32_t type,
+                               const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void sendKeepAlive();
+    bool sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                           bool reliable);
+    void onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     std::string auth_token_;

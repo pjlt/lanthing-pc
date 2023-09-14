@@ -30,7 +30,7 @@ public:
     bool init();
     SDL_Window* window() override;
 
-    void set_input_handler(const OnInputEvent& on_event) override;
+    void setInputHandler(const OnInputEvent& on_event) override;
 
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
@@ -100,8 +100,8 @@ SDL_Window* PcSdlImpl::window() {
     return window_;
 }
 
-void PcSdlImpl::set_input_handler(const OnInputEvent& on_event) {
-    input_->set_input_handler(on_event);
+void PcSdlImpl::setInputHandler(const OnInputEvent& on_event) {
+    input_->setInputHandler(on_event);
 }
 
 void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive) {
@@ -118,10 +118,10 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         desktop_width = dm.w;
     }
     window_ = SDL_CreateWindow("Lanthing",
-                               desktop_width / 6,  // x
-                               desktop_height / 6, // y
+                               desktop_width / 6,      // x
+                               desktop_height / 6,     // y
                                desktop_width * 2 / 3,  // width,
-                               desktop_height *2 / 3, // height,
+                               desktop_height * 2 / 3, // height,
                                SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (window_ == nullptr) {
@@ -284,47 +284,47 @@ PcSdlImpl::DispatchResult PcSdlImpl::reset_dr_pipeline() {
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_key_up_down(const SDL_Event& ev) {
-    input_->handle_key_up_down(ev.key);
+    input_->handleKeyUpDown(ev.key);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_mouse_button_event(const SDL_Event& ev) {
-    input_->handle_mouse_button(ev.button);
+    input_->handleMouseButton(ev.button);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_mouse_motion(const SDL_Event& ev) {
-    input_->handle_mouse_move(ev.motion);
+    input_->handleMouseMove(ev.motion);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_mouse_wheel(const SDL_Event& ev) {
-    input_->handle_mouse_wheel(ev.wheel);
+    input_->handleMouseWheel(ev.wheel);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_axis_motion(const SDL_Event& ev) {
-    input_->handle_controller_axis(ev.caxis);
+    input_->handleControllerAxis(ev.caxis);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_button_event(const SDL_Event& ev) {
-    input_->handle_controller_button(ev.cbutton);
+    input_->handleControllerButton(ev.cbutton);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_added(const SDL_Event& ev) {
-    input_->handle_controller_added(ev.cdevice);
+    input_->handleControllerAdded(ev.cdevice);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_controller_removed(const SDL_Event& ev) {
-    input_->handle_controller_removed(ev.cdevice);
+    input_->handleControllerRemoved(ev.cdevice);
     return DispatchResult::kContinue;
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handle_sdl_joy_device_added(const SDL_Event& ev) {
-    input_->handle_joystick_added(ev.jdevice);
+    input_->handleJoystickAdded(ev.jdevice);
     return DispatchResult::kContinue;
 }
 

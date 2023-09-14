@@ -19,9 +19,9 @@ public:
     IOLoop& operator=(IOLoop&&) = delete;
     void run(const std::function<void()>& i_am_alive);
     void post(const std::function<void()>& task);
-    void post_delay(int64_t delay_ms, const std::function<void()>& task);
-    bool is_current_thread() const;
-    bool is_not_current_thread() const;
+    void postDelay(int64_t delay_ms, const std::function<void()>& task);
+    bool isCurrentThread() const;
+    bool isNotCurrentThread() const;
     void* context();
 
 private:

@@ -22,7 +22,7 @@ Event::Event(const std::string& name) noexcept
     : name_ { name }
 {
     assert(!name_.empty());
-    std::wstring wname = utf8_to_utf16(name_);
+    std::wstring wname = utf8To16(name_);
     handle_ = ::CreateEventW(NULL, FALSE, FALSE, wname.c_str());
     if (::GetLastError() == 0) {
         is_owner_ = true;
@@ -64,10 +64,10 @@ bool Event::notify()
 
 Event::WaitResult Event::wait()
 {
-    return wait_for(INFINITE);
+    return waitFor(INFINITE);
 }
 
-Event::WaitResult Event::wait_for(uint32_t ms)
+Event::WaitResult Event::waitFor(uint32_t ms)
 {
     DWORD ret = ::WaitForSingleObject(handle_, ms);
     if (ret == WAIT_OBJECT_0) {
@@ -79,7 +79,7 @@ Event::WaitResult Event::wait_for(uint32_t ms)
     }
 }
 
-void* Event::get_handle() const
+void* Event::getHandle() const
 {
     return handle_;
 }
@@ -123,11 +123,11 @@ bool Event::wait()
 {
 }
 
-bool Event::wait_for(uint32_t ms)
+bool Event::waitFor(uint32_t ms)
 {
 }
 
-void* Event::get_handle() const
+void* Event::getHandle() const
 {
 }
 

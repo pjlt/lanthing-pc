@@ -12,12 +12,12 @@ namespace worker {
 class SessionChangeObserver {
 public:
     static std::unique_ptr<SessionChangeObserver> create();
-    void wait_for_change();
+    void waitForChange();
     void stop();
 
 private:
     SessionChangeObserver() = default;
-    void waiting_loop();
+    void waitingLoop();
 
 private:
     // std::thread thread_;

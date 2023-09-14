@@ -33,28 +33,28 @@ VideoCapturer::~VideoCapturer() {
 void VideoCapturer::start() {
     thread_ = ltlib::BlockingThread::create(
         "video_capture",
-        [this](const std::function<void()>& i_am_alive, void*) { main_loop(i_am_alive); }, nullptr);
+        [this](const std::function<void()>& i_am_alive, void*) { mainLoop(i_am_alive); }, nullptr);
 }
 
 bool VideoCapturer::init() {
-    if (!pre_init()) {
+    if (!preInit()) {
         return false;
     }
     return true;
 }
 
-void VideoCapturer::main_loop(const std::function<void()>& i_am_alive) {
+void VideoCapturer::mainLoop(const std::function<void()>& i_am_alive) {
     stoped_ = false;
     LOG(INFO) << "Video capturer started";
     while (!stoped_) {
         i_am_alive();
-        auto frame = capture_one_frame();
+        auto frame = captureOneFrame();
         if (frame) {
             // TODO: 设置其他frame的其他值
             frame->set_picture_id(frame_no_++);
             on_frame_(frame);
         }
-        wait_for_vblank();
+        waitForVblank();
     }
     stop_promise_->set_value();
 }

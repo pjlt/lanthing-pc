@@ -18,8 +18,8 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
     }
 
     // 比较{width, height, refresh_rate ± 1}
-    std::set<DisplaySetting, decltype(&DisplaySetting::compare_full_loose)> available_settings{
-        &DisplaySetting::compare_full_loose};
+    std::set<DisplaySetting, decltype(&DisplaySetting::compareFullLoose)> available_settings{
+        &DisplaySetting::compareFullLoose};
     DEVMODEW mode{};
     mode.dmSize = sizeof(DEVMODEW);
     DWORD mode_num = 0;
@@ -34,9 +34,8 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
     }
 
     // 比较{width, height}
-    std::set<DisplaySetting, decltype(&DisplaySetting::compare_width_height)> avaiable_settings2{
-        available_settings.begin(), available_settings.end(),
-        &DisplaySetting::compare_width_height};
+    std::set<DisplaySetting, decltype(&DisplaySetting::compareWidthHeight)> avaiable_settings2{
+        available_settings.begin(), available_settings.end(), &DisplaySetting::compareWidthHeight};
     auto iter2 = avaiable_settings2.find(client_display_setting);
     if (iter2 != avaiable_settings2.end()) {
         DisplaySetting result = *iter2;
@@ -60,7 +59,7 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
     return result;
 }
 
-bool DisplaySetting::compare_full_strict(const DisplaySetting& lhs, const DisplaySetting& rhs) {
+bool DisplaySetting::compareFullStrict(const DisplaySetting& lhs, const DisplaySetting& rhs) {
     if (lhs.width != rhs.width) {
         return lhs.width < rhs.width;
     }
@@ -70,7 +69,7 @@ bool DisplaySetting::compare_full_strict(const DisplaySetting& lhs, const Displa
     return lhs.refrash_rate < rhs.refrash_rate;
 }
 
-bool DisplaySetting::compare_full_loose(const DisplaySetting& lhs, const DisplaySetting& rhs) {
+bool DisplaySetting::compareFullLoose(const DisplaySetting& lhs, const DisplaySetting& rhs) {
     if (lhs.width != rhs.width) {
         return lhs.width < rhs.width;
     }
@@ -83,7 +82,7 @@ bool DisplaySetting::compare_full_loose(const DisplaySetting& lhs, const Display
     return (rhs.refrash_rate > lhs.refrash_rate) && (rhs.refrash_rate - lhs.refrash_rate > 2);
 }
 
-bool DisplaySetting::compare_width_height(const DisplaySetting& lhs, const DisplaySetting& rhs) {
+bool DisplaySetting::compareWidthHeight(const DisplaySetting& lhs, const DisplaySetting& rhs) {
     if (lhs.width != rhs.width) {
         return lhs.width < rhs.width;
     }

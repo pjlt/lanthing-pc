@@ -109,7 +109,7 @@ bool ClientImpl::on_transport_read(const Buffer& buff)
 
 bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback)
 {
-    if (!ioloop_->is_current_thread()) {
+    if (!ioloop_->isCurrentThread()) {
         LOG(FATAL) << "Send data in wrong thread!";
         return false;
     }
@@ -136,7 +136,7 @@ bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::Mes
 
 bool ClientImpl::send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback)
 {
-    if (!ioloop_->is_current_thread()) {
+    if (!ioloop_->isCurrentThread()) {
         LOG(FATAL) << "Send data in wrong thread!";
         return false;
     }

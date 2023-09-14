@@ -46,17 +46,17 @@ std::unique_ptr<SessionChangeObserver> SessionChangeObserver::create() {
     return observer;
 }
 
-void SessionChangeObserver::wait_for_change() {
-    waiting_loop();
+void SessionChangeObserver::waitForChange() {
+    waitingLoop();
 }
 
 void SessionChangeObserver::stop() {
     stoped_ = true;
 }
 
-void SessionChangeObserver::waiting_loop() {
+void SessionChangeObserver::waitingLoop() {
     while (!stoped_) {
-        if (!ltlib::is_run_as_local_system()) {
+        if (!ltlib::isRunasLocalSystem()) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             continue;
         }

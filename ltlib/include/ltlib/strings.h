@@ -6,12 +6,11 @@
 namespace ltlib
 {
 
-std::wstring LT_API utf8_to_utf16(const std::string& str);
+std::wstring LT_API utf8To16(const std::string& str);
 
-std::string LT_API utf16_to_utf8(const std::wstring& str);
+std::string LT_API utf16To8(const std::wstring& str);
 
-std::string LT_API random_str(size_t len);
-
+std::string LT_API randomStr(size_t len);
 
 // 返回std::optional是最好的方式，这里倒退回老派C接口了
 class LT_API String

@@ -288,7 +288,7 @@ bool NvD3d11EncoderImpl::loadNvApi() {
     using NvEncodeAPIGetMaxSupportedVersionType = NVENCSTATUS(NVENCAPI*)(uint32_t*);
     auto NvEncodeAPIGetMaxSupportedVersionFunc =
         reinterpret_cast<NvEncodeAPIGetMaxSupportedVersionType>(
-            nvapi_->get_func("NvEncodeAPIGetMaxSupportedVersion"));
+            nvapi_->getFunc("NvEncodeAPIGetMaxSupportedVersion"));
     if (NvEncodeAPIGetMaxSupportedVersionFunc == nullptr) {
         LOG(WARNING) << "Load 'NvEncodeAPIGetMaxSupportedVersion' from '" << lib_name << "' failed";
         return false;
@@ -308,7 +308,7 @@ bool NvD3d11EncoderImpl::loadNvApi() {
 
     using NvEncodeAPICreateInstanceType = NVENCSTATUS(NVENCAPI*)(NV_ENCODE_API_FUNCTION_LIST*);
     auto NvEncodeAPICreateInstanceFunc = reinterpret_cast<NvEncodeAPICreateInstanceType>(
-        nvapi_->get_func("NvEncodeAPICreateInstance"));
+        nvapi_->getFunc("NvEncodeAPICreateInstance"));
     if (NvEncodeAPICreateInstanceFunc == nullptr) {
         LOG(WARNING) << "Load 'NvEncodeAPICreateInstance' from '" << lib_name << "' failed";
         return false;

@@ -15,9 +15,9 @@ namespace lt {
 using Microsoft::WRL::ComPtr;
 
 #if defined(LT_WINDOWS)
-void create_inbound_firewall_rule(const std::string& _rule_name, const std::string& _path) {
-    std::wstring rule_name = ltlib::utf8_to_utf16(_rule_name);
-    std::wstring path = ltlib::utf8_to_utf16(_path);
+void createInboundFirewallRule(const std::string& _rule_name, const std::string& _path) {
+    std::wstring rule_name = ltlib::utf8To16(_rule_name);
+    std::wstring path = ltlib::utf8To16(_path);
     bool com_inited = false;
     do {
         HRESULT hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
@@ -103,7 +103,7 @@ CLEANUP:
     }
 }
 #else  // LT_WINDOWS
-void create_inbound_firewall_rule(const std::string& rule_name, const std::string& path) {
+void createInboundFirewallRule(const std::string& rule_name, const std::string& path) {
     (void)rule_name;
     (void)path;
 }

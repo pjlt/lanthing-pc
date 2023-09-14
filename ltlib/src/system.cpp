@@ -102,7 +102,7 @@ bool get_program_filename(std::wstring& filename)
     return false;
 }
 
-bool get_program_path(std::string& path)
+bool getProgramPath(std::string& path)
 {
     std::string filename;
     if (get_program_filename(filename)) {
@@ -115,7 +115,7 @@ bool get_program_path(std::string& path)
     return false;
 }
 
-bool get_program_path(std::wstring& path)
+bool getProgramPath(std::wstring& path)
 {
     std::wstring filename;
     if (get_program_filename(filename)) {
@@ -129,23 +129,23 @@ bool get_program_path(std::wstring& path)
 }
 
 template <>
-std::string get_program_path<char>()
+std::string getProgramPath<char>()
 {
     std::string path;
-    get_program_path(path);
+    getProgramPath(path);
     return path;
 }
 
 template <>
-std::wstring get_program_path<wchar_t>()
+std::wstring getProgramPath<wchar_t>()
 {
     std::wstring path;
-    get_program_path(path);
+    getProgramPath(path);
     return path;
 }
 
 template <>
-std::string get_program_fullpath<char>()
+std::string getProgramFullpath<char>()
 {
     std::string path;
     get_program_filename(path);
@@ -153,14 +153,14 @@ std::string get_program_fullpath<char>()
 }
 
 template <>
-std::wstring get_program_fullpath<wchar_t>()
+std::wstring getProgramFullpath<wchar_t>()
 {
     std::wstring path;
     get_program_filename(path);
     return path;
 }
 
-uint32_t get_session_id_by_pid(uint32_t pid)
+uint32_t getSessionIdByPid(uint32_t pid)
 {
     DWORD sid = 0;
     if (FALSE == ProcessIdToSessionId(pid, &sid)) {
@@ -170,7 +170,7 @@ uint32_t get_session_id_by_pid(uint32_t pid)
     return sid;
 }
 
-uint32_t get_parent_pid(uint32_t curr_pid)
+uint32_t getParentPid(uint32_t curr_pid)
 {
     HANDLE PHANDLE = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
     if (PHANDLE == INVALID_HANDLE_VALUE) {
@@ -194,7 +194,7 @@ uint32_t get_parent_pid(uint32_t curr_pid)
     return 0;
 }
 
-std::string get_appdata_path(bool is_service)
+std::string getAppdataPath(bool is_service)
 {
     static std::string appdata_path;
     if (!appdata_path.empty()) {
@@ -216,7 +216,7 @@ std::string get_appdata_path(bool is_service)
         }
         CoTaskMemFree(pidl);
         GetShortPathNameW(szDocument, m_lpszDefaultDir, _MAX_PATH);
-        appdata_path = utf16_to_utf8(std::wstring(m_lpszDefaultDir));
+        appdata_path = utf16To8(std::wstring(m_lpszDefaultDir));
         return true;
     };
 
@@ -233,7 +233,7 @@ std::string get_appdata_path(bool is_service)
     return appdata_path;
 }
 
-bool is_run_as_local_system()
+bool isRunasLocalSystem()
 {
     BOOL bIsLocalSystem = FALSE;
     PSID psidLocalSystem;
@@ -249,7 +249,7 @@ bool is_run_as_local_system()
     return bIsLocalSystem;
 }
 
-bool is_run_as_service()
+bool isRunAsService()
 {
     DWORD current_process_id = GetCurrentProcessId();
     DWORD prev_session_id = 0;
@@ -259,7 +259,7 @@ bool is_run_as_service()
     return prev_session_id == 0;
 }
 
-int32_t get_screen_width()
+int32_t getScreenWidth()
 {
     HDC hdc = GetDC(NULL);
     int32_t x = GetDeviceCaps(hdc, DESKTOPHORZRES);
@@ -267,7 +267,7 @@ int32_t get_screen_width()
     return x;
 }
 
-int32_t get_screen_height()
+int32_t getScreenHeight()
 {
     HDC hdc = GetDC(NULL);
     int32_t y = GetDeviceCaps(hdc, DESKTOPVERTRES);
@@ -275,7 +275,7 @@ int32_t get_screen_height()
     return y;
 }
 
-bool set_thread_desktop()
+bool setThreadDesktop()
 {
     bool succes = false;
     HDESK thread_desktop = nullptr;
@@ -326,7 +326,7 @@ bool set_thread_desktop()
     return succes;
 }
 
-DisplayOutputDesc get_display_output_desc()
+DisplayOutputDesc getDisplayOutputDesc()
 {
     uint32_t width, height, frequency;
     DEVMODE dm;
@@ -336,8 +336,8 @@ DisplayOutputDesc get_display_output_desc()
         height = dm.dmPelsHeight;
         frequency = dm.dmDisplayFrequency ? dm.dmDisplayFrequency : 60;
     } else {
-        width = get_screen_width();
-        height = get_screen_height();
+        width = getScreenWidth();
+        height = getScreenHeight();
         frequency = 60;
     }
     return DisplayOutputDesc { width, height, frequency };

@@ -43,7 +43,7 @@ std::string backend_to_string(lt::VideoEncoder::Backend backend) {
     }
 }
 
-auto create_d3d11()
+auto createD3d11()
     -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
     // TODO: 遍历每个GPU
     uint32_t vendor_id = 0;
@@ -86,7 +86,7 @@ auto create_d3d11()
     return {device, context, vendor_id, luid};
 }
 
-auto create_d3d11_with_luid(int64_t luid)
+auto createD3D11WithLuid(int64_t luid)
     -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
     uint32_t vendor_id = 0;
     ComPtr<ID3D11Device> device;
@@ -136,15 +136,15 @@ auto create_d3d11(std::optional<int64_t> luid)
     -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
 
     if (luid.has_value()) {
-        return create_d3d11_with_luid(luid.value());
+        return createD3D11WithLuid(luid.value());
     }
     else {
-        return create_d3d11();
+        return createD3d11();
     }
 }
 
-std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::InitParams& params,
-                                                    void* d3d11_dev, void* d3d11_ctx) {
+std::unique_ptr<lt::VideoEncoder> doCreateEncoder(const lt::VideoEncoder::InitParams& params,
+                                                  void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt;
     VideoEncodeParamsHelper params_helper{
         params.codec_type, params.width, params.height, 60, params.bitrate_bps / 1024, false};
@@ -194,9 +194,10 @@ std::unique_ptr<lt::VideoEncoder> do_create_encoder(const lt::VideoEncoder::Init
     }
 }
 
-std::vector<lt::VideoEncoder::Ability>
-do_check_encode_abilities(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContext> context,
-                          uint32_t vendor_id, int64_t luid, uint32_t width, uint32_t height) {
+std::vector<lt::VideoEncoder::Ability> doCheckEncodeAbilities(ComPtr<ID3D11Device> device,
+                                                              ComPtr<ID3D11DeviceContext> context,
+                                                              uint32_t vendor_id, int64_t luid,
+                                                              uint32_t width, uint32_t height) {
     using namespace lt;
     constexpr uint32_t kAMDVendorID = 0x1002;
     constexpr uint32_t kIntelVendorID = 0x8086;
@@ -211,7 +212,7 @@ do_check_encode_abilities(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContex
         params.height = height;
         params.bitrate_bps = 10'000;
         params.luid = luid;
-        auto encoder = do_create_encoder(params, dev, ctx);
+        auto encoder = doCreateEncoder(params, dev, ctx);
         return encoder != nullptr;
     };
 
@@ -285,7 +286,7 @@ std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params) {
     if (device == nullptr || context == nullptr) {
         return nullptr;
     }
-    return do_create_encoder(params, device.Get(), context.Get());
+    return doCreateEncoder(params, device.Get(), context.Get());
 }
 
 VideoEncoder::VideoEncoder(void* d3d11_dev, void* d3d11_ctx)
@@ -323,7 +324,7 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
         LOG(FATAL) << "Only support DxgiSharedHandle!";
         return {};
     }
-    std::wstring name = ltlib::utf8_to_utf16(input_frame->name());
+    std::wstring name = ltlib::utf8To16(input_frame->name());
     Microsoft::WRL::ComPtr<ID3D11Device1> d3d11_1_dev;
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev = reinterpret_cast<ID3D11Device*>(d3d11_dev_);
     d3d11_dev.As(&d3d11_1_dev);
@@ -365,22 +366,22 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
     return encoded_frame;
 }
 
-std::vector<VideoEncoder::Ability> VideoEncoder::check_encode_abilities(uint32_t width,
-                                                                        uint32_t height) {
-    auto [device, context, vendor_id, luid] = create_d3d11();
+std::vector<VideoEncoder::Ability> VideoEncoder::checkEncodeAbilities(uint32_t width,
+                                                                      uint32_t height) {
+    auto [device, context, vendor_id, luid] = createD3d11();
     if (device == nullptr || context == nullptr) {
         return {};
     }
-    return do_check_encode_abilities(device, context, vendor_id, luid, width, height);
+    return doCheckEncodeAbilities(device, context, vendor_id, luid, width, height);
 }
 
 std::vector<VideoEncoder::Ability>
-VideoEncoder::check_encode_abilities_with_luid(int64_t luid, uint32_t width, uint32_t height) {
-    auto [device, context, vendor_id, _] = create_d3d11_with_luid(luid);
+VideoEncoder::checkEncodeAbilitiesWithLuid(int64_t luid, uint32_t width, uint32_t height) {
+    auto [device, context, vendor_id, _] = createD3D11WithLuid(luid);
     if (device == nullptr || context == nullptr) {
         return {};
     }
-    return do_check_encode_abilities(device, context, vendor_id, luid, width, height);
+    return doCheckEncodeAbilities(device, context, vendor_id, luid, width, height);
 }
 
 bool VideoEncoder::InitParams::validate() const {

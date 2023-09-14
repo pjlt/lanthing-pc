@@ -14,9 +14,9 @@ struct DisplaySetting {
     uint32_t width = 0;
     uint32_t height = 0;
     uint32_t refrash_rate = 0;
-    static bool compare_full_strict(const DisplaySetting& lhs, const DisplaySetting& rhs);
-    static bool compare_full_loose(const DisplaySetting& lhs, const DisplaySetting& rhs);
-    static bool compare_width_height(const DisplaySetting& lhs, const DisplaySetting& rhs);
+    static bool compareFullStrict(const DisplaySetting& lhs, const DisplaySetting& rhs);
+    static bool compareFullLoose(const DisplaySetting& lhs, const DisplaySetting& rhs);
+    static bool compareWidthHeight(const DisplaySetting& lhs, const DisplaySetting& rhs);
 };
 
 class DisplaySettingNegotiator {

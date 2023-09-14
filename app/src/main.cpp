@@ -31,9 +31,9 @@ void sigint_handler(int) {
 }
 
 void initLogging() {
-    std::string bin_path = ltlib::get_program_fullpath<char>();
-    std::string bin_dir = ltlib::get_program_path<char>();
-    std::string appdata_dir = ltlib::get_appdata_path(/*is_win_service=*/false);
+    std::string bin_path = ltlib::getProgramFullpath<char>();
+    std::string bin_dir = ltlib::getProgramPath<char>();
+    std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
     std::string kPrefix = "ui";
     std::filesystem::path log_dir;
     if (!appdata_dir.empty()) {
@@ -53,7 +53,7 @@ void initLogging() {
     g_logWorker = g3::LogWorker::createLogWorker();
     g_logsSink = g_logWorker->addDefaultLogger(kPrefix, log_dir.string(), "app");
     g3::initializeLogging(g_logWorker.get());
-    ltlib::ThreadWatcher::instance()->register_terminate_callback(
+    ltlib::ThreadWatcher::instance()->registerTerminateCallback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
 
     LOG(INFO) << "Log system initialized";

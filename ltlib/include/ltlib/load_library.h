@@ -11,7 +11,7 @@ class LT_API DynamicLibrary
 public:
     static std::unique_ptr<DynamicLibrary> load(const std::string& path);
     ~DynamicLibrary();
-    void* get_func(const std::string& name);
+    void* getFunc(const std::string& name);
 
 private:
     DynamicLibrary();
@@ -19,6 +19,5 @@ private:
 private:
     void* handle_;
 };
-
 
 } // namespace ltlib

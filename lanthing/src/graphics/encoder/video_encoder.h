@@ -59,9 +59,9 @@ public:
     void requestKeyframe();
     EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame);
 
-    static std::vector<Ability> check_encode_abilities(uint32_t width, uint32_t height);
-    static std::vector<Ability> check_encode_abilities_with_luid(int64_t luid, uint32_t width,
-                                                                 uint32_t height);
+    static std::vector<Ability> checkEncodeAbilities(uint32_t width, uint32_t height);
+    static std::vector<Ability> checkEncodeAbilitiesWithLuid(int64_t luid, uint32_t width,
+                                                             uint32_t height);
 
 protected:
     VideoEncoder(void* d3d11_dev, void* d3d11_ctx);

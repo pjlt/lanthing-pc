@@ -11,8 +11,8 @@ class LanthingWinService : public ltlib::WinApp {
 public:
     LanthingWinService();
     ~LanthingWinService() override;
-    void on_start() override;
-    void on_stop() override;
+    void onStart() override;
+    void onStop() override;
     void run() override;
 
 private:

@@ -44,12 +44,12 @@ void SdlInput::init() {
     }
 }
 
-void SdlInput::set_input_handler(const OnInputEvent& on_input_event) {
+void SdlInput::setInputHandler(const OnInputEvent& on_input_event) {
     std::lock_guard lock{mutex_};
     on_input_event_ = on_input_event;
 }
 
-void SdlInput::handle_key_up_down(const SDL_KeyboardEvent& ev) {
+void SdlInput::handleKeyUpDown(const SDL_KeyboardEvent& ev) {
     if (ev.repeat) {
         return;
     }
@@ -57,11 +57,10 @@ void SdlInput::handle_key_up_down(const SDL_KeyboardEvent& ev) {
     if (ev.keysym.scancode <= SDL_SCANCODE_UNKNOWN || ev.keysym.scancode >= SDL_NUM_SCANCODES) {
         return;
     }
-    on_input_event(
-        KeyboardEvent{static_cast<uint16_t>(ev.keysym.scancode), ev.type == SDL_KEYDOWN});
+    onInputEvent(KeyboardEvent{static_cast<uint16_t>(ev.keysym.scancode), ev.type == SDL_KEYDOWN});
 }
 
-void SdlInput::handle_mouse_button(const SDL_MouseButtonEvent& ev) {
+void SdlInput::handleMouseButton(const SDL_MouseButtonEvent& ev) {
     // SdlInput属于platform层，只负责把窗口内所有鼠标button事件回调到业务层的Input
     // 渲染的视频可能只是这个窗口的一部分，判断点击是否在窗口内的逻辑，由业务层去做
     if (ev.which == SDL_TOUCH_MOUSEID) {
@@ -91,11 +90,11 @@ void SdlInput::handle_mouse_button(const SDL_MouseButtonEvent& ev) {
     int width;
     int height;
     SDL_GetWindowSize(window_, &width, &height);
-    on_input_event(MouseButtonEvent{btn, ev.state == SDL_PRESSED, ev.x, ev.y,
-                                    static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
+    onInputEvent(MouseButtonEvent{btn, ev.state == SDL_PRESSED, ev.x, ev.y,
+                                  static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
 }
 
-void SdlInput::handle_mouse_move(const SDL_MouseMotionEvent& ev) {
+void SdlInput::handleMouseMove(const SDL_MouseMotionEvent& ev) {
     if (ev.which == SDL_TOUCH_MOUSEID) {
         return;
     }
@@ -106,18 +105,18 @@ void SdlInput::handle_mouse_move(const SDL_MouseMotionEvent& ev) {
         LOG(WARNING) << "Get window width/height failed";
         return;
     }
-    on_input_event(MouseMoveEvent{ev.x, ev.y, ev.xrel, ev.yrel, static_cast<uint32_t>(width),
-                                  static_cast<uint32_t>(height)});
+    onInputEvent(MouseMoveEvent{ev.x, ev.y, ev.xrel, ev.yrel, static_cast<uint32_t>(width),
+                                static_cast<uint32_t>(height)});
 }
 
-void SdlInput::handle_mouse_wheel(const SDL_MouseWheelEvent& ev) {
+void SdlInput::handleMouseWheel(const SDL_MouseWheelEvent& ev) {
     if (ev.which == SDL_TOUCH_MOUSEID) {
         return;
     }
-    on_input_event(MouseWheelEvent{ev.y * 120});
+    onInputEvent(MouseWheelEvent{ev.y * 120});
 }
 
-void SdlInput::handle_controller_axis(const SDL_ControllerAxisEvent& ev) {
+void SdlInput::handleControllerAxis(const SDL_ControllerAxisEvent& ev) {
     uint8_t index;
     for (index = 0; index < kMaxControllers; index++) {
         if (controller_states_[index].has_value() &&
@@ -158,14 +157,14 @@ void SdlInput::handle_controller_axis(const SDL_ControllerAxisEvent& ev) {
     default:
         return;
     }
-    on_input_event(ControllerAxisEvent{index, axis_type, value});
+    onInputEvent(ControllerAxisEvent{index, axis_type, value});
 }
 
-void SdlInput::handle_controller_button(const SDL_ControllerButtonEvent& ev) {
+void SdlInput::handleControllerButton(const SDL_ControllerButtonEvent& ev) {
     for (uint8_t index = 0; index < kMaxControllers; index++) {
         if (controller_states_[index].has_value() &&
             controller_states_[index]->joystick_id == ev.which) {
-            on_input_event(
+            onInputEvent(
                 ControllerButtonEvent{index, static_cast<ControllerButtonEvent::Button>(ev.button),
                                       ev.state == SDL_PRESSED});
             return;
@@ -173,7 +172,7 @@ void SdlInput::handle_controller_button(const SDL_ControllerButtonEvent& ev) {
     }
 }
 
-void SdlInput::handle_controller_added(const SDL_ControllerDeviceEvent& ev) {
+void SdlInput::handleControllerAdded(const SDL_ControllerDeviceEvent& ev) {
     SDL_GameController* controller = SDL_GameControllerOpen(ev.which);
     if (controller == NULL) {
         LOG(WARNING) << "Open controller failed: " << SDL_GetError();
@@ -208,22 +207,22 @@ void SdlInput::handle_controller_added(const SDL_ControllerDeviceEvent& ev) {
         SDL_free((void*)mapping);
     }
 
-    on_input_event(ControllerAddedRemovedEvent{index, true});
+    onInputEvent(ControllerAddedRemovedEvent{index, true});
 }
 
-void SdlInput::handle_controller_removed(const SDL_ControllerDeviceEvent& ev) {
+void SdlInput::handleControllerRemoved(const SDL_ControllerDeviceEvent& ev) {
     for (uint32_t index = 0; index < kMaxControllers; index++) {
         if (controller_states_[index].has_value() &&
             controller_states_[index]->joystick_id == ev.which) {
             SDL_GameControllerClose(controller_states_[index]->controller);
             controller_states_[index] = std::nullopt;
-            on_input_event(ControllerAddedRemovedEvent{index, /*is_added=*/false});
+            onInputEvent(ControllerAddedRemovedEvent{index, /*is_added=*/false});
             return;
         }
     }
 }
 
-void SdlInput::handle_joystick_added(const SDL_JoyDeviceEvent& ev) {
+void SdlInput::handleJoystickAdded(const SDL_JoyDeviceEvent& ev) {
     if (SDL_IsGameController(ev.which)) {
         return;
     }
@@ -233,7 +232,7 @@ void SdlInput::handle_joystick_added(const SDL_JoyDeviceEvent& ev) {
     LOG(WARNING) << "Unknown controller: " << name;
 }
 
-void SdlInput::on_input_event(const InputEvent& ev) {
+void SdlInput::onInputEvent(const InputEvent& ev) {
     OnInputEvent handle_input;
     {
         std::lock_guard lock{mutex_};

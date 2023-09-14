@@ -20,17 +20,17 @@ class DxgiVideoCapturer : public VideoCapturer {
 public:
     DxgiVideoCapturer();
     ~DxgiVideoCapturer() override;
-    bool pre_init() override;
-    std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> capture_one_frame() override;
-    void release_frame(const std::string& name);
-    void wait_for_vblank() override;
+    bool preInit() override;
+    std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> captureOneFrame() override;
+    void releaseFrame(const std::string& name);
+    void waitForVblank() override;
     Backend backend() const override;
     int64_t luid() override;
 
 private:
-    bool init_d3d11();
-    std::string share_texture(ID3D11Texture2D* texture);
-    std::optional<size_t> get_free_shared_texture();
+    bool initD3D11();
+    std::string shareTexture(ID3D11Texture2D* texture);
+    std::optional<size_t> getFreeSharedTexture();
 
 private:
     std::unique_ptr<DUPLICATIONMANAGER> impl_;

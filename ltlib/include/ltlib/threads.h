@@ -27,10 +27,10 @@ public:
     ~ThreadWatcher();
     void add(const std::string& name, std::thread::id thread_id);
     void remove(const std::string& name);
-    void report_alive(const std::string& name);
-    void register_terminate_callback(const std::function<void(const std::string&)>& callback);
-    void enable_crash_on_timeout();
-    void disable_crash_on_timeout();
+    void reportAlive(const std::string& name);
+    void registerTerminateCallback(const std::function<void(const std::string&)>& callback);
+    void enableCrashOnTimeout();
+    void disableCrashOnTimeout();
 
 private:
     ThreadWatcher();
@@ -38,7 +38,7 @@ private:
     ThreadWatcher(ThreadWatcher&&) = delete;
     ThreadWatcher& operator=(const ThreadWatcher&) = delete;
     ThreadWatcher& operator=(const ThreadWatcher&&) = delete;
-    void check_loop();
+    void checkLoop();
 
 private:
     struct ThreadInfo
@@ -59,7 +59,7 @@ private:
 class LT_API BlockingThread
 {
 public:
-    using EntryFunction = std::function<void(std::function<void()>/*i_am_alive*/, void*/*user_data*/)>;
+    using EntryFunction = std::function<void(std::function<void()> /*i_am_alive*/, void* /*user_data*/)>;
 
 public:
     static std::unique_ptr<BlockingThread> create(const std::string& prefix, const EntryFunction& user_func, void* user_data);
@@ -97,8 +97,6 @@ inline bool operator<(const Priority& left, const Priority& right)
 {
     return static_cast<std::underlying_type_t<Priority>>(left) < static_cast<std::underlying_type_t<Priority>>(right);
 }
-
-
 
 class LT_API TaskThread
 {

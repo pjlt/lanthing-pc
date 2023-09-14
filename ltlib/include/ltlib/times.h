@@ -113,7 +113,6 @@ inline double operator/(const TimeDelta d1, const TimeDelta d2)
     return d1.value() * 1.0 / d2.value();
 }
 
-
 class LT_API Timestamp
 {
     static int64_t kMicroSecondsPerSecond;
@@ -194,7 +193,6 @@ inline Timestamp operator+(const Timestamp& at_time, const TimeDelta dt)
 {
     return at_time.microseconds() + dt.value();
 }
-
 
 namespace time
 {

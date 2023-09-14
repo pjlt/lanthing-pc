@@ -21,23 +21,23 @@ public:
 
 public:
     static std::unique_ptr<SdlInput> create(const Params& params);
-    void set_input_handler(const OnInputEvent& on_input_event);
+    void setInputHandler(const OnInputEvent& on_input_event);
     void rumble(uint16_t controller_number, uint16_t log_freq_motor, uint16_t high_freq_motor);
 
-    void handle_key_up_down(const SDL_KeyboardEvent& ev);
-    void handle_mouse_button(const SDL_MouseButtonEvent& ev);
-    void handle_mouse_move(const SDL_MouseMotionEvent& ev);
-    void handle_mouse_wheel(const SDL_MouseWheelEvent& ev);
-    void handle_controller_axis(const SDL_ControllerAxisEvent& ev);
-    void handle_controller_button(const SDL_ControllerButtonEvent& ev);
-    void handle_controller_added(const SDL_ControllerDeviceEvent& ev);
-    void handle_controller_removed(const SDL_ControllerDeviceEvent& ev);
-    void handle_joystick_added(const SDL_JoyDeviceEvent& ev);
+    void handleKeyUpDown(const SDL_KeyboardEvent& ev);
+    void handleMouseButton(const SDL_MouseButtonEvent& ev);
+    void handleMouseMove(const SDL_MouseMotionEvent& ev);
+    void handleMouseWheel(const SDL_MouseWheelEvent& ev);
+    void handleControllerAxis(const SDL_ControllerAxisEvent& ev);
+    void handleControllerButton(const SDL_ControllerButtonEvent& ev);
+    void handleControllerAdded(const SDL_ControllerDeviceEvent& ev);
+    void handleControllerRemoved(const SDL_ControllerDeviceEvent& ev);
+    void handleJoystickAdded(const SDL_JoyDeviceEvent& ev);
 
 private:
     SdlInput(const Params& params);
     void init();
-    void on_input_event(const InputEvent& ev);
+    void onInputEvent(const InputEvent& ev);
 
 private:
     struct ControllerState {

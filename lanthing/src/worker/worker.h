@@ -2,8 +2,8 @@
 
 #include <map>
 #include <memory>
-#include <string>
 #include <mutex>
+#include <string>
 
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
@@ -40,31 +40,30 @@ public:
 private:
     Worker(const Params& params);
     bool init();
-    bool init_pipe_client();
-    bool negotiate_parameters();
-    void main_loop(const std::function<void()>& i_am_alive);
+    bool initPipeClient();
+    bool negotiateParameters();
+    void mainLoop(const std::function<void()>& i_am_alive);
     void stop();
-    void post_task(const std::function<void()>& task);
-    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
-    bool register_message_handler(uint32_t type, const MessageHandler& msg);
-    void dispatch_service_message(uint32_t type,
-                                  const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    bool send_pipe_message(uint32_t type,
-                           const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void print_stats();
-    void check_timeout();
-    void on_captured_video_frame(std::shared_ptr<google::protobuf::MessageLite> frame);
-    void on_captured_audio_data(std::shared_ptr<google::protobuf::MessageLite> audio_data);
+    void postTask(const std::function<void()>& task);
+    void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
+    bool registerMessageHandler(uint32_t type, const MessageHandler& msg);
+    void dispatchServiceMessage(uint32_t type,
+                                const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    bool sendPipeMessage(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void printStats();
+    void checkCimeout();
+    void onCapturedVideoFrame(std::shared_ptr<google::protobuf::MessageLite> frame);
+    void onCapturedAudioData(std::shared_ptr<google::protobuf::MessageLite> audio_data);
 
     // pipe message handlers
-    void on_pipe_message(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_pipe_disconnected();
-    void on_pipe_reconnecting();
-    void on_pipe_connected();
-    void on_start_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_stop_working(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_keep_alive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_frame_ack(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onPipeMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onPipeDisconnected();
+    void onPipeReconnecting();
+    void onPipeConnected();
+    void onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onFrameAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const uint32_t client_width_;

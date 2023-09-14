@@ -252,7 +252,7 @@ bool AmdEncoderImpl::loadAmdApi() {
         LOG(WARNING) << "Load " << lib_name << " failed";
         return false;
     }
-    auto AMFInit = reinterpret_cast<AMFInit_Fn>(amdapi_->get_func(AMF_INIT_FUNCTION_NAME));
+    auto AMFInit = reinterpret_cast<AMFInit_Fn>(amdapi_->getFunc(AMF_INIT_FUNCTION_NAME));
     if (AMFInit == nullptr) {
         LOG(WARNING) << "Load 'AMFInit' from '" << lib_name << "' failed";
         return false;

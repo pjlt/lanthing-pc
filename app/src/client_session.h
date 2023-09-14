@@ -35,10 +35,10 @@ public:
     ClientSession(const Params& params);
     ~ClientSession();
     bool start();
-    std::string client_id() const;
+    std::string clientID() const;
 
 private:
-    void main_loop(const std::function<void()>& i_am_alive);
+    void mainLoop(const std::function<void()>& i_am_alive);
 
 private:
     Params params_;

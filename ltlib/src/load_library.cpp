@@ -15,7 +15,7 @@ std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
     if (path.empty()) {
         return nullptr;
     }
-    std::wstring wpath = utf8_to_utf16(path);
+    std::wstring wpath = utf8To16(path);
     HMODULE lib = LoadLibraryW(wpath.c_str());
     if (lib == nullptr) {
         return nullptr;
@@ -35,7 +35,7 @@ DynamicLibrary::~DynamicLibrary()
     }
 }
 
-void* DynamicLibrary::get_func(const std::string& name)
+void* DynamicLibrary::getFunc(const std::string& name)
 {
     if (name.empty() || handle_ == nullptr) {
         return nullptr;
@@ -44,7 +44,7 @@ void* DynamicLibrary::get_func(const std::string& name)
     return fptr;
 }
 
-#else //LT_WINDOWS
+#else // LT_WINDOWS
 std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
 {
     if (path.empty()) {
@@ -67,7 +67,7 @@ DynamicLibrary::~DynamicLibrary()
     }
 }
 
-void* DynamicLibrary::get_func(const std::string& name)
+void* DynamicLibrary::getFunc(const std::string& name)
 {
     if (name.empty() || handle_ == nullptr) {
         return nullptr;
@@ -75,6 +75,6 @@ void* DynamicLibrary::get_func(const std::string& name)
     auto fptr = dlsym(handle_, name.c_str());
     return fptr;
 }
-#endif //LT_WINDOWS
+#endif // LT_WINDOWS
 
 } // namespace ltlib

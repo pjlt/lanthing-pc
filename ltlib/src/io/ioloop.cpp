@@ -57,17 +57,17 @@ void IOLoop::post(const std::function<void()>& task)
     impl_->post(task);
 }
 
-void IOLoop::post_delay(int64_t delay_ms, const std::function<void()>& task)
+void IOLoop::postDelay(int64_t delay_ms, const std::function<void()>& task)
 {
     impl_->post_delay(delay_ms, task);
 }
 
-bool IOLoop::is_current_thread() const
+bool IOLoop::isCurrentThread() const
 {
     return impl_->is_current_thread();
 }
 
-bool IOLoop::is_not_current_thread() const
+bool IOLoop::isNotCurrentThread() const
 {
     return !impl_->is_current_thread();
 }

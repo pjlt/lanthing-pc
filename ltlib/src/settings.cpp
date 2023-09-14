@@ -98,7 +98,7 @@ std::unique_ptr<LockedFile> LockedFile::open(const std::string& path)
 {
 #if defined(LT_WINDOWS)
     // Windows implementation
-    std::wstring wpath = ltlib::utf8_to_utf16(path);
+    std::wstring wpath = ltlib::utf8To16(path);
     HANDLE handle = CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
         return nullptr;
@@ -192,12 +192,12 @@ public:
     SettingsToml() = default;
     ~SettingsToml() override = default;
     bool init() override;
-    void set_boolean(const std::string& key, bool value) override;
-    auto get_boolean(const std::string& key) -> std::optional<bool> override;
-    void set_integer(const std::string& key, int64_t value) override;
-    auto get_integer(const std::string& key) -> std::optional<int64_t> override;
-    void set_string(const std::string& key, const std::string& value) override;
-    auto get_string(const std::string& key) -> std::optional<std::string> override;
+    void setBoolean(const std::string& key, bool value) override;
+    auto getBoolean(const std::string& key) -> std::optional<bool> override;
+    void setInteger(const std::string& key, int64_t value) override;
+    auto getInteger(const std::string& key) -> std::optional<int64_t> override;
+    void setString(const std::string& key, const std::string& value) override;
+    auto getString(const std::string& key) -> std::optional<std::string> override;
 
 private:
     template <typename VType>
@@ -248,7 +248,7 @@ private:
 
 bool SettingsToml::init()
 {
-    std::string appdatapath = ltlib::get_appdata_path(ltlib::is_run_as_service());
+    std::string appdatapath = ltlib::getAppdataPath(ltlib::isRunAsService());
     if (appdatapath.empty()) {
         return false;
     }
@@ -266,34 +266,34 @@ bool SettingsToml::init()
     return true;
 }
 
-void SettingsToml::set_boolean(const std::string& key, bool value)
+void SettingsToml::setBoolean(const std::string& key, bool value)
 {
     set_value(key, value);
 }
 
-auto SettingsToml::get_boolean(const std::string& key) -> std::optional<bool>
+auto SettingsToml::getBoolean(const std::string& key) -> std::optional<bool>
 {
     auto value = get_value<bool>(key);
     return value;
 }
 
-void SettingsToml::set_integer(const std::string& key, int64_t value)
+void SettingsToml::setInteger(const std::string& key, int64_t value)
 {
     set_value(key, value);
 }
 
-auto SettingsToml::get_integer(const std::string& key) -> std::optional<int64_t>
+auto SettingsToml::getInteger(const std::string& key) -> std::optional<int64_t>
 {
     auto value = get_value<int64_t>(key);
     return value;
 }
 
-void SettingsToml::set_string(const std::string& key, const std::string& value)
+void SettingsToml::setString(const std::string& key, const std::string& value)
 {
     set_value(key, value);
 }
 
-auto SettingsToml::get_string(const std::string& key) -> std::optional<std::string>
+auto SettingsToml::getString(const std::string& key) -> std::optional<std::string>
 {
     auto value = get_value<std::string>(key);
     return value;

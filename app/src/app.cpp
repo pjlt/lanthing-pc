@@ -92,12 +92,12 @@ bool App::init() {
     if (!initSettings()) {
         return false;
     }
-    device_id_ = settings_->get_integer("device_id").value_or(0);
-    run_as_daemon_ = settings_->get_boolean("daemon").value_or(false);
-    auto_refresh_access_token_ = settings_->get_boolean("auto_refresh").value_or(false);
-    relay_server_ = settings_->get_string("relay").value_or("");
+    device_id_ = settings_->getInteger("device_id").value_or(0);
+    run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
+    auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
+    relay_server_ = settings_->getString("relay").value_or("");
 
-    std::optional<std::string> access_token = settings_->get_string("access_token");
+    std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
         access_token_ = access_token.value();
     }
@@ -105,7 +105,7 @@ bool App::init() {
         access_token_ = generateAccessToken();
         // FIXME: 对文件加锁、解锁、加锁太快会崩，这里的sleep是临时解决方案
         std::this_thread::sleep_for(std::chrono::milliseconds{5});
-        settings_->set_string("access_token", access_token_);
+        settings_->setString("access_token", access_token_);
     }
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
@@ -195,7 +195,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     // HardDecodability abilities = lt::check_hard_decodability();
     bool h264_decodable = true;
     bool h265_decodable = true;
-    ltlib::DisplayOutputDesc display_output_desc = ltlib::get_display_output_desc();
+    ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc();
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);
     params->set_enable_gamepad(false);
@@ -258,17 +258,17 @@ App::Settings App::getSettings() const {
 
 void App::enableRefreshAccessToken(bool enable) {
     auto_refresh_access_token_ = enable;
-    settings_->set_boolean("auto_refresh", enable);
+    settings_->setBoolean("auto_refresh", enable);
 }
 
 void App::enableRunAsDaemon(bool enable) {
     run_as_daemon_ = enable;
-    settings_->set_boolean("daemon", enable);
+    settings_->setBoolean("daemon", enable);
 }
 
 void App::setRelayServer(const std::string& svr) {
     relay_server_ = svr;
-    settings_->set_string("relay", svr);
+    settings_->setString("relay", svr);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -336,7 +336,7 @@ void App::stopService() {
 }
 
 void App::loadHistoryIDs() {
-    std::string appdata_dir = ltlib::get_appdata_path(/*is_win_service=*/false);
+    std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
     std::filesystem::path filepath{appdata_dir};
     filepath /= "lanthing";
     filepath /= "historyids";
@@ -365,7 +365,7 @@ void App::saveHistoryIDs() {
     for (const auto& id : history_ids_) {
         ss << id << ';';
     }
-    std::string appdata_dir = ltlib::get_appdata_path(/*is_win_service=*/false);
+    std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
     std::filesystem::path filepath{appdata_dir};
     filepath /= "lanthing";
     filepath /= "historyids";
@@ -400,7 +400,7 @@ void App::maybeRefreshAccessToken() {
         return;
     }
     access_token_ = generateAccessToken();
-    settings_->set_string("access_token", access_token_);
+    settings_->setString("access_token", access_token_);
     ui_->onLocalAccessToken(access_token_);
 }
 
@@ -414,7 +414,7 @@ void App::postTask(const std::function<void()>& task) {
 void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
     std::lock_guard lock{ioloop_mutex_};
     if (ioloop_) {
-        ioloop_->post_delay(delay_ms, task);
+        ioloop_->postDelay(delay_ms, task);
     }
 }
 
@@ -497,7 +497,7 @@ void App::loginDevice() {
 }
 
 void App::allocateDeviceID() {
-    //NOTE: 运行在ioloop
+    // NOTE: 运行在ioloop
     auto msg = std::make_shared<ltproto::server::AllocateDeviceID>();
     sendMessage(ltproto::id(msg), msg);
 }
@@ -505,7 +505,7 @@ void App::allocateDeviceID() {
 void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
     device_id_ = ack->device_id();
-    settings_->set_integer("device_id", device_id_);
+    settings_->setInteger("device_id", device_id_);
     loginDevice();
 }
 
@@ -574,7 +574,8 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         }
     }
     if (!session->start()) {
-        LOGF(INFO, "Start session(device_id:%d, request_id:%d) failed", ack->device_id(), ack->request_id());
+        LOGF(INFO, "Start session(device_id:%d, request_id:%d) failed", ack->device_id(),
+             ack->request_id());
         std::lock_guard<std::mutex> lock{session_mutex_};
         sessions_.erase(ack->request_id());
     }

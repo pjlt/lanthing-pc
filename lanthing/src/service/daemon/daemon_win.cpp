@@ -14,14 +14,14 @@ LanthingWinService::LanthingWinService()
 
 LanthingWinService::~LanthingWinService() {}
 
-void LanthingWinService::on_start() {
+void LanthingWinService::onStart() {
     if (!impl_->init()) {
         is_stop_ = true;
     }
     return;
 }
 
-void LanthingWinService::on_stop() {
+void LanthingWinService::onStop() {
     LOG(INFO) << "Lanthing service on stop";
     is_stop_ = true;
     if (g_stop_service_handle) {

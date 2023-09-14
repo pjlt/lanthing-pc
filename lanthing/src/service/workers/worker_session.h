@@ -49,68 +49,69 @@ private:
             on_create_completed,
         std::function<void(CloseReason, const std::string&, const std::string&)> on_closed);
     bool init(std::shared_ptr<google::protobuf::MessageLite> msg);
-    bool init_rtc_server();
-    void create_worker_process(uint32_t client_width, uint32_t client_height,
-                               uint32_t client_refresh_rate,
-                               std::vector<lt::VideoCodecType> client_codecs);
-    void main_loop(const std::function<void()>& i_am_alive);
-    void on_closed(CloseReason reason);
-    void maybe_on_create_session_completed();
-    bool create_video_encoder();
-    void post_task(const std::function<void()>& task);
-    void post_delay_task(int64_t delay_ms, const std::function<void()>& task);
+    bool initRtcServer();
+    void createWorkerProcess(uint32_t client_width, uint32_t client_height,
+                             uint32_t client_refresh_rate,
+                             std::vector<lt::VideoCodecType> client_codecs);
+    void mainLoop(const std::function<void()>& i_am_alive);
+    void onClosed(CloseReason reason);
+    void maybeOnCreateSessionCompleted();
+    bool createVideoEncoder();
+    void postTask(const std::function<void()>& task);
+    void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
     // 信令
-    bool init_signling_client();
-    void on_signaling_message_from_net(uint32_t type,
-                                       std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_signaling_disconnected();
-    void on_signaling_reconnecting();
-    void on_signaling_connected();
-    void on_signaling_join_room_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_signaling_message(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_signaling_message_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void dispatch_signaling_message_rtc(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void dispatch_signaling_message_core(std::shared_ptr<google::protobuf::MessageLite> msg);
+    bool initSignlingClient();
+    void onSignalingMessageFromNet(uint32_t type,
+                                   std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingDisconnected();
+    void onSignalingReconnecting();
+    void onSignalingConnected();
+    void onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // worker process
-    bool init_pipe_server();
-    void on_pipe_accepted(uint32_t fd);
-    void on_pipe_disconnected(uint32_t fd);
-    void on_pipe_message(uint32_t fd, uint32_t type,
-                         std::shared_ptr<google::protobuf::MessageLite> msg);
-    void start_working();
-    void on_start_working_ack(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void send_to_worker(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void send_to_worker_from_other_thread(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_worker_stoped();
-    void on_worker_streaming_params(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void send_worker_keep_alive();
+    bool initPipeServer();
+    void onPipeAccepted(uint32_t fd);
+    void onPipeDisconnected(uint32_t fd);
+    void onPipeMessage(uint32_t fd, uint32_t type,
+                       std::shared_ptr<google::protobuf::MessageLite> msg);
+    void startWorking();
+    void onStartWorkingAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendToWorker(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendToWorkerFromOtherThread(uint32_t type,
+                                     std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onWorkerStoped();
+    void onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendWorkerKeepAlive();
 
     // rtc server
-    void on_ltrtc_data(const uint8_t* data, uint32_t size, bool reliable);
-    void on_ltrtc_accepted_thread_safe();
-    void on_ltrtc_conn_changed();
-    void on_ltrtc_failed_thread_safe();
-    void on_ltrtc_disconnected_thread_safe();
-    void on_ltrtc_signaling_message(const std::string& key, const std::string& value);
-    void on_ltrtc_request_keyframe();
-    void on_ltrtc_loss_rate_update(float rate);
-    void on_ltrtc_bwe_update(uint32_t bps);
+    void onTpData(const uint8_t* data, uint32_t size, bool reliable);
+    void onTpAccepted();
+    void onTpConnChanged();
+    void onTpFailed();
+    void onTpDisconnected();
+    void onTpSignalingMessage(const std::string& key, const std::string& value);
+    void onTpRequestKeyframe();
+    void onTpLossRateUpdate(float rate);
+    void onTpBweUpdate(uint32_t bps);
 
     // 数据通道
-    void dispatch_dc_message(uint32_t type,
-                             const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void on_start_transmission(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_keep_alive(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_captured_video(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void on_captured_audio(std::shared_ptr<google::protobuf::MessageLite> msg);
-    bool send_message_to_remote_client(uint32_t type,
-                                       const std::shared_ptr<google::protobuf::MessageLite>& msg,
-                                       bool reliable);
+    void dispatchDcMessage(uint32_t type,
+                           const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onStartTransmission(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> msg);
+    bool sendMessageToRemoteClient(uint32_t type,
+                                   const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                                   bool reliable);
 
-    void update_last_recv_time();
-    void check_timeout();
+    void updateLastRecvTime();
+    void checkTimeout();
 
 private:
     std::string session_name_;
