@@ -1,12 +1,17 @@
 # Lanthing
 ## 编译
 1. git clone --recursive https://github.com/pjlt/lanthing-pc.git
-2. cd lanthing-pc && bash ./build.sh prebuild
-3.1 右键用VS打开lanthing-pc文件夹，然后在`x64-Release`-`管理配置`中设置CMAKE参数 -DLT_QT_CMAKE_PATH=<qt的cmake目录>，然后在VS中生成。或者也可以手动敲cmake命令`cmake -DLT_QT_CMAKE_PATH=xxx`
-(添加qt后，`build.sh build`还没改，暂时不能正常工作) 
-3.2 mkdir build;cd build; cmake.exe ../ -DCMAKE_BUILD_TYPE=Debug -DLT_QT_CMAKE_PATH="QT6_SDK_DIR" -DCMAKE_INSTALL_PREFIX=./install
+2. ./build.ps1 prebuild
+3. 两种方式可选：
+```
+$> ./build.ps1 build [Debug|Release] /path/to/qt/cmake
+```
+或者：
+```
+$> cmake -B build/[Debug|Release] --DCMAKE_BUILD_TYPE=[Debug|Release]  -DLT_QT_CMAKE_PATH=/path/to/qt/cmake -DCMAKE_INSTALL_PREFIX=install/[Debug|Release]
+$> cmake --build build/[Debug|Release] --config [Debug|Release] --target install
+```
 
-## TODO
-1. 完善配置系统与设置系统（需要设计怎么存）
-2. 更名`ltproto->proto`，`ltlib->???`....
-3. 编写cmake install功能，方便打包和调试
+
+## IDE
+目前只在VS测试过，理论上其它支持CMake的IDE都可以。无论是用CMake生成sln文件后VS打开，还是直接用VS打开当前目录，都要设置CMake参数`-DLT_QT_CMAKE_PATH=/path/to/qt/cmake`。

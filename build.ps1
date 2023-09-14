@@ -145,12 +145,12 @@ function clear_g3log() {
 }
 
 function cmake_project() {
-    Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DLT_QT_CMAKE_PATH=$script:qt_path"
+    Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DLT_QT_CMAKE_PATH=$script:qt_path -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     exit_if_fail
 }
 
 function cmake_build() {
-    Invoke-Expression "cmake --build build/$script:build_type --config $script:build_type"
+    Invoke-Expression "cmake --build build/$script:build_type --config $script:build_type --target install"
     exit_if_fail
 }
 
