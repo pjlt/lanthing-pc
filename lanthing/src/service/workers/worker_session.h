@@ -39,6 +39,7 @@
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/server.h>
 #include <ltlib/threads.h>
+#include <ltlib/time_sync.h>
 #include <transport/transport.h>
 
 #include <graphics/encoder/video_encoder.h>
@@ -137,12 +138,14 @@ private:
     void onRequestKeyframe();
     void onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
     bool sendMessageToRemoteClient(uint32_t type,
                                    const std::shared_ptr<google::protobuf::MessageLite>& msg,
                                    bool reliable);
 
     void updateLastRecvTime();
     void checkTimeout();
+    void syncTime();
 
 private:
     std::string session_name_;
@@ -176,6 +179,9 @@ private:
     bool worker_process_stoped_ = true;
     std::optional<bool> join_signaling_room_success_;
     std::shared_ptr<google::protobuf::MessageLite> negotiated_streaming_params_;
+    ltlib::TimeSync time_sync_;
+    int64_t rtt_ = 0;
+    int64_t time_diff_ = 0;
 };
 
 } // namespace svc

@@ -46,6 +46,7 @@
 #include "ct_smoother.h"
 #include "gpu_capability.h"
 #include <graphics/decoder/video_decoder.h>
+#include <graphics/drpipeline/video_statistics.h>
 #include <graphics/renderer/video_renderer.h>
 #include <graphics/widgets/widgets_manager.h>
 
@@ -64,6 +65,8 @@ public:
     ~VDRPipeline();
     bool init();
     VideoDecodeRenderPipeline::Action submit(const lt::VideoFrame& frame);
+    void setTimeDiff(int64_t diff_us);
+    void setRTT(int64_t rtt_us);
 
 private:
     void decodeLoop(const std::function<void()>& i_am_alive);
@@ -72,6 +75,7 @@ private:
     bool waitForDecode(std::vector<VideoFrameInternal>& frames,
                        std::chrono::microseconds max_delay);
     bool waitForRender(std::chrono::microseconds ms);
+    void onStat();
 
 private:
     const uint32_t width_;
@@ -102,8 +106,13 @@ private:
     std::unique_ptr<ltlib::BlockingThread> decode_thread_;
     std::unique_ptr<ltlib::BlockingThread> render_thread_;
 
-    // std::mutex widgets_mtx_;
+    bool show_statistics_ = true;
+    bool show_status_ = true;
     std::unique_ptr<WidgetsManager> widgets_;
+    std::unique_ptr<VideoStatistics> statistics_;
+    std::unique_ptr<ltlib::TaskThread> stat_thread_;
+    int64_t time_diff_ = 0;
+    int64_t rtt_ = 0;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -112,7 +121,8 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , screen_refresh_rate_{params.screen_refresh_rate}
     , codec_type_{params.codec_type}
     , send_message_to_host_{params.send_message_to_host}
-    , sdl_{params.sdl} {
+    , sdl_{params.sdl}
+    , statistics_{new VideoStatistics} {
     SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(params.sdl->window(), &info);
@@ -181,6 +191,8 @@ bool VDRPipeline::init() {
     render_thread_ = ltlib::BlockingThread::create(
         "video_render",
         [this](const std::function<void()>& i_am_alive) { renderLoop(i_am_alive); });
+    stat_thread_ = ltlib::TaskThread::create("stat_task");
+    stat_thread_->post_delay(ltlib::TimeDelta{1'000'00}, std::bind(&VDRPipeline::onStat, this));
     return true;
 }
 
@@ -189,6 +201,17 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
     // stream.flush();
+    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", _frame.capture_timestamp_us,
+         _frame.start_encode_timestamp_us, _frame.end_encode_timestamp_us);
+    statistics_->addEncode();
+    statistics_->addVideoBW(_frame.size);
+    statistics_->updateEncodeTime(_frame.end_encode_timestamp_us -
+                                  _frame.start_encode_timestamp_us);
+    if (time_diff_ != 0) {
+        statistics_->updateNetDelay(ltlib::steady_now_us() - _frame.end_encode_timestamp_us +
+                                    time_diff_);
+    }
+
     VideoFrameInternal frame{};
     frame.is_keyframe = _frame.is_keyframe;
     frame.ltframe_id = _frame.ltframe_id;
@@ -213,6 +236,15 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
                            : VideoDecodeRenderPipeline::Action::NONE;
 }
 
+void VDRPipeline::setTimeDiff(int64_t diff_us) {
+    LOG(DEBUG) << "TIME DIFF " << diff_us;
+    time_diff_ = diff_us;
+}
+
+void VDRPipeline::setRTT(int64_t rtt_us) {
+    rtt_ = rtt_us;
+}
+
 bool VDRPipeline::waitForDecode(std::vector<VideoFrameInternal>& frames,
                                 std::chrono::microseconds max_delay) {
     std::unique_lock<std::mutex> lock(decode_mtx_);
@@ -233,7 +265,9 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
             continue;
         }
         for (auto& frame : frames) {
+            auto start = ltlib::steady_now_us();
             DecodedFrame decoded_frame = video_decoder_->decode(frame.data, frame.size);
+            auto end = ltlib::steady_now_us();
             if (decoded_frame.status == DecodeStatus::Failed) {
                 LOG(WARNING) << "Failed to call decode(), reqesut i frame";
                 request_i_frame_ = true;
@@ -243,6 +277,7 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
                 LOG(FATAL) << "Should not be reach here";
             }
             else {
+                statistics_->updateDecodeTime(end - start);
                 CTSmoother::Frame f;
                 f.no = decoded_frame.frame;
                 f.capture_time = frame.capture_timestamp_us;
@@ -263,6 +298,17 @@ bool VDRPipeline::waitForRender(std::chrono::microseconds ms) {
     return ret;
 }
 
+void VDRPipeline::onStat() {
+    auto stat = statistics_->getStat();
+    if (show_statistics_) {
+        widgets_->updateStatistics(stat);
+    }
+    if (show_statistics_) {
+        widgets_->updateStatus((uint32_t)rtt_ / 1000, (uint32_t)stat.render_video_fps, .0f);
+    }
+    stat_thread_->post_delay(ltlib::TimeDelta{1'000'00}, std::bind(&VDRPipeline::onStat, this));
+}
+
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
@@ -271,10 +317,20 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             int64_t frame = smoother_.get(cur_time.microseconds());
             smoother_.pop();
             if (frame != -1) {
+                statistics_->addRenderVideo();
+                auto start = ltlib::steady_now_us();
                 video_renderer_->render(frame);
-                widgets_->render();
-                video_renderer_->present();
+                auto end = ltlib::steady_now_us();
+                statistics_->updateRenderVideoTime(end - start);
             }
+            auto start = ltlib::steady_now_us();
+            widgets_->render();
+            auto mid = ltlib::steady_now_us();
+            video_renderer_->present();
+            auto end = ltlib::steady_now_us();
+            statistics_->addPresent();
+            statistics_->updateRenderWidgetsTime(mid - start);
+            statistics_->updatePresentTime(end - mid);
         }
     }
 }
@@ -316,6 +372,14 @@ std::unique_ptr<VideoDecodeRenderPipeline> VideoDecodeRenderPipeline::create(con
 
 VideoDecodeRenderPipeline::Action VideoDecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
     return impl_->submit(frame);
+}
+
+void VideoDecodeRenderPipeline::setTimeDiff(int64_t diff_us) {
+    impl_->setTimeDiff(diff_us);
+}
+
+void VideoDecodeRenderPipeline::setRTT(int64_t rtt_us) {
+    impl_->setRTT(rtt_us);
 }
 
 } // namespace lt

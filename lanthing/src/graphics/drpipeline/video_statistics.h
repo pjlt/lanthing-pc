@@ -30,51 +30,70 @@
 
 #pragma once
 #include <cstdint>
-#include <functional>
+#include <deque>
 #include <memory>
-
-#include <google/protobuf/message_lite.h>
-
-#include <platforms/pc_sdl.h>
-#include <transport/transport.h>
+#include <mutex>
+#include <vector>
 
 namespace lt {
 
-class VDRPipeline;
-class VideoDecodeRenderPipeline {
+class VideoStatistics {
 public:
-    struct Params {
-        Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-               uint32_t _screen_refresh_rate,
-               std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
-                   send_message);
-        bool validate() const;
-
-        lt::VideoCodecType codec_type;
-        uint32_t width;
-        uint32_t height;
-        uint32_t screen_refresh_rate;
-        PcSdl* sdl = nullptr;
-        std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
-            send_message_to_host;
+    struct Time {
+        std::deque<int64_t> history;
+        int64_t last_clear_time = 0;
+        int64_t max;
+        int64_t min;
+        int64_t avg;
     };
-
-    enum class Action {
-        REQUEST_KEY_FRAME = 1,
-        NONE = 2,
+    struct Stat {
+        Time encode_time;
+        Time render_video_time;
+        Time render_widgets_time;
+        Time present_time;
+        Time net_delay;
+        Time decode_time;
+        int64_t render_video_fps;
+        int64_t present_fps;
+        int64_t encode_fps;
+        int64_t capture_fps;
     };
 
 public:
-    static std::unique_ptr<VideoDecodeRenderPipeline> create(const Params& params);
-    Action submit(const lt::VideoFrame& frame);
-    void setTimeDiff(int64_t diff_us);
-    void setRTT(int64_t rtt_us);
+    VideoStatistics() = default;
+    Stat getStat();
+    void addRenderVideo();
+    void addPresent();
+    void addEncode();
+    void updateEncodeTime(int64_t duration); // 跟视频数据一并从host传输过来
+    void updateRenderVideoTime(int64_t duration);
+    void updateRenderWidgetsTime(int64_t duration);
+    void updatePresentTime(int64_t duration);
+    void updateNetDelay(int64_t duration);
+    void updateDecodeTime(int64_t duration);
+    void addVideoBW(int64_t bytes); // 特殊处理
+
+    // 独立消息
+    void updateLossRate(const std::vector<float>& loss);
+    void addCapture(const std::vector<uint32_t>& fps);
+    void updateBWE(const std::vector<uint32_t>& bps);
 
 private:
-    VideoDecodeRenderPipeline() = default;
+    static void addHistory(std::deque<int64_t>& history);
+    static void updateTime(Time& time_entry, int64_t duration);
 
 private:
-    std::shared_ptr<VDRPipeline> impl_;
+    std::mutex mutex_;
+    std::deque<int64_t> render_video_history_;
+    std::deque<int64_t> present_history_;
+    std::deque<int64_t> encode_history_;
+    std::deque<int64_t> capture_history_;
+    Time encode_time_;
+    Time render_video_time_;
+    Time render_widgets_time_;
+    Time present_time_;
+    Time net_delay_;
+    Time decode_time_;
 };
 
 } // namespace lt

@@ -28,31 +28,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <cstdint>
+#include <ltlib/time_sync.h>
 
-namespace lt {
+namespace ltlib
+{
 
-class StatusWidget {
-public:
-    StatusWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
-                 uint32_t display_height);
-    ~StatusWidget();
-    void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
-                       uint32_t bottom);
-    void render();
-    void update(uint32_t delay_ms, uint32_t fps, float loss);
+std::optional<TimeSync::Result> TimeSync::calc(int64_t t0, int64_t t1, int64_t t2, int64_t t3)
+{
+    t0_ = t2;
+    t1_ = t3;
+    if (t0 == 0 || t1 == 0) {
+        return std::nullopt;
+    }
+    Result result {};
+    result.rtt = (t3 - t0) - (t2 - t1);
+    result.time_diff = t3 - t2 - result.rtt / 2;
+    return result;
+}
 
-private:
-    uint32_t video_width_;
-    uint32_t video_height_;
-    uint32_t display_width_;
-    uint32_t display_height_;
-    uint32_t rtt_ms_ = 0;
-    uint32_t fps_ = 0;
-    float loss_ = 0.0f;
-    uint32_t bottom_margin_ = 48;
-    uint32_t right_margin_ = 36;
-};
+int64_t TimeSync::getT0() const
+{
+    return t0_;
+}
 
-} // namespace lt
+int64_t TimeSync::getT1() const
+{
+    return t1_;
+}
+
+} // namespace ltlib

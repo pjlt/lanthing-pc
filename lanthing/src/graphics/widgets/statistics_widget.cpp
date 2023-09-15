@@ -30,7 +30,26 @@
 
 #include "statistics_widget.h"
 
+#include <sstream>
+
 #include <imgui.h>
+
+namespace {
+
+void plotLines(const std::string& name, const lt::VideoStatistics::Time& times) {
+    std::vector<float> values;
+    values.resize(times.history.size());
+    for (size_t i = 0; i < times.history.size(); i++) {
+        values[i] = (float)times.history[i];
+    }
+    char buffer[128];
+    const int64_t max = std::min(times.max, (int64_t)99999);
+    sprintf(buffer, "%s min:%lld max:%lld avg:%lld", name.c_str(), times.min, max, times.avg);
+    ImGui::PlotLines(buffer, values.data(), static_cast<int>(values.size()), 0, "",
+                     static_cast<float>(times.min), static_cast<float>(max), ImVec2{300.f, 0});
+}
+
+} // namespace
 
 namespace lt {
 
@@ -43,18 +62,29 @@ StatisticsWidget::StatisticsWidget(uint32_t video_width, uint32_t video_height,
 
 void StatisticsWidget::render() {
     ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 480, 40), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 600, 40), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.7f);
-
+    const char* format = R"(capture_fps: %d
+encode_fps: %d
+render_fps: %d
+present_fps: %d
+)";
     ImGui::Begin("statistics", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-                     ImGuiWindowFlags_NoBackground);
-    float arr[60] = {0.1f, 0.2f, 0.3f, 0.4f, 0.3f, 0.4f, 0.2f, 0.1f, 0.3f, 0.4f,
-                     0.5f, 0.6f, 0.6f, 0.6f, 0.7f, 0.6f, 0.6f, 0.5f, 0.5f};
-    ImGui::PlotLines("plot_xxx", arr, 60);
+                     ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text(format, stat_.capture_fps, stat_.encode_fps, stat_.render_video_fps,
+                stat_.present_fps);
+    plotLines("encode", stat_.encode_time);
+    plotLines("render", stat_.render_video_time);
+    plotLines("widgets", stat_.render_widgets_time);
+    plotLines("present", stat_.present_time);
+    plotLines("net", stat_.net_delay);
+    plotLines("decode", stat_.decode_time);
     ImGui::End();
 }
 
-void StatisticsWidget::update() {}
+void StatisticsWidget::update(const VideoStatistics::Stat& statistics) {
+    stat_ = statistics;
+}
 
 } // namespace lt

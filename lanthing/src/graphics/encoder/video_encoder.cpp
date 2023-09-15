@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -380,6 +380,7 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
     const int64_t start_encode = ltlib::steady_now_us();
     auto encoded_frame = this->encodeFrame(texture.Get());
     const int64_t end_encode = ltlib::steady_now_us();
+    mutex->ReleaseSync(0);
 
     encoded_frame.is_black_frame = is_black_frame(encoded_frame);
     encoded_frame.start_encode_timestamp_us = start_encode;
@@ -388,7 +389,6 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
     encoded_frame.capture_timestamp_us = input_frame->capture_timestamp_us();
     encoded_frame.width = input_frame->width();
     encoded_frame.height = input_frame->height();
-    mutex->ReleaseSync(0);
     if (!first_frame_) {
         first_frame_ = true;
         LOG(INFO) << "First frame encoded";

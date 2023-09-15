@@ -191,7 +191,7 @@ bool D3D11Pipeline::render(int64_t frame) {
     const float clear[4] = {0.f, 0.f, 0.f, 0.f};
     ID3D11ShaderResourceView* const shader_views[2] = {shader_views_[index].y.Get(),
                                                        shader_views_[index].uv.Get()};
-    // d3d11_ctx_->ClearRenderTargetView(render_view_.Get(), clear);
+    d3d11_ctx_->ClearRenderTargetView(render_view_.Get(), clear);
     d3d11_ctx_->OMSetRenderTargets(1, render_view_.GetAddressOf(), nullptr);
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);

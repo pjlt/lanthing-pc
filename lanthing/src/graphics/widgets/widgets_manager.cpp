@@ -68,7 +68,7 @@ WidgetsManager::WidgetsManager(void* dev, void* ctx, void* window, uint32_t vide
     d3d11_ctx->AddRef();
     HWND hwnd = reinterpret_cast<HWND>(window);
     ImGui::CreateContext();
-    ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(d3d11_dev, d3d11_ctx);
 }
@@ -133,10 +133,12 @@ void WidgetsManager::setTaskBarPos(uint32_t direction, uint32_t left, uint32_t r
     status_->setTaskBarPos(direction, left, right, top, bottom);
 }
 
-void WidgetsManager::updateStatus(uint32_t delay_ms, uint32_t fps, float loss) {
-    status_->update(delay_ms, fps, loss);
+void WidgetsManager::updateStatus(uint32_t rtt_ms, uint32_t fps, float loss) {
+    status_->update(rtt_ms, fps, loss);
 }
 
-void WidgetsManager::updateStatistics() {}
+void WidgetsManager::updateStatistics(const VideoStatistics::Stat& statistics) {
+    statistics_->update(statistics);
+}
 
 } // namespace lt

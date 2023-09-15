@@ -70,13 +70,13 @@ void StatusWidget::render() {
     ImGui::Begin("status", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                      ImGuiWindowFlags_NoBackground);
-    ImGui::TextColored(ImVec4{.5f, .5f, .5f, 1.f}, "RTT:%u  FPS:%u  LOSS:%.1f%%", delay_ms_, fps_,
+    ImGui::TextColored(ImVec4{.5f, .5f, .5f, 1.f}, "RTT:%u  FPS:%u  LOSS:%.1f%% ", rtt_ms_, fps_,
                        loss_);
     ImGui::End();
 }
 
-void StatusWidget::update(uint32_t delay_ms, uint32_t fps, float loss) {
-    delay_ms_ = delay_ms;
+void StatusWidget::update(uint32_t rtt_ms, uint32_t fps, float loss) {
+    rtt_ms_ = rtt_ms;
     fps_ = fps;
     loss_ = loss;
 }

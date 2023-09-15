@@ -29,13 +29,23 @@
  */
 
 #pragma once
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
+
+#include <graphics/drpipeline/video_statistics.h>
 
 namespace lt {
 
 class StatusWidget;
 class StatisticsWidget;
 class ControlBarWidget;
+
+struct Statistics {
+    std::string name;
+    float value;
+};
 
 class WidgetsManager {
 public:
@@ -52,8 +62,8 @@ public:
     void disableControlBar();
     void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
                        uint32_t bottom);
-    void updateStatus(uint32_t delay_ms, uint32_t fps, float loss);
-    void updateStatistics();
+    void updateStatus(uint32_t rtt_ms, uint32_t fps, float loss);
+    void updateStatistics(const VideoStatistics::Stat& statistics);
 
 private:
     WidgetsManager(void* dev, void* ctx, void* window, uint32_t video_width, uint32_t video_height,
@@ -67,7 +77,7 @@ private:
     std::shared_ptr<StatisticsWidget> statistics_;
     std::shared_ptr<ControlBarWidget> control_bar_;
     bool show_status_ = true;
-    bool show_statistics_ = false;
+    bool show_statistics_ = true;
     bool show_control_bar_ = false;
 };
 

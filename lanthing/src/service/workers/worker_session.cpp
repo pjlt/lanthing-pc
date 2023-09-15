@@ -42,6 +42,7 @@
 #include <ltproto/peer2peer/start_working.pb.h>
 #include <ltproto/peer2peer/start_working_ack.pb.h>
 #include <ltproto/peer2peer/stop_working.pb.h>
+#include <ltproto/peer2peer/time_sync.pb.h>
 #include <ltproto/peer2peer/video_frame.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
@@ -642,6 +643,7 @@ void WorkerSession::onTpAccepted() {
     postTask([this]() {
         LOG(INFO) << "Accepted client";
         updateLastRecvTime();
+        syncTime();
         postTask(std::bind(&WorkerSession::checkTimeout, this));
     });
 }
@@ -699,6 +701,8 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
     if (encoded_frame.is_black_frame) {
         //???
     }
+    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame.capture_timestamp_us,
+         encoded_frame.start_encode_timestamp_us, encoded_frame.end_encode_timestamp_us);
     tp_server_->sendVideo(encoded_frame);
     auto ack = std::make_shared<ltproto::peer2peer::CaptureVideoFrameAck>();
     ack->set_name(captured_frame->name());
@@ -716,6 +720,16 @@ void WorkerSession::onCapturedAudio(std::shared_ptr<google::protobuf::MessageLit
     tp_server_->sendAudio(audio_data);
 }
 
+void WorkerSession::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::peer2peer::TimeSync>(_msg);
+    auto result = time_sync_.calc(msg->t0(), msg->t1(), msg->t2(), ltlib::steady_now_us());
+    if (result.has_value()) {
+        rtt_ = result->rtt;
+        time_diff_ = result->time_diff;
+        LOG(DEBUG) << "rtt:" << rtt_ << ", time_diff:" << time_diff_;
+    }
+}
+
 void WorkerSession::dispatchDcMessage(uint32_t type,
                                       const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     updateLastRecvTime();
@@ -729,6 +743,9 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
         break;
     case ltype::kRequestKeyframe:
         onRequestKeyframe();
+        break;
+    case ltype::kTimeSync:
+        onTimeSync(msg);
         break;
     default:
         if (worker_registered_msg_.find(type) != worker_registered_msg_.cend()) {
@@ -781,6 +798,16 @@ void WorkerSession::checkTimeout() {
     else {
         postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkTimeout, this));
     }
+}
+
+void WorkerSession::syncTime() {
+    auto msg = std::make_shared<ltproto::peer2peer::TimeSync>();
+    msg->set_t0(time_sync_.getT0());
+    msg->set_t1(time_sync_.getT1());
+    msg->set_t2(ltlib::steady_now_us());
+    sendMessageToRemoteClient(ltproto::id(msg), msg, true);
+    constexpr uint32_t k500ms = 500;
+    postDelayTask(k500ms, std::bind(&WorkerSession::syncTime, this));
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

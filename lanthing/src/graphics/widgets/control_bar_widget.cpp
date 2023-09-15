@@ -30,6 +30,9 @@
 
 #include "control_bar_widget.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui.h>
+
 namespace lt {
 
 ControlBarWidget::ControlBarWidget(uint32_t video_width, uint32_t video_height,
@@ -39,7 +42,27 @@ ControlBarWidget::ControlBarWidget(uint32_t video_width, uint32_t video_height,
     , display_width_{display_width}
     , display_height_{display_height} {}
 
-void ControlBarWidget::render() {}
+void ControlBarWidget::render() {
+    constexpr float width = 20.f;
+    constexpr float height = 10.f;
+    ImVec2 a{-width / 2, 0.f};
+    ImVec2 b{width / 2, 0.f};
+    ImVec2 c{0.f, height};
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos({(io.DisplaySize.x - width) / 2, 0}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({width, height});
+    ImGui::Begin("control_bar", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                     ImGuiWindowFlags_NoBackground);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    ImVec2 middle{io.DisplaySize.x / 2, 0.f};
+    ImVec4 color{.5f, .5f, .5f, .5f};
+    draw_list->AddTriangleFilled(middle + a, middle + b, middle + c,
+                                 ImGui::ColorConvertFloat4ToU32(color));
+    ImGui::End();
+}
 
 void ControlBarWidget::update() {}
 

@@ -73,6 +73,8 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/ct_smoother.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_statistics.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_statistics.cpp
     # graphics->widget
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.cpp

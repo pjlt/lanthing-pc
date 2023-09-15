@@ -29,30 +29,32 @@
  */
 
 #pragma once
+#include <ltlib/ltlib.h>
+#include <memory>
 #include <cstdint>
+#include <optional>
 
-namespace lt {
+namespace ltlib
+{
 
-class StatusWidget {
+class LT_API TimeSync
+{
 public:
-    StatusWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
-                 uint32_t display_height);
-    ~StatusWidget();
-    void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
-                       uint32_t bottom);
-    void render();
-    void update(uint32_t delay_ms, uint32_t fps, float loss);
+    struct Result
+    {
+        int64_t rtt;
+        int64_t time_diff;
+    };
+
+public:
+    TimeSync() = default;
+    std::optional<Result> calc(int64_t t0, int64_t t1, int64_t t2, int64_t t3);
+    int64_t getT0() const;
+    int64_t getT1() const;
 
 private:
-    uint32_t video_width_;
-    uint32_t video_height_;
-    uint32_t display_width_;
-    uint32_t display_height_;
-    uint32_t rtt_ms_ = 0;
-    uint32_t fps_ = 0;
-    float loss_ = 0.0f;
-    uint32_t bottom_margin_ = 48;
-    uint32_t right_margin_ = 36;
+    int64_t t0_ = 0;
+    int64_t t1_ = 0;
 };
 
-} // namespace lt
+} // namespace ltlib

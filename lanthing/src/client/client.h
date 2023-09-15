@@ -39,6 +39,7 @@
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/threads.h>
+#include <ltlib/time_sync.h>
 #include <transport/transport.h>
 
 #include <audio/player/audio_player.h>
@@ -98,6 +99,7 @@ private:
     void stopWait();
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
+    void syncTime();
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -126,6 +128,7 @@ private:
     bool sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
                            bool reliable);
     void onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::string auth_token_;
@@ -150,6 +153,9 @@ private:
     std::condition_variable exit_cv_;
     std::mutex exit_mutex_;
     bool should_exit_ = true;
+    ltlib::TimeSync time_sync_;
+    int64_t rtt_ = 0;
+    int64_t time_diff_ = 0;
 };
 
 } // namespace cli

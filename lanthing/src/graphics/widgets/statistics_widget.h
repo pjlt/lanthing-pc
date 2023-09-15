@@ -30,21 +30,36 @@
 
 #pragma once
 #include <cstdint>
+#include <queue>
+
+#include <graphics/widgets/widgets_manager.h>
 
 namespace lt {
 
 class StatisticsWidget {
+    struct TimeEntry {
+        std::deque<int64_t> history;
+        int64_t max;
+        int64_t min;
+        int64_t avg;
+    };
+
 public:
     StatisticsWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
                      uint32_t display_height);
     void render();
-    void update();
+    void update(const VideoStatistics::Stat& statistics);
 
 private:
     uint32_t video_width_;
     uint32_t video_height_;
     uint32_t display_width_;
     uint32_t display_height_;
+    VideoStatistics::Stat stat_{};
+    char buffer[4096]{};
+
+private:
+    //
 };
 
 } // namespace lt

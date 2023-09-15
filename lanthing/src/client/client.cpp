@@ -37,6 +37,7 @@
 #include <ltproto/peer2peer/request_keyframe.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
+#include <ltproto/peer2peer/time_sync.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
@@ -44,6 +45,7 @@
 #include <ltproto/signaling/signaling_message.pb.h>
 #include <ltproto/signaling/signaling_message_ack.pb.h>
 
+#include <ltlib/time_sync.h>
 #include <string_keys.h>
 
 #if LT_USE_LTRTC
@@ -264,6 +266,16 @@ void Client::postDelayTask(int64_t delay_ms, const std::function<void()>& task) 
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
+}
+
+void Client::syncTime() {
+    auto msg = std::make_shared<ltproto::peer2peer::TimeSync>();
+    msg->set_t0(time_sync_.getT0());
+    msg->set_t1(time_sync_.getT1());
+    msg->set_t2(ltlib::steady_now_us());
+    sendMessageToHost(ltproto::id(msg), msg, true);
+    constexpr uint32_t k500ms = 500;
+    postDelayTask(k500ms, std::bind(&Client::syncTime, this));
 }
 
 void Client::onSignalingNetMessage(uint32_t type,
@@ -487,6 +499,7 @@ void Client::onTpConnected() {
     start->set_client_os(ltproto::peer2peer::StartTransmission_ClientOS_Windows);
     start->set_token(auth_token_);
     sendMessageToHost(ltproto::id(start), start, true);
+    postTask(std::bind(&Client::syncTime, this));
 }
 
 void Client::onTpConnChanged() {}
@@ -514,6 +527,9 @@ void Client::dispatchRemoteMessage(uint32_t type,
     switch (type) {
     case ltproto::type::kStartTransmissionAck:
         onStartTransmissionAck(msg);
+        break;
+    case ltproto::type::kTimeSync:
+        onTimeSync(msg);
         break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
@@ -553,6 +569,19 @@ void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::Mess
         LOG(INFO) << "StartTransmission failed with "
                   << ltproto::peer2peer::StartTransmissionAck_ErrCode_Name(msg->err_code());
         stopWait();
+    }
+}
+
+void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::peer2peer::TimeSync>(_msg);
+    auto result = time_sync_.calc(msg->t0(), msg->t1(), msg->t2(), ltlib::steady_now_us());
+    if (result.has_value()) {
+        rtt_ = result->rtt;
+        time_diff_ = result->time_diff;
+        LOG(DEBUG) << "rtt:" << rtt_ << ", time_diff:" << time_diff_;
+        if (video_pipeline_) {
+            video_pipeline_->setTimeDiff(time_diff_);
+        }
     }
 }
 
