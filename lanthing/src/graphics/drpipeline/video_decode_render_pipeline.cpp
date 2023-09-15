@@ -47,6 +47,7 @@
 #include "gpu_capability.h"
 #include <graphics/decoder/video_decoder.h>
 #include <graphics/renderer/video_renderer.h>
+#include <graphics/widgets/widgets_manager.h>
 
 namespace lt {
 
@@ -79,6 +80,7 @@ private:
     const lt::VideoCodecType codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
+    PcSdl* sdl_;
     HWND hwnd_;
 
     std::atomic<bool> request_i_frame_ = false;
@@ -99,6 +101,9 @@ private:
     std::atomic<bool> stoped_{true};
     std::unique_ptr<ltlib::BlockingThread> decode_thread_;
     std::unique_ptr<ltlib::BlockingThread> render_thread_;
+
+    // std::mutex widgets_mtx_;
+    std::unique_ptr<WidgetsManager> widgets_;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -106,7 +111,8 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , height_{params.height}
     , screen_refresh_rate_{params.screen_refresh_rate}
     , codec_type_{params.codec_type}
-    , send_message_to_host_{params.send_message_to_host} {
+    , send_message_to_host_{params.send_message_to_host}
+    , sdl_{params.sdl} {
     SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(params.sdl->window(), &info);
@@ -157,6 +163,14 @@ bool VDRPipeline::init() {
         return false;
     }
     if (!video_renderer_->bindTextures(video_decoder_->textures())) {
+        return false;
+    }
+    video_renderer_->displayWidth();
+    video_renderer_->displayHeight();
+    widgets_ = WidgetsManager::create(video_renderer_->hwDevice(), video_renderer_->hwContext(),
+                                      hwnd_, width_, height_, video_renderer_->displayWidth(),
+                                      video_renderer_->displayHeight());
+    if (widgets_ == nullptr) {
         return false;
     }
     smoother_.clear();
@@ -258,6 +272,8 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             smoother_.pop();
             if (frame != -1) {
                 video_renderer_->render(frame);
+                widgets_->render();
+                video_renderer_->present();
             }
         }
     }

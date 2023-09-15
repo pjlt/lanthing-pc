@@ -73,6 +73,15 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/ct_smoother.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.cpp
+    # graphics->widget
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/control_bar_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/control_bar_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/statistics_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/statistics_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/status_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/status_widget.cpp
 
     # audio->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.h
@@ -152,6 +161,7 @@ target_link_libraries(${PROJECT_NAME}
     amf
     uv
     breakpad
+    imgui
     ltlib
     ltproto
     rtc

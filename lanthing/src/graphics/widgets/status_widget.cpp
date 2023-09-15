@@ -28,33 +28,57 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <memory>
-#include <vector>
+#include "status_widget.h"
+
+#include <d3d11.h>
+
+#include <SDL.h>
+#include <SDL_syswm.h>
+#include <imgui.h>
+
+// NOTE: 暂时写死D3D11+SDL2
 
 namespace lt {
 
-class VideoRenderer {
-public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-    };
+StatusWidget::StatusWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
+                           uint32_t display_height)
+    : video_width_{video_width}
+    , video_height_{video_height}
+    , display_width_{display_width}
+    , display_height_{display_height} {}
 
-public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual bool render(int64_t frame) = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
-};
+StatusWidget::~StatusWidget() {}
+
+void StatusWidget::setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
+                                 uint32_t bottom) {
+    if (direction == 2) {
+        right_margin_ = right - left;
+    }
+    if (direction == 3) {
+        bottom_margin_ = bottom - top;
+    }
+}
+
+void StatusWidget::render() {
+    const uint32_t kAssumeWidth = 250;
+    const uint32_t kAssumeHeight = 50;
+    float x = static_cast<float>(video_width_ - kAssumeWidth - right_margin_);
+    x = x * display_width_ / video_width_;
+    float y = static_cast<float>(video_height_ - kAssumeHeight - bottom_margin_);
+    y = y * display_height_ / video_height_;
+    ImGui::SetNextWindowPos(ImVec2{x, y});
+    ImGui::Begin("status", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                     ImGuiWindowFlags_NoBackground);
+    ImGui::TextColored(ImVec4{.5f, .5f, .5f, 1.f}, "RTT:%u  FPS:%u  LOSS:%.1f%%", delay_ms_, fps_,
+                       loss_);
+    ImGui::End();
+}
+
+void StatusWidget::update(uint32_t delay_ms, uint32_t fps, float loss) {
+    delay_ms_ = delay_ms;
+    fps_ = fps;
+    loss_ = loss;
+}
 
 } // namespace lt

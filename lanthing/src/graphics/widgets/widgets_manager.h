@@ -30,31 +30,45 @@
 
 #pragma once
 #include <memory>
-#include <vector>
 
 namespace lt {
 
-class VideoRenderer {
-public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-    };
+class StatusWidget;
+class StatisticsWidget;
+class ControlBarWidget;
 
+class WidgetsManager {
 public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual bool render(int64_t frame) = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
+    static std::unique_ptr<WidgetsManager> create(void* dev, void* ctx, void* window,
+                                                  uint32_t video_width, uint32_t video_height,
+                                                  uint32_t render_width, uint32_t render_height);
+    ~WidgetsManager();
+    void render();
+    void enableStatus();
+    void disableStatus();
+    void enableStatistics();
+    void disableStatistics();
+    void enableControlBar();
+    void disableControlBar();
+    void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
+                       uint32_t bottom);
+    void updateStatus(uint32_t delay_ms, uint32_t fps, float loss);
+    void updateStatistics();
+
+private:
+    WidgetsManager(void* dev, void* ctx, void* window, uint32_t video_width, uint32_t video_height,
+                   uint32_t render_width, uint32_t render_height);
+
+private:
+    void* dev_;
+    void* ctx_;
+    void* window_;
+    std::shared_ptr<StatusWidget> status_;
+    std::shared_ptr<StatisticsWidget> statistics_;
+    std::shared_ptr<ControlBarWidget> control_bar_;
+    bool show_status_ = true;
+    bool show_statistics_ = false;
+    bool show_control_bar_ = false;
 };
 
 } // namespace lt

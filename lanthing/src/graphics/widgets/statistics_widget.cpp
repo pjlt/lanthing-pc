@@ -28,33 +28,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <memory>
-#include <vector>
+#include "statistics_widget.h"
+
+#include <imgui.h>
 
 namespace lt {
 
-class VideoRenderer {
-public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-    };
+StatisticsWidget::StatisticsWidget(uint32_t video_width, uint32_t video_height,
+                                   uint32_t display_width, uint32_t display_height)
+    : video_width_{video_width}
+    , video_height_{video_height}
+    , display_width_{display_width}
+    , display_height_{display_height} {}
 
-public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual bool render(int64_t frame) = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
-};
+void StatisticsWidget::render() {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 480, 40), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.7f);
+
+    ImGui::Begin("statistics", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                     ImGuiWindowFlags_NoBackground);
+    float arr[60] = {0.1f, 0.2f, 0.3f, 0.4f, 0.3f, 0.4f, 0.2f, 0.1f, 0.3f, 0.4f,
+                     0.5f, 0.6f, 0.6f, 0.6f, 0.7f, 0.6f, 0.6f, 0.5f, 0.5f};
+    ImGui::PlotLines("plot_xxx", arr, 60);
+    ImGui::End();
+}
+
+void StatisticsWidget::update() {}
 
 } // namespace lt

@@ -28,33 +28,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <memory>
-#include <vector>
+#include "control_bar_widget.h"
 
 namespace lt {
 
-class VideoRenderer {
-public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-    };
+ControlBarWidget::ControlBarWidget(uint32_t video_width, uint32_t video_height,
+                                   uint32_t display_width, uint32_t display_height)
+    : video_width_{video_width}
+    , video_height_{video_height}
+    , display_width_{display_width}
+    , display_height_{display_height} {}
 
-public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual bool render(int64_t frame) = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
-};
+void ControlBarWidget::render() {}
+
+void ControlBarWidget::update() {}
 
 } // namespace lt

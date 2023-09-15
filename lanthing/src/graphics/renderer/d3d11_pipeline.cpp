@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -191,11 +191,14 @@ bool D3D11Pipeline::render(int64_t frame) {
     const float clear[4] = {0.f, 0.f, 0.f, 0.f};
     ID3D11ShaderResourceView* const shader_views[2] = {shader_views_[index].y.Get(),
                                                        shader_views_[index].uv.Get()};
-    d3d11_ctx_->ClearRenderTargetView(render_view_.Get(), clear);
+    // d3d11_ctx_->ClearRenderTargetView(render_view_.Get(), clear);
     d3d11_ctx_->OMSetRenderTargets(1, render_view_.GetAddressOf(), nullptr);
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
+    return true;
+}
 
+bool D3D11Pipeline::present() {
     auto hr = swap_chain_->Present(0, 0);
     pipeline_ready_ = false;
     if (FAILED(hr)) {
@@ -225,6 +228,14 @@ void* D3D11Pipeline::hwDevice() {
 
 void* D3D11Pipeline::hwContext() {
     return d3d11_ctx_.Get();
+}
+
+uint32_t D3D11Pipeline::displayWidth() {
+    return display_width_;
+}
+
+uint32_t D3D11Pipeline::displayHeight() {
+    return display_height_;
 }
 
 bool D3D11Pipeline::init() {
