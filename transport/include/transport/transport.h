@@ -39,7 +39,7 @@ using OnDisconnected = std::function<void()>;
 using OnFailed = std::function<void()>;
 using OnSignalingMessage = std::function<void(const char*, const char*)>;
 using OnKeyframeRequest = std::function<void()>;
-using OnBandwidthEstimatedUpdate = std::function<void(uint32_t bps)>;
+using OnVEncoderBitrateUpdate = std::function<void(uint32_t bps)>;
 using OnLossRateUpdate = std::function<void(float)>;
 
 class Client {

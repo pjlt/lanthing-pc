@@ -37,6 +37,7 @@
 #include <ltproto/peer2peer/audio_data.pb.h>
 #include <ltproto/peer2peer/capture_video_frame_ack.pb.h>
 #include <ltproto/peer2peer/keep_alive.pb.h>
+#include <ltproto/peer2peer/send_side_stat.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
 #include <ltproto/peer2peer/start_working.pb.h>
@@ -259,7 +260,8 @@ bool WorkerSession::initRtcServer() {
     params.on_signaling_message =
         std::bind(&WorkerSession::onTpSignalingMessage, this, ph::_1, ph::_2);
     params.on_keyframe_request = std::bind(&WorkerSession::onTpRequestKeyframe, this);
-    params.on_bwe_update = std::bind(&WorkerSession::onTpBweUpdate, this, ph::_1);
+    params.on_video_bitrate_update =
+        std::bind(&WorkerSession::onTpEesimatedVideoBitreateUpdate, this, ph::_1);
     params.on_loss_rate_update = std::bind(&WorkerSession::onTpLossRateUpdate, this, ph::_1);
     tp_server_ = rtc::Server::create(std::move(params));
 #else  // LT_USE_LTRTC
@@ -645,6 +647,7 @@ void WorkerSession::onTpAccepted() {
         updateLastRecvTime();
         syncTime();
         postTask(std::bind(&WorkerSession::checkTimeout, this));
+        postTask(std::bind(&WorkerSession::getTransportStat, this));
     });
 }
 
@@ -682,12 +685,15 @@ void WorkerSession::onTpRequestKeyframe() {
 }
 
 void WorkerSession::onTpLossRateUpdate(float rate) {
-    postTask([this, rate]() { LOG(DEBUG) << "loss rate " << rate; });
+    postTask([this, rate]() {
+        loss_rate_ = rate;
+        LOG(DEBUG) << "loss rate " << rate;
+    });
 }
 
-void WorkerSession::onTpBweUpdate(uint32_t bps) {
+void WorkerSession::onTpEesimatedVideoBitreateUpdate(uint32_t bps) {
     postTask([this, bps]() {
-        LOG(DEBUG) << "BWE " << bps << "bps";
+        LOG(DEBUG) << "VideoBWE video " << bps << "bps";
         VideoEncoder::ReconfigureParams params{};
         params.bitrate_bps = bps;
         video_encoder_->reconfigure(params);
@@ -808,6 +814,21 @@ void WorkerSession::syncTime() {
     sendMessageToRemoteClient(ltproto::id(msg), msg, true);
     constexpr uint32_t k500ms = 500;
     postDelayTask(k500ms, std::bind(&WorkerSession::syncTime, this));
+}
+
+void WorkerSession::getTransportStat() {
+#if LT_USE_LTRTC
+    rtc::Server* svr = static_cast<rtc::Server*>(tp_server_.get());
+    uint32_t bwe_bps = svr->bwe();
+    uint32_t nack_count = svr->nack();
+    auto msg = std::make_shared<ltproto::peer2peer::SendSideStat>();
+    msg->set_bwe(bwe_bps);
+    msg->set_nack(nack_count);
+    msg->set_loss_rate(loss_rate_);
+    LOG(DEBUG) << "BWE " << bwe_bps << " NACK " << nack_count;
+    sendMessageToRemoteClient(ltproto::id(msg), msg, true);
+    postDelayTask(1'000, std::bind(&WorkerSession::getTransportStat, this));
+#endif // LT_USE_LTRTC
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

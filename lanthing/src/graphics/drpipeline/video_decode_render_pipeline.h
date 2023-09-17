@@ -69,6 +69,9 @@ public:
     Action submit(const lt::VideoFrame& frame);
     void setTimeDiff(int64_t diff_us);
     void setRTT(int64_t rtt_us);
+    void setBWE(uint32_t bps);
+    void setNack(uint32_t nack);
+    void setLossRate(float rate);
 
 private:
     VideoDecodeRenderPipeline() = default;

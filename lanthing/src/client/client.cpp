@@ -35,6 +35,7 @@
 
 #include <ltproto/peer2peer/keep_alive.pb.h>
 #include <ltproto/peer2peer/request_keyframe.pb.h>
+#include <ltproto/peer2peer/send_side_stat.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
 #include <ltproto/peer2peer/time_sync.pb.h>
@@ -531,6 +532,9 @@ void Client::dispatchRemoteMessage(uint32_t type,
     case ltproto::type::kTimeSync:
         onTimeSync(msg);
         break;
+    case ltproto::type::kSendSideStat:
+        onSendSideStat(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
         break;
@@ -583,6 +587,12 @@ void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
             video_pipeline_->setTimeDiff(time_diff_);
         }
     }
+}
+
+void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::peer2peer::SendSideStat>(_msg);
+    video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));
+    video_pipeline_->setBWE(static_cast<uint32_t>(msg->bwe()));
 }
 
 } // namespace cli

@@ -39,20 +39,23 @@ namespace lt {
 
 class VideoStatistics {
 public:
-    struct Time {
-        std::deque<int64_t> history;
+    struct History {
+        std::deque<double> history;
         int64_t last_clear_time = 0;
-        int64_t max;
-        int64_t min;
-        int64_t avg;
+        double max = 0;
+        double min = 0;
+        double avg = 0;
     };
     struct Stat {
-        Time encode_time;
-        Time render_video_time;
-        Time render_widgets_time;
-        Time present_time;
-        Time net_delay;
-        Time decode_time;
+        History encode_time;
+        History render_video_time;
+        History render_widgets_time;
+        History present_time;
+        History net_delay;
+        History decode_time;
+        History bwe;
+        History video_bw;
+        History loss_rate;
         int64_t render_video_fps;
         int64_t present_fps;
         int64_t encode_fps;
@@ -71,16 +74,16 @@ public:
     void updatePresentTime(int64_t duration);
     void updateNetDelay(int64_t duration);
     void updateDecodeTime(int64_t duration);
-    void addVideoBW(int64_t bytes); // 特殊处理
+    void updateVideoBW(int64_t bytes); // 特殊处理
 
     // 独立消息
-    void updateLossRate(const std::vector<float>& loss);
+    void updateLossRate(float loss);
     void addCapture(const std::vector<uint32_t>& fps);
-    void updateBWE(const std::vector<uint32_t>& bps);
+    void updateBWE(uint32_t bps);
 
 private:
     static void addHistory(std::deque<int64_t>& history);
-    static void updateTime(Time& time_entry, int64_t duration);
+    static void updateHistory(History& time_entry, double value);
 
 private:
     std::mutex mutex_;
@@ -88,12 +91,20 @@ private:
     std::deque<int64_t> present_history_;
     std::deque<int64_t> encode_history_;
     std::deque<int64_t> capture_history_;
-    Time encode_time_;
-    Time render_video_time_;
-    Time render_widgets_time_;
-    Time present_time_;
-    Time net_delay_;
-    Time decode_time_;
+    History encode_time_;
+    History render_video_time_;
+    History render_widgets_time_;
+    History present_time_;
+    History net_delay_;
+    History decode_time_;
+    History bwe_;
+    History loss_rate_;
+    History video_bw_;
+    struct VideoBW {
+        int64_t bytes;
+        int64_t time;
+    };
+    std::deque<VideoBW> video_bw_history_;
 };
 
 } // namespace lt

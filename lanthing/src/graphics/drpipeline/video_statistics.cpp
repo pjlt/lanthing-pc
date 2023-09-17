@@ -49,27 +49,27 @@ void VideoStatistics::addHistory(std::deque<int64_t>& history) {
     }
 }
 
-void VideoStatistics::updateTime(Time& time_entry, int64_t duration) {
+void VideoStatistics::updateHistory(History& time_entry, double value) {
     constexpr size_t kMaxSize = 60;
     constexpr int64_t kOneMinute = 60'000'000;
-    time_entry.history.push_back(duration);
+    time_entry.history.push_back(value);
     while (time_entry.history.size() > kMaxSize) {
         time_entry.history.pop_front();
     }
-    int64_t sum = 0;
-    for (auto value : time_entry.history) {
-        sum += value;
+    double sum = 0;
+    for (auto val : time_entry.history) {
+        sum += val;
     }
     time_entry.avg = sum / time_entry.history.size();
     int64_t now = ltlib::steady_now_us();
     if (time_entry.last_clear_time + kOneMinute < now) {
         time_entry.last_clear_time = now;
-        time_entry.max = duration;
-        time_entry.min = duration;
+        time_entry.max = value;
+        time_entry.min = value;
     }
     else {
-        time_entry.max = std::max(time_entry.max, duration);
-        time_entry.min = std::min(time_entry.min, duration);
+        time_entry.max = std::max(time_entry.max, value);
+        time_entry.min = std::min(time_entry.min, value);
     }
 }
 
@@ -82,6 +82,9 @@ VideoStatistics::Stat VideoStatistics::getStat() {
     stat.present_time = present_time_;
     stat.net_delay = net_delay_;
     stat.decode_time = decode_time_;
+    stat.video_bw = video_bw_;
+    stat.loss_rate = loss_rate_;
+    stat.bwe = bwe_;
 
     stat.render_video_fps = render_video_history_.size();
     stat.present_fps = present_history_.size();
@@ -108,43 +111,67 @@ void VideoStatistics::addEncode() {
 
 void VideoStatistics::updateEncodeTime(int64_t duration) {
     std::lock_guard lock{mutex_};
-    updateTime(encode_time_, duration);
+    updateHistory(encode_time_, static_cast<double>(duration));
 }
 
 void VideoStatistics::updateRenderVideoTime(int64_t duration) {
     std::lock_guard lock{mutex_};
-    updateTime(render_video_time_, duration);
+    updateHistory(render_video_time_, static_cast<double>(duration));
 }
 
 void VideoStatistics::updateRenderWidgetsTime(int64_t duration) {
     std::lock_guard lock{mutex_};
-    updateTime(render_widgets_time_, duration);
+    updateHistory(render_widgets_time_, static_cast<double>(duration));
 }
 
 void VideoStatistics::updatePresentTime(int64_t duration) {
     std::lock_guard lock{mutex_};
-    updateTime(present_time_, duration);
+    updateHistory(present_time_, static_cast<double>(duration));
 }
 
 void VideoStatistics::updateNetDelay(int64_t duration) {
     std::lock_guard lock{mutex_};
-    updateTime(net_delay_, duration);
+    updateHistory(net_delay_, static_cast<double>(duration));
 }
 
 void VideoStatistics::updateDecodeTime(int64_t duration) {
     std::lock_guard lock{mutex_};
-    updateTime(decode_time_, duration);
+    updateHistory(decode_time_, static_cast<double>(duration));
 }
 
-void VideoStatistics::addVideoBW(int64_t) {}
+void VideoStatistics::updateVideoBW(int64_t bytes) {
+    const int64_t kOneSecond = 1'000'000;
+    int64_t now = ltlib::steady_now_us();
+    int64_t sum = 0;
+    {
+        std::lock_guard lock{mutex_};
+        video_bw_history_.push_back({bytes, now});
+        while (!video_bw_history_.empty()) {
+            if (video_bw_history_.front().time + kOneSecond < now) {
+                video_bw_history_.pop_front();
+            }
+            else {
+                break;
+            }
+        }
+        for (auto& history : video_bw_history_) {
+            sum += history.bytes;
+        }
+    }
+    updateHistory(video_bw_, static_cast<double>(sum * 8 / 1024));
+}
 
-void VideoStatistics::updateLossRate(const std::vector<float>&) {}
+void VideoStatistics::updateLossRate(float rate) {
+    updateHistory(loss_rate_, rate * 100);
+}
 
 void VideoStatistics::addCapture(const std::vector<uint32_t>&) {
     std::lock_guard lock{mutex_};
     addHistory(capture_history_);
 }
 
-void VideoStatistics::updateBWE(const std::vector<uint32_t>&) {}
+void VideoStatistics::updateBWE(uint32_t bps) {
+    updateHistory(bwe_, static_cast<double>(bps / 1024));
+}
 
 } // namespace lt

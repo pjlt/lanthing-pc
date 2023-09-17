@@ -129,6 +129,7 @@ private:
                            bool reliable);
     void onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::string auth_token_;

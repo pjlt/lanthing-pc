@@ -67,6 +67,9 @@ public:
     VideoDecodeRenderPipeline::Action submit(const lt::VideoFrame& frame);
     void setTimeDiff(int64_t diff_us);
     void setRTT(int64_t rtt_us);
+    void setBWE(uint32_t bps);
+    void setNack(uint32_t nack);
+    void setLossRate(float rate);
 
 private:
     void decodeLoop(const std::function<void()>& i_am_alive);
@@ -113,6 +116,9 @@ private:
     std::unique_ptr<ltlib::TaskThread> stat_thread_;
     int64_t time_diff_ = 0;
     int64_t rtt_ = 0;
+    uint32_t bwe_ = 0;
+    uint32_t nack_ = 0;
+    float loss_rate_ = .0f;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -204,7 +210,7 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", _frame.capture_timestamp_us,
          _frame.start_encode_timestamp_us, _frame.end_encode_timestamp_us);
     statistics_->addEncode();
-    statistics_->addVideoBW(_frame.size);
+    statistics_->updateVideoBW(_frame.size);
     statistics_->updateEncodeTime(_frame.end_encode_timestamp_us -
                                   _frame.start_encode_timestamp_us);
     if (time_diff_ != 0) {
@@ -243,6 +249,19 @@ void VDRPipeline::setTimeDiff(int64_t diff_us) {
 
 void VDRPipeline::setRTT(int64_t rtt_us) {
     rtt_ = rtt_us;
+}
+
+void VDRPipeline::setBWE(uint32_t bps) {
+    bwe_ = bps;
+    statistics_->updateBWE(bps);
+}
+
+void VDRPipeline::setNack(uint32_t nack) {
+    nack_ = nack;
+}
+
+void VDRPipeline::setLossRate(float rate) {
+    loss_rate_ = rate;
 }
 
 bool VDRPipeline::waitForDecode(std::vector<VideoFrameInternal>& frames,
@@ -304,7 +323,7 @@ void VDRPipeline::onStat() {
         widgets_->updateStatistics(stat);
     }
     if (show_statistics_) {
-        widgets_->updateStatus((uint32_t)rtt_ / 1000, (uint32_t)stat.render_video_fps, .0f);
+        widgets_->updateStatus((uint32_t)rtt_ / 1000, (uint32_t)stat.render_video_fps, loss_rate_);
     }
     stat_thread_->post_delay(ltlib::TimeDelta{1'000'00}, std::bind(&VDRPipeline::onStat, this));
 }
@@ -380,6 +399,18 @@ void VideoDecodeRenderPipeline::setTimeDiff(int64_t diff_us) {
 
 void VideoDecodeRenderPipeline::setRTT(int64_t rtt_us) {
     impl_->setRTT(rtt_us);
+}
+
+void VideoDecodeRenderPipeline::setBWE(uint32_t bps) {
+    impl_->setBWE(bps);
+}
+
+void VideoDecodeRenderPipeline::setNack(uint32_t nack) {
+    impl_->setNack(nack);
+}
+
+void VideoDecodeRenderPipeline::setLossRate(float rate) {
+    impl_->setLossRate(rate);
 }
 
 } // namespace lt

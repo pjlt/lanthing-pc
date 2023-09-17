@@ -128,7 +128,7 @@ private:
     void onTpSignalingMessage(const std::string& key, const std::string& value);
     void onTpRequestKeyframe();
     void onTpLossRateUpdate(float rate);
-    void onTpBweUpdate(uint32_t bps);
+    void onTpEesimatedVideoBitreateUpdate(uint32_t bps);
 
     // 数据通道
     void dispatchDcMessage(uint32_t type,
@@ -146,6 +146,7 @@ private:
     void updateLastRecvTime();
     void checkTimeout();
     void syncTime();
+    void getTransportStat();
 
 private:
     std::string session_name_;
@@ -182,6 +183,7 @@ private:
     ltlib::TimeSync time_sync_;
     int64_t rtt_ = 0;
     int64_t time_diff_ = 0;
+    float loss_rate_ = .0f;
 };
 
 } // namespace svc
