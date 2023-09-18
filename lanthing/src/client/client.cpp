@@ -230,11 +230,12 @@ void Client::mainLoop(const std::function<void()>& i_am_alive) {
 void Client::onPlatformRenderTargetReset() {
     // NOTE: 这运行在platform线程
     std::lock_guard lock{dr_mutex_};
-    video_pipeline_.reset();
-    video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
-    if (video_pipeline_ == nullptr) {
-        LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
-    }
+    //video_pipeline_.reset();
+    //video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+    //if (video_pipeline_ == nullptr) {
+    //    LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
+    //}
+    video_pipeline_->resetRenderTarget();
 }
 
 void Client::onPlatformExit() {

@@ -34,6 +34,7 @@
 #include <cstdint>
 #include <optional>
 #include <vector>
+#include <atomic>
 
 #include <d3d11_1.h>
 #include <dxgi1_3.h>
@@ -66,6 +67,7 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     bool render(int64_t frame) override;
+    void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
     void* hwDevice() override;
@@ -83,6 +85,7 @@ private:
     bool initShaderResources(const std::vector<ID3D11Texture2D*>& textures);
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
+    bool tryResetSwapChain();
 
 private:
     HWND hwnd_;
@@ -104,6 +107,7 @@ private:
 
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;
+    std::atomic<bool> reset_{false};
 };
 
 } // namespace lt

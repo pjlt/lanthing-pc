@@ -180,6 +180,7 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
 }
 
 bool D3D11Pipeline::render(int64_t frame) {
+    tryResetSwapChain();
     if (frame >= static_cast<int64_t>(shader_views_.size())) {
         LOGF(WARNING, "Can not find shader view for texutre %d", frame);
         return false;
@@ -204,6 +205,52 @@ bool D3D11Pipeline::present() {
     if (FAILED(hr)) {
         LOGF(WARNING, "failed to call presenter, hr:0x%08x", hr);
         return false;
+    }
+    return true;
+}
+
+void D3D11Pipeline::resetRenderTarget() {
+    reset_ = true;
+}
+
+bool D3D11Pipeline::tryResetSwapChain() {
+    if (reset_.exchange(false)) {
+        RECT rect;
+        if (!GetClientRect(hwnd_, &rect)) {
+            LOG(WARNING) << "GetClientRect failed";
+            return false;
+        }
+        display_width_ = rect.right - rect.left;
+        display_height_ = rect.bottom - rect.top;
+        render_view_ = nullptr;
+        HRESULT hr = swap_chain_->ResizeBuffers(0, static_cast<UINT>(display_width_), static_cast<UINT>(display_height_),
+            DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
+        if (FAILED(hr)) {
+            LOGF(WARNING, "SwapChain resize buffers failed %#x", hr);
+            return false;
+        }
+        if (waitable_obj_) {
+            CloseHandle(waitable_obj_);
+        }
+        swap_chain_->SetMaximumFrameLatency(1);
+        waitable_obj_ = swap_chain_->GetFrameLatencyWaitableObject();
+        if (!waitable_obj_) {
+            LOG(WARNING) << "SwapChain GetFrameLatencyWaitableObject failed";
+            return false;
+        }
+        ComPtr<ID3D11Resource> back_buffer;
+        hr = swap_chain_->GetBuffer(0, __uuidof(ID3D11Resource), (void**)back_buffer.GetAddressOf());
+        if (FAILED(hr)) {
+            LOGF(WARNING, "IDXGISwapChain::GetBuffer failed: %#x", hr);
+            return false;
+        }
+        hr = d3d11_dev_->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_view_);
+        if (FAILED(hr)) {
+            LOGF(WARNING, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
+            return false;
+        }
+        setupRSStage();
+
     }
     return true;
 }

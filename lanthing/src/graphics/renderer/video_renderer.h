@@ -49,6 +49,7 @@ public:
     virtual ~VideoRenderer() = default;
     virtual bool bindTextures(const std::vector<void*>& textures) = 0;
     virtual bool render(int64_t frame) = 0;
+    virtual void resetRenderTarget() = 0;
     virtual bool present() = 0;
     virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
     virtual void* hwDevice() = 0;

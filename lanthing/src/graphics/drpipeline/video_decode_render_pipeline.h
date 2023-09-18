@@ -67,6 +67,7 @@ public:
 public:
     static std::unique_ptr<VideoDecodeRenderPipeline> create(const Params& params);
     Action submit(const lt::VideoFrame& frame);
+    void resetRenderTarget();
     void setTimeDiff(int64_t diff_us);
     void setRTT(int64_t rtt_us);
     void setBWE(uint32_t bps);

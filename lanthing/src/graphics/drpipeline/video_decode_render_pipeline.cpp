@@ -70,6 +70,7 @@ public:
     void setBWE(uint32_t bps);
     void setNack(uint32_t nack);
     void setLossRate(float rate);
+    void resetRenderTarget();
 
 private:
     void decodeLoop(const std::function<void()>& i_am_alive);
@@ -264,6 +265,10 @@ void VDRPipeline::setLossRate(float rate) {
     loss_rate_ = rate;
 }
 
+void VDRPipeline::resetRenderTarget() {
+    video_renderer_->resetRenderTarget();
+}
+
 bool VDRPipeline::waitForDecode(std::vector<VideoFrameInternal>& frames,
                                 std::chrono::microseconds max_delay) {
     std::unique_lock<std::mutex> lock(decode_mtx_);
@@ -391,6 +396,10 @@ std::unique_ptr<VideoDecodeRenderPipeline> VideoDecodeRenderPipeline::create(con
 
 VideoDecodeRenderPipeline::Action VideoDecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
     return impl_->submit(frame);
+}
+
+void VideoDecodeRenderPipeline::resetRenderTarget() {
+    impl_->resetRenderTarget();
 }
 
 void VideoDecodeRenderPipeline::setTimeDiff(int64_t diff_us) {

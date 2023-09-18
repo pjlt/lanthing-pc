@@ -149,7 +149,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
                                desktop_height / 6,     // y
                                desktop_width * 2 / 3,  // width,
                                desktop_height * 2 / 3, // height,
-                               SDL_WINDOW_ALLOW_HIGHDPI);
+                               SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
 
     if (window_ == nullptr) {
         // 出错了，退出整个client（
