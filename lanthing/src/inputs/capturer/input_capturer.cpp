@@ -186,13 +186,6 @@ void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
 }
 
 void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
-    Rect host_surface{host_width_, host_height_};
-    Rect client_surface{ev.window_width, ev.window_height};
-    Rect target_rect = ::scale_src_to_dst_surface(host_surface, client_surface);
-    uint32_t padding_height = (client_surface.height - target_rect.height) / 2;
-    uint32_t padding_width = (client_surface.width - target_rect.width) / 2;
-    float x = (ev.x - padding_width) * 1.0f / target_rect.width;
-    float y = (ev.y - padding_height) * 1.0f / target_rect.height;
     ltproto::peer2peer::MouseEvent::KeyFlag key_flag;
     switch (ev.button) {
     case MouseButtonEvent::Button::Left:
@@ -221,8 +214,8 @@ void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
     }
     auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
     msg->set_key_falg(key_flag);
-    msg->set_x(x);
-    msg->set_y(y);
+    msg->set_x(ev.x * 1.0f / ev.window_width);
+    msg->set_y(ev.y * 1.0f / ev.window_height);
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
@@ -233,17 +226,11 @@ void InputCapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
 }
 
 void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
-    Rect host_surface{host_width_, host_height_};
-    Rect client_surface{ev.window_width, ev.window_height};
-    Rect target_rect = ::scale_src_to_dst_surface(host_surface, client_surface);
-    uint32_t padding_height = (client_surface.height - target_rect.height) / 2;
-    uint32_t padding_width = (client_surface.width - target_rect.width) / 2;
-    float x = (ev.x - padding_width) * 1.0f / target_rect.width;
-    float y = (ev.y - padding_height) * 1.0f / target_rect.height;
+
     // TODO: 相对模式可能要累积一段再发出去
     auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
-    msg->set_x(x);
-    msg->set_y(y);
+    msg->set_x(ev.x * 1.0f / ev.window_width);
+    msg->set_y(ev.y * 1.0f / ev.window_height);
     msg->set_delta_x(ev.delta_x);
     msg->set_delta_y(ev.delta_y);
     sendMessageToHost(ltproto::id(msg), msg, true);

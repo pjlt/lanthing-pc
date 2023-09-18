@@ -117,10 +117,10 @@ std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captur
     auto hr = impl_->GetFrame(&frame, &timeout);
     if (hr == DUPL_RETURN::DUPL_RETURN_SUCCESS && !timeout) {
         std::string name = shareTexture(frame.Frame);
+        impl_->DoneWithFrame();
         if (name.empty()) {
             return nullptr;
         }
-        impl_->DoneWithFrame();
         auto capture_frame = std::make_shared<ltproto::peer2peer::CaptureVideoFrame>();
         capture_frame->set_name(name);
         capture_frame->set_capture_timestamp_us(ltlib::steady_now_us());

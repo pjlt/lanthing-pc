@@ -79,7 +79,7 @@ private:
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
         send_message_;
-    bool is_absolute_mouse_ = false;
+    bool is_absolute_mouse_ = true;
     // 需要添加第三方库vigem才能使用gamepad
     // std::unique_ptr<Gamepad> gamepad_;
 };
