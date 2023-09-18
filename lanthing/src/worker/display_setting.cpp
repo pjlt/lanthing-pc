@@ -46,7 +46,9 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
         LOG(WARNING) << "Enumerate current display settings failed";
         return {};
     }
-
+    (void)client_display_setting;
+    // 因为不修改被控分辨率，暂时不协商了
+#if 0
     // 比较{width, height, refresh_rate ± 1}
     std::set<DisplaySetting, decltype(&DisplaySetting::compareFullLoose)> available_settings{
         &DisplaySetting::compareFullLoose};
@@ -83,6 +85,7 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
             return result;
         }
     }
+#endif
     // 找不到，直接返回host当前的DisplaySetting
     DisplaySetting result(current_mode.dmPelsWidth, current_mode.dmPelsHeight,
                           current_mode.dmDisplayFrequency);
