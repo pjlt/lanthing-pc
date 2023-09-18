@@ -103,6 +103,10 @@ void WidgetsManager::render() {
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 
+void WidgetsManager::resize() {
+    status_->resize();
+}
+
 void WidgetsManager::enableStatus() {
     show_status_ = true;
 }

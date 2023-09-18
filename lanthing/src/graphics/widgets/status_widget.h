@@ -30,6 +30,7 @@
 
 #pragma once
 #include <cstdint>
+#include <atomic>
 
 namespace lt {
 
@@ -42,6 +43,7 @@ public:
                        uint32_t bottom);
     void render();
     void update(uint32_t delay_ms, uint32_t fps, float loss);
+    void resize();
 
 private:
     uint32_t video_width_;
@@ -53,6 +55,7 @@ private:
     float loss_ = 0.0f;
     uint32_t bottom_margin_ = 48;
     uint32_t right_margin_ = 36;
+    std::atomic<bool> resize_{false};
 };
 
 } // namespace lt
