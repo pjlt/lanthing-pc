@@ -54,6 +54,7 @@ public:
                                                   uint32_t render_width, uint32_t render_height);
     ~WidgetsManager();
     void render();
+    void resize();
     void enableStatus();
     void disableStatus();
     void enableStatistics();

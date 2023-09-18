@@ -266,6 +266,7 @@ void VDRPipeline::setLossRate(float rate) {
 }
 
 void VDRPipeline::resetRenderTarget() {
+    widgets_->resize();
     video_renderer_->resetRenderTarget();
 }
 
