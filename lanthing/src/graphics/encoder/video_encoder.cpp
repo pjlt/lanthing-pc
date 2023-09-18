@@ -393,6 +393,9 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
         first_frame_ = true;
         LOG(INFO) << "First frame encoded";
     }
+    if (encoded_frame.is_keyframe) {
+        LOG(DEBUG) << "SEND KEY FRAME";
+    }
     return encoded_frame;
 }
 

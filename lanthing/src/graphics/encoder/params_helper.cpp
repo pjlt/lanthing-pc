@@ -47,37 +47,7 @@ VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t 
     assert(c == lt::VideoCodecType::H264 || c == lt::VideoCodecType::H265);
     uint32_t bitrate_bps = bitrate_kbps_ * 1024;
     if (enable_vbv) {
-        float vbv = 0.f;
-        if (bitrate_bps >= 12 * 1024 * 1024) {
-            qmin_ = {14, 14, 24};
-            qmax_ = {39, 39, 39};
-            vbv = 2.7f;
-        }
-        else if (bitrate_bps >= 8 * 1024 * 1024) {
-            qmin_ = {15, 15, 24};
-            qmax_ = {40, 40, 41};
-            vbv = 2.6f;
-        }
-        else if (bitrate_bps >= 6 * 1024 * 1024) {
-            qmin_ = {17, 17, 25};
-            qmax_ = {42, 42, 42};
-            vbv = 2.4f;
-        }
-        else if (bitrate_bps >= 4 * 1024 * 1024) {
-            qmin_ = {18, 18, 26};
-            qmax_ = {43, 43, 42};
-            vbv = 2.3f;
-        }
-        else if (bitrate_bps >= 3 * 1024 * 1024) {
-            qmin_ = {19, 19, 27};
-            qmax_ = {44, 44, 43};
-            vbv = 2.1f;
-        }
-        else {
-            qmin_ = {21, 21, 28};
-            qmax_ = {47, 47, 46};
-            vbv = 2.1f;
-        }
+        float vbv = 2.6f;
         int bitrate_vbv = static_cast<int>(bitrate_bps * vbv + 0.5f);
         int vbv_buf = static_cast<int>(bitrate_vbv * 1.0f / fps_ + 0.5f);
         vbvbufsize_ = vbv_buf;

@@ -91,8 +91,8 @@ private:
     const RcMode rc_ = RcMode::VBR;
     const Preset preset_ = Preset::Speed;
     const Profile profile_;
-    std::array<uint32_t, 3> qmin_ = {10, 10, 10};
-    std::array<uint32_t, 3> qmax_ = {40, 40, 40};
+    std::array<uint32_t, 3> qmin_ = {10, 10, 25};
+    std::array<uint32_t, 3> qmax_ = {40, 40, 42};
     std::optional<int> vbvbufsize_;
     std::optional<int> vbvinit_;
     std::map<std::string, std::string> params_;
