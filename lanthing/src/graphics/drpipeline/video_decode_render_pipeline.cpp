@@ -215,7 +215,7 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     statistics_->updateEncodeTime(_frame.end_encode_timestamp_us -
                                   _frame.start_encode_timestamp_us);
     if (time_diff_ != 0) {
-        statistics_->updateNetDelay(ltlib::steady_now_us() - _frame.end_encode_timestamp_us +
+        statistics_->updateNetDelay(ltlib::steady_now_us() - _frame.end_encode_timestamp_us -
                                     time_diff_);
     }
 
