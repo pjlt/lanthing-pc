@@ -29,26 +29,39 @@
  */
 
 #pragma once
-#include <cstdint>
+#include <functional>
 #include <memory>
 
-#include "params_helper.h"
-#include <graphics/encoder/video_encoder.h>
+#include <google/protobuf/message_lite.h>
+
+#include <message_handler.h>
+#include <transport/transport.h>
 
 namespace lt {
 
-class IntelEncoderImpl;
-
-class IntelEncoder : public VideoEncoder {
+class VCEPipeline;
+class VideoCaptureEncodePipeline {
 public:
-    IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid, uint32_t width, uint32_t height);
-    ~IntelEncoder() override {}
-    bool init(const VideoEncodeParamsHelper& params);
-    void reconfigure(const ReconfigureParams& params) override;
-    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeFrame(void* input_frame) override;
+    struct Params {
+        std::vector<VideoCodecType> codecs;
+        uint32_t width;
+        uint32_t height;
+        std::function<bool(uint32_t, const MessageHandler&)> register_message_handler;
+        std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
+            send_message;
+    };
+
+public:
+    static std::unique_ptr<VideoCaptureEncodePipeline> create(const Params& params);
+    void start();
+    void stop();
+    VideoCodecType codec() const;
 
 private:
-    std::shared_ptr<IntelEncoderImpl> impl_;
+    VideoCaptureEncodePipeline() = default;
+
+private:
+    std::shared_ptr<VCEPipeline> impl_;
 };
 
 } // namespace lt

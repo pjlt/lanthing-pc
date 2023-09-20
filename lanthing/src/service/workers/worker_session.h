@@ -42,8 +42,6 @@
 #include <ltlib/time_sync.h>
 #include <transport/transport.h>
 
-#include <graphics/encoder/video_encoder.h>
-
 namespace lt {
 
 namespace svc {
@@ -135,7 +133,6 @@ private:
                            const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onStartTransmission(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void onRequestKeyframe();
     void onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -157,7 +154,6 @@ private:
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::unique_ptr<lt::tp::Server> tp_server_;
     std::unique_ptr<ltlib::Server> pipe_server_;
-    std::unique_ptr<lt::VideoEncoder> video_encoder_;
     uint32_t pipe_client_fd_ = std::numeric_limits<uint32_t>::max();
     std::string pipe_name_;
     std::set<uint32_t> worker_registered_msg_;

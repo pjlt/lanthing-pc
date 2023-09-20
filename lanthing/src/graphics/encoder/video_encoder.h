@@ -36,34 +36,21 @@
 #include <optional>
 #include <vector>
 
-#include <ltproto/peer2peer/capture_video_frame.pb.h>
+#include <ltproto/peer2peer/video_frame.pb.h>
 
+#include <graphics/capturer/video_capturer.h>
 #include <transport/transport.h>
 
 namespace lt {
 
 class VideoEncoder {
 public:
-    enum class Backend {
-        Unknown,
-        NvEnc,
-        IntelMediaSDK,
-        Amf,
-    };
-
-    enum class FrameType {
-        IFrame,
-        PFrame,
-    };
-
-    struct EncodedFrame : lt::VideoFrame {
-        bool is_black_frame = false;
-        std::shared_ptr<uint8_t> internal_data;
-    };
-
     struct InitParams {
-        Backend backend = Backend::Unknown;
+        // 其实有一个device就够了，但是在创建d3ddevice的时候就能顺便获取其他值，就干脆传递过来
         int64_t luid;
+        uint32_t vendor_id;
+        void* device;
+        void* context;
         lt::VideoCodecType codec_type = lt::VideoCodecType::H264;
         uint32_t width = 0;
         uint32_t height = 0;
@@ -77,40 +64,30 @@ public:
         std::optional<uint32_t> fps;
     };
 
-    struct Ability {
-        Backend backend;
-        lt::VideoCodecType codec_type;
-    };
-
 public:
     static std::unique_ptr<VideoEncoder> create(const InitParams& params);
     virtual ~VideoEncoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
     void requestKeyframe();
-    EncodedFrame encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> input_frame);
+    std::shared_ptr<ltproto::peer2peer::VideoFrame> encode(const VideoCapturer::Frame& input_frame);
 
-    static std::vector<Ability> checkEncodeAbilities(uint32_t width, uint32_t height);
-    static std::vector<Ability> checkEncodeAbilitiesWithLuid(int64_t luid, uint32_t width,
-                                                             uint32_t height);
+    // static std::vector<VideoCodecType> checkSupportedCodecs(uint32_t width, uint32_t height);
+    // static std::vector<VideoCodecType> checkSupportedCodecsWithLuid(int64_t luid, uint32_t width,
+    //                                                                 uint32_t height);
 
 protected:
-    VideoEncoder(void* d3d11_dev, void* d3d11_ctx);
+    VideoEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
     bool needKeyframe();
-    virtual EncodedFrame encodeFrame(void* input_frame) = 0;
+    virtual std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeFrame(void* input_frame) = 0;
 
 private:
     void* d3d11_dev_ = nullptr;
     void* d3d11_ctx_ = nullptr;
+    const uint32_t width_;
+    const uint32_t height_;
     uint64_t frame_id_ = 0;
     std::atomic<bool> request_keyframe_{false};
     bool first_frame_ = false;
-    struct SharedResource {
-        std::string name;
-        void* resource = nullptr;
-        void* texture = nullptr;
-        void* mutex = nullptr;
-    };
-    std::vector<SharedResource> shared_resources_;
 };
 
 } // namespace lt

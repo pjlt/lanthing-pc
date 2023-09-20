@@ -146,7 +146,8 @@ public:
     ~NvD3d11EncoderImpl();
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
-    VideoEncoder::EncodedFrame encodeOneFrame(void* input_frame, bool request_iframe);
+    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeOneFrame(void* input_frame,
+                                                                   bool request_iframe);
 
 private:
     bool loadNvApi();
@@ -233,6 +234,7 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
     if (!initBuffers()) {
         return false;
     }
+    LOG(INFO) << "NvD3d11Encoder initialized";
     return true;
 }
 
@@ -277,12 +279,11 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& para
     }
 }
 
-VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encodeOneFrame(void* input_frame,
-                                                              bool request_iframe) {
-    VideoEncoder::EncodedFrame out_frame{};
+std::shared_ptr<ltproto::peer2peer::VideoFrame>
+NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     auto mapped_resource = initInputFrame(input_frame);
     if (!mapped_resource.has_value()) {
-        return out_frame; //??
+        return nullptr;
     }
 
     NV_ENC_PIC_PARAMS params{};
@@ -300,11 +301,12 @@ VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encodeOneFrame(void* input_frame,
     if (status != NV_ENC_SUCCESS) {
         // include NV_ENC_ERR_NEED_MORE_INPUT
         LOG(WARNING) << "nvEncEncodePicture failed with " << status;
+        return nullptr;
     }
     if (async_) {
         if (WaitForSingleObject(event_, 20000) == WAIT_FAILED) {
             LOG(WARNING) << "Wait encode event timeout";
-            return out_frame;
+            return nullptr;
         }
     }
     NV_ENC_LOCK_BITSTREAM lbs = {NV_ENC_LOCK_BITSTREAM_VER};
@@ -313,28 +315,27 @@ VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encodeOneFrame(void* input_frame,
     status = nvfuncs_.nvEncLockBitstream(nvencoder_, &lbs);
     if (status != NV_ENC_SUCCESS) {
         LOG(WARNING) << "nvEncLockBitstream failed with " << status;
-        return out_frame; // ??
+        return nullptr;
     }
-    out_frame.size = lbs.bitstreamSizeInBytes;
-    out_frame.internal_data = std::shared_ptr<uint8_t>(new uint8_t[out_frame.size]);
-    memcpy(out_frame.internal_data.get(), lbs.bitstreamBufferPtr, out_frame.size);
-    out_frame.data = out_frame.internal_data.get();
+    auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    out_frame->set_frame(lbs.bitstreamBufferPtr, lbs.bitstreamSizeInBytes);
     status = nvfuncs_.nvEncUnlockBitstream(nvencoder_, lbs.outputBitstream);
     if (status != NV_ENC_SUCCESS) {
         LOG(WARNING) << "nvEncUnlockBitstream failed with " << status;
-        return out_frame; // ??
+        return nullptr;
     }
 
     if (!uninitInputFrame(mapped_resource.value())) {
-        return out_frame; //??
+        return nullptr;
     }
 
     NV_ENC_STAT encode_stats{};
     encode_stats.outputBitStream = params.outputBitstream;
     encode_stats.version = NV_ENC_STAT_VER;
     nvfuncs_.nvEncGetEncodeStats(nvencoder_, &encode_stats);
-    out_frame.is_keyframe =
+    bool is_keyframe =
         encode_stats.picType == NV_ENC_PIC_TYPE_I || encode_stats.picType == NV_ENC_PIC_TYPE_IDR;
+    out_frame->set_is_keyframe(is_keyframe);
     return out_frame;
 }
 
@@ -513,8 +514,8 @@ bool NvD3d11EncoderImpl::uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource) {
     return true;
 }
 
-NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx)
-    : VideoEncoder{d3d11_dev, d3d11_ctx}
+NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
+    : VideoEncoder{d3d11_dev, d3d11_ctx, width, height}
     , impl_{std::make_shared<NvD3d11EncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev))} {}
 
 NvD3d11Encoder::~NvD3d11Encoder() {}
@@ -527,7 +528,7 @@ void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame NvD3d11Encoder::encodeFrame(void* input_frame) {
+std::shared_ptr<ltproto::peer2peer::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 

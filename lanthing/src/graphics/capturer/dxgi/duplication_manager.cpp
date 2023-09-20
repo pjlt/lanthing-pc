@@ -18,16 +18,14 @@ DUPLICATIONMANAGER::DUPLICATIONMANAGER()
     , m_MetaDataSize(0)
     , m_OutputNumber(0)
     , m_Device(nullptr)
-    , m_DxgiOutput(nullptr)
-{
+    , m_DxgiOutput(nullptr) {
     RtlZeroMemory(&m_OutputDesc, sizeof(m_OutputDesc));
 }
 
 //
 // Destructor simply calls CleanRefs to destroy everything
 //
-DUPLICATIONMANAGER::~DUPLICATIONMANAGER()
-{
+DUPLICATIONMANAGER::~DUPLICATIONMANAGER() {
     if (m_DxgiOutput) {
         m_DxgiOutput->Release();
         m_DxgiOutput = nullptr;
@@ -56,8 +54,7 @@ DUPLICATIONMANAGER::~DUPLICATIONMANAGER()
 //
 // Initialize duplication interfaces
 //
-bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output)
-{
+bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     m_OutputNumber = Output;
 
     // Take a reference on the device
@@ -66,7 +63,8 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output)
 
     // Get DXGI device
     IDXGIDevice* DxgiDevice = nullptr;
-    HRESULT hr = m_Device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&DxgiDevice));
+    HRESULT hr =
+        m_Device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&DxgiDevice));
     if (FAILED(hr)) {
         LOGF(WARNING, "failed to get DXGI Device, hr: 0x%08x", hr);
         return false;
@@ -95,8 +93,8 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output)
 
     // QI for Output 1
     IDXGIOutput1* DxgiOutput1 = nullptr;
-    hr = m_DxgiOutput->QueryInterface(__uuidof(DxgiOutput1),
-        reinterpret_cast<void**>(&DxgiOutput1));
+    hr =
+        m_DxgiOutput->QueryInterface(__uuidof(DxgiOutput1), reinterpret_cast<void**>(&DxgiOutput1));
     if (FAILED(hr)) {
         LOGF(WARNING, "failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
         return false;
@@ -108,10 +106,11 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output)
     DxgiOutput1 = nullptr;
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
-            LOGF(WARNING, "There is already the maximum number of applications using the Desktop "
-                          "Duplication API running, please close one of those applications and then "
-                          "try again.",
-                "Error");
+            LOGF(WARNING,
+                 "There is already the maximum number of applications using the Desktop "
+                 "Duplication API running, please close one of those applications and then "
+                 "try again.",
+                 "Error");
         }
         LOGF(WARNING, "failed to call DuplicateOutput, hr:0x%08x", hr);
         return false;
@@ -124,9 +123,8 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output)
 // Retrieves mouse info and write it into PtrInfo
 //
 DUPL_RETURN DUPLICATIONMANAGER::GetMouse(_Inout_ PTR_INFO* PtrInfo,
-    _In_ DXGI_OUTDUPL_FRAME_INFO* FrameInfo, INT OffsetX,
-    INT OffsetY)
-{
+                                         _In_ DXGI_OUTDUPL_FRAME_INFO* FrameInfo, INT OffsetX,
+                                         INT OffsetY) {
     // A non-zero mouse update timestamp indicates that there is a mouse position update and
     // optionally a shape change
     if (FrameInfo->LastMouseUpdateTime.QuadPart == 0) {
@@ -138,19 +136,24 @@ DUPL_RETURN DUPLICATIONMANAGER::GetMouse(_Inout_ PTR_INFO* PtrInfo,
     // Make sure we don't update pointer position wrongly
     // If pointer is invisible, make sure we did not get an update from another output that the last
     // time that said pointer was visible, if so, don't set it to invisible or update.
-    if (!FrameInfo->PointerPosition.Visible && (PtrInfo->WhoUpdatedPositionLast != m_OutputNumber)) {
+    if (!FrameInfo->PointerPosition.Visible &&
+        (PtrInfo->WhoUpdatedPositionLast != m_OutputNumber)) {
         UpdatePosition = false;
     }
 
     // If two outputs both say they have a visible, only update if new update has newer timestamp
-    if (FrameInfo->PointerPosition.Visible && PtrInfo->Visible && (PtrInfo->WhoUpdatedPositionLast != m_OutputNumber) && (PtrInfo->LastTimeStamp.QuadPart > FrameInfo->LastMouseUpdateTime.QuadPart)) {
+    if (FrameInfo->PointerPosition.Visible && PtrInfo->Visible &&
+        (PtrInfo->WhoUpdatedPositionLast != m_OutputNumber) &&
+        (PtrInfo->LastTimeStamp.QuadPart > FrameInfo->LastMouseUpdateTime.QuadPart)) {
         UpdatePosition = false;
     }
 
     // Update position
     if (UpdatePosition) {
-        PtrInfo->Position.x = FrameInfo->PointerPosition.Position.x + m_OutputDesc.DesktopCoordinates.left - OffsetX;
-        PtrInfo->Position.y = FrameInfo->PointerPosition.Position.y + m_OutputDesc.DesktopCoordinates.top - OffsetY;
+        PtrInfo->Position.x =
+            FrameInfo->PointerPosition.Position.x + m_OutputDesc.DesktopCoordinates.left - OffsetX;
+        PtrInfo->Position.y =
+            FrameInfo->PointerPosition.Position.y + m_OutputDesc.DesktopCoordinates.top - OffsetY;
         PtrInfo->WhoUpdatedPositionLast = m_OutputNumber;
         PtrInfo->LastTimeStamp = FrameInfo->LastMouseUpdateTime;
         PtrInfo->Visible = FrameInfo->PointerPosition.Visible != 0;
@@ -183,8 +186,8 @@ DUPL_RETURN DUPLICATIONMANAGER::GetMouse(_Inout_ PTR_INFO* PtrInfo,
     // Get shape
     UINT BufferSizeRequired;
     HRESULT hr = m_DeskDupl->GetFramePointerShape(FrameInfo->PointerShapeBufferSize,
-        reinterpret_cast<VOID*>(PtrInfo->PtrShapeBuffer),
-        &BufferSizeRequired, &(PtrInfo->ShapeInfo));
+                                                  reinterpret_cast<VOID*>(PtrInfo->PtrShapeBuffer),
+                                                  &BufferSizeRequired, &(PtrInfo->ShapeInfo));
     if (FAILED(hr)) {
         delete[] PtrInfo->PtrShapeBuffer;
         PtrInfo->PtrShapeBuffer = nullptr;
@@ -202,13 +205,12 @@ DUPL_RETURN DUPLICATIONMANAGER::GetMouse(_Inout_ PTR_INFO* PtrInfo,
 // Get next frame and write it into Data
 //
 _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
-    DUPL_RETURN DUPLICATIONMANAGER::GetFrame(_Out_ FRAME_DATA* Data, _Out_ bool* Timeout)
-{
+    DUPL_RETURN DUPLICATIONMANAGER::GetFrame(_Out_ FRAME_DATA* Data, _Out_ bool* Timeout) {
     IDXGIResource* DesktopResource = nullptr;
     DXGI_OUTDUPL_FRAME_INFO FrameInfo;
 
     // Get new frame
-    HRESULT hr = m_DeskDupl->AcquireNextFrame(500, &FrameInfo, &DesktopResource);
+    HRESULT hr = m_DeskDupl->AcquireNextFrame(50, &FrameInfo, &DesktopResource);
     if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
         *Timeout = true;
         return DUPL_RETURN_SUCCESS;
@@ -229,7 +231,7 @@ _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
 
     // QI for IDXGIResource
     hr = DesktopResource->QueryInterface(__uuidof(ID3D11Texture2D),
-        reinterpret_cast<void**>(&m_AcquiredDesktopImage));
+                                         reinterpret_cast<void**>(&m_AcquiredDesktopImage));
     DesktopResource->Release();
     DesktopResource = nullptr;
     if (FAILED(hr)) {
@@ -303,8 +305,7 @@ _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
 //
 // Release frame
 //
-DUPL_RETURN DUPLICATIONMANAGER::DoneWithFrame()
-{
+DUPL_RETURN DUPLICATIONMANAGER::DoneWithFrame() {
     HRESULT hr = m_DeskDupl->ReleaseFrame();
     if (FAILED(hr)) {
         // return ProcessFailure(m_Device, L"Failed to release frame in DUPLICATIONMANAGER",
@@ -324,13 +325,11 @@ DUPL_RETURN DUPLICATIONMANAGER::DoneWithFrame()
 //
 // Gets output desc into DescPtr
 //
-void DUPLICATIONMANAGER::GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr)
-{
+void DUPLICATIONMANAGER::GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr) {
     *DescPtr = m_OutputDesc;
 }
 
-void DUPLICATIONMANAGER::WaitForVBlank()
-{
+void DUPLICATIONMANAGER::WaitForVBlank() {
     assert(m_DxgiOutput);
     m_DxgiOutput->WaitForVBlank();
 }

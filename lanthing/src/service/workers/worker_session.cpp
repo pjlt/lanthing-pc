@@ -37,6 +37,8 @@
 #include <ltproto/peer2peer/audio_data.pb.h>
 #include <ltproto/peer2peer/capture_video_frame_ack.pb.h>
 #include <ltproto/peer2peer/keep_alive.pb.h>
+#include <ltproto/peer2peer/reconfigure_video_encoder.pb.h>
+#include <ltproto/peer2peer/request_keyframe.pb.h>
 #include <ltproto/peer2peer/send_side_stat.pb.h>
 #include <ltproto/peer2peer/start_transmission.pb.h>
 #include <ltproto/peer2peer/start_transmission_ack.pb.h>
@@ -73,19 +75,6 @@ lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type) {
         return lt::VideoCodecType::H265;
     default:
         return lt::VideoCodecType::Unknown;
-    }
-}
-
-lt::VideoEncoder::Backend to_lt(ltproto::peer2peer::StreamingParams::VideoEncodeBackend backend) {
-    switch (backend) {
-    case ltproto::peer2peer::StreamingParams_VideoEncodeBackend_NvEnc:
-        return lt::VideoEncoder::Backend::NvEnc;
-    case ltproto::peer2peer::StreamingParams_VideoEncodeBackend_IntelMediaSDK:
-        return lt::VideoEncoder::Backend::IntelMediaSDK;
-    case ltproto::peer2peer::StreamingParams_VideoEncodeBackend_AMF:
-        return lt::VideoEncoder::Backend::Amf;
-    default:
-        return lt::VideoEncoder::Backend::Unknown;
     }
 }
 
@@ -177,7 +166,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     }
     std::vector<lt::VideoCodecType> client_codecs;
     for (auto codec : msg->streaming_params().video_codecs()) {
-        switch (ltproto::peer2peer::VideoCodecType(codec.codec_type())) {
+        switch (ltproto::peer2peer::VideoCodecType(codec)) {
         case ltproto::peer2peer::VideoCodecType::AVC:
             client_codecs.push_back(lt::VideoCodecType::H264);
             break;
@@ -251,7 +240,9 @@ bool WorkerSession::initRtcServer() {
     }
     params.audio_channels = negotiated_params->audio_channels();
     params.audio_sample_rate = negotiated_params->audio_sample_rate();
-    params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
+    // negotiated_params->video_codecs()的类型居然不是枚举数组
+    params.video_codec_type = ::to_ltrtc(
+        static_cast<ltproto::peer2peer::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
     params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
@@ -266,7 +257,7 @@ bool WorkerSession::initRtcServer() {
     tp_server_ = rtc::Server::create(std::move(params));
 #else  // LT_USE_LTRTC
     lt::tp::ServerTCP::Params params{};
-    params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0).codec_type());
+    params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0));
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
     params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
@@ -347,40 +338,11 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
-    if (!createVideoEncoder()) {
-        on_create_session_completed_(false, session_name_, empty_params);
-        return;
-    }
     if (!initRtcServer()) {
         on_create_session_completed_(false, session_name_, empty_params);
         return;
     }
     on_create_session_completed_(true, session_name_, negotiated_streaming_params_);
-}
-
-bool WorkerSession::createVideoEncoder() {
-    auto params =
-        std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
-    if (params->video_codecs_size() == 0) {
-        LOG(WARNING) << "Negotiate failed, no appropriate video codec";
-        return false;
-    }
-    auto backend = params->video_codecs().Get(0).backend();
-    auto codec = params->video_codecs().Get(0).codec_type();
-    LOG(INFO) << "Negotiate success, using "
-              << ltproto::peer2peer::StreamingParams_VideoEncodeBackend_Name(backend) << ":"
-              << ltproto::peer2peer::VideoCodecType_Name(codec);
-    lt::VideoEncoder::InitParams init_params{};
-    init_params.backend = to_lt(backend);
-    init_params.codec_type = to_ltrtc(codec);
-    init_params.bitrate_bps = 10'000'000; // TODO: 修改更合理的值，或者协商
-    init_params.width = params->video_width();
-    init_params.height = params->video_height();
-    if (params->has_luid()) {
-        init_params.luid = params->luid();
-    }
-    video_encoder_ = lt::VideoEncoder::create(init_params);
-    return video_encoder_ != nullptr;
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
@@ -559,7 +521,7 @@ void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,
     case ltype::kStartWorkingAck:
         onStartWorkingAck(msg);
         break;
-    case ltype::kCaptureVideoFrame:
+    case ltype::kVideoFrame:
         onCapturedVideo(msg);
         break;
     case ltype::kStreamingParams:
@@ -678,10 +640,8 @@ void WorkerSession::onTpSignalingMessage(const std::string& key, const std::stri
 }
 
 void WorkerSession::onTpRequestKeyframe() {
-    postTask([this]() {
-        LOG(INFO) << "transport request keyframe";
-        video_encoder_->requestKeyframe();
-    });
+    auto msg = std::make_shared<ltproto::peer2peer::RequestKeyframe>();
+    sendToWorkerFromOtherThread(ltproto::id(msg), msg);
 }
 
 void WorkerSession::onTpLossRateUpdate(float rate) {
@@ -692,27 +652,27 @@ void WorkerSession::onTpLossRateUpdate(float rate) {
 }
 
 void WorkerSession::onTpEesimatedVideoBitreateUpdate(uint32_t bps) {
-    postTask([this, bps]() {
-        LOG(DEBUG) << "VideoBWE video " << bps << "bps";
-        VideoEncoder::ReconfigureParams params{};
-        params.bitrate_bps = bps;
-        video_encoder_->reconfigure(params);
-    });
+    auto msg = std::make_shared<ltproto::peer2peer::ReconfigureVideoEncoder>();
+    msg->set_bitrate_bps(bps);
+    sendToWorkerFromOtherThread(ltproto::id(msg), msg);
 }
 
 void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     // NOTE: 这是在IOLoop线程
-    auto captured_frame = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrame>(_msg);
-    auto encoded_frame = video_encoder_->encode(captured_frame);
-    if (encoded_frame.is_black_frame) {
-        //???
-    }
-    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame.capture_timestamp_us,
-         encoded_frame.start_encode_timestamp_us, encoded_frame.end_encode_timestamp_us);
-    tp_server_->sendVideo(encoded_frame);
-    auto ack = std::make_shared<ltproto::peer2peer::CaptureVideoFrameAck>();
-    ack->set_name(captured_frame->name());
-    sendToWorker(ltproto::id(ack), ack);
+    auto encoded_frame = std::static_pointer_cast<ltproto::peer2peer::VideoFrame>(_msg);
+    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame->capture_timestamp_us(),
+         encoded_frame->start_encode_timestamp_us(), encoded_frame->end_encode_timestamp_us());
+    lt::VideoFrame video_frame{};
+    video_frame.capture_timestamp_us = encoded_frame->capture_timestamp_us();
+    video_frame.start_encode_timestamp_us = encoded_frame->start_encode_timestamp_us();
+    video_frame.end_encode_timestamp_us = encoded_frame->end_encode_timestamp_us();
+    video_frame.width = encoded_frame->width();
+    video_frame.height = encoded_frame->height();
+    video_frame.is_keyframe = encoded_frame->is_keyframe();
+    video_frame.data = reinterpret_cast<const uint8_t*>(encoded_frame->frame().data());
+    video_frame.size = static_cast<uint32_t>(encoded_frame->frame().size());
+    video_frame.ltframe_id = encoded_frame->picture_id();
+    tp_server_->sendVideo(video_frame);
     // static std::ofstream out{"./service_stream", std::ios::binary};
     // out.write(reinterpret_cast<const char*>(encoded_frame.data), encoded_frame.size);
     // out.flush();
@@ -747,9 +707,6 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     case ltype::kStartTransmission:
         onStartTransmission(msg);
         break;
-    case ltype::kRequestKeyframe:
-        onRequestKeyframe();
-        break;
     case ltype::kTimeSync:
         onTimeSync(msg);
         break;
@@ -782,10 +739,6 @@ void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::Messag
 
 void WorkerSession::onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg) {
     // 是否需要回ack
-}
-
-void WorkerSession::onRequestKeyframe() {
-    video_encoder_->requestKeyframe();
 }
 
 void WorkerSession::updateLastRecvTime() {

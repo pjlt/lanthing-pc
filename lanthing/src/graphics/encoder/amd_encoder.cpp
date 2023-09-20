@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -130,7 +130,8 @@ public:
     ~AmdEncoderImpl();
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
-    VideoEncoder::EncodedFrame encodeOneFrame(void* input_frame, bool request_iframe);
+    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeOneFrame(void* input_frame,
+                                                                   bool request_iframe);
 
 private:
     bool loadAmdApi();
@@ -226,13 +227,13 @@ void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) 
     }
 }
 
-VideoEncoder::EncodedFrame AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
-    VideoEncoder::EncodedFrame out_frame{};
+std::shared_ptr<ltproto::peer2peer::VideoFrame>
+AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     amf::AMFSurfacePtr surface = nullptr;
     AMF_RESULT result = context_->CreateSurfaceFromDX11Native(input_frame, &surface, nullptr);
     if (result != AMF_OK) {
         LOG(WARNING) << "AMFContext::CreateSurfaceFromDX11Native failed with " << result;
-        return out_frame;
+        return nullptr;
     }
     if (request_iframe) {
         if (codec_type_ == lt::VideoCodecType::H264) {
@@ -255,23 +256,21 @@ VideoEncoder::EncodedFrame AmdEncoderImpl::encodeOneFrame(void* input_frame, boo
     result = encoder_->SubmitInput(surface);
     if (result != AMF_OK) {
         LOG(WARNING) << "AMFComponent::SubmitInput failed with " << result;
-        return out_frame;
+        return nullptr;
     }
     amf::AMFDataPtr outdata = nullptr;
     result = encoder_->QueryOutput(&outdata);
     if (result == AMF_EOF) {
-        return out_frame;
+        return nullptr;
     }
     if (outdata == nullptr) {
         LOG(WARNING) << "AMFComponent::QueryOutput failed with " << result;
-        return out_frame;
+        return nullptr;
     }
-    out_frame.is_keyframe = isKeyFrame(outdata);
     amf::AMFBufferPtr buffer{outdata};
-    out_frame.size = static_cast<uint32_t>(buffer->GetSize());
-    out_frame.internal_data = std::shared_ptr<uint8_t>(new uint8_t[out_frame.size]);
-    memcpy(out_frame.internal_data.get(), buffer->GetNative(), out_frame.size);
-    out_frame.data = out_frame.internal_data.get();
+    auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    out_frame->set_is_keyframe(isKeyFrame(outdata));
+    out_frame->set_frame(buffer->GetNative(), static_cast<uint32_t>(buffer->GetSize()));
     return out_frame;
 }
 
@@ -449,8 +448,8 @@ bool AmdEncoderImpl::isKeyFrame(amf::AMFDataPtr data) {
     return false;
 }
 
-AmdEncoder::AmdEncoder(void* d3d11_dev, void* d3d11_ctx)
-    : VideoEncoder{d3d11_dev, d3d11_ctx}
+AmdEncoder::AmdEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
+    : VideoEncoder{d3d11_dev, d3d11_ctx, width, height}
     , impl_{std::make_shared<AmdEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
                                              reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx))} {}
 
@@ -462,7 +461,7 @@ void AmdEncoder::reconfigure(const VideoEncoder::ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame AmdEncoder::encodeFrame(void* input_frame) {
+std::shared_ptr<ltproto::peer2peer::VideoFrame> AmdEncoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 

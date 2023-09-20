@@ -54,6 +54,9 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/common_types.h
+    # graphics->cepipeline
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/cepipeline/video_capture_encode_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/cepipeline/video_capture_encode_pipeline.cpp
     # graphics->decoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.cpp

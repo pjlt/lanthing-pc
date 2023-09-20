@@ -36,7 +36,6 @@
 #include <ltproto/ltproto.h>
 
 #include <ltproto/peer2peer/audio_data.pb.h>
-#include <ltproto/peer2peer/capture_video_frame_ack.pb.h>
 #include <ltproto/peer2peer/start_working.pb.h>
 #include <ltproto/peer2peer/start_working_ack.pb.h>
 #include <ltproto/peer2peer/streaming_params.pb.h>
@@ -54,19 +53,19 @@ lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type) {
     }
 }
 
-ltproto::peer2peer::StreamingParams::VideoEncodeBackend
-to_protobuf(lt::VideoEncoder::Backend backend) {
-    switch (backend) {
-    case lt::VideoEncoder::Backend::NvEnc:
-        return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_NvEnc;
-    case lt::VideoEncoder::Backend::IntelMediaSDK:
-        return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_IntelMediaSDK;
-    case lt::VideoEncoder::Backend::Amf:
-        return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_AMF;
-    default:
-        return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_UnknownVideoEncode;
-    }
-}
+// ltproto::peer2peer::StreamingParams::VideoEncodeBackend
+// to_protobuf(lt::VideoEncoder::Backend backend) {
+//     switch (backend) {
+//     case lt::VideoEncoder::Backend::NvEnc:
+//         return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_NvEnc;
+//     case lt::VideoEncoder::Backend::IntelMediaSDK:
+//         return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_IntelMediaSDK;
+//     case lt::VideoEncoder::Backend::Amf:
+//         return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_AMF;
+//     default:
+//         return ltproto::peer2peer::StreamingParams_VideoEncodeBackend_UnknownVideoEncode;
+//     }
+// }
 
 ltproto::peer2peer::VideoCodecType to_protobuf(lt::VideoCodecType codec_type) {
     switch (codec_type) {
@@ -207,8 +206,7 @@ bool Worker::init() {
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kStartWorking, std::bind(&Worker::onStartWorking, this, ph::_1)},
         {ltype::kStopWorking, std::bind(&Worker::onStopWorking, this, ph::_1)},
-        {ltype::kKeepAlive, std::bind(&Worker::onKeepAlive, this, ph::_1)},
-        {ltype::kCaptureVideoFrameAck, std::bind(&Worker::onFrameAck, this, ph::_1)}};
+        {ltype::kKeepAlive, std::bind(&Worker::onKeepAlive, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!registerMessageHandler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -253,74 +251,37 @@ bool Worker::negotiateParameters() {
 #endif
     audio_params.on_audio_data =
         std::bind(&Worker::onCapturedAudioData, this, std::placeholders::_1);
-    auto audio_capturer = AudioCapturer::create(audio_params);
-    if (audio_capturer == nullptr) {
+    auto audio = AudioCapturer::create(audio_params);
+    if (audio == nullptr) {
         return false;
     }
-    negotiated_params->set_audio_channels(audio_capturer->channels());
-    negotiated_params->set_audio_sample_rate(audio_capturer->framesPerSec());
+    negotiated_params->set_audio_channels(audio->channels());
+    negotiated_params->set_audio_sample_rate(audio->framesPerSec());
 
-    lt::VideoCapturer::Params video_params{};
-    video_params.backend = lt::VideoCapturer::Backend::Dxgi;
-    video_params.on_frame = std::bind(&Worker::onCapturedVideoFrame, this, std::placeholders::_1);
-    auto video_capturer = lt::VideoCapturer::create(video_params);
-    if (video_capturer == nullptr) {
-        LOGF(WARNING, "Create VideoCapturer with(backend:%d) failed", video_params.backend);
+    lt::VideoCaptureEncodePipeline::Params video_params{};
+    video_params.codecs = client_codec_types_;
+    video_params.width = negotiated_display_setting_.width;
+    video_params.height = negotiated_display_setting_.height;
+    video_params.send_message = std::bind(&Worker::sendPipeMessageFromOtherThread, this,
+                                          std::placeholders::_1, std::placeholders::_2);
+    video_params.register_message_handler = std::bind(&Worker::registerMessageHandler, this,
+                                                      std::placeholders::_1, std::placeholders::_2);
+    auto video = lt::VideoCaptureEncodePipeline::create(video_params);
+    if (video == nullptr) {
+        LOGF(WARNING, "Create VideoCaptureEncodePipeline failed");
         return false;
-    }
-    std::vector<VideoEncoder::Ability> encode_abilities;
-    if (video_params.backend == VideoCapturer::Backend::Dxgi) {
-        negotiated_params->set_video_capture_backend(
-            ltproto::peer2peer::StreamingParams_VideoCaptureBackend_Dxgi);
-        negotiated_params->set_luid(video_capturer->luid());
-        encode_abilities = VideoEncoder::checkEncodeAbilitiesWithLuid(
-            video_capturer->luid(), negotiated_display_setting_.width,
-            negotiated_display_setting_.height);
-    }
-    else {
-        negotiated_params->set_video_capture_backend(
-            ltproto::peer2peer::StreamingParams_VideoCaptureBackend_UnknownVideoCapture);
-        encode_abilities = VideoEncoder::checkEncodeAbilities(client_width_, client_height_);
     }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
     negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
     negotiated_params->set_video_width(negotiated_display_setting_.width);
     negotiated_params->set_video_height(negotiated_display_setting_.height);
-    auto negotiated_video_codecs = negotiated_params->mutable_video_codecs();
-    for (const auto& encode_ability : encode_abilities) {
-        if (!negotiated_video_codecs->empty()) {
-            break;
-        }
-        for (const auto& client_codec_type : client_codec_types_) {
-            if (client_codec_type == encode_ability.codec_type) {
-                ltproto::peer2peer::StreamingParams::VideoCodec video_codec;
-                video_codec.set_backend(::to_protobuf(encode_ability.backend));
-                video_codec.set_codec_type(::to_protobuf(encode_ability.codec_type));
-                negotiated_video_codecs->Add(std::move(video_codec));
-                negotiated_video_codec_beckend_ = encode_ability.backend;
-                negotiated_video_codec_type_ = encode_ability.codec_type;
-                LOG(INFO) << "Negotiated video codec:" << to_string(encode_ability.codec_type);
-                break;
-            }
-        }
-    }
-    if (negotiated_video_codecs->empty()) {
-        std::stringstream ss;
-        ss << "Negotiate video codec failed, client supports codec:[";
-        for (auto codec : client_codec_types_) {
-            ss << to_string(codec) << " ";
-        }
-        ss << "], host supports codec:[";
-        for (auto& codec : encode_abilities) {
-            ss << to_string(codec.codec_type) << " ";
-        }
-        ss << "]";
-        LOG(WARNING) << ss.str();
-    }
+    negotiated_params->add_video_codecs(to_protobuf(video->codec()));
+    LOG(INFO) << "Negotiated video codec:" << to_string(video->codec());
+
     negotiated_params_ = negotiated_params;
-    video_capturer_ = std::move(video_capturer);
-    audio_capturer_ = std::move(audio_capturer);
+    video_ = std::move(video);
+    audio_ = std::move(audio);
     return true;
 }
 
@@ -377,6 +338,13 @@ bool Worker::sendPipeMessage(uint32_t type,
     return pipe_client_->send(type, msg);
 }
 
+// FIXME: 返回值
+bool Worker::sendPipeMessageFromOtherThread(
+    uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+    postTask([type, msg, this]() { sendPipeMessage(type, msg); });
+    return true;
+}
+
 void Worker::printStats() {}
 
 void Worker::checkCimeout() {
@@ -390,10 +358,6 @@ void Worker::checkCimeout() {
     else {
         postDelayTask(500, [this]() { checkCimeout(); });
     }
-}
-
-void Worker::onCapturedVideoFrame(std::shared_ptr<google::protobuf::MessageLite> frame) {
-    postTask([this, frame]() { sendPipeMessage(ltproto::type::kCaptureVideoFrame, frame); });
 }
 
 void Worker::onCapturedAudioData(std::shared_ptr<google::protobuf::MessageLite> audio_data) {
@@ -431,8 +395,8 @@ void Worker::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>
     auto msg = std::static_pointer_cast<ltproto::peer2peer::StartWorking>(_msg);
     auto ack = std::make_shared<ltproto::peer2peer::StartWorkingAck>();
     do {
-        video_capturer_->start();
-        audio_capturer_->start();
+        video_->start();
+        audio_->start();
 
         InputExecutor::Params input_params{};
         input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
@@ -441,8 +405,8 @@ void Worker::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>
         input_params.screen_height = negotiated_display_setting_.height;
         input_params.register_message_handler = std::bind(
             &Worker::registerMessageHandler, this, std::placeholders::_1, std::placeholders::_2);
-        input_params.send_message =
-            std::bind(&Worker::sendPipeMessage, this, std::placeholders::_1, std::placeholders::_2);
+        input_params.send_message = std::bind(&Worker::sendPipeMessageFromOtherThread, this,
+                                              std::placeholders::_1, std::placeholders::_2);
         input_ = InputExecutor::create(input_params);
         if (input_ == nullptr) {
             ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_InputFailed);
@@ -455,11 +419,11 @@ void Worker::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>
     }
 
     if (ack->err_code() != ltproto::peer2peer::StartWorkingAck_ErrCode_Success) {
-        if (video_capturer_) {
-            video_capturer_->stop();
+        if (video_) {
+            video_->stop();
         }
-        if (audio_capturer_) {
-            audio_capturer_->stop();
+        if (audio_) {
+            audio_->stop();
         }
         input_ = nullptr;
     }
@@ -473,13 +437,6 @@ void Worker::onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>&
 
 void Worker::onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>&) {
     last_time_received_from_service_ = ltlib::steady_now_ms();
-}
-
-void Worker::onFrameAck(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-
-    auto ack = std::static_pointer_cast<ltproto::peer2peer::CaptureVideoFrameAck>(msg);
-    LOG(DEBUG) << "Frame ack " << ack->name();
-    video_capturer_->releaseFrame(ack->name());
 }
 
 } // namespace worker

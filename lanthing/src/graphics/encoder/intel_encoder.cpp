@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -38,7 +38,6 @@
 #include <vpl/mfx.h>
 
 #include <g3log/g3log.hpp>
-
 
 #define MSDK_ALIGN16(value) (((value + 15) >> 4) << 4)
 #define MSDK_ALIGN32(X) (((mfxU32)((X) + 31)) & (~(mfxU32)31))
@@ -121,21 +120,24 @@ void printMfxVideoParamEncode(const mfxVideoParam& p) {
 }
 
 void printMfxVideoParamVPP(const mfxVideoParam& p) {
-    LOGF(INFO, "AsyncDepth:%u, IOPattern:%u, NumExtParam:%u, VppIn{ChannelId:%u, BitDepthLuma:%u, BitDepthChroma:%u, Shift:%u, "
+    LOGF(
+        INFO,
+        "AsyncDepth:%u, IOPattern:%u, NumExtParam:%u, VppIn{ChannelId:%u, BitDepthLuma:%u, "
+        "BitDepthChroma:%u, Shift:%u, "
         "FourCC:%u, Width:%u, Height:%u, CropX:%u, CropY:%u, CropW:%u, CropH:%u, FrameRateExtN:%u, "
-        "FrameRateExtD:%u, AspectRatioW:%u, AspectRatioH:%u, PicStruct:%u, ChromaFormat:%u}, VppOut{ChannelId:%u, BitDepthLuma:%u, BitDepthChroma:%u, Shift:%u, "
+        "FrameRateExtD:%u, AspectRatioW:%u, AspectRatioH:%u, PicStruct:%u, ChromaFormat:%u}, "
+        "VppOut{ChannelId:%u, BitDepthLuma:%u, BitDepthChroma:%u, Shift:%u, "
         "FourCC:%u, Width:%u, Height:%u, CropX:%u, CropY:%u, CropW:%u, CropH:%u, FrameRateExtN:%u, "
         "FrameRateExtD:%u, AspectRatioW:%u, AspectRatioH:%u, PicStruct:%u, ChromaFormat:%u}",
         p.AsyncDepth, p.IOPattern, p.NumExtParam, p.vpp.In.ChannelId, p.vpp.In.BitDepthLuma,
-        p.vpp.In.BitDepthChroma, p.vpp.In.Shift, p.vpp.In.FourCC, p.vpp.In.Width,
-        p.vpp.In.Height, p.vpp.In.CropX, p.vpp.In.CropY, p.vpp.In.CropW, p.vpp.In.CropH,
-        p.vpp.In.FrameRateExtN, p.vpp.In.FrameRateExtD, p.vpp.In.AspectRatioW,
-        p.vpp.In.AspectRatioH, p.vpp.In.PicStruct, p.vpp.In.ChromaFormat, p.vpp.Out.ChannelId,
-        p.vpp.Out.BitDepthLuma, p.vpp.Out.BitDepthChroma, p.vpp.Out.Shift, p.vpp.Out.FourCC,
-        p.vpp.Out.Width,  p.vpp.Out.Height, p.vpp.Out.CropX, p.vpp.Out.CropY,
-        p.vpp.Out.CropW, p.vpp.Out.CropH, p.vpp.Out.FrameRateExtN, p.vpp.Out.FrameRateExtD,
-        p.vpp.Out.AspectRatioW, p.vpp.Out.AspectRatioH, p.vpp.Out.PicStruct,
-        p.vpp.Out.ChromaFormat);
+        p.vpp.In.BitDepthChroma, p.vpp.In.Shift, p.vpp.In.FourCC, p.vpp.In.Width, p.vpp.In.Height,
+        p.vpp.In.CropX, p.vpp.In.CropY, p.vpp.In.CropW, p.vpp.In.CropH, p.vpp.In.FrameRateExtN,
+        p.vpp.In.FrameRateExtD, p.vpp.In.AspectRatioW, p.vpp.In.AspectRatioH, p.vpp.In.PicStruct,
+        p.vpp.In.ChromaFormat, p.vpp.Out.ChannelId, p.vpp.Out.BitDepthLuma,
+        p.vpp.Out.BitDepthChroma, p.vpp.Out.Shift, p.vpp.Out.FourCC, p.vpp.Out.Width,
+        p.vpp.Out.Height, p.vpp.Out.CropX, p.vpp.Out.CropY, p.vpp.Out.CropW, p.vpp.Out.CropH,
+        p.vpp.Out.FrameRateExtN, p.vpp.Out.FrameRateExtD, p.vpp.Out.AspectRatioW,
+        p.vpp.Out.AspectRatioH, p.vpp.Out.PicStruct, p.vpp.Out.ChromaFormat);
 }
 
 class VplParamsHelper {
@@ -238,7 +240,8 @@ public:
     ~IntelEncoderImpl();
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
-    VideoEncoder::EncodedFrame encodeOneFrame(void* input_frame, bool request_iframe);
+    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeOneFrame(void* input_frame,
+                                                                   bool request_iframe);
 
 private:
     bool createMfxSession();
@@ -268,6 +271,7 @@ private:
     std::vector<mfxExtBuffer*> vpp_ext_buffers_;
     mfxExtCodingOption enc_coding_opt_{};
     std::vector<mfxExtBuffer*> enc_ext_buffers_;
+    std::vector<uint8_t> bitstream_;
 };
 
 IntelEncoderImpl::IntelEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx,
@@ -332,7 +336,8 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
     }
     if (params.bitrate_bps.has_value()) {
         uint32_t target_kbps = params.bitrate_bps.value() / 1024;
-        uint32_t old8 = static_cast<uint32_t>(static_cast<uint32_t>(encode_param_.mfx.TargetKbps) * encode_param_.mfx.BRCParamMultiplier *0.8);
+        uint32_t old8 = static_cast<uint32_t>(static_cast<uint32_t>(encode_param_.mfx.TargetKbps) *
+                                              encode_param_.mfx.BRCParamMultiplier * 0.8);
         VplSize vsize;
         vsize.target = std::max(old8, target_kbps);
         vsize.max = static_cast<uint32_t>(vsize.target * 1.05);
@@ -347,46 +352,50 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
         encode_param_.mfx.BufferSizeInKB = static_cast<mfxU16>(vsize.buffer_size);
         encode_param_.mfx.BRCParamMultiplier = vsize.factor;
         LOG(DEBUG) << "factor:" << vsize.factor << ", TargetKbps " << encode_param_.mfx.TargetKbps
-                  << ", MaxKbps:" << encode_param_.mfx.MaxKbps
-                  << ", InitDelayInKB:" << encode_param_.mfx.InitialDelayInKB << ", BufferSizeInKB:" << encode_param_.mfx.BufferSizeInKB;
+                   << ", MaxKbps:" << encode_param_.mfx.MaxKbps
+                   << ", InitDelayInKB:" << encode_param_.mfx.InitialDelayInKB
+                   << ", BufferSizeInKB:" << encode_param_.mfx.BufferSizeInKB;
     }
     if (params.fps.has_value()) {
         ConvertFrameRate(params.fps.value(), &encode_param_.mfx.FrameInfo.FrameRateExtN,
                          &encode_param_.mfx.FrameInfo.FrameRateExtD);
     }
-    //LOG(INFO) << "before query";
-    //printMfxVideoParamEncode(encode_param_);
+    // LOG(INFO) << "before query";
+    // printMfxVideoParamEncode(encode_param_);
     mfxStatus status = MFXVideoENCODE_Query(mfxsession_, &encode_param_, &encode_param_);
     if (status > MFX_ERR_NONE) {
         LOG(WARNING) << "MFXVideoENCODE_Query invalid parameters";
         // 是合法的留下？？？
-        //LOG(INFO) << "after query";
-        //printMfxVideoParamEncode(encode_param_);
+        // LOG(INFO) << "after query";
+        // printMfxVideoParamEncode(encode_param_);
         status = MFXVideoENCODE_Query(mfxsession_, &encode_param_, &encode_param_);
-        //LOG(INFO) << "after query2";
-        //printMfxVideoParamEncode(encode_param_);
+        // LOG(INFO) << "after query2";
+        // printMfxVideoParamEncode(encode_param_);
     }
     if (status < MFX_ERR_NONE) {
         LOG(WARNING) << "MFXVideoENCODE_Query failed";
         return;
     }
     status = MFXVideoENCODE_Reset(mfxsession_, &encode_param_);
-    //LOG(INFO) << "after reset";
-    //printMfxVideoParamEncode(encode_param_);
+    // LOG(INFO) << "after reset";
+    // printMfxVideoParamEncode(encode_param_);
     if (status != MFX_ERR_NONE) {
         LOG(WARNING) << "MFXVideoENCODE_Reset failed with " << status;
     }
 }
 
-VideoEncoder::EncodedFrame IntelEncoderImpl::encodeOneFrame(void* input_frame,
-                                                            bool request_iframe) {
-    VideoEncoder::EncodedFrame out_frame{};
+std::shared_ptr<ltproto::peer2peer::VideoFrame>
+IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     mfxSyncPoint sync_point{};
-    uint32_t k1024 = 1024;
-    std::shared_ptr<uint8_t> buffer(new uint8_t[k1024 * encode_param_.mfx.BufferSizeInKB * encode_param_.mfx.BRCParamMultiplier ]);
+    const uint32_t k1024 = 1024;
+    const uint32_t buffer_size =
+        k1024 * encode_param_.mfx.BufferSizeInKB * encode_param_.mfx.BRCParamMultiplier;
+    if (bitstream_.size() < buffer_size) {
+        bitstream_.resize(buffer_size);
+    }
     mfxBitstream bs{};
-    bs.Data = buffer.get();
-    bs.MaxLength = k1024 * encode_param_.mfx.BufferSizeInKB * encode_param_.mfx.BRCParamMultiplier;
+    bs.Data = bitstream_.data();
+    bs.MaxLength = static_cast<mfxU32>(bitstream_.size());
     mfxEncodeCtrl ctrl{};
     mfxEncodeCtrl* pctrl = nullptr;
     if (request_iframe) {
@@ -412,7 +421,8 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encodeOneFrame(void* input_frame,
             break;
         }
         else {
-            return out_frame;
+            LOG(WARNING) << "MFXVideoVPP_RunFrameVPPAsync failed with " << status;
+            return nullptr;
         }
     }
     while (true) {
@@ -431,7 +441,8 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encodeOneFrame(void* input_frame,
             break;
         }
         else {
-            return out_frame;
+            LOG(INFO) << "MFXVideoENCODE_EncodeFrameAsync failed with " << status;
+            return nullptr;
         }
     }
     status = MFX_WRN_IN_EXECUTION;
@@ -441,18 +452,17 @@ VideoEncoder::EncodedFrame IntelEncoderImpl::encodeOneFrame(void* input_frame,
             break;
         }
         else if (status < MFX_ERR_NONE) {
-            return out_frame;
+            LOG(INFO) << "MFXVideoCORE_SyncOperation failed with " << status;
+            return nullptr;
         }
         else {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
         }
     }
-    out_frame.internal_data = buffer;
-    out_frame.data = buffer.get();
-    out_frame.size = bs.DataLength;
-    out_frame.width = width_;
-    out_frame.height = height_;
-    out_frame.is_keyframe = (bs.FrameType & MFX_FRAMETYPE_I) || (bs.FrameType & MFX_FRAMETYPE_IDR);
+    bool is_keyframe = (bs.FrameType & MFX_FRAMETYPE_I) || (bs.FrameType & MFX_FRAMETYPE_IDR);
+    auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    out_frame->set_frame(bitstream_.data(), bs.DataLength);
+    out_frame->set_is_keyframe(is_keyframe);
     return out_frame;
 }
 
@@ -533,8 +543,8 @@ bool IntelEncoderImpl::findImplIndex() {
 
 bool IntelEncoderImpl::initEncoder(const VplParamsHelper& params_helper) {
     auto params = genEncodeParams(params_helper);
-    //LOG(INFO) << "Generated VPL encode params";
-    //printMfxVideoParamEncode(params);
+    // LOG(INFO) << "Generated VPL encode params";
+    // printMfxVideoParamEncode(params);
     mfxStatus status = MFX_ERR_NONE;
     status = MFXVideoENCODE_Init(mfxsession_, &params);
     if (status < MFX_ERR_NONE) { // FIXME: 这里会有参数不兼容的警告
@@ -550,8 +560,8 @@ bool IntelEncoderImpl::initEncoder(const VplParamsHelper& params_helper) {
         LOG(WARNING) << "MFXVideoENCODE_GetVideoParam failed with " << status;
         return false;
     }
-    //LOG(INFO) << "GetVideoParam encode";
-    //printMfxVideoParamEncode(param_out);
+    // LOG(INFO) << "GetVideoParam encode";
+    // printMfxVideoParamEncode(param_out);
     encode_param_ = param_out;
     return true;
 }
@@ -608,7 +618,7 @@ mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_he
     vsize = calcSize(vsize);
     mfxVideoParam params{};
     params.mfx.CodecId = params_helper.codec();
-    params.mfx.LowPower = MFX_CODINGOPTION_OFF; //效果差？
+    params.mfx.LowPower = MFX_CODINGOPTION_OFF; // 效果差？
     params.mfx.TargetUsage = params_helper.preset();
     params.mfx.BRCParamMultiplier = vsize.factor;
     params.mfx.TargetKbps = static_cast<mfxU16>(vsize.target);
@@ -687,8 +697,9 @@ mfxVideoParam IntelEncoderImpl::genVppParams(const VplParamsHelper& params_helpe
     return params;
 }
 
-IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid)
-    : VideoEncoder{d3d11_dev, d3d11_ctx}
+IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid, uint32_t width,
+                           uint32_t height)
+    : VideoEncoder{d3d11_dev, d3d11_ctx, width, height}
     , impl_{std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
                                                reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx),
                                                luid)} {}
@@ -701,7 +712,7 @@ void IntelEncoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-VideoEncoder::EncodedFrame IntelEncoder::encodeFrame(void* input_frame) {
+std::shared_ptr<ltproto::peer2peer::VideoFrame> IntelEncoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 

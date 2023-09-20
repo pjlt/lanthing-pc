@@ -237,18 +237,12 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         switch (codec) {
         case ltproto::peer2peer::AVC:
             if (h264_decodable) {
-                auto video_codec = params->add_video_codecs();
-                video_codec->set_backend(
-                    Backend::StreamingParams_VideoEncodeBackend_UnknownVideoEncode);
-                video_codec->set_codec_type(CodecType::AVC);
+                params->add_video_codecs(CodecType::AVC);
             }
             break;
         case ltproto::peer2peer::HEVC:
             if (h265_decodable) {
-                auto video_codec = params->add_video_codecs();
-                video_codec->set_backend(
-                    Backend::StreamingParams_VideoEncodeBackend_UnknownVideoEncode);
-                video_codec->set_codec_type(CodecType::HEVC);
+                params->add_video_codecs(CodecType::HEVC);
             }
             break;
         default:
@@ -569,7 +563,8 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     params.signaling_addr = ack->signaling_addr();
     params.signaling_port = ack->signaling_port();
     params.on_exited = std::bind(&App::onClientExitedThreadSafe, this, ack->request_id());
-    params.video_codec_type = toLtrtc(ack->streaming_params().video_codecs().Get(0).codec_type());
+    params.video_codec_type = toLtrtc(static_cast<ltproto::peer2peer::VideoCodecType>(
+        ack->streaming_params().video_codecs().Get(0)));
     params.width = ack->streaming_params().video_width();
     params.height = ack->streaming_params().video_height();
     params.refresh_rate = ack->streaming_params().screen_refresh_rate();

@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -44,8 +44,7 @@
 #include "message_handler.h"
 #include "session_change_observer.h"
 #include <audio/capturer/audio_capturer.h>
-#include <graphics/capturer/video_capturer.h>
-#include <graphics/encoder/video_encoder.h>
+#include <graphics/cepipeline/video_capture_encode_pipeline.h>
 #include <inputs/executor/input_executor.h>
 
 namespace lt {
@@ -80,9 +79,11 @@ private:
     void dispatchServiceMessage(uint32_t type,
                                 const std::shared_ptr<google::protobuf::MessageLite>& msg);
     bool sendPipeMessage(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    bool sendPipeMessageFromOtherThread(uint32_t type,
+                                        const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void printStats();
     void checkCimeout();
-    void onCapturedVideoFrame(std::shared_ptr<google::protobuf::MessageLite> frame);
+    // TODO: AUDIO和VIDEO INPUT一样改成通用的接口
     void onCapturedAudioData(std::shared_ptr<google::protobuf::MessageLite> audio_data);
 
     // pipe message handlers
@@ -93,7 +94,6 @@ private:
     void onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    void onFrameAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const uint32_t client_width_;
@@ -107,15 +107,14 @@ private:
     std::map<uint32_t, MessageHandler> msg_handlers_;
     DisplaySetting negotiated_display_setting_;
     lt::VideoCodecType negotiated_video_codec_type_ = lt::VideoCodecType::Unknown;
-    VideoEncoder::Backend negotiated_video_codec_beckend_ = VideoEncoder::Backend::Unknown;
     std::shared_ptr<google::protobuf::MessageLite> negotiated_params_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> pipe_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     int64_t last_time_received_from_service_;
-    std::unique_ptr<lt::VideoCapturer> video_capturer_;
+    std::unique_ptr<lt::VideoCaptureEncodePipeline> video_;
     std::unique_ptr<lt::InputExecutor> input_;
-    std::unique_ptr<lt::AudioCapturer> audio_capturer_;
+    std::unique_ptr<lt::AudioCapturer> audio_;
 };
 
 } // namespace worker
