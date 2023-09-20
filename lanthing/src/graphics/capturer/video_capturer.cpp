@@ -32,6 +32,8 @@
 
 #include <g3log/g3log.hpp>
 
+#include <ltlib/times.h>
+
 #include "dxgi_video_capturer.h"
 
 namespace lt {

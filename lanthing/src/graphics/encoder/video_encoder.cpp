@@ -177,7 +177,7 @@ std::unique_ptr<lt::VideoEncoder> doCreateEncoder(const lt::VideoEncoder::InitPa
                                                   void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt;
     VideoEncodeParamsHelper params_helper{
-        params.codec_type, params.width, params.height, 60, params.bitrate_bps / 1024, false};
+        params.codec_type, params.width, params.height, 60, params.bitrate_bps / 1024, true};
     switch (params.backend) {
     case VideoEncoder::Backend::NvEnc:
     {
@@ -333,6 +333,14 @@ bool VideoEncoder::needKeyframe() {
 }
 
 VideoEncoder::~VideoEncoder() {
+    for (auto& sr : shared_resources_) {
+        auto mutex = reinterpret_cast<IDXGIKeyedMutex*>(sr.mutex);
+        auto resource = reinterpret_cast<IDXGIResource*>(sr.resource);
+        auto texture = reinterpret_cast<ID3D11Texture2D*>(sr.texture);
+        mutex->Release();
+        resource->Release();
+        texture->Release();
+    }
     if (d3d11_dev_) {
         auto dev = reinterpret_cast<ID3D11Device*>(d3d11_dev_);
         dev->Release();
@@ -354,23 +362,42 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
         LOG(FATAL) << "Only support DxgiSharedHandle!";
         return {};
     }
-    std::wstring name = ltlib::utf8To16(input_frame->name());
-    Microsoft::WRL::ComPtr<ID3D11Device1> d3d11_1_dev;
-    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev = reinterpret_cast<ID3D11Device*>(d3d11_dev_);
-    d3d11_dev.As(&d3d11_1_dev);
-    Microsoft::WRL::ComPtr<ID3D11Resource> resource;
-    auto hr = d3d11_1_dev->OpenSharedResourceByName(name.c_str(), DXGI_SHARED_RESOURCE_READ,
-                                                    __uuidof(ID3D11Resource),
-                                                    (void**)resource.GetAddressOf());
-    if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to open shared resource, hr:0x%08x", hr);
-        return {};
+    int index = -1;
+    for (int i = 0; i < shared_resources_.size(); i++) {
+        if (shared_resources_[i].name == input_frame->name()) {
+            index = i;
+            break;
+        }
     }
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
-    resource.As(&texture);
-    Microsoft::WRL::ComPtr<IDXGIKeyedMutex> mutex;
-    resource.As(&mutex);
-    hr = mutex->AcquireSync(1, 0);
+    if (index == -1) {
+        std::wstring name = ltlib::utf8To16(input_frame->name());
+        Microsoft::WRL::ComPtr<ID3D11Device1> d3d11_1_dev;
+        Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev =
+            reinterpret_cast<ID3D11Device*>(d3d11_dev_);
+        d3d11_dev.As(&d3d11_1_dev);
+        ID3D11Resource* resource = nullptr;
+        auto hr = d3d11_1_dev->OpenSharedResourceByName(
+            name.c_str(), DXGI_SHARED_RESOURCE_READ, __uuidof(ID3D11Resource), (void**)&resource);
+        if (FAILED(hr)) {
+            LOGF(WARNING, "Failed to open shared resource, hr:0x%08x", hr);
+            return {};
+        }
+        ID3D11Texture2D* texture = nullptr;
+        IDXGIKeyedMutex* mutex = nullptr;
+
+        resource->QueryInterface(&texture);
+        texture->QueryInterface(&mutex);
+        SharedResource sr;
+        sr.name = input_frame->name();
+        sr.resource = resource;
+        sr.texture = texture;
+        sr.mutex = mutex;
+        shared_resources_.push_back(sr);
+        index = static_cast<int>(shared_resources_.size() - 1);
+        LOG(INFO) << "OpenSharedResource " << input_frame->name() << ", " << texture;
+    }
+    auto mutex = reinterpret_cast<IDXGIKeyedMutex*>(shared_resources_[index].mutex);
+    HRESULT hr = mutex->AcquireSync(1, 0);
     if (hr != S_OK) {
         LOGF(WARNING, "Failed to get dxgi mutex, hr:0x%08x", hr);
         mutex->ReleaseSync(0);
@@ -378,7 +405,7 @@ VideoEncoder::encode(std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> inpu
     }
 
     const int64_t start_encode = ltlib::steady_now_us();
-    auto encoded_frame = this->encodeFrame(texture.Get());
+    auto encoded_frame = this->encodeFrame(shared_resources_[index].texture);
     const int64_t end_encode = ltlib::steady_now_us();
     mutex->ReleaseSync(0);
 

@@ -223,7 +223,8 @@ bool D3D11Pipeline::tryResetSwapChain() {
         display_width_ = rect.right - rect.left;
         display_height_ = rect.bottom - rect.top;
         render_view_ = nullptr;
-        HRESULT hr = swap_chain_->ResizeBuffers(0, static_cast<UINT>(display_width_), static_cast<UINT>(display_height_),
+        HRESULT hr = swap_chain_->ResizeBuffers(
+            0, static_cast<UINT>(display_width_), static_cast<UINT>(display_height_),
             DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
         if (FAILED(hr)) {
             LOGF(WARNING, "SwapChain resize buffers failed %#x", hr);
@@ -239,7 +240,8 @@ bool D3D11Pipeline::tryResetSwapChain() {
             return false;
         }
         ComPtr<ID3D11Resource> back_buffer;
-        hr = swap_chain_->GetBuffer(0, __uuidof(ID3D11Resource), (void**)back_buffer.GetAddressOf());
+        hr =
+            swap_chain_->GetBuffer(0, __uuidof(ID3D11Resource), (void**)back_buffer.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(WARNING, "IDXGISwapChain::GetBuffer failed: %#x", hr);
             return false;
@@ -250,7 +252,6 @@ bool D3D11Pipeline::tryResetSwapChain() {
             return false;
         }
         setupRSStage();
-
     }
     return true;
 }

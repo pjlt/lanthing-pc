@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -45,6 +45,12 @@
 #include <ltlib/load_library.h>
 
 namespace {
+
+#if LT_WINDOWS
+constexpr char* kNvEncLibName = "nvEncodeAPI64.dll";
+#else
+constexpr char* kNvEncLibName = "libnvidia-encode.so.1";
+#endif
 
 DXGI_FORMAT toDxgiFormat(NV_ENC_BUFFER_FORMAT format) {
     switch (format) {
@@ -163,7 +169,14 @@ private:
     NV_ENC_INITIALIZE_PARAMS init_params_;
     NV_ENC_CONFIG encode_config_;
     void* bitstream_output_buffer_ = nullptr;
-    NV_ENC_REGISTER_RESOURCE register_res_ = {NV_ENC_REGISTER_RESOURCE_VER};
+    void* event_ = nullptr;
+    // 因为编码需求是一帧都不延迟，这个async似乎没有意义，只是想测试一下async似乎会玄学地缩短编码latency
+    bool async_ = false;
+    struct EncodeResource {
+        NV_ENC_REGISTER_RESOURCE reg = {NV_ENC_REGISTER_RESOURCE_VER};
+        NV_ENC_MAP_INPUT_RESOURCE mapped = {NV_ENC_MAP_INPUT_RESOURCE_VER};
+    };
+    std::vector<EncodeResource> resources_;
 };
 
 NvD3d11EncoderImpl::NvD3d11EncoderImpl(ID3D11Device* dev)
@@ -210,6 +223,13 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
         LOG(WARNING) << "nvEncInitializeEncoder failed with " << status;
         return false;
     }
+    if (async_) {
+        event_ = CreateEventA(NULL, FALSE, FALSE, NULL);
+        NV_ENC_EVENT_PARAMS ev_param = {NV_ENC_EVENT_PARAMS_VER};
+        ev_param.completionEvent = event_;
+        nvfuncs_.nvEncRegisterAsyncEvent(nvencoder_, &ev_param);
+    }
+
     if (!initBuffers()) {
         return false;
     }
@@ -217,6 +237,13 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
 }
 
 void NvD3d11EncoderImpl::releaseResources() {
+    if (event_) {
+        NV_ENC_EVENT_PARAMS ev_param = {NV_ENC_EVENT_PARAMS_VER};
+        ev_param.completionEvent = event_;
+        nvfuncs_.nvEncUnregisterAsyncEvent(nvencoder_, &ev_param);
+        CloseHandle(event_);
+        event_ = nullptr;
+    }
     if (nvencoder_ == nullptr) {
         return;
     }
@@ -268,10 +295,17 @@ VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encodeOneFrame(void* input_frame,
     params.inputWidth = width_;
     params.inputHeight = height_;
     params.outputBitstream = bitstream_output_buffer_;
+    params.completionEvent = event_;
     NVENCSTATUS status = nvfuncs_.nvEncEncodePicture(nvencoder_, &params);
     if (status != NV_ENC_SUCCESS) {
         // include NV_ENC_ERR_NEED_MORE_INPUT
         LOG(WARNING) << "nvEncEncodePicture failed with " << status;
+    }
+    if (async_) {
+        if (WaitForSingleObject(event_, 20000) == WAIT_FAILED) {
+            LOG(WARNING) << "Wait encode event timeout";
+            return out_frame;
+        }
     }
     NV_ENC_LOCK_BITSTREAM lbs = {NV_ENC_LOCK_BITSTREAM_VER};
     lbs.outputBitstream = bitstream_output_buffer_;
@@ -305,11 +339,7 @@ VideoEncoder::EncodedFrame NvD3d11EncoderImpl::encodeOneFrame(void* input_frame,
 }
 
 bool NvD3d11EncoderImpl::loadNvApi() {
-#if defined(LT_WINDOWS)
-    std::string lib_name = "nvEncodeAPI64.dll";
-#else
-    std::string lib_name = "libnvidia-encode.so.1";
-#endif
+    std::string lib_name = kNvEncLibName;
     nvapi_ = ltlib::DynamicLibrary::load(lib_name);
     if (nvapi_ == nullptr) {
         return false;
@@ -374,7 +404,7 @@ NvD3d11EncoderImpl::generateEncodeParams(const NvEncParamsHelper& helper,
     params.enablePTD = 1;
     params.reportSliceOffsets = 0;
     params.enableSubFrameWrite = 0;
-    params.enableEncodeAsync = false;
+    params.enableEncodeAsync = async_;
 
     NV_ENC_PRESET_CONFIG preset_config = {NV_ENC_PRESET_CONFIG_VER, {NV_ENC_CONFIG_VER}};
     nvfuncs_.nvEncGetEncodePresetConfig(nvencoder_, params.encodeGUID, params.presetGUID,
@@ -442,46 +472,44 @@ bool NvD3d11EncoderImpl::initBuffers() {
 }
 
 std::optional<NV_ENC_MAP_INPUT_RESOURCE> NvD3d11EncoderImpl::initInputFrame(void* frame) {
-    if (register_res_.resourceToRegister && register_res_.resourceToRegister != frame) {
-        NVENCSTATUS status =
-            nvfuncs_.nvEncUnregisterResource(nvencoder_, register_res_.registeredResource);
-        if (status != NV_ENC_SUCCESS) {
-            LOG(WARNING) << "nvEncUnregisterResource failed with " << status;
-            return {};
+    for (auto& res : resources_) {
+        if (res.reg.resourceToRegister == frame) {
+            return res.mapped;
         }
     }
-    if (register_res_.resourceToRegister == nullptr) {
-        register_res_.resourceToRegister = frame;
-        NVENCSTATUS status = nvfuncs_.nvEncRegisterResource(nvencoder_, &register_res_);
-        if (status != NV_ENC_SUCCESS) {
-            LOG(WARNING) << "nvEncRegisterResource failed with " << status;
-            return {};
-        }
+    EncodeResource res;
+    res.reg.resourceToRegister = frame;
+    NVENCSTATUS status = nvfuncs_.nvEncRegisterResource(nvencoder_, &res.reg);
+    if (status != NV_ENC_SUCCESS) {
+        LOG(WARNING) << "nvEncRegisterResource failed with " << status;
+        return {};
     }
-    NV_ENC_MAP_INPUT_RESOURCE mapped_resource = {NV_ENC_MAP_INPUT_RESOURCE_VER};
-    mapped_resource.registeredResource = register_res_.registeredResource;
-    NVENCSTATUS status = nvfuncs_.nvEncMapInputResource(nvencoder_, &mapped_resource);
+    res.mapped.registeredResource = res.reg.registeredResource;
+    status = nvfuncs_.nvEncMapInputResource(nvencoder_, &res.mapped);
     if (status != NV_ENC_SUCCESS) {
         LOG(WARNING) << "nvEncMapInputResource failed with " << status;
         return {};
     }
-    return mapped_resource;
+    resources_.push_back(res);
+    LOG(INFO) << "Register texture " << frame;
+    return res.mapped;
 }
 
 bool NvD3d11EncoderImpl::uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource) {
-    NVENCSTATUS status = nvfuncs_.nvEncUnmapInputResource(nvencoder_, &resource);
-    if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncUnmapInputResource failed with " << status;
-        return false;
-    }
-    if (register_res_.registeredResource) {
-        status = nvfuncs_.nvEncUnregisterResource(nvencoder_, register_res_.registeredResource);
-        if (status != NV_ENC_SUCCESS) {
-            LOG(WARNING) << "nvEncUnregisterResource failed with " << status;
-            return false;
-        }
-        register_res_.resourceToRegister = nullptr;
-    }
+    (void)resource;
+    // NVENCSTATUS status = nvfuncs_.nvEncUnmapInputResource(nvencoder_, &resource);
+    // if (status != NV_ENC_SUCCESS) {
+    //     LOG(WARNING) << "nvEncUnmapInputResource failed with " << status;
+    //     return false;
+    // }
+    //  if (register_res_.registeredResource) {
+    //      status = nvfuncs_.nvEncUnregisterResource(nvencoder_, register_res_.registeredResource);
+    //      if (status != NV_ENC_SUCCESS) {
+    //          LOG(WARNING) << "nvEncUnregisterResource failed with " << status;
+    //          return false;
+    //      }
+    //      register_res_.resourceToRegister = nullptr;
+    //  }
     return true;
 }
 

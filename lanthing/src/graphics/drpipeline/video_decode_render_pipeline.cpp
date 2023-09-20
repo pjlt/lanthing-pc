@@ -302,6 +302,8 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
                 LOG(FATAL) << "Should not be reach here";
             }
             else {
+                LOG(DEBUG) << "CAPTURE-AFTER_DECODE "
+                           << ltlib::steady_now_us() - frame.capture_timestamp_us - time_diff_;
                 statistics_->updateDecodeTime(end - start);
                 CTSmoother::Frame f;
                 f.no = decoded_frame.frame;
@@ -339,12 +341,14 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
         i_am_alive();
         ltlib::Timestamp cur_time = ltlib::Timestamp::now();
         if (video_renderer_->waitForPipeline(16) && waitForRender(2ms)) {
-            int64_t frame = smoother_.get(cur_time.microseconds());
+            auto frame = smoother_.get(cur_time.microseconds());
             smoother_.pop();
-            if (frame != -1) {
+            if (frame.has_value()) {
+                LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
+                           << ltlib::steady_now_us() - frame->capture_time - time_diff_;
                 statistics_->addRenderVideo();
                 auto start = ltlib::steady_now_us();
-                video_renderer_->render(frame);
+                video_renderer_->render(frame->no);
                 auto end = ltlib::steady_now_us();
                 statistics_->updateRenderVideoTime(end - start);
             }

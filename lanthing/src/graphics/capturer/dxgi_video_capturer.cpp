@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -37,6 +37,23 @@
 
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
+
+#if 0
+static int64_t point1;
+static int64_t point2;
+static int64_t point3;
+static int64_t point4;
+static int64_t point5;
+static int64_t point6;
+static int64_t point7;
+#define RECORD_T(x) x = ltlib::steady_now_us();
+#define LOG_RECORD_T()                                                                             \
+    LOGF(INFO, "RECORD_T %lld,%lld,%lld,%lld,%lld,%lld,%lld", point1, point2, point3, point4,      \
+         point5, point6, point7)
+#else
+#define RECORD_T(X)
+#define LOG_RECORD_T()
+#endif
 
 using namespace Microsoft::WRL;
 
@@ -114,13 +131,18 @@ bool DxgiVideoCapturer::initD3D11() {
 std::shared_ptr<ltproto::peer2peer::CaptureVideoFrame> DxgiVideoCapturer::captureOneFrame() {
     FRAME_DATA frame;
     bool timeout = false;
+    RECORD_T(point1);
     auto hr = impl_->GetFrame(&frame, &timeout);
     if (hr == DUPL_RETURN::DUPL_RETURN_SUCCESS && !timeout) {
+        RECORD_T(point2);
         std::string name = shareTexture(frame.Frame);
+        RECORD_T(point6);
         impl_->DoneWithFrame();
+        RECORD_T(point7);
         if (name.empty()) {
             return nullptr;
         }
+        LOG_RECORD_T();
         auto capture_frame = std::make_shared<ltproto::peer2peer::CaptureVideoFrame>();
         capture_frame->set_name(name);
         capture_frame->set_capture_timestamp_us(ltlib::steady_now_us());
@@ -185,12 +207,15 @@ std::string DxgiVideoCapturer::shareTexture(ID3D11Texture2D* texture1) {
         LOGF(WARNING, "Cast to IDXGIKeyedMutex failed, hr:0x%08x", hr);
         return "";
     }
+    RECORD_T(point3);
     hr = mutex->AcquireSync(0, 0);
     if (FAILED(hr)) {
         LOGF(WARNING, "drop frame, hr:0x%08x", hr);
         return "";
     }
+    RECORD_T(point4);
     d3d11_ctx_->CopyResource(texture_pool_[*index].texture.Get(), texture1);
+    RECORD_T(point5);
     // FIXME: 如果没有人打开过handle, 会持续failed
     mutex->ReleaseSync(1);
     return texture_pool_[*index].name;
