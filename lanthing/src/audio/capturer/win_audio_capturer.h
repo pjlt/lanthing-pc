@@ -66,6 +66,7 @@ private:
     std::condition_variable cv_;
     std::mutex mtx_;
     bool running_ = false;
+    std::vector<uint8_t> slient_buffer_;
 };
 
 } // namespace lt
