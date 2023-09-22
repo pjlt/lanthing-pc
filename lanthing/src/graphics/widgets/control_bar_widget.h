@@ -30,21 +30,42 @@
 
 #pragma once
 #include <cstdint>
+#include <functional>
+#include <string>
 
 namespace lt {
 
 class ControlBarWidget {
 public:
-    ControlBarWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
-                     uint32_t display_height);
+    struct Params {
+        uint32_t video_width;
+        uint32_t video_height;
+        std::function<void(bool)> toggle_fullscreen;
+        std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
+        std::function<void()> exit;
+        std::function<void(bool)> show_stat;
+    };
+
+public:
+    ControlBarWidget(const Params& params);
     void render();
     void update();
 
 private:
     uint32_t video_width_;
     uint32_t video_height_;
-    uint32_t display_width_;
-    uint32_t display_height_;
+    std::function<void(bool)> toggle_fullscreen_;
+    std::function<void(uint32_t bps)> set_bitrate_; // 0代表自动
+    std::function<void()> exit_;
+    std::function<void(bool)> on_show_stat_;
+    bool collapse_ = true;
+    std::string fullscreen_text_;
+    bool fullscreen_ = false;
+    int radio_ = 0;
+    int manual_bitrate_ = 2;
+    bool show_stat_ = false;
+    std::string stat_text_;
+    bool first_time_ = true;
 };
 
 } // namespace lt

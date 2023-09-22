@@ -28,33 +28,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <atomic>
-#include <cstdint>
+#include "renderer_grab_inputs.h"
+
+#include <mutex>
+
+// 暂时写死SDL
+#include <backends/imgui_impl_sdl2.h>
+
+static bool g_imgui_valid = false;
+static std::mutex g_mutex;
 
 namespace lt {
 
-class StatusWidget {
-public:
-    StatusWidget(uint32_t video_width, uint32_t video_height);
-    ~StatusWidget();
-    void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
-                       uint32_t bottom);
-    void render();
-    void update(uint32_t delay_ms, uint32_t fps, float loss);
-    void resize();
+bool rendererGrabInputs(void* inputs) {
+    std::lock_guard lk{g_mutex};
+    if (!g_imgui_valid) {
+        return false;
+    }
+    if (ImGui_ImplSDL2_ProcessEvent(reinterpret_cast<const SDL_Event*>(inputs))) {
+        auto& io = ImGui::GetIO();
+        if (io.WantCaptureKeyboard || io.WantCaptureMouse) {
+            return true;
+        }
+    }
+    return false;
+}
 
-private:
-    uint32_t video_width_;
-    uint32_t video_height_;
-    uint32_t display_width_;
-    uint32_t display_height_;
-    uint32_t rtt_ms_ = 0;
-    uint32_t fps_ = 0;
-    float loss_ = 0.0f;
-    uint32_t bottom_margin_ = 48;
-    uint32_t right_margin_ = 36;
-    std::atomic<bool> resize_;
-};
+void setImGuiValid() {
+    std::lock_guard lk{g_mutex};
+    g_imgui_valid = true;
+}
+
+void setImGuiInvalid() {
+    std::lock_guard lk{g_mutex};
+    g_imgui_valid = false;
+}
 
 } // namespace lt

@@ -41,4 +41,6 @@ CMakeSettings.json
 # misc
 draft.txt
 /third_party/Video_Codec*
+fonts/
+icons/
 

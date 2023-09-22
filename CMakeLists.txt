@@ -4,6 +4,7 @@ project(lanthing-pc)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/options.cmake)
+include(cmake/CMakeRC.cmake)
 
 # 平台检测
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -70,6 +71,7 @@ add_subdirectory(third_party/nvcodec)
 add_subdirectory(third_party/amf)
 add_subdirectory(third_party/ffmpeg)
 add_subdirectory(third_party/breakpad_builder)
+#add_subdirectory(third_party/lodepng)
 
 find_package(protobuf REQUIRED PATHS third_party/protobuf/build2/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(GTest REQUIRED PATHS third_party/googletest/build/install/${THIRD_PARTY_BUILD_TYPE})

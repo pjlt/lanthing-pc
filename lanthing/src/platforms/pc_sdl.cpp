@@ -35,11 +35,14 @@
 #include <SDL.h>
 
 #include "pc_sdl_input.h"
+#include <graphics/renderer/renderer_grab_inputs.h>
 #include <ltlib/threads.h>
 
 namespace {
 
 constexpr int32_t kUserEventResetDRPipeline = 1;
+constexpr int32_t kUserEventSwitchToFullscreen = 2;
+constexpr int32_t kUserEventSwitchToWindowed = 3;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -86,6 +89,7 @@ private: // 事件处理
     DispatchResult handleSdlControllerRemoved(const SDL_Event& ev);
     DispatchResult handleSdlJoyDeviceAdded(const SDL_Event& ev);
     DispatchResult handleSdlTouchEvent(const SDL_Event& ev);
+    DispatchResult toggleFullscreen(bool fullscreen);
 
 private:
     SDL_Window* window_ = nullptr;
@@ -178,7 +182,9 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         if (!SDL_WaitEventTimeout(&ev, 1000)) {
             continue;
         }
-
+        if (rendererGrabInputs(&ev)) {
+            continue;
+        }
         switch (dispatchSdlEvent(ev)) {
         case DispatchResult::kContinue:
             continue;
@@ -267,6 +273,10 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
     switch (ev.user.code) {
     case kUserEventResetDRPipeline:
         return resetDrPipeline();
+    case kUserEventSwitchToFullscreen:
+        return toggleFullscreen(true);
+    case kUserEventSwitchToWindowed:
+        return toggleFullscreen(false);
     default:
         SDL_assert(false);
         return DispatchResult::kStop;
@@ -357,6 +367,13 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlJoyDeviceAdded(const SDL_Event& ev
 
 PcSdlImpl::DispatchResult PcSdlImpl::handleSdlTouchEvent(const SDL_Event& ev) {
     (void)ev;
+    return DispatchResult::kContinue;
+}
+
+PcSdlImpl::DispatchResult PcSdlImpl::toggleFullscreen(bool fullscreen) {
+    // 使用无边框窗口全屏会导致ImGui坐标错误，暂时不知道怎么解决
+    // 使用真·全屏，会黑一下屏，暂时不清楚什么问题
+    SDL_SetWindowFullscreen(window_, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
     return DispatchResult::kContinue;
 }
 

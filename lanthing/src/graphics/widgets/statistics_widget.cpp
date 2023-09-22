@@ -53,12 +53,9 @@ void plotLines(const std::string& name, const lt::VideoStatistics::History& hist
 
 namespace lt {
 
-StatisticsWidget::StatisticsWidget(uint32_t video_width, uint32_t video_height,
-                                   uint32_t display_width, uint32_t display_height)
+StatisticsWidget::StatisticsWidget(uint32_t video_width, uint32_t video_height)
     : video_width_{video_width}
-    , video_height_{video_height}
-    , display_width_{display_width}
-    , display_height_{display_height} {}
+    , video_height_{video_height} {}
 
 void StatisticsWidget::render() {
     ImGuiIO& io = ImGui::GetIO();

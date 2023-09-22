@@ -40,12 +40,11 @@
 
 namespace lt {
 
-StatusWidget::StatusWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
-                           uint32_t display_height)
+StatusWidget::StatusWidget(uint32_t video_width, uint32_t video_height)
     : video_width_{video_width}
-    , video_height_{video_height}
-    , display_width_{display_width}
-    , display_height_{display_height} {}
+    , video_height_{video_height} {
+    resize_ = true;
+}
 
 StatusWidget::~StatusWidget() {}
 

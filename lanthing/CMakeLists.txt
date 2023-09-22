@@ -3,6 +3,11 @@ project(lanthing)
 
 include(deploy_dlls)
 
+#cmrc_add_resource_library(fonts
+#    NAMESPACE fonts
+#    ${CMAKE_CURRENT_SOURCE_DIR}/fonts/NotoSansSC-Medium.ttf
+#)
+
 set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.h
@@ -69,6 +74,8 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.cpp
     # graphics->drpipeline
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.cpp
@@ -171,6 +178,7 @@ target_link_libraries(${PROJECT_NAME}
     ltproto
     rtc
     transport
+    #fonts
 )
 
 install(TARGETS ${PROJECT_NAME})

@@ -30,6 +30,7 @@
 
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -49,9 +50,19 @@ struct Statistics {
 
 class WidgetsManager {
 public:
-    static std::unique_ptr<WidgetsManager> create(void* dev, void* ctx, void* window,
-                                                  uint32_t video_width, uint32_t video_height,
-                                                  uint32_t render_width, uint32_t render_height);
+    struct Params {
+        void* dev;
+        void* ctx;
+        void* window;
+        uint32_t video_width;
+        uint32_t video_height;
+        // std::function<void(bool)> toggle_fullscreen;
+        // std::function<void()> exit;
+        std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
+    };
+
+public:
+    static std::unique_ptr<WidgetsManager> create(const Params& params);
     ~WidgetsManager();
     void render();
     void resize();
@@ -59,27 +70,24 @@ public:
     void disableStatus();
     void enableStatistics();
     void disableStatistics();
-    void enableControlBar();
-    void disableControlBar();
     void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
                        uint32_t bottom);
     void updateStatus(uint32_t rtt_ms, uint32_t fps, float loss);
     void updateStatistics(const VideoStatistics::Stat& statistics);
 
 private:
-    WidgetsManager(void* dev, void* ctx, void* window, uint32_t video_width, uint32_t video_height,
-                   uint32_t render_width, uint32_t render_height);
+    WidgetsManager(const Params& params);
 
 private:
     void* dev_;
     void* ctx_;
     void* window_;
+    bool show_status_ = true;
+    bool show_statistics_ = false;
+    // bool show_control_bar_ = true;
     std::shared_ptr<StatusWidget> status_;
     std::shared_ptr<StatisticsWidget> statistics_;
     std::shared_ptr<ControlBarWidget> control_bar_;
-    bool show_status_ = true;
-    bool show_statistics_ = true;
-    bool show_control_bar_ = false;
 };
 
 } // namespace lt

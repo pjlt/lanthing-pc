@@ -45,16 +45,13 @@ class StatisticsWidget {
     };
 
 public:
-    StatisticsWidget(uint32_t video_width, uint32_t video_height, uint32_t display_width,
-                     uint32_t display_height);
+    StatisticsWidget(uint32_t video_width, uint32_t video_height);
     void render();
     void update(const VideoStatistics::Stat& statistics);
 
 private:
     uint32_t video_width_;
     uint32_t video_height_;
-    uint32_t display_width_;
-    uint32_t display_height_;
     VideoStatistics::Stat stat_{};
     char buffer[4096]{};
 

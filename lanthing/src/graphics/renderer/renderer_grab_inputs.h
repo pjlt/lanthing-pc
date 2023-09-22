@@ -29,32 +29,12 @@
  */
 
 #pragma once
-#include <atomic>
-#include <cstdint>
 
 namespace lt {
 
-class StatusWidget {
-public:
-    StatusWidget(uint32_t video_width, uint32_t video_height);
-    ~StatusWidget();
-    void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
-                       uint32_t bottom);
-    void render();
-    void update(uint32_t delay_ms, uint32_t fps, float loss);
-    void resize();
-
-private:
-    uint32_t video_width_;
-    uint32_t video_height_;
-    uint32_t display_width_;
-    uint32_t display_height_;
-    uint32_t rtt_ms_ = 0;
-    uint32_t fps_ = 0;
-    float loss_ = 0.0f;
-    uint32_t bottom_margin_ = 48;
-    uint32_t right_margin_ = 36;
-    std::atomic<bool> resize_;
-};
+// TODO: 想办法换掉这种丑陋的全局用法（因为每次串流，client都是一个独立的进程，也许这样就很好）
+bool rendererGrabInputs(void* inputs);
+void setImGuiValid();
+void setImGuiInvalid();
 
 } // namespace lt

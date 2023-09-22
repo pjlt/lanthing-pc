@@ -35,32 +35,91 @@
 
 namespace lt {
 
-ControlBarWidget::ControlBarWidget(uint32_t video_width, uint32_t video_height,
-                                   uint32_t display_width, uint32_t display_height)
-    : video_width_{video_width}
-    , video_height_{video_height}
-    , display_width_{display_width}
-    , display_height_{display_height} {}
+ControlBarWidget::ControlBarWidget(const Params& params)
+    : video_width_{params.video_width}
+    , video_height_{params.video_height}
+    , toggle_fullscreen_{params.toggle_fullscreen}
+    , set_bitrate_{params.set_bitrate}
+    , exit_{params.exit}
+    , on_show_stat_{params.show_stat} {
+    // fullscreen_text_ = u8"全屏";
+    // stat_text_ = u8"显示统计";
+    fullscreen_text_ = "Fullscreen";
+    stat_text_ = "Show Stat";
+}
 
 void ControlBarWidget::render() {
-    constexpr float width = 20.f;
-    constexpr float height = 10.f;
-    ImVec2 a{-width / 2, 0.f};
-    ImVec2 b{width / 2, 0.f};
-    ImVec2 c{0.f, height};
+    if (first_time_) {
+        first_time_ = false;
+        auto& io = ImGui::GetIO();
+        ImGui::SetNextWindowPos(ImVec2{(io.DisplaySize.x - 24.f) / 2, 0.f});
+        ImGui::SetNextWindowCollapsed(true);
+    }
+    if (collapse_) {
+        ImGui::SetNextWindowSize(ImVec2{24.f, 24.f});
+    }
+    else {
+        ImGui::SetNextWindowSize(ImVec2{320.f, 175.f});
+    }
 
-    ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos({(io.DisplaySize.x - width) / 2, 0}, ImGuiCond_Always);
-    ImGui::SetNextWindowSize({width, height});
-    ImGui::Begin("control_bar", nullptr,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-                     ImGuiWindowFlags_NoBackground);
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImGui::Begin("Tool", nullptr,
+                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNavInputs |
+                     ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoSavedSettings);
+    if (ImGui::IsWindowCollapsed()) {
+        collapse_ = true;
+    }
+    else {
+        collapse_ = false;
+        if (ImGui::Button(fullscreen_text_.c_str())) {
+            if (fullscreen_) {
+                fullscreen_ = false;
+                // fullscreen_text_ = u8"全屏";
+                fullscreen_text_ = "Fullscreen";
+                toggle_fullscreen_(false);
+            }
+            else {
+                fullscreen_ = true;
+                // fullscreen_text_ = u8"窗口化";
+                fullscreen_text_ = "Windowed";
+                toggle_fullscreen_(true);
+            }
+        }
+        if (ImGui::Button(stat_text_.c_str())) {
+            if (show_stat_) {
+                // stat_text_ = u8"显示统计";
+                stat_text_ = "Show stat";
+            }
+            else {
+                // stat_text_ = u8"关闭统计";
+                stat_text_ = "Hide stat";
+            }
+            show_stat_ = !show_stat_;
+            on_show_stat_(show_stat_);
+        }
+        ImGui::Text("Bitrate:");
+        // if (ImGui::RadioButton(u8"自动", &radio_, 0)) {
+        if (ImGui::RadioButton("Auto", &radio_, 0)) {
+            set_bitrate_(0);
+        }
+        // if (ImGui::RadioButton(u8"手动", &radio_, 1)) {
+        if (ImGui::RadioButton("Manual", &radio_, 1)) {
+            //
+        }
+        if (radio_ == 1) {
+            ImGui::SameLine();
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.6f);
+            if (ImGui::SliderInt("Mbps", &manual_bitrate_, 2, 100, "%d")) {
+                set_bitrate_(static_cast<uint32_t>(manual_bitrate_) * 1024 * 1024);
+            }
+            ImGui::PopItemWidth();
+        }
+        // if (ImGui::Button(u8"退出")) {
+        if (ImGui::Button("Quit")) {
+            exit_();
+        }
+    }
 
-    ImVec2 middle{io.DisplaySize.x / 2, 0.f};
-    ImVec4 color{.5f, .5f, .5f, .5f};
-    draw_list->AddTriangleFilled(middle + a, middle + b, middle + c,
-                                 ImGui::ColorConvertFloat4ToU32(color));
     ImGui::End();
 }
 

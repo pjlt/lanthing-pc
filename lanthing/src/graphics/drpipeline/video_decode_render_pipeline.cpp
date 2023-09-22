@@ -80,6 +80,7 @@ private:
                        std::chrono::microseconds max_delay);
     bool waitForRender(std::chrono::microseconds ms);
     void onStat();
+    void onUserSetBitrate(uint32_t bps);
 
 private:
     const uint32_t width_;
@@ -182,11 +183,15 @@ bool VDRPipeline::init() {
     if (!video_renderer_->bindTextures(video_decoder_->textures())) {
         return false;
     }
-    video_renderer_->displayWidth();
-    video_renderer_->displayHeight();
-    widgets_ = WidgetsManager::create(video_renderer_->hwDevice(), video_renderer_->hwContext(),
-                                      hwnd_, width_, height_, video_renderer_->displayWidth(),
-                                      video_renderer_->displayHeight());
+    WidgetsManager::Params widgets_params{};
+    widgets_params.dev = video_renderer_->hwDevice();
+    widgets_params.ctx = video_renderer_->hwContext();
+    widgets_params.window = hwnd_;
+    widgets_params.video_width = width_;
+    widgets_params.video_height = height_;
+    widgets_params.set_bitrate =
+        std::bind(&VDRPipeline::onUserSetBitrate, this, std::placeholders::_1);
+    widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
         return false;
     }
@@ -334,6 +339,11 @@ void VDRPipeline::onStat() {
         widgets_->updateStatus((uint32_t)rtt_ / 1000, (uint32_t)stat.render_video_fps, loss_rate_);
     }
     stat_thread_->post_delay(ltlib::TimeDelta{1'000'00}, std::bind(&VDRPipeline::onStat, this));
+}
+
+void VDRPipeline::onUserSetBitrate(uint32_t bps) {
+    (void)bps;
+    // TODO: 定义新的proto，告诉被控修改码率
 }
 
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
