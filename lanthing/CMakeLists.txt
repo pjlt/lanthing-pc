@@ -116,6 +116,8 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.cpp
 
     # platforms
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.h
@@ -174,6 +176,7 @@ target_link_libraries(${PROJECT_NAME}
     uv
     breakpad
     imgui
+    ViGEmClient::ViGEmClientShared
     ltlib
     ltproto
     rtc

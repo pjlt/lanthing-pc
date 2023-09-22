@@ -40,3 +40,6 @@
 [submodule "third_party/imgui"]
 	path = third_party/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "third_party/ViGEmClient"]
+	path = third_party/ViGEmClient
+	url = https://github.com/nefarius/ViGEmClient.git

@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,8 +28,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <Windows.h>
+
 #include "input_executor.h"
 
+#include <Xinput.h>
+
+#include <ViGEm/Common.h>
+#include <g3log/g3log.hpp>
+
+#include <inputs/executor/gamepad.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
 #include <ltproto/peer2peer/controller_response.pb.h>
@@ -65,12 +73,12 @@ bool InputExecutor::init() {
     if (!initKeyMouse()) {
         return false;
     }
-    // 需要添加第三方库vigem才能使用
-    // gamepad_ = Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this,
-    // std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    // if (gamepad_ == nullptr) {
-    //    return false;
-    //}
+    gamepad_ =
+        Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this, std::placeholders::_1,
+                                  std::placeholders::_2, std::placeholders::_3));
+    if (gamepad_ == nullptr) {
+        return false;
+    }
     return true;
 }
 
@@ -103,29 +111,29 @@ bool InputExecutor::isAbsoluteMouse() const {
 void InputExecutor::onControllerAddedRemoved(
     const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerAddedRemoved>(msg);
-    // if (controller->is_added()) {
-    //     gamepad_->plugin(controller->index());
-    // }
-    // else {
-    //     gamepad_->plugout(controller->index());
-    // }
+    if (controller->is_added()) {
+        gamepad_->plugin(controller->index());
+    }
+    else {
+        gamepad_->plugout(controller->index());
+    }
 }
 
 void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerStatus>(msg);
-    // if (controller->gamepad_index() >= XUSER_MAX_COUNT) {
-    //     LOG(WARNING) << "Gamepad index exceed limit: " << controller->gamepad_index();
-    //     return;
-    // }
-    // XUSB_REPORT gamepad_report{};
-    // gamepad_report.wButtons = controller->button_flags();
-    // gamepad_report.bLeftTrigger = controller->left_trigger(); // 0-255
-    // gamepad_report.bRightTrigger = controller->right_trigger();
-    // gamepad_report.sThumbLX = controller->left_stick_x(); //-32768~ 32767
-    // gamepad_report.sThumbLY = controller->left_stick_y();
-    // gamepad_report.sThumbRX = controller->right_stick_x();
-    // gamepad_report.sThumbRY = controller->right_stick_y();
-    // gamepad_->submit(controller->gamepad_index(), gamepad_report);
+    if (controller->gamepad_index() >= XUSER_MAX_COUNT) {
+        LOG(WARNING) << "Gamepad index exceed limit: " << controller->gamepad_index();
+        return;
+    }
+    XUSB_REPORT gamepad_report{};
+    gamepad_report.wButtons = static_cast<USHORT>(controller->button_flags());
+    gamepad_report.bLeftTrigger = static_cast<BYTE>(controller->left_trigger()); // 0-255
+    gamepad_report.bRightTrigger = static_cast<BYTE>(controller->right_trigger());
+    gamepad_report.sThumbLX = static_cast<USHORT>(controller->left_stick_x()); //-32768~ 32767
+    gamepad_report.sThumbLY = static_cast<USHORT>(controller->left_stick_y());
+    gamepad_report.sThumbRX = static_cast<USHORT>(controller->right_stick_x());
+    gamepad_report.sThumbRY = static_cast<USHORT>(controller->right_stick_y());
+    gamepad_->submit(controller->gamepad_index(), gamepad_report);
 }
 
 void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor) {

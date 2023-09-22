@@ -139,6 +139,23 @@ function build_g3log() {
     Set-Location $root_dir
 }
 
+function build_vigemclient() {
+    Write-Host -ForegroundColor Green building ViGEmClient
+    Set-Location third_party/ViGEmClient
+    New-Item -ItemType Directory -ErrorAction SilentlyContinue build
+    Set-Location build
+    Invoke-Expression "cmake .. -DCMAKE_INSTALL_PREFIX=install/Debug -DViGEmClient_DLL=ON"
+    Invoke-Expression "cmake --build . --config Debug --target install"
+    Invoke-Expression "cmake .. -DCMAKE_INSTALL_PREFIX=install/Release -DViGEmClient_DLL=ON"
+    Invoke-Expression "cmake --build . --config Release --target install"
+    Set-Location $root_dir
+}
+
+function clear_vigemclient() {
+    Remove-Item -Force -Recurse third_party/ViGEmClient/build/*
+    exit_if_fail
+}
+
 function clear_g3log() {
     Remove-Item -Force -Recurse third_party/g3log/build/*
     exit_if_fail
@@ -177,6 +194,7 @@ if ($action -eq "prebuild") {
     build_sdl
     build_opus
     build_g3log
+    build_vigemclient
 } elseif ($action -eq "clean") {
     clear_protobuf
     clear_google_test
@@ -185,6 +203,7 @@ if ($action -eq "prebuild") {
     clear_sdl
     clear_opus
     clear_g3log
+    clear_vigemclient
 } elseif ($action -eq "build") {
     $script:build_type=$args[1]
     $script:qt_path=$args[2]

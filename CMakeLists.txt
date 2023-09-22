@@ -81,6 +81,7 @@ find_package(libuv REQUIRED PATHS third_party/libuv/build/install/${THIRD_PARTY_
 find_package(SDL2 REQUIRED PATHS third_party/SDL/build/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(VPL REQUIRED PATHS third_party/oneVPL/build/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(Opus REQUIRED PATHS third_party/opus/build/install/${THIRD_PARTY_BUILD_TYPE})
+find_package(ViGEmClient REQUIRED PATHS third_party/ViGEmClient/build/install/${THIRD_PARTY_BUILD_TYPE})
 
 # 依赖于SDL
 add_subdirectory(third_party/imgui_builder)

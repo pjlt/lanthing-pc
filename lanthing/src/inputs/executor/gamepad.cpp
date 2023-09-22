@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,13 +28,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma comment(lib, "SetupAPI.lib")
+
 #include <Windows.h>
 #include <g3log/g3log.hpp>
 #include <inputs/executor/gamepad.h>
 
 namespace lt {
-
-std::map<PVIGEM_CLIENT, Gamepad*> Gamepad::map_s;
 
 std::unique_ptr<Gamepad>
 Gamepad::create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response) {
@@ -47,10 +47,28 @@ Gamepad::create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_respon
     }
 }
 Gamepad::Gamepad(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response)
-    : gamepad_response_{gamepad_response} {}
+    : gamepad_response_{gamepad_response} {
+    gamepad_target_.resize(4);
+    for (size_t i = 0; i < gamepad_target_.size(); i++) {
+        gamepad_target_[i] = nullptr;
+    }
+}
+
+Gamepad::~Gamepad() {
+    for (auto& target : gamepad_target_) {
+        if (target) {
+            vigem_target_x360_unregister_notification(target);
+            vigem_target_remove(gamepad_driver_, target);
+            vigem_target_free(target);
+        }
+    }
+    if (gamepad_driver_) {
+        vigem_free(gamepad_driver_);
+    }
+}
 
 bool Gamepad::plugin(uint32_t index) {
-    if (index >= XUSER_MAX_COUNT) {
+    if (index >= gamepad_target_.size()) {
         return false;
     }
 
@@ -67,7 +85,7 @@ bool Gamepad::plugin(uint32_t index) {
     }
 
     ret = vigem_target_x360_register_notification(gamepad_driver_, gamepad,
-                                                  &Gamepad::on_gamepad_response);
+                                                  &Gamepad::on_gamepad_response, this);
     if (!VIGEM_SUCCESS(ret)) {
         vigem_target_x360_unregister_notification(gamepad);
         LOG(WARNING) << "Register x360 failed";
@@ -80,7 +98,7 @@ bool Gamepad::plugin(uint32_t index) {
 }
 
 void Gamepad::plugout(uint32_t index) {
-    if (index >= XUSER_MAX_COUNT) {
+    if (index >= gamepad_target_.size()) {
         return;
     }
 
@@ -117,21 +135,15 @@ bool Gamepad::connect() {
         LOG(WARNING) << "Connect to vigem failed";
         return false;
     }
-    else {
-        Gamepad::map_s[gamepad_driver_] = this;
-        return true;
-    }
+    return true;
 }
 
 void Gamepad::on_gamepad_response(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHAR large_motor,
-                                  UCHAR small_motor, UCHAR led_number) {
-    auto iter = Gamepad::map_s.find(client);
-    if (iter == Gamepad::map_s.end()) {
-        LOG(WARNING) << "Can not find vigem client " << client;
-        return;
-    }
-    auto that = iter->second;
-    for (uint32_t i = 0; i < XUSER_MAX_COUNT; i++) {
+                                  UCHAR small_motor, UCHAR led_number, void* user_data) {
+    (void)led_number;
+    (void)client;
+    auto that = reinterpret_cast<Gamepad*>(user_data);
+    for (uint32_t i = 0; i < that->gamepad_target_.size(); i++) {
         if (that->gamepad_target_[i] != nullptr && that->gamepad_target_[i] == target) {
             that->gamepad_response_(i, large_motor, small_motor);
         }
