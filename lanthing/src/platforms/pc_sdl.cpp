@@ -41,8 +41,7 @@
 namespace {
 
 constexpr int32_t kUserEventResetDRPipeline = 1;
-constexpr int32_t kUserEventSwitchToFullscreen = 2;
-constexpr int32_t kUserEventSwitchToWindowed = 3;
+constexpr int32_t kUserEventToggleFullscreen = 2;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -64,6 +63,8 @@ public:
     SDL_Window* window() override;
 
     void setInputHandler(const OnInputEvent& on_event) override;
+
+    void toggleFullscreen() override;
 
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
@@ -89,7 +90,7 @@ private: // 事件处理
     DispatchResult handleSdlControllerRemoved(const SDL_Event& ev);
     DispatchResult handleSdlJoyDeviceAdded(const SDL_Event& ev);
     DispatchResult handleSdlTouchEvent(const SDL_Event& ev);
-    DispatchResult toggleFullscreen(bool fullscreen);
+    DispatchResult handleToggleFullscreen();
 
 private:
     SDL_Window* window_ = nullptr;
@@ -133,6 +134,13 @@ SDL_Window* PcSdlImpl::window() {
 
 void PcSdlImpl::setInputHandler(const OnInputEvent& on_event) {
     input_->setInputHandler(on_event);
+}
+
+void PcSdlImpl::toggleFullscreen() {
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventToggleFullscreen;
+    SDL_PushEvent(&ev);
 }
 
 void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive) {
@@ -273,10 +281,8 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
     switch (ev.user.code) {
     case kUserEventResetDRPipeline:
         return resetDrPipeline();
-    case kUserEventSwitchToFullscreen:
-        return toggleFullscreen(true);
-    case kUserEventSwitchToWindowed:
-        return toggleFullscreen(false);
+    case kUserEventToggleFullscreen:
+        return handleToggleFullscreen();
     default:
         SDL_assert(false);
         return DispatchResult::kStop;
@@ -370,10 +376,10 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlTouchEvent(const SDL_Event& ev) {
     return DispatchResult::kContinue;
 }
 
-PcSdlImpl::DispatchResult PcSdlImpl::toggleFullscreen(bool fullscreen) {
-    // 使用无边框窗口全屏会导致ImGui坐标错误，暂时不知道怎么解决
-    // 使用真·全屏，会黑一下屏，暂时不清楚什么问题
-    SDL_SetWindowFullscreen(window_, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+PcSdlImpl::DispatchResult PcSdlImpl::handleToggleFullscreen() {
+    auto flag = SDL_GetWindowFlags(window_);
+    auto is_fullscreen = (flag & SDL_WINDOW_FULLSCREEN) || (flag & SDL_WINDOW_FULLSCREEN_DESKTOP);
+    SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
     return DispatchResult::kContinue;
 }
 

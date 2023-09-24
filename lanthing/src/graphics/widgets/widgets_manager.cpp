@@ -75,11 +75,11 @@ WidgetsManager::WidgetsManager(const Params& params)
         ev.type = SDL_QUIT;
         SDL_PushEvent(&ev);
     };
-    control_params.toggle_fullscreen = [](bool is_fullscreen) {
+    control_params.toggle_fullscreen = []() {
         SDL_Event ev{};
         ev.type = SDL_USEREVENT;
         // TODO: 不要用魔数
-        ev.user.code = is_fullscreen ? 2 : 3;
+        ev.user.code = 2;
         SDL_PushEvent(&ev);
     };
     control_params.set_bitrate = params.set_bitrate;

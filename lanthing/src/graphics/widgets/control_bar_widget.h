@@ -40,7 +40,7 @@ public:
     struct Params {
         uint32_t video_width;
         uint32_t video_height;
-        std::function<void(bool)> toggle_fullscreen;
+        std::function<void()> toggle_fullscreen;
         std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
         std::function<void()> exit;
         std::function<void(bool)> show_stat;
@@ -54,7 +54,7 @@ public:
 private:
     uint32_t video_width_;
     uint32_t video_height_;
-    std::function<void(bool)> toggle_fullscreen_;
+    std::function<void()> toggle_fullscreen_;
     std::function<void(uint32_t bps)> set_bitrate_; // 0代表自动
     std::function<void()> exit_;
     std::function<void(bool)> on_show_stat_;

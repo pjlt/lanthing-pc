@@ -100,6 +100,7 @@ private:
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
     void syncTime();
+    void toggleFullscreen();
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);

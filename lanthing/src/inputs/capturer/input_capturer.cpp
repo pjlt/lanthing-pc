@@ -35,11 +35,12 @@
 
 #include <g3log/g3log.hpp>
 #include <ltproto/ltproto.h>
-
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
 #include <ltproto/peer2peer/controller_status.pb.h>
 #include <ltproto/peer2peer/keyboard_event.pb.h>
 #include <ltproto/peer2peer/mouse_event.pb.h>
+
+#include <inputs/executor/scancode.h>
 
 namespace {
 
@@ -109,11 +110,13 @@ private:
     void handleControllerButton(const ControllerButtonEvent& ev);
     void handleControllerAxis(const ControllerAxisEvent& ev);
     void sendControllerState(uint32_t index);
+    void processHotKeys();
 
 private:
     PcSdl* sdl_;
     std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
         send_message_to_host_;
+    std::function<void()> toggle_fullscreen_;
     // 0表示松开，非0表示按下。不用bool而用uint8_t是担心menset()之类函数不好处理bool数组
     std::array<uint8_t, 512> key_states_ = {0};
     uint32_t host_width_;
@@ -133,7 +136,8 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     : sdl_{params.sdl}
     , host_width_{params.host_width}
     , host_height_{params.host_height}
-    , send_message_to_host_{params.send_message} {}
+    , send_message_to_host_{params.send_message}
+    , toggle_fullscreen_{params.toggle_fullscreen} {}
 
 void InputCapturerImpl::init() {
     sdl_->setInputHandler(
@@ -178,6 +182,7 @@ void InputCapturerImpl::onPlatformInputEvent(const InputEvent& e) {
 void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
     // TODO: 增加一个reset状态的逻辑，入口在sdl还是input另说。
     key_states_[ev.scan_code] = ev.is_pressed ? 1 : 0;
+    processHotKeys();
     auto msg = std::make_shared<ltproto::peer2peer::KeyboardEvent>();
     msg->set_key(ev.scan_code);
     msg->set_down(ev.is_pressed);
@@ -414,6 +419,14 @@ void InputCapturerImpl::sendControllerState(uint32_t index) {
     msg->set_left_trigger(state->left_trigger);
     msg->set_right_trigger(state->right_trigger);
     sendMessageToHost(ltproto::id(msg), msg, true);
+}
+
+void InputCapturerImpl::processHotKeys() {
+    // TODO: 按键释放问题
+    if (key_states_[Scancode::SCANCODE_LGUI] && key_states_[Scancode::SCANCODE_LSHIFT] &&
+        key_states_[Scancode::SCANCODE_Z]) {
+        toggle_fullscreen_();
+    }
 }
 
 } // namespace lt

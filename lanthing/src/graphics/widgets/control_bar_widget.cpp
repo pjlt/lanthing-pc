@@ -70,19 +70,20 @@ void ControlBarWidget::render() {
         collapse_ = true;
     }
     else {
+        // FIXME: 应该读取当前窗口模式，而不是记录是否全屏，因为还有“快捷键切换”，记录不到这里
         collapse_ = false;
         if (ImGui::Button(fullscreen_text_.c_str())) {
             if (fullscreen_) {
                 fullscreen_ = false;
                 // fullscreen_text_ = u8"全屏";
                 fullscreen_text_ = "Fullscreen";
-                toggle_fullscreen_(false);
+                toggle_fullscreen_();
             }
             else {
                 fullscreen_ = true;
                 // fullscreen_text_ = u8"窗口化";
                 fullscreen_text_ = "Windowed";
-                toggle_fullscreen_(true);
+                toggle_fullscreen_();
             }
         }
         if (ImGui::Button(stat_text_.c_str())) {

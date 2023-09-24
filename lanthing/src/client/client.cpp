@@ -230,11 +230,11 @@ void Client::mainLoop(const std::function<void()>& i_am_alive) {
 void Client::onPlatformRenderTargetReset() {
     // NOTE: 这运行在platform线程
     std::lock_guard lock{dr_mutex_};
-    //video_pipeline_.reset();
-    //video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
-    //if (video_pipeline_ == nullptr) {
-    //    LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
-    //}
+    // video_pipeline_.reset();
+    // video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+    // if (video_pipeline_ == nullptr) {
+    //     LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
+    // }
     video_pipeline_->resetRenderTarget();
 }
 
@@ -278,6 +278,10 @@ void Client::syncTime() {
     sendMessageToHost(ltproto::id(msg), msg, true);
     constexpr uint32_t k500ms = 500;
     postDelayTask(k500ms, std::bind(&Client::syncTime, this));
+}
+
+void Client::toggleFullscreen() {
+    sdl_->toggleFullscreen();
 }
 
 void Client::onSignalingNetMessage(uint32_t type,
@@ -485,6 +489,7 @@ void Client::onTpConnected() {
                                            std::placeholders::_2, std::placeholders::_3);
     input_params_.host_height = video_params_.height;
     input_params_.host_width = video_params_.width;
+    input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, this);
     input_capturer_ = InputCapturer::create(input_params_);
     if (input_capturer_ == nullptr) {
         LOG(WARNING) << "Create InputCapturer failed";
