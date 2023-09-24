@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,6 +33,7 @@
 #include <cstdarg>
 #include <filesystem>
 #include <memory>
+#include <regex>
 
 #include <g3log/g3log.hpp>
 #include <g3log/logworker.hpp>
@@ -60,6 +61,49 @@ void sigint_handler(int) {
     std::terminate();
 }
 
+// 太丑了，应该在LogSink里实现
+void logfileHelper(const std::filesystem::path& directory, const std::string& logger_id) {
+    time_t s = ::time(nullptr);
+    struct tm last_tm = *localtime(&s);
+    last_tm.tm_mday += 1;
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds{1});
+        time_t totalseconds = ::time(nullptr);
+        struct tm curr_tm = *localtime(&totalseconds);
+        curr_tm.tm_year += 1900;
+        curr_tm.tm_mday += 1;
+        if (curr_tm.tm_mday != last_tm.tm_mday) {
+            // 1. 滚动
+            if (g_logsSink) {
+                auto sink = g_logsSink->sink().lock();
+                sink->_real_sink->changeLogFile(directory.string(), logger_id);
+            }
+            last_tm = curr_tm;
+            // 2. 删除
+            auto expire_tp = std::chrono::system_clock::now() - std::chrono::hours{24 * 7};
+            auto expire_time_t = std::chrono::system_clock::to_time_t(expire_tp);
+            struct tm expire_tm = *localtime(&expire_time_t);
+            expire_tm.tm_year += 1900;
+            expire_tm.tm_mday += 1;
+            int expire_date =
+                expire_tm.tm_year * 10000 + (expire_tm.tm_mon + 1) * 100 + expire_tm.tm_mday;
+            std::regex pattern{".+?([0-9]+?)-.+?"};
+            for (const auto& file : std::filesystem::directory_iterator{directory}) {
+
+                std::smatch sm;
+                std::string filename = file.path().string();
+                if (!std::regex_match(filename, sm, pattern)) {
+                    continue;
+                }
+                int file_date = atoi(sm[1].str().c_str());
+                if (file_date < expire_date) {
+                    remove(filename.c_str());
+                }
+            }
+        }
+    }
+}
+
 void initLogging() {
     std::string bin_path = ltlib::getProgramFullpath<char>();
     std::string bin_dir = ltlib::getProgramPath<char>();
@@ -83,6 +127,7 @@ void initLogging() {
     g_logWorker = g3::LogWorker::createLogWorker();
     g_logsSink = g_logWorker->addDefaultLogger(kPrefix, log_dir.string(), "app");
     g3::initializeLogging(g_logWorker.get());
+    std::thread([log_dir]() { logfileHelper(log_dir, "app"); }).detach();
     ltlib::ThreadWatcher::instance()->registerTerminateCallback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
 
