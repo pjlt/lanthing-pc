@@ -40,6 +40,7 @@
 
 #include <lt_minidump_generator.h>
 #include <ltlib/event.h>
+#include <ltlib/log_sink.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -83,49 +84,6 @@ void sigint_handler(int) {
     ::exit(0);
 }
 
-// 太丑了，应该在LogSink里实现
-void logfileHelper(const std::filesystem::path& directory, const std::string& logger_id) {
-    time_t s = ::time(nullptr);
-    struct tm last_tm = *localtime(&s);
-    last_tm.tm_mday += 1;
-    while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds{1});
-        time_t totalseconds = ::time(nullptr);
-        struct tm curr_tm = *localtime(&totalseconds);
-        curr_tm.tm_year += 1900;
-        curr_tm.tm_mday += 1;
-        if (curr_tm.tm_mday != last_tm.tm_mday) {
-            // 1. 滚动
-            if (g_log_sink) {
-                auto sink = g_log_sink->sink().lock();
-                sink->_real_sink->changeLogFile(directory.string(), logger_id);
-            }
-            last_tm = curr_tm;
-            // 2. 删除
-            auto expire_tp = std::chrono::system_clock::now() - std::chrono::hours{24 * 7};
-            auto expire_time_t = std::chrono::system_clock::to_time_t(expire_tp);
-            struct tm expire_tm = *localtime(&expire_time_t);
-            expire_tm.tm_year += 1900;
-            expire_tm.tm_mday += 1;
-            int expire_date =
-                expire_tm.tm_year * 10000 + (expire_tm.tm_mon + 1) * 100 + expire_tm.tm_mday;
-            std::regex pattern{".+?([0-9]+?)-.+?"};
-            for (const auto& file : std::filesystem::directory_iterator{directory}) {
-
-                std::smatch sm;
-                std::string filename = file.path().string();
-                if (!std::regex_match(filename, sm, pattern)) {
-                    continue;
-                }
-                int file_date = atoi(sm[1].str().c_str());
-                if (file_date < expire_date) {
-                    remove(filename.c_str());
-                }
-            }
-        }
-    }
-}
-
 void initLogAndMinidump(Role role) {
     std::string prefix;
     std::string rtc_prefix;
@@ -166,10 +124,10 @@ void initLogAndMinidump(Role role) {
         }
     }
     g_log_worker = g3::LogWorker::createLogWorker();
-    g_log_sink = g_log_worker->addDefaultLogger(prefix, log_dir.string(), "lanthing");
+    g_log_worker->addSink(std::make_unique<ltlib::LogSink>(prefix, log_dir.string()),
+                          &ltlib::LogSink::fileWrite);
     g3::log_levels::disable(DEBUG);
     g3::initializeLogging(g_log_worker.get());
-    std::thread([log_dir]() { logfileHelper(log_dir, "lanthing"); }).detach();
     ltlib::ThreadWatcher::instance()->registerTerminateCallback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
