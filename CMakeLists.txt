@@ -88,8 +88,6 @@ find_package(ViGEmClient REQUIRED PATHS third_party/ViGEmClient/build/install/${
 # 依赖于SDL
 add_subdirectory(third_party/imgui_builder)
 
-add_subdirectory(rtc)
-add_subdirectory(rtc2)
 add_subdirectory(ltproto)
 add_subdirectory(ltlib)
 add_subdirectory(transport)
