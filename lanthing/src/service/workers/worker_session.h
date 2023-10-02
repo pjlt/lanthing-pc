@@ -32,6 +32,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <set>
 
 #include <google/protobuf/message_lite.h>
 

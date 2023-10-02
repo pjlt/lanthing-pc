@@ -35,7 +35,6 @@
 #include <g3log/g3log.hpp>
 
 #include <ltproto/peer2peer/audio_data.pb.h>
-#include <ltproto/peer2peer/capture_video_frame_ack.pb.h>
 #include <ltproto/peer2peer/keep_alive.pb.h>
 #include <ltproto/peer2peer/reconfigure_video_encoder.pb.h>
 #include <ltproto/peer2peer/request_keyframe.pb.h>

@@ -12,7 +12,7 @@ function build_protobuf() {
     Set-Location third_party/protobuf
     New-Item -ItemType Directory -ErrorAction SilentlyContinue build2
     Set-Location build2
-    Invoke-Expression "cmake ../cmake -DBUILD_SHARED_LIBS=ON -Dprotobuf_BUILD_TESTS=OFF"
+    Invoke-Expression "cmake ../ -DBUILD_SHARED_LIBS=ON -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=OFF"
     Invoke-Expression "cmake --build . --config Debug"
     Invoke-Expression "cmake --install . --config Debug --prefix install/Debug"
     Invoke-Expression "cmake --build . --config Release"

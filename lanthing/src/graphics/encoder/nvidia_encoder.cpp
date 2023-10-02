@@ -47,9 +47,9 @@
 namespace {
 
 #if LT_WINDOWS
-constexpr char* kNvEncLibName = "nvEncodeAPI64.dll";
+const char* kNvEncLibName = "nvEncodeAPI64.dll";
 #else
-constexpr char* kNvEncLibName = "libnvidia-encode.so.1";
+const char* kNvEncLibName = "libnvidia-encode.so.1";
 #endif
 
 DXGI_FORMAT toDxgiFormat(NV_ENC_BUFFER_FORMAT format) {

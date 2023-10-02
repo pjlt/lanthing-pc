@@ -60,7 +60,8 @@ namespace {
 lt::VideoCodecType to_ltrtc(std::string codec_str) {
     static const std::string kAVC = "avc";
     static const std::string kHEVC = "hevc";
-    std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(), std::tolower);
+    std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(),
+                   [](char c) -> char { return (char)std::tolower(c); });
     if (codec_str == kAVC) {
         return lt::VideoCodecType::H264;
     }
@@ -162,7 +163,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
 
     std::unique_ptr<Client> client{new Client{params}};
     if (!client->init()) {
-        return false;
+        return nullptr;
     }
     return client;
 }

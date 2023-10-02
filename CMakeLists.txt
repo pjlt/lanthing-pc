@@ -30,7 +30,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if(LT_WINDOWS)
     add_compile_definitions(WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS)# NOGDI)
@@ -73,6 +73,8 @@ add_subdirectory(third_party/ffmpeg)
 add_subdirectory(third_party/breakpad_builder)
 #add_subdirectory(third_party/lodepng)
 
+#protobuf依赖absl
+find_package(absl REQUIRED PATHS third_party/protobuf/build2/install/${THIRD_PARTY_BUILD_TYPE}/lib/cmake)
 find_package(protobuf REQUIRED PATHS third_party/protobuf/build2/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(GTest REQUIRED PATHS third_party/googletest/build/install/${THIRD_PARTY_BUILD_TYPE})
 find_package(g3log REQUIRED PATHS third_party/g3log/build/install/${THIRD_PARTY_BUILD_TYPE})
@@ -87,6 +89,7 @@ find_package(ViGEmClient REQUIRED PATHS third_party/ViGEmClient/build/install/${
 add_subdirectory(third_party/imgui_builder)
 
 add_subdirectory(rtc)
+add_subdirectory(rtc2)
 add_subdirectory(ltproto)
 add_subdirectory(ltlib)
 add_subdirectory(transport)

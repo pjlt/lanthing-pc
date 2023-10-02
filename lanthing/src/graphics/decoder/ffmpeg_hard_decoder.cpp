@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -211,6 +211,9 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     char strbuff[kBuffLen] = {0};
     AVCodecContext* codec_ctx = nullptr;
     AVBufferRef* avbuffref_hw_frames_ctx = nullptr;
+    AVHWFramesContext* hw_frames_ctx = nullptr;
+    int align = codecType() == lt::VideoCodecType::H264 ? 16 : 128;
+    int ret = 0;
 
     // 1
     // 将已有的设备上下文传入ffmpeg，不然不同D3D11设备之间需要'共享'资源，其他硬件加速api暂时不清楚
@@ -222,7 +225,7 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
         goto INIT2_FAILED;
     }
     configAVHWDeviceContext(avbuffref_hw_ctx->data, hw_dev_, hw_ctx_);
-    int ret = av_hwdevice_ctx_init(avbuffref_hw_ctx);
+    ret = av_hwdevice_ctx_init(avbuffref_hw_ctx);
     if (ret != 0) {
         ret = av_strerror(ret, strbuff, kBuffLen);
         LOG(WARNING) << "av_hwdevice_ctx_init() failed: " << (ret == 0 ? strbuff : "unknown error");
@@ -236,10 +239,9 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
         LOG(WARNING) << "av_hwframe_ctx_alloc failed";
         goto INIT2_FAILED;
     }
-    auto hw_frames_ctx = reinterpret_cast<AVHWFramesContext*>(avbuffref_hw_frames_ctx->data);
+    hw_frames_ctx = reinterpret_cast<AVHWFramesContext*>(avbuffref_hw_frames_ctx->data);
     hw_frames_ctx->format = hwPixFormat();
     hw_frames_ctx->sw_format = AVPixelFormat::AV_PIX_FMT_NV12;
-    int align = codecType() == lt::VideoCodecType::H264 ? 16 : 128;
     hw_frames_ctx->width = FFALIGN(width(), align);
     hw_frames_ctx->height = FFALIGN(height(), align);
     hw_frames_ctx->initial_pool_size = 10;
