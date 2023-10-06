@@ -13,8 +13,9 @@ add_library(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-	PRIVATE
+	PUBLIC
 		${PROJECT_NAME}_api
+	PRIVATE
 		protobuf::libprotobuf-lite
 		g3log
 		ltlib

@@ -1,3 +1,33 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <transport/transport_tcp.h>
 
 #include <WinSock2.h>
@@ -7,8 +37,8 @@
 #include <g3log/g3log.hpp>
 
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/video_frame.pb.h>
 #include <ltproto/peer2peer/audio_data.pb.h>
+#include <ltproto/peer2peer/video_frame.pb.h>
 
 namespace {
 
@@ -46,11 +76,10 @@ ClientTCP::ClientTCP(const Params& params)
 
 ClientTCP::~ClientTCP() {
     {
-        std::lock_guard lock{ mutex_ };
+        std::lock_guard lock{mutex_};
         tcp_client_.reset();
         ioloop_.reset();
     }
-
 }
 
 bool ClientTCP::connect() {
@@ -112,8 +141,7 @@ bool ClientTCP::initTcpClient(const std::string& ip, uint16_t port) {
         return false;
     }
     net_thread_ = ltlib::BlockingThread::create(
-        "ClientTCP_net",
-        [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
+        "ClientTCP_net", [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
     return true;
 }
 
@@ -208,8 +236,7 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
     }
 }
 
-void ClientTCP::netLoop(const std::function<void()>& i_am_alive)
-{
+void ClientTCP::netLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "ClientTCP enter net loop";
     ioloop_->run(i_am_alive);
     LOG(INFO) << "ClientTCP exit net loop";
@@ -278,7 +305,7 @@ ServerTCP::ServerTCP(const Params& params)
 
 ServerTCP::~ServerTCP() {
     {
-        std::lock_guard lock{ mutex_ };
+        std::lock_guard lock{mutex_};
         tcp_server_.reset();
         ioloop_.reset();
     }
@@ -354,8 +381,7 @@ bool ServerTCP::init() {
         return false;
     }
     net_thread_ = ltlib::BlockingThread::create(
-        "ServerTCP_net",
-        [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
+        "ServerTCP_net", [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
     task_thread_ = ltlib::TaskThread::create("ServerTCP_task");
     if (task_thread_ == nullptr) {
         return false;

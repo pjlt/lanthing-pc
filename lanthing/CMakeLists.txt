@@ -153,6 +153,8 @@ target_include_directories(${PROJECT_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DBUILDING_LT_EXE=1)
+
 
 if(LT_WINDOWS)
     set(PLATFORM_LIBS
@@ -180,6 +182,7 @@ target_link_libraries(${PROJECT_NAME}
     ltlib
     ltproto
     rtc
+    transport_api
     transport
     #fonts
 )
