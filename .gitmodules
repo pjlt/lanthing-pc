@@ -46,6 +46,3 @@
 [submodule "transport/rtc"]
 	path = transport/rtc
 	url = https://github.com/pjlt/rtc.git
-[submodule "transport/rtc2"]
-	path = transport/rtc2
-	url = https://github.com/numbaa/rtc2.git
