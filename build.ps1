@@ -162,7 +162,7 @@ function clear_g3log() {
 }
 
 function cmake_project() {
-    Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DLT_QT_CMAKE_PATH=$script:qt_path -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
+    Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     exit_if_fail
 }
 
@@ -206,7 +206,6 @@ if ($action -eq "prebuild") {
     clear_vigemclient
 } elseif ($action -eq "build") {
     $script:build_type=$args[1]
-    $script:qt_path=$args[2]
     check_build_type
     cmake_project
     cmake_build
@@ -214,6 +213,6 @@ if ($action -eq "prebuild") {
     Write-Host -ForegroundColor Green 'Usage: '
     Write-Host -ForegroundColor Green '    build.ps1 [prebuild][build][clean]'
     Write-Host -ForegroundColor Green '    build.ps1 prebuild'
-    Write-Host -ForegroundColor Green '    build.ps1 build [Debug|Release] /path/to/qt/cmake'
+    Write-Host -ForegroundColor Green '    build.ps1 build [Debug|Release]'
     Write-Host -ForegroundColor Green '    build.ps1 clean'
 }

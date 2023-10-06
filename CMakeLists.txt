@@ -3,8 +3,13 @@ cmake_minimum_required(VERSION 3.20)
 project(lanthing-pc)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(cmake/options.cmake)
-include(cmake/CMakeRC.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake)
+
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/options-user.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/options-user.cmake)
+else()
+    include(${CMAKE_CURRENT_SOURCE_DIR}/options-default.cmake)
+endif()
 
 # 平台检测
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")

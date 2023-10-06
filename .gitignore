@@ -37,6 +37,7 @@
 /.vs
 /build
 CMakeSettings.json
+options-user.cmake
 
 # misc
 draft.txt
