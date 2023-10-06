@@ -79,14 +79,16 @@ private:
             on_create_completed,
         std::function<void(CloseReason, const std::string&, const std::string&)> on_closed);
     bool init(std::shared_ptr<google::protobuf::MessageLite> msg);
-    bool initRtcServer();
+    bool initTransport();
+    std::unique_ptr<tp::Server> createTcpServer();
+    std::unique_ptr<tp::Server> createRtcServer();
+    std::unique_ptr<tp::Server> createRtc2Server();
     void createWorkerProcess(uint32_t client_width, uint32_t client_height,
                              uint32_t client_refresh_rate,
                              std::vector<lt::VideoCodecType> client_codecs);
     void mainLoop(const std::function<void()>& i_am_alive);
     void onClosed(CloseReason reason);
     void maybeOnCreateSessionCompleted();
-    bool createVideoEncoder();
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 

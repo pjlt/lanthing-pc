@@ -55,11 +55,9 @@
 #include <ltlib/system.h>
 #include <ltlib/times.h>
 
-#if LT_USE_LTRTC
-#include <rtc/rtc.h>
-#else // LT_USE_LTRTC
+#include <transport/transport_rtc.h>
+#include <transport/transport_rtc2.h>
 #include <transport/transport_tcp.h>
-#endif // LT_USE_LTRTC
 
 #include "worker_process.h"
 #include <string_keys.h>
@@ -207,11 +205,51 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     return true;
 }
 
-bool WorkerSession::initRtcServer() {
+bool WorkerSession::initTransport() {
+    switch (LT_TRANSPORT_TYPE) {
+    case LT_TRANSPORT_TCP:
+        tp_server_ = createTcpServer();
+        break;
+    case LT_TRANSPORT_RTC:
+        tp_server_ = createRtcServer();
+        break;
+    case LT_TRANSPORT_RTC2:
+        tp_server_ = createRtc2Server();
+        break;
+    default:
+        break;
+    }
+    if (tp_server_ == nullptr) {
+        LOG(ERR) << "Create transport server failed";
+        return false;
+    }
+    else {
+        rtc_closed_ = false;
+        return true;
+    }
+}
+
+std::unique_ptr<tp::Server> WorkerSession::createTcpServer() {
+    namespace ph = std::placeholders;
     auto negotiated_params =
         std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
+    lt::tp::ServerTCP::Params params{};
+    params.video_codec_type = ::to_ltrtc(
+        static_cast<ltproto::peer2peer::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
+    params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
+    params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
+    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
+    params.on_data = std::bind(&WorkerSession::onTpData, this, ph::_1, ph::_2, ph::_3);
+    params.on_signaling_message =
+        std::bind(&WorkerSession::onTpSignalingMessage, this, ph::_1, ph::_2);
+    return lt::tp::ServerTCP::create(params);
+}
+
+std::unique_ptr<tp::Server> WorkerSession::createRtcServer() {
     namespace ph = std::placeholders;
-#if LT_USE_LTRTC
+    auto negotiated_params =
+        std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
+
     rtc::Server::Params params{};
     params.use_nbp2p = true;
     std::vector<const char*> reflex_servers;
@@ -253,27 +291,12 @@ bool WorkerSession::initRtcServer() {
     params.on_video_bitrate_update =
         std::bind(&WorkerSession::onTpEesimatedVideoBitreateUpdate, this, ph::_1);
     params.on_loss_rate_update = std::bind(&WorkerSession::onTpLossRateUpdate, this, ph::_1);
-    tp_server_ = rtc::Server::create(std::move(params));
-#else  // LT_USE_LTRTC
-    lt::tp::ServerTCP::Params params{};
-    params.video_codec_type = ::to_ltrtc(negotiated_params->video_codecs().Get(0));
-    params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
-    params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
-    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
-    params.on_data = std::bind(&WorkerSession::onTpData, this, ph::_1, ph::_2, ph::_3);
-    params.onSignalingMessage =
-        std::bind(&WorkerSession::onTpSignalingMessage, this, ph::_1, ph::_2);
-    tp_server_ = lt::tp::ServerTCP::create(params);
-#endif // LT_USE_LTRTC
+    return rtc::Server::create(std::move(params));
+}
 
-    if (tp_server_ == nullptr) {
-        LOG(ERR) << "Create rtc server failed";
-        return false;
-    }
-    else {
-        rtc_closed_ = false;
-        return true;
-    }
+std::unique_ptr<tp::Server> WorkerSession::createRtc2Server() {
+    namespace ph = std::placeholders;
+    return nullptr;
 }
 
 void WorkerSession::mainLoop(const std::function<void()>& i_am_alive) {
@@ -337,7 +360,7 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
-    if (!initRtcServer()) {
+    if (!initTransport()) {
         on_create_session_completed_(false, session_name_, empty_params);
         return;
     }
