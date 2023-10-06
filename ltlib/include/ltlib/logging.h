@@ -14,6 +14,11 @@
 #include <vector>
 
 #include <g3log/logmessage.hpp>
+#include <g3log/g3log.hpp>
+
+const LEVELS ERR {
+    WARNING.value + 100, "ERROR"
+};
 
 namespace ltlib
 {

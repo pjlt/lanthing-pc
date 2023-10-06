@@ -30,7 +30,7 @@
 
 #include "client.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <ltproto/ltproto.h>
 
 #include <ltproto/peer2peer/keep_alive.pb.h>
@@ -96,7 +96,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         options.find("-freq") == options.end() || options.find("-dinput") == options.end() ||
         options.find("-gamepad") == options.end() || options.find("-chans") == options.end() ||
         options.find("-afreq") == options.end()) {
-        LOG(WARNING) << "Parameter invalid";
+        LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
     Params params{};
@@ -126,37 +126,37 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     }
 
     if (signaling_port <= 0 || signaling_port > 65535) {
-        LOG(WARNING) << "Invalid parameter: port";
+        LOG(ERR) << "Invalid parameter: port";
         return nullptr;
     }
     params.signaling_port = static_cast<uint16_t>(signaling_port);
 
     if (width <= 0) {
-        LOG(WARNING) << "Invalid parameter: width";
+        LOG(ERR) << "Invalid parameter: width";
         return nullptr;
     }
     params.width = static_cast<uint32_t>(width);
 
     if (height <= 0) {
-        LOG(WARNING) << "Invalid parameter: height";
+        LOG(ERR) << "Invalid parameter: height";
         return nullptr;
     }
     params.height = static_cast<uint32_t>(height);
 
     if (freq <= 0) {
-        LOG(WARNING) << "Invalid parameter: freq";
+        LOG(ERR) << "Invalid parameter: freq";
         return nullptr;
     }
     params.screen_refresh_rate = static_cast<uint32_t>(freq);
 
     if (audio_channels <= 0) {
-        LOG(WARNING) << "Invalid parameter: achans";
+        LOG(ERR) << "Invalid parameter: achans";
         return nullptr;
     }
     params.audio_channels = static_cast<uint32_t>(audio_channels);
 
     if (audio_freq <= 0) {
-        LOG(WARNING) << "Invalid parameter: afreq";
+        LOG(ERR) << "Invalid parameter: afreq";
         return nullptr;
     }
     params.audio_freq = static_cast<uint32_t>(audio_freq);
@@ -191,7 +191,7 @@ Client::~Client() {
 bool Client::init() {
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
-        LOG(WARNING) << "Init IOLoop failed";
+        LOG(ERR) << "Init IOLoop failed";
         return false;
     }
     ltlib::Client::Params params{};
@@ -234,7 +234,7 @@ void Client::onPlatformRenderTargetReset() {
     // video_pipeline_.reset();
     // video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
     // if (video_pipeline_ == nullptr) {
-    //     LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
+    //     LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
     // }
     video_pipeline_->resetRenderTarget();
 }
@@ -483,7 +483,7 @@ void Client::onTpAudioData(const lt::AudioData& audio_data) {
 void Client::onTpConnected() {
     video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
     if (video_pipeline_ == nullptr) {
-        LOG(WARNING) << "Create VideoDecodeRenderPipeline failed";
+        LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
         return;
     }
     input_params_.send_message = std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
@@ -493,7 +493,7 @@ void Client::onTpConnected() {
     input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, this);
     input_capturer_ = InputCapturer::create(input_params_);
     if (input_capturer_ == nullptr) {
-        LOG(WARNING) << "Create InputCapturer failed";
+        LOG(ERR) << "Create InputCapturer failed";
         return;
     }
     audio_player_ = AudioPlayer::create(audio_params_);
@@ -561,7 +561,7 @@ bool Client::sendMessageToHost(uint32_t type,
                                bool reliable) {
     auto packet = ltproto::Packet::create({type, msg}, false);
     if (!packet.has_value()) {
-        LOG(WARNING) << "Create Peer2Peer packet failed, type:" << type;
+        LOG(ERR) << "Create Peer2Peer packet failed, type:" << type;
         return false;
     }
     const auto& pkt = packet.value();

@@ -32,7 +32,7 @@
 
 #include <Windows.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltproto/peer2peer/stop_working.pb.h>
 

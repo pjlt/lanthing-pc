@@ -35,7 +35,7 @@
 #include <fstream>
 #include <mutex>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -154,7 +154,7 @@ bool VDRPipeline::init() {
         sorted_by_memory.emplace(ability.video_memory_mb, ability);
     }
     if (sorted_by_memory.empty()) {
-        LOG(WARNING) << "No hardware video decode ability!";
+        LOG(ERR) << "No hardware video decode ability!";
         return false;
     }
     uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
@@ -299,7 +299,7 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
             DecodedFrame decoded_frame = video_decoder_->decode(frame.data, frame.size);
             auto end = ltlib::steady_now_us();
             if (decoded_frame.status == DecodeStatus::Failed) {
-                LOG(WARNING) << "Failed to call decode(), reqesut i frame";
+                LOG(ERR) << "Failed to call decode(), reqesut i frame";
                 request_i_frame_ = true;
                 break;
             }

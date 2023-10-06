@@ -31,7 +31,7 @@
 #include "service.h"
 #include <cassert>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
@@ -61,7 +61,7 @@ bool Service::init() {
     }
     std::optional<int64_t> device_id = settings_->getInteger("device_id");
     if (!device_id.has_value() || device_id.value() == 0) {
-        LOG(WARNING) << "Get device_id from local settings failed";
+        LOG(ERR) << "Get device_id from local settings failed";
         return false;
     }
     device_id_ = device_id.value();
@@ -187,13 +187,15 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (!access_token.has_value() || access_token.value().empty()) {
-        LOG(WARNING) << "Get access_token from local settings failed";
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        tcp_client_->send(ltproto::id(ack), ack);
+        LOG(ERR) << "Get access_token from local settings failed";
         return;
     }
     if (msg->access_token() != access_token.value()) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
         tcp_client_->send(ltproto::id(ack), ack);
-        LOG(WARNING) << "Received connection with invalid access_token: " << msg->access_token();
+        LOG(ERR) << "Received connection with invalid access_token: " << msg->access_token();
         return;
     }
     constexpr size_t kSessionNameLen = 8;
@@ -201,7 +203,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     {
         std::lock_guard<std::mutex> lock{mutex_};
         if (!worker_sessions_.empty()) {
-            LOG(WARNING) << "Only support one client";
+            LOG(ERR) << "Only support one client";
             return;
         }
         else {

@@ -110,6 +110,11 @@ function build_onevpl() {
     Set-Location $root_dir
 }
 
+function clear_onevpl() {
+    Remove-Item -Force -Recurse third_party/oneVPL/build/*
+    exit_if_fail
+}
+
 function build_opus() {
     Write-Host -ForegroundColor Green building opus
     Set-Location third_party/opus
@@ -192,6 +197,7 @@ if ($action -eq "prebuild") {
     build_mbedtls
     build_libuv
     build_sdl
+    build_onevpl
     build_opus
     build_g3log
     build_vigemclient
@@ -201,6 +207,7 @@ if ($action -eq "prebuild") {
     clear_mbedtls
     clear_libuv
     clear_sdl
+    clear_onevpl
     clear_opus
     clear_g3log
     clear_vigemclient

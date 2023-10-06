@@ -33,7 +33,7 @@
 
 #include <array>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/peer2peer/controller_added_removed.pb.h>
 #include <ltproto/peer2peer/controller_status.pb.h>

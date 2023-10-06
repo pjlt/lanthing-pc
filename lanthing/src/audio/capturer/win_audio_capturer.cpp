@@ -32,7 +32,7 @@
 
 #include <Functiondiscoverykeys_devpkey.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 // wasapi的用法参考了下面的链接：
 //  https://learn.microsoft.com/en-us/windows/win32/api/_coreaudio/
@@ -96,20 +96,20 @@ bool WinAudioCapturer::initPlatform() {
                                   __uuidof(IMMDeviceEnumerator),
                                   reinterpret_cast<void**>(enumerator_.GetAddressOf()));
     if (FAILED(hr)) {
-        LOG(WARNING) << "CoCreateInstance IMMDeviceEnumerator failed with " << toHex(hr);
+        LOG(ERR) << "CoCreateInstance IMMDeviceEnumerator failed with " << toHex(hr);
         return false;
     }
     hr = enumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole,
                                               device_.GetAddressOf());
     if (FAILED(hr)) {
-        LOG(WARNING) << "IMMDeviceEnumerator::GetDefaultAudioEndpoint failed with " << toHex(hr);
+        LOG(ERR) << "IMMDeviceEnumerator::GetDefaultAudioEndpoint failed with " << toHex(hr);
         return false;
     }
     getDeviceName();
     hr = device_->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr,
                            reinterpret_cast<void**>(client_.GetAddressOf()));
     if (FAILED(hr)) {
-        LOG(WARNING) << "IMMDevice::Activate failed with " << toHex(hr);
+        LOG(ERR) << "IMMDevice::Activate failed with " << toHex(hr);
         return false;
     }
     printAudioEngineInternalFormat();
@@ -118,23 +118,23 @@ bool WinAudioCapturer::initPlatform() {
     }
     hr = client_->SetEventHandle(read_ev_);
     if (FAILED(hr)) {
-        LOG(WARNING) << "IAudioClient::SetEventHandle failed with " << toHex(hr);
+        LOG(ERR) << "IAudioClient::SetEventHandle failed with " << toHex(hr);
         return false;
     }
     hr = client_->GetService(__uuidof(IAudioCaptureClient),
                              reinterpret_cast<void**>(capturer_.GetAddressOf()));
     if (FAILED(hr)) {
-        LOG(WARNING) << "IAudioClient::GetService(IAudioCaptureClient) failed with " << toHex(hr);
+        LOG(ERR) << "IAudioClient::GetService(IAudioCaptureClient) failed with " << toHex(hr);
         return false;
     }
     hr = client_->GetBufferSize(&buffer_len_); // 注意，单位是帧
     if (FAILED(hr)) {
-        LOG(WARNING) << "IAudioClient::GetBufferSize failed with " << toHex(hr);
+        LOG(ERR) << "IAudioClient::GetBufferSize failed with " << toHex(hr);
         return false;
     }
     hr = client_->Start();
     if (FAILED(hr)) {
-        LOG(WARNING) << "IAudioClient::Start failed with " << toHex(hr);
+        LOG(ERR) << "IAudioClient::Start failed with " << toHex(hr);
         return false;
     }
     return true;
@@ -179,7 +179,7 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
         uint32_t next_packet_size = 0;
         hr = capturer_->GetNextPacketSize(&next_packet_size);
         if (FAILED(hr)) {
-            LOG(WARNING) << "IAudioCaptureClient::GetNextPacketSize failed with " << toHex(hr);
+            LOG(ERR) << "IAudioCaptureClient::GetNextPacketSize failed with " << toHex(hr);
             return;
         }
         while (next_packet_size != 0) {
@@ -194,7 +194,7 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
             UINT64 recPos = 0;
             hr = capturer_->GetBuffer(&pData, &framesAvailable, &flags, &recPos, &recTime);
             if (FAILED(hr)) {
-                LOG(WARNING) << "IAudioCaptureClient::GetBuffer failed with " << toHex(hr);
+                LOG(ERR) << "IAudioCaptureClient::GetBuffer failed with " << toHex(hr);
                 return;
             }
             if (AUDCLNT_S_BUFFER_EMPTY == hr) {
@@ -211,12 +211,12 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
             onCapturedData(pData, framesAvailable);
             hr = capturer_->ReleaseBuffer(framesAvailable);
             if (FAILED(hr)) {
-                LOG(WARNING) << "IAudioCaptureClient::ReleaseBuffer failed with " << toHex(hr);
+                LOG(ERR) << "IAudioCaptureClient::ReleaseBuffer failed with " << toHex(hr);
                 return;
             }
             hr = capturer_->GetNextPacketSize(&next_packet_size);
             if (FAILED(hr)) {
-                LOG(WARNING) << "IAudioCaptureClient::GetNextPacketSize failed with " << toHex(hr);
+                LOG(ERR) << "IAudioCaptureClient::GetNextPacketSize failed with " << toHex(hr);
                 return;
             }
         }
@@ -227,13 +227,13 @@ void WinAudioCapturer::getDeviceName() {
     ComPtr<IPropertyStore> store;
     HRESULT hr = device_->OpenPropertyStore(STGM_READ, store.GetAddressOf());
     if (FAILED(hr)) {
-        LOG(WARNING) << "IMMDevice::OpenPropertyStore failed with " << toHex(hr);
+        LOG(ERR) << "IMMDevice::OpenPropertyStore failed with " << toHex(hr);
         return;
     }
     PROPVARIANT name{};
     hr = store->GetValue(PKEY_Device_FriendlyName, &name);
     if (FAILED(hr)) {
-        LOG(WARNING) << "IPropertyStore::GetValue(PKEY_Device_FriendlyName) failed with "
+        LOG(ERR) << "IPropertyStore::GetValue(PKEY_Device_FriendlyName) failed with "
                      << toHex(hr);
         return;
     }
@@ -247,7 +247,7 @@ void WinAudioCapturer::printAudioEngineInternalFormat() {
     WAVEFORMATEX* wformat = nullptr;
     HRESULT hr = client_->GetMixFormat(&wformat);
     if (FAILED(hr)) {
-        LOG(WARNING) << "IAudioClient::GetMixFormat failed with " << toHex(hr);
+        LOG(ERR) << "IAudioClient::GetMixFormat failed with " << toHex(hr);
         CoTaskMemFree(wformat);
         return;
     }
@@ -321,7 +321,7 @@ bool WinAudioCapturer::setAudioFormat() {
                                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_LOOPBACK,
                                  0, 0, reinterpret_cast<WAVEFORMATEX*>(&wfmte), NULL);
         if (FAILED(hr)) {
-            LOG(WARNING) << "IAudioClient::Initialize failed with " << toHex(hr);
+            LOG(ERR) << "IAudioClient::Initialize failed with " << toHex(hr);
         }
     }
     CoTaskMemFree(pWfxClosestMatch);

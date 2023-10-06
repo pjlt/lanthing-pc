@@ -36,7 +36,7 @@
 
 #include <optional>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltproto/peer2peer/keyboard_event.pb.h>
 #include <ltproto/peer2peer/mouse_event.pb.h>

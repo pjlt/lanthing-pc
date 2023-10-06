@@ -35,7 +35,7 @@
 #include <d3dcompiler.h>
 #include <dwmapi.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 using namespace Microsoft::WRL;
 
@@ -141,7 +141,7 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
     UINT subresource = D3D11CalcSubresource(0, 0, 0);
     auto ret = d3d11_context->Map(cpu_texture, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
     if (!SUCCEEDED(ret)) {
-        LOGF(WARNING, "fail to map texture");
+        LOGF(ERR, "fail to map texture");
         return;
     }
     memcpy(buffer, resource.pData, kSize);
@@ -182,7 +182,7 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
 bool D3D11Pipeline::render(int64_t frame) {
     tryResetSwapChain();
     if (frame >= static_cast<int64_t>(shader_views_.size())) {
-        LOGF(WARNING, "Can not find shader view for texutre %d", frame);
+        LOGF(ERR, "Can not find shader view for texutre %d", frame);
         return false;
     }
     size_t index = static_cast<size_t>(frame);
@@ -203,7 +203,7 @@ bool D3D11Pipeline::present() {
     auto hr = swap_chain_->Present(0, 0);
     pipeline_ready_ = false;
     if (FAILED(hr)) {
-        LOGF(WARNING, "failed to call presenter, hr:0x%08x", hr);
+        LOGF(ERR, "failed to call presenter, hr:0x%08x", hr);
         return false;
     }
     return true;
@@ -217,7 +217,7 @@ bool D3D11Pipeline::tryResetSwapChain() {
     if (reset_.exchange(false)) {
         RECT rect;
         if (!GetClientRect(hwnd_, &rect)) {
-            LOG(WARNING) << "GetClientRect failed";
+            LOG(ERR) << "GetClientRect failed";
             return false;
         }
         display_width_ = rect.right - rect.left;
@@ -227,7 +227,7 @@ bool D3D11Pipeline::tryResetSwapChain() {
             0, static_cast<UINT>(display_width_), static_cast<UINT>(display_height_),
             DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
         if (FAILED(hr)) {
-            LOGF(WARNING, "SwapChain resize buffers failed %#x", hr);
+            LOGF(ERR, "SwapChain resize buffers failed %#x", hr);
             return false;
         }
         if (waitable_obj_) {
@@ -236,19 +236,19 @@ bool D3D11Pipeline::tryResetSwapChain() {
         swap_chain_->SetMaximumFrameLatency(1);
         waitable_obj_ = swap_chain_->GetFrameLatencyWaitableObject();
         if (!waitable_obj_) {
-            LOG(WARNING) << "SwapChain GetFrameLatencyWaitableObject failed";
+            LOG(ERR) << "SwapChain GetFrameLatencyWaitableObject failed";
             return false;
         }
         ComPtr<ID3D11Resource> back_buffer;
         hr =
             swap_chain_->GetBuffer(0, __uuidof(ID3D11Resource), (void**)back_buffer.GetAddressOf());
         if (FAILED(hr)) {
-            LOGF(WARNING, "IDXGISwapChain::GetBuffer failed: %#x", hr);
+            LOGF(ERR, "IDXGISwapChain::GetBuffer failed: %#x", hr);
             return false;
         }
         hr = d3d11_dev_->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_view_);
         if (FAILED(hr)) {
-            LOGF(WARNING, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
+            LOGF(ERR, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
             return false;
         }
         setupRSStage();
@@ -292,7 +292,7 @@ bool D3D11Pipeline::init() {
     HRESULT hr = DwmGetCompositionTimingInfo(nullptr, &info);
 
     if (FAILED(hr) || info.rateRefresh.uiDenominator == 0) {
-        LOGF(WARNING, "Failed to get dwm composition timing info, hr:0x%08x", hr);
+        LOGF(ERR, "Failed to get dwm composition timing info, hr:0x%08x", hr);
         return false;
     }
     refresh_rate_ = info.rateRefresh.uiNumerator / info.rateRefresh.uiDenominator;
@@ -309,7 +309,7 @@ bool D3D11Pipeline::init() {
 bool D3D11Pipeline::createD3D() {
     HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory3), (void**)&dxgi_factory_);
     if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create dxgi factory, err:%08lx", hr);
+        LOGF(ERR, "Failed to create dxgi factory, err:%08lx", hr);
         return false;
     }
 
@@ -340,13 +340,13 @@ bool D3D11Pipeline::createD3D() {
                            D3D11_SDK_VERSION, d3d11_dev_.GetAddressOf(), nullptr,
                            d3d11_ctx_.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create d3d11 device, err:%08lx", hr);
+        LOGF(ERR, "Failed to create d3d11 device, err:%08lx", hr);
         return false;
     }
     ComPtr<ID3D10Multithread> d3d10_mt;
     hr = d3d11_dev_.As(&d3d10_mt);
     if (FAILED(hr)) {
-        LOGF(WARNING, "Cast to ID3D10Multithread failed: %#x", hr);
+        LOGF(ERR, "Cast to ID3D10Multithread failed: %#x", hr);
         return false;
     }
     d3d10_mt->SetMultithreadProtected(TRUE);
@@ -356,7 +356,7 @@ bool D3D11Pipeline::createD3D() {
 bool D3D11Pipeline::setupRenderPipeline() {
     RECT rect;
     if (!GetClientRect(hwnd_, &rect)) {
-        LOG(WARNING) << "GetClientRect failed";
+        LOG(ERR) << "GetClientRect failed";
         return false;
     }
     display_width_ = rect.right - rect.left;
@@ -384,12 +384,12 @@ bool D3D11Pipeline::setupRenderPipeline() {
     }
     hr = swap_chain->QueryInterface(__uuidof(IDXGISwapChain2), (void**)swap_chain_.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "IDXGISwapChain::QueryInterface(IDXGISwapChain4) failed: %#x ", hr);
+        LOGF(ERR, "IDXGISwapChain::QueryInterface(IDXGISwapChain4) failed: %#x ", hr);
         return false;
     }
     hr = dxgi_factory_->MakeWindowAssociation(hwnd_, DXGI_MWA_NO_WINDOW_CHANGES);
     if (FAILED(hr)) {
-        LOGF(WARNING, "IDXGIFactory::MakeWindowAssociation() failed: %#x", hr);
+        LOGF(ERR, "IDXGIFactory::MakeWindowAssociation() failed: %#x", hr);
         return false;
     }
     swap_chain_->SetMaximumFrameLatency(1);
@@ -401,12 +401,12 @@ bool D3D11Pipeline::setupRenderPipeline() {
     ComPtr<ID3D11Resource> back_buffer;
     hr = swap_chain_->GetBuffer(0, __uuidof(ID3D11Resource), (void**)back_buffer.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "IDXGISwapChain::GetBuffer failed: %#x", hr);
+        LOGF(ERR, "IDXGISwapChain::GetBuffer failed: %#x", hr);
         return false;
     }
     hr = d3d11_dev_->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_view_);
     if (FAILED(hr)) {
-        LOGF(WARNING, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
+        LOGF(ERR, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
         return false;
     }
 

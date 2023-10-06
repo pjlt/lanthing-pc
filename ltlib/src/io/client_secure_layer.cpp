@@ -29,7 +29,7 @@
  */
 
 #include "client_secure_layer.h"
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <mbedtls/error.h>
 #include "client_transport_layer.h"
 
@@ -119,7 +119,7 @@ bool MbedtlsCTransport::tls_init_context()
     mbedtls_x509_crt_init(&own_cert_);
     int ret = mbedtls_x509_crt_parse(&own_cert_, reinterpret_cast<const unsigned char*>(cert_content_.c_str()), cert_content_.size() + 1);
     if (ret != 0) {
-        LOG(WARNING) << "Parse cert file failed: " << ret;
+        LOG(ERR) << "Parse cert file failed: " << ret;
         return false;
     }
     mbedtls_ssl_conf_ca_chain(&ssl_cfg_, &own_cert_, nullptr);
@@ -205,7 +205,7 @@ int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* o
         error_ = rc;
         char err[1024];
         mbedtls_strerror(rc, err, 1024);
-        LOGF(WARNING, "TLS error: %0x(%s)", rc, err);
+        LOGF(ERR, "TLS error: %0x(%s)", rc, err);
         return TLS_ERR;
     }
 
@@ -246,7 +246,7 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
         } else if (hs_state == HandshakeState::ERROR_) {
             char errbuf[1024];
             mbedtls_strerror(error_, errbuf, sizeof(errbuf));
-            LOG(WARNING) << "TLS handshake error:" << errbuf;
+            LOG(ERR) << "TLS handshake error:" << errbuf;
             return false;
         }
     } else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
@@ -286,11 +286,11 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
                     on_read_(outbuff);
                 }
                 if (rc == ltlib::TLS_ERR) {
-                    LOG(WARNING) << "Unexpected TLS result:" << rc;
+                    LOG(ERR) << "Unexpected TLS result:" << rc;
                 } else {
                     char errbuf[1024];
                     mbedtls_strerror(error_, errbuf, 1024);
-                    LOG(WARNING) << "TLS error:" << errbuf;
+                    LOG(ERR) << "TLS error:" << errbuf;
                 }
                 return false;
             }
@@ -303,7 +303,7 @@ void MbedtlsCTransport::on_uv_closed()
 {
     int ret = tls_reset_engine();
     if (ret != 0) {
-        LOG(WARNING) << "Reset ssl session failed:" << ret;
+        LOG(ERR) << "Reset ssl session failed:" << ret;
     }
     on_closed_();
 }
@@ -312,7 +312,7 @@ void MbedtlsCTransport::on_uv_reconnecting()
 {
     int ret = tls_reset_engine();
     if (ret != 0) {
-        LOG(WARNING) << "Reset ssl session failed:" << ret;
+        LOG(ERR) << "Reset ssl session failed:" << ret;
     }
     on_reconnecting_();
 }
@@ -323,7 +323,7 @@ bool MbedtlsCTransport::on_uv_connected()
     int state = ssl_.MBEDTLS_PRIVATE(state);
     LOG(INFO) << "Start tls handshake " << state;
     if (is_handshake_continue(state)) {
-        LOGF(WARNING, "Start hanshake in the middle of another handshak(%d)", state);
+        LOGF(ERR, "Start hanshake in the middle of another handshak(%d)", state);
         return false;
     }
     Buffer buff { TLS_BUF_SZ };
@@ -386,7 +386,7 @@ bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count, const std::func
         if (tls_rc < 0) {
             char errbuf[1024] = { 0 };
             mbedtls_strerror(error_, errbuf, 1024);
-            LOG(WARNING) << "tls_write failed:" << errbuf;
+            LOG(ERR) << "tls_write failed:" << errbuf;
             return false;
         }
     }
@@ -396,7 +396,7 @@ bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count, const std::func
         if (tls_rc < 0) {
             char errbuf[1024] = { 0 };
             mbedtls_strerror(error_, errbuf, 1024);
-            LOG(WARNING) << "tls_write failed:" << errbuf;
+            LOG(ERR) << "tls_write failed:" << errbuf;
             return false;
         } else {
             bool success = uvtransport_.send(&outbuf, 1, [outbuf]() { delete outbuf.base; });

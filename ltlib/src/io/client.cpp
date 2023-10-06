@@ -29,7 +29,7 @@
  */
 
 #include <ltlib/io/client.h>
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <ltproto/ltproto.h>
 #include "client_transport_layer.h"
 #include "client_secure_layer.h"
@@ -148,7 +148,7 @@ bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::Mes
     }
     auto packet = ltproto::Packet::create({ type, msg }, true);
     if (!packet.has_value()) {
-        LOG(WARNING) << "Create net packet failed, type:" << type;
+        LOG(ERR) << "Create net packet failed, type:" << type;
         return false;
     }
     const auto& pkt = packet.value();
@@ -175,7 +175,7 @@ bool ClientImpl::send(const std::shared_ptr<uint8_t>& data, uint32_t len, const 
     }
     auto packet = ltproto::Packet::create(data, len, true);
     if (!packet.has_value()) {
-        LOG(WARNING) << "Create net packet failed";
+        LOG(ERR) << "Create net packet failed";
         return false;
     }
     const auto& pkt = packet.value();

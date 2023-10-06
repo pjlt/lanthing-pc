@@ -32,7 +32,7 @@
 
 #include <fstream>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <opus/opus.h>
 #include <opus/opus_types.h>
 
@@ -101,7 +101,7 @@ bool AudioCapturer::initEncoder() {
     OpusEncoder* encoder =
         opus_encoder_create(framesPerSec(), channels(), OPUS_APPLICATION_AUDIO, &error);
     if (encoder == nullptr || error != OPUS_OK) {
-        LOG(WARNING) << "opus_encoder_create failed with " << error;
+        LOG(ERR) << "opus_encoder_create failed with " << error;
         return false;
     }
     opus_encoder_ctl(encoder, OPUS_SET_BITRATE(framesPerSec() * bytesPerFrame() * 8));
@@ -157,7 +157,7 @@ void AudioCapturer::onCapturedData(const uint8_t* data, uint32_t frames) {
             auto len = opus_encode(encoder, pcm_data, framesPer10ms(), opus_buffer_.data(),
                                    static_cast<opus_int32>(opus_buffer_.size()));
             if (len < 0) {
-                LOG(WARNING) << "opus_encode failed with " << len;
+                LOG(ERR) << "opus_encode failed with " << len;
                 return;
             }
             auto msg = std::make_shared<ltproto::peer2peer::AudioData>();

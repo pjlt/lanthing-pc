@@ -35,11 +35,11 @@
 #include <memory>
 #include <regex>
 
-#include <g3log/g3log.hpp>
 #include <g3log/logworker.hpp>
 #include <lt_minidump_generator.h>
+#include <ltlib/logging.h>
 
-#include <ltlib/log_sink.h>
+#include <ltlib/logging.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -85,6 +85,8 @@ void initLogging() {
     g_logWorker = g3::LogWorker::createLogWorker();
     g_logWorker->addSink(std::make_unique<ltlib::LogSink>(kPrefix, log_dir.string()),
                          &ltlib::LogSink::fileWrite);
+    g3::only_change_at_initialization::addLogLevel(ERR);
+    g3::log_levels::disable(DEBUG);
     g3::initializeLogging(g_logWorker.get());
     ltlib::ThreadWatcher::instance()->registerTerminateCallback(
         [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });

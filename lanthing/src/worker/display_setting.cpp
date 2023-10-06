@@ -32,7 +32,7 @@
 
 #include "display_setting.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <set>
 
 namespace lt {

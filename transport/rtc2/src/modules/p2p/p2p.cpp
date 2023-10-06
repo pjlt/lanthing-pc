@@ -32,7 +32,7 @@
 
 #include <sstream>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <modules/network/network_channel.h>
 #include <modules/p2p/netcard.h>

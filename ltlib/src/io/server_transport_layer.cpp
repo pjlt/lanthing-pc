@@ -29,7 +29,7 @@
  */
 
 #include "server_transport_layer.h"
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace
 {
@@ -115,7 +115,7 @@ bool LibuvSTransport::send(uint32_t fd, Buffer buff[], uint32_t buff_count, cons
     uv_buf_t* uvbuf = reinterpret_cast<uv_buf_t*>(buff);
     int ret = uv_write(write_req, conn->handle, uvbuf, buff_count, &LibuvSTransport::on_written);
     if (ret != 0) {
-        LOGF(WARNING, "%s write failed:%d", stype_ == StreamType::TCP ? "TCP" : "Pipe", ret);
+        LOGF(ERR, "%s write failed:%d", stype_ == StreamType::TCP ? "TCP" : "Pipe", ret);
         delete info;
         delete write_req;
         return false;
@@ -142,26 +142,26 @@ bool LibuvSTransport::init_tcp()
     server_tcp_ = std::make_unique<uv_tcp_t>();
     int ret = uv_tcp_init(uvloop(), server_tcp_.get());
     if (ret != 0) {
-        LOG(WARNING) << "Init tcp socket failed: " << ret;
+        LOG(ERR) << "Init tcp socket failed: " << ret;
         server_tcp_.reset(); // reset是为了告诉析构函数，不要close这个socket
     }
     struct sockaddr_in addr;
     ret = uv_ip4_addr(bind_ip_.c_str(), bind_port_, &addr);
     if (ret != 0) {
-        LOGF(WARNING, "Create uv_ip4_addr(%s:%u) failed with %d", bind_ip_.c_str(), bind_port_, ret);
+        LOGF(ERR, "Create uv_ip4_addr(%s:%u) failed with %d", bind_ip_.c_str(), bind_port_, ret);
         server_tcp_.reset();
         return false;
     }
     ret = uv_tcp_bind(server_tcp_.get(), reinterpret_cast<const sockaddr*>(&addr), 0);
     if (ret != 0) {
-        LOG(WARNING) << "TCP bind to '" << bind_ip_ << ":" << bind_port_ << "' failed: " << ret;
+        LOG(ERR) << "TCP bind to '" << bind_ip_ << ":" << bind_port_ << "' failed: " << ret;
         server_tcp_.reset();
         return false;
     }
     int name_len = sizeof(addr);
     ret = uv_tcp_getsockname(server_tcp_.get(), reinterpret_cast<sockaddr*>(&addr), &name_len);
     if (ret != 0) {
-        LOG(WARNING) << "getsockname failed with " << ret;
+        LOG(ERR) << "getsockname failed with " << ret;
         return false;
     }
     listen_port_ = ntohs(addr.sin_port);
@@ -170,7 +170,7 @@ bool LibuvSTransport::init_tcp()
     constexpr int kBacklog = 4;
     ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_tcp_.get()), kBacklog, &LibuvSTransport::on_new_client);
     if (ret != 0) {
-        LOG(WARNING) << "Listen on TCP '" << bind_ip_ << ":" << bind_port_ << "' failed: " << ret;
+        LOG(ERR) << "Listen on TCP '" << bind_ip_ << ":" << bind_port_ << "' failed: " << ret;
         server_tcp_.reset();
         return false;
     }
@@ -183,7 +183,7 @@ bool LibuvSTransport::init_pipe()
     uv_pipe_init(uvloop(), server_pipe_.get(), 0); /*返回值永远是0*/
     int ret = uv_pipe_bind(server_pipe_.get(), pipe_name_.c_str());
     if (ret != 0) {
-        LOG(WARNING) << "Pipe bind to name '" << pipe_name_ << "' failed: " << ret;
+        LOG(ERR) << "Pipe bind to name '" << pipe_name_ << "' failed: " << ret;
         server_pipe_.reset();
         return false;
     }
@@ -191,7 +191,7 @@ bool LibuvSTransport::init_pipe()
     constexpr int kBacklog = 4;
     ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_pipe_.get()), kBacklog, &LibuvSTransport::on_new_client);
     if (ret != 0) {
-        LOG(WARNING) << "Listen on pipe '" << pipe_name_ << "' failed: " << ret;
+        LOG(ERR) << "Listen on pipe '" << pipe_name_ << "' failed: " << ret;
         server_pipe_.reset();
         return false;
     }
@@ -252,26 +252,26 @@ void LibuvSTransport::on_new_client(uv_stream_t* server, int status)
 {
     auto that = reinterpret_cast<LibuvSTransport*>(server->data);
     if (status != 0) {
-        LOG(WARNING) << "New connection error: " << status;
+        LOG(ERR) << "New connection error: " << status;
         return;
     }
     std::shared_ptr<Conn> conn = Conn::create(that->stype_, that->uvloop());
     if (conn == nullptr) {
-        LOG(WARNING) << "Create connection handle for new connection failed";
+        LOG(ERR) << "Create connection handle for new connection failed";
         return;
     }
     conn->handle->data = conn.get();
     conn->svr = that;
     int ret = uv_accept(that->server_handle(), conn->handle);
     if (ret != 0) {
-        LOG(WARNING) << "Accept pipe client failed: " << ret;
+        LOG(ERR) << "Accept pipe client failed: " << ret;
         return;
     }
     conn->fd = that->latest_fd_++;
     that->conns_[conn->fd] = conn;
     ret = uv_read_start(conn->handle, &LibuvSTransport::on_alloc_memory, &LibuvSTransport::on_read);
     if (ret != 0) {
-        LOG(WARNING) << "Start read on pipe failed: " << ret;
+        LOG(ERR) << "Start read on pipe failed: " << ret;
         that->conns_.erase(conn->fd);
         return;
     }

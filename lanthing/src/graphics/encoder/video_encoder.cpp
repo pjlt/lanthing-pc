@@ -32,7 +32,7 @@
 #include <dxgi1_3.h>
 #include <wrl/client.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
@@ -64,7 +64,7 @@ auto createD3d11()
     ComPtr<IDXGIFactory2> dxgi_factory;
     auto hr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory2), (void**)dxgi_factory.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create dxgi factory2, hr:0x%08x", hr);
+        LOGF(ERR, "Failed to create dxgi factory2, hr:0x%08x", hr);
         return {nullptr, nullptr, vendor_id, luid};
     }
     ComPtr<IDXGIAdapter1> adapter;
@@ -90,7 +90,7 @@ auto createD3d11()
                            D3D11_SDK_VERSION, device.GetAddressOf(), nullptr,
                            context.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
+        LOGF(ERR, "fail to create d3d11 device, err:%08lx", hr);
         return {nullptr, nullptr, vendor_id, luid};
     }
     LOGF(INFO, "D3D11Device(index:0, %x:%x) created", desc.VendorId, desc.DeviceId);
@@ -134,7 +134,7 @@ auto createD3D11WithLuid(int64_t luid)
                            D3D11_SDK_VERSION, device.GetAddressOf(), nullptr,
                            context.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "fail to create d3d11 device, err:%08lx", hr);
+        LOGF(ERR, "fail to create d3d11 device, err:%08lx", hr);
         return {nullptr, nullptr, vendor_id, luid};
     }
     vendor_id = desc.VendorId;
@@ -293,7 +293,7 @@ namespace lt {
 
 std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params) {
     if (!params.validate()) {
-        LOG(WARNING) << "Create VideoEncoder failed: invalid parameters";
+        LOG(ERR) << "Create VideoEncoder failed: invalid parameters";
         return nullptr;
     }
     // auto [device, context, vendor_id, luid] = create_d3d11(params.luid);

@@ -37,7 +37,7 @@
 #include <amf/components/VideoEncoderVCE.h>
 #include <amf/core/Factory.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/load_library.h>
 
@@ -171,17 +171,17 @@ bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     }
     AMF_RESULT result = factory_->CreateContext(&context_);
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFFactory::CreateContext failed with " << result;
+        LOG(ERR) << "AMFFactory::CreateContext failed with " << result;
         return false;
     }
     result = context_->InitDX11(d3d11_dev_.Get());
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFFactory::InitDX11 failed with " << result;
+        LOG(ERR) << "AMFFactory::InitDX11 failed with " << result;
         return false;
     }
     result = factory_->CreateComponent(context_, params_helper.codec().c_str(), &encoder_);
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFFactory::CreateComponent failed with " << result;
+        LOG(ERR) << "AMFFactory::CreateComponent failed with " << result;
         return false;
     }
     if (codec_type_ == lt::VideoCodecType::H264) {
@@ -196,7 +196,7 @@ bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     }
     result = encoder_->Init(amf::AMF_SURFACE_BGRA, width_, height_);
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFComponent::Init failed with " << result;
+        LOG(ERR) << "AMFComponent::Init failed with " << result;
         return false;
     }
     return true;
@@ -220,7 +220,7 @@ void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) 
         }
     }
     if (result != AMF_OK) {
-        LOG(WARNING)
+        LOG(ERR)
             << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE/AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE failed "
                "with "
             << result;
@@ -232,7 +232,7 @@ AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     amf::AMFSurfacePtr surface = nullptr;
     AMF_RESULT result = context_->CreateSurfaceFromDX11Native(input_frame, &surface, nullptr);
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFContext::CreateSurfaceFromDX11Native failed with " << result;
+        LOG(ERR) << "AMFContext::CreateSurfaceFromDX11Native failed with " << result;
         return nullptr;
     }
     if (request_iframe) {
@@ -251,11 +251,11 @@ AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
         }
     }
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFSurface::SetProperty(PICTURE_TYPE) failed with " << result;
+        LOG(ERR) << "AMFSurface::SetProperty(PICTURE_TYPE) failed with " << result;
     }
     result = encoder_->SubmitInput(surface);
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFComponent::SubmitInput failed with " << result;
+        LOG(ERR) << "AMFComponent::SubmitInput failed with " << result;
         return nullptr;
     }
     amf::AMFDataPtr outdata = nullptr;
@@ -264,7 +264,7 @@ AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
         return nullptr;
     }
     if (outdata == nullptr) {
-        LOG(WARNING) << "AMFComponent::QueryOutput failed with " << result;
+        LOG(ERR) << "AMFComponent::QueryOutput failed with " << result;
         return nullptr;
     }
     amf::AMFBufferPtr buffer{outdata};
@@ -278,17 +278,17 @@ bool AmdEncoderImpl::loadAmdApi() {
     std::string lib_name = AMF_DLL_NAMEA;
     amdapi_ = ltlib::DynamicLibrary::load(lib_name);
     if (amdapi_ == nullptr) {
-        LOG(WARNING) << "Load " << lib_name << " failed";
+        LOG(ERR) << "Load " << lib_name << " failed";
         return false;
     }
     auto AMFInit = reinterpret_cast<AMFInit_Fn>(amdapi_->getFunc(AMF_INIT_FUNCTION_NAME));
     if (AMFInit == nullptr) {
-        LOG(WARNING) << "Load 'AMFInit' from '" << lib_name << "' failed";
+        LOG(ERR) << "Load 'AMFInit' from '" << lib_name << "' failed";
         return false;
     }
     AMF_RESULT result = AMFInit(AMF_FULL_VERSION, &factory_);
     if (result != AMF_OK) {
-        LOG(WARNING) << "AMFInit failed with " << result;
+        LOG(ERR) << "AMFInit failed with " << result;
         return false;
     }
     return true;
@@ -298,64 +298,64 @@ bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
     AMF_RESULT result =
         encoder_->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY);
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_USAGE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_USAGE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_IDR_PERIOD, params.gop());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_IDR_PERIOD failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_IDR_PERIOD failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, params.bitrate());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, params.qmin());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_MIN_QP failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_MIN_QP failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, params.qmax());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_MAX_QP failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_MAX_QP failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, params.presetAvc());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_QUALITY_PRESET failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_QUALITY_PRESET failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
         return false;
     }
     result =
         encoder_->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(width_, height_));
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_FRAMESIZE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_FRAMESIZE failed with " << result;
         return false;
     }
     result =
         encoder_->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(params.fps(), 1));
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_FRAMERATE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_FRAMERATE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_ENFORCE_HRD, true); // ??
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_ENFORCE_HRD failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_ENFORCE_HRD failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, params.rc());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_LOWLATENCY_MODE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_LOWLATENCY_MODE failed with " << result;
         return false;
     }
     return true;
@@ -365,64 +365,64 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
     AMF_RESULT result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE,
                                               AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY);
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_USAGE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_USAGE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_GOP_SIZE, params.gop());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_GOP_SIZE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_GOP_SIZE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, params.bitrate());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MIN_QP_P, params.qmin());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_MIN_QP_P failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_MIN_QP_P failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MAX_QP_P, params.qmax());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_MAX_QP_P failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_MAX_QP_P failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, params.presetHevc());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET failed with " << result;
         return false;
     }
     // result = encoder_->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
     // if (result != AMF_OK) {
-    //     LOG(WARNING) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
+    //     LOG(ERR) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
     //     return false;
     // }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE,
                                    ::AMFConstructSize(width_, height_));
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMESIZE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMESIZE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE,
                                    ::AMFConstructRate(params.fps(), 1));
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMERATE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMERATE failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_ENFORCE_HRD, true); // ??
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_ENFORCE_HRD failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_ENFORCE_HRD failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, params.rc());
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD failed with " << result;
         return false;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
     if (result != AMF_OK) {
-        LOG(WARNING) << "Set AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE failed with " << result;
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE failed with " << result;
         return false;
     }
     return true;

@@ -38,7 +38,7 @@
 #include <dxgi1_5.h>
 #include <wrl/client.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
 
@@ -59,7 +59,7 @@ bool GpuInfo::init() {
     ComPtr<IDXGIFactory5> dxgi_factory;
     hr = CreateDXGIFactory(__uuidof(IDXGIFactory5), (void**)dxgi_factory.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create dxgi factory, er:%08x", hr);
+        LOGF(ERR, "Failed to create dxgi factory, er:%08x", hr);
         return false;
     }
 
@@ -93,7 +93,7 @@ bool GpuInfo::init() {
                                D3D11_SDK_VERSION, d3d11_dev.GetAddressOf(), nullptr,
                                d3d11_ctx.GetAddressOf());
         if (FAILED(hr)) {
-            LOGF(WARNING, "Failed to create d3d11 device on %s, err:%08lx",
+            LOGF(ERR, "Failed to create d3d11 device on %s, err:%08lx",
                  ability.to_str().c_str(), hr);
             continue;
         }
@@ -101,7 +101,7 @@ bool GpuInfo::init() {
         hr = d3d11_dev->QueryInterface(__uuidof(ID3D11VideoDevice),
                                        (void**)video_device.GetAddressOf());
         if (FAILED(hr)) {
-            LOGF(WARNING, "Failed to get ID3D11VideoDevice on %s, hr:%08lx", hr,
+            LOGF(ERR, "Failed to get ID3D11VideoDevice on %s, hr:%08lx", hr,
                  ability.to_str().c_str());
             continue;
         }

@@ -30,7 +30,7 @@
 
 #include "worker.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/times.h>
 #include <ltproto/ltproto.h>
@@ -99,7 +99,7 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
         options.find("-name") == options.end()) {
-        LOG(WARNING) << "Parameter invalid";
+        LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
     Params params{};
@@ -110,21 +110,21 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
 
     params.name = options["-name"];
     if (params.name.empty()) {
-        LOG(WARNING) << "Parameter invalid: name";
+        LOG(ERR) << "Parameter invalid: name";
         return nullptr;
     }
     if (width <= 0) {
-        LOG(WARNING) << "Parameter invalid: width";
+        LOG(ERR) << "Parameter invalid: width";
         return nullptr;
     }
     params.width = static_cast<uint32_t>(width);
     if (height <= 0) {
-        LOG(WARNING) << "Parameter invalid: height";
+        LOG(ERR) << "Parameter invalid: height";
         return nullptr;
     }
     params.height = static_cast<uint32_t>(height);
     if (freq <= 0) {
-        LOG(WARNING) << "Parameter invalid: freq";
+        LOG(ERR) << "Parameter invalid: freq";
         return nullptr;
     }
     params.refresh_rate = static_cast<uint32_t>(freq);
@@ -138,7 +138,7 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
         }
     }
     if (params.codecs.empty()) {
-        LOG(WARNING) << "Parameter invalid: codecs";
+        LOG(ERR) << "Parameter invalid: codecs";
         return nullptr;
     }
 
@@ -172,16 +172,16 @@ void Worker::wait() {
 bool Worker::init() {
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
-        LOG(WARNING) << "Create session observer failed";
+        LOG(ERR) << "Create session observer failed";
         return false;
     }
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
-        LOG(WARNING) << "Create IOLoop failed";
+        LOG(ERR) << "Create IOLoop failed";
         return false;
     }
     if (!initPipeClient()) {
-        LOG(WARNING) << "Init pipe client failed";
+        LOG(ERR) << "Init pipe client failed";
         return false;
     }
     DisplaySetting client_display_setting{client_width_, client_height_, client_refresh_rate_};
@@ -268,7 +268,7 @@ bool Worker::negotiateParameters() {
                                                       std::placeholders::_1, std::placeholders::_2);
     auto video = lt::VideoCaptureEncodePipeline::create(video_params);
     if (video == nullptr) {
-        LOGF(WARNING, "Create VideoCaptureEncodePipeline failed");
+        LOGF(ERR, "Create VideoCaptureEncodePipeline failed");
         return false;
     }
     negotiated_params->set_enable_driver_input(false);
@@ -312,7 +312,7 @@ void Worker::postDelayTask(int64_t delay_ms, const std::function<void()>& task) 
 bool Worker::registerMessageHandler(uint32_t type, const MessageHandler& handler) {
     auto [_, success] = msg_handlers_.insert({type, handler});
     if (!success) {
-        LOG(WARNING) << "Register message handler(" << type << ") failed";
+        LOG(ERR) << "Register message handler(" << type << ") failed";
         return false;
     }
     else {
@@ -369,7 +369,7 @@ void Worker::onPipeMessage(uint32_t type, std::shared_ptr<google::protobuf::Mess
 }
 
 void Worker::onPipeDisconnected() {
-    LOG(WARNING) << "Disconnected from service, won't reconnect again";
+    LOG(ERR) << "Disconnected from service, won't reconnect again";
     connected_to_service_ = false;
 }
 

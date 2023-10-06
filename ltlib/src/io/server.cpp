@@ -29,7 +29,7 @@
  */
 
 #include <ltlib/io/server.h>
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <ltproto/ltproto.h>
 #include "server_transport_layer.h"
 
@@ -117,7 +117,7 @@ bool ServerImpl::send(uint32_t fd, uint32_t type, const std::shared_ptr<google::
     }
     auto packet = ltproto::Packet::create({ type, msg }, false);
     if (!packet.has_value()) {
-        LOG(WARNING) << "Create net packet failed, type:" << type;
+        LOG(ERR) << "Create net packet failed, type:" << type;
         return false;
     }
     const auto& pkt = packet.value();
@@ -142,7 +142,7 @@ bool ServerImpl::send(uint32_t fd, const std::shared_ptr<uint8_t>& data, uint32_
     }
     auto packet = ltproto::Packet::create(data, len, false);
     if (!packet.has_value()) {
-        LOG(WARNING) << "Create net packet failed";
+        LOG(ERR) << "Create net packet failed";
         return false;
     }
     const auto& pkt = packet.value();
@@ -196,7 +196,7 @@ bool ServerImpl::on_transport_read(uint32_t fd, const Buffer& buff)
     auto conn = iter->second;
     conn.parser->push_buffer(reinterpret_cast<const uint8_t*>(buff.base), buff.len);
     if (!conn.parser->parse_buffer()) {
-        LOG(WARNING) << "Parse data failed";
+        LOG(ERR) << "Parse data failed";
         return false;
     }
     while (auto msg = conn.parser->pop_message()) {

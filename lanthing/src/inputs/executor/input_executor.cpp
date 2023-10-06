@@ -35,7 +35,7 @@
 #include <Xinput.h>
 
 #include <ViGEm/Common.h>
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <inputs/executor/gamepad.h>
 #include <ltproto/ltproto.h>
@@ -122,7 +122,7 @@ void InputExecutor::onControllerAddedRemoved(
 void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerStatus>(msg);
     if (controller->gamepad_index() >= XUSER_MAX_COUNT) {
-        LOG(WARNING) << "Gamepad index exceed limit: " << controller->gamepad_index();
+        LOG(ERR) << "Gamepad index exceed limit: " << controller->gamepad_index();
         return;
     }
     XUSB_REPORT gamepad_report{};

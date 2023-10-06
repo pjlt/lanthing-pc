@@ -30,7 +30,7 @@
 
 #include "udp_socket.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <uv.h>
 
 #include <ltlib/times.h>
@@ -65,7 +65,7 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
     int ret = uv_udp_init_ex(uvloop, udp, AF_INET);
     if (ret != 0) {
         delete udp;
-        LOG(WARNING) << "uv_udp_init_ex failed with " << ret;
+        LOG(ERR) << "uv_udp_init_ex failed with " << ret;
         return nullptr;
     }
     auto storage = bind_addr.to_storage();
@@ -75,7 +75,7 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
             auto udp = (uv_udp_t*)handle;
             delete udp;
         });
-        LOG(WARNING) << "uv_udp_bind failed with " << ret;
+        LOG(ERR) << "uv_udp_bind failed with " << ret;
         return nullptr;
     }
     ret = uv_udp_recv_start(udp, UDPSocketImpl::on_alloc_memory, UDPSocketImpl::on_udp_recv);
@@ -84,7 +84,7 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
             auto udp = (uv_udp_t*)handle;
             delete udp;
         });
-        LOG(WARNING) << "uv_udp_recv_start failed with " << ret;
+        LOG(ERR) << "uv_udp_recv_start failed with " << ret;
         return nullptr;
     }
     auto udp_socket = std::make_unique<UDPSocketImpl>();

@@ -6,7 +6,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved
 
 #include "duplication_manager.h"
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 //
 // Constructor sets up references / variables
@@ -66,7 +66,7 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     HRESULT hr =
         m_Device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&DxgiDevice));
     if (FAILED(hr)) {
-        LOGF(WARNING, "failed to get DXGI Device, hr: 0x%08x", hr);
+        LOGF(ERR, "failed to get DXGI Device, hr: 0x%08x", hr);
         return false;
     }
 
@@ -76,7 +76,7 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     DxgiDevice->Release();
     DxgiDevice = nullptr;
     if (FAILED(hr)) {
-        LOGF(WARNING, "failed to get parent DXGI Adapter, hr: 0x%08x", hr);
+        LOGF(ERR, "failed to get parent DXGI Adapter, hr: 0x%08x", hr);
         return false;
     }
 
@@ -85,7 +85,7 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     DxgiAdapter->Release();
     DxgiAdapter = nullptr;
     if (FAILED(hr)) {
-        LOGF(WARNING, "failed to get specified output in DUPLICATIONMANAGER, hr: 0x%08x", hr);
+        LOGF(ERR, "failed to get specified output in DUPLICATIONMANAGER, hr: 0x%08x", hr);
         return false;
     }
 
@@ -96,7 +96,7 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     hr =
         m_DxgiOutput->QueryInterface(__uuidof(DxgiOutput1), reinterpret_cast<void**>(&DxgiOutput1));
     if (FAILED(hr)) {
-        LOGF(WARNING, "failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
+        LOGF(ERR, "failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
         return false;
     }
 
@@ -106,13 +106,13 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     DxgiOutput1 = nullptr;
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
-            LOGF(WARNING,
+            LOGF(ERR,
                  "There is already the maximum number of applications using the Desktop "
                  "Duplication API running, please close one of those applications and then "
                  "try again.",
                  "Error");
         }
-        LOGF(WARNING, "failed to call DuplicateOutput, hr:0x%08x", hr);
+        LOGF(ERR, "failed to call DuplicateOutput, hr:0x%08x", hr);
         return false;
     }
 

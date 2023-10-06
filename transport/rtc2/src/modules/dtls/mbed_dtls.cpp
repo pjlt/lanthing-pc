@@ -30,7 +30,7 @@
 
 #include "mbed_dtls.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
@@ -184,7 +184,7 @@ bool MbedDtls::onNetworkData(const uint8_t* data, uint32_t size) {
                 if (outbuff_len > 0) {
                     on_receive_(buffer_.data(), outbuff_len);
                 }
-                LOG(WARNING) << "Unexpected TLS result:" << rc;
+                LOG(ERR) << "Unexpected TLS result:" << rc;
                 on_tls_error_(); // 有必要？
                 return false;
             }
@@ -242,7 +242,7 @@ bool MbedDtls::tls_init_context() {
         }
     }
     if (ciphersuites_.empty()) {
-        LOG(WARNING) << "No ciphersuites";
+        LOG(ERR) << "No ciphersuites";
         return false;
     }
     ciphersuites_.push_back(0);
@@ -255,7 +255,7 @@ bool MbedDtls::tls_init_context() {
     int ret = mbedtls_ctr_drbg_seed(&drbg_, mbedtls_entropy_func, &entropy_, seed.get(),
                                     MBEDTLS_ENTROPY_MAX_SEED_SIZE);
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_ctr_drbg_seed failed " << ret;
+        LOG(ERR) << "mbedtls_ctr_drbg_seed failed " << ret;
         return false;
     }
     mbedtls_ssl_conf_rng(&ssl_cfg_, mbedtls_ctr_drbg_random, &drbg_);
@@ -335,7 +335,7 @@ int MbedDtls::tls_read(const uint8_t* ssl_in, uint32_t ssl_in_len, uint8_t* out,
     if (rc < 0) {
         char err[1024];
         mbedtls_strerror(rc, err, 1024);
-        LOGF(WARNING, "TLS error: %#x(%s)", rc, err);
+        LOGF(ERR, "TLS error: %#x(%s)", rc, err);
         return TLS_ERR;
     }
 
@@ -365,7 +365,7 @@ MbedDtls::HandshakeState MbedDtls::continue_handshake(const uint8_t* in, uint32_
     else {
         char err[1024];
         mbedtls_strerror(state, err, 1024);
-        LOG(WARNING) << "mbedtls_ssl_handshake: " << err;
+        LOG(ERR) << "mbedtls_ssl_handshake: " << err;
         return HandshakeState::ERROR_;
     }
 }
@@ -401,7 +401,7 @@ int MbedDtls::verify_cert(void* data, mbedtls_x509_crt* crt, int depth, uint32_t
         LOG(INFO) << "Valid certificate";
     }
     else {
-        LOG(WARNING) << "Invalid certificate";
+        LOG(ERR) << "Invalid certificate";
     }
     return 0;
 }

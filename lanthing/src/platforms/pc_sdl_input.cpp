@@ -30,7 +30,7 @@
 
 #include "pc_sdl_input.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace {
 
@@ -205,7 +205,7 @@ void SdlInput::handleControllerButton(const SDL_ControllerButtonEvent& ev) {
 void SdlInput::handleControllerAdded(const SDL_ControllerDeviceEvent& ev) {
     SDL_GameController* controller = SDL_GameControllerOpen(ev.which);
     if (controller == NULL) {
-        LOG(WARNING) << "Open controller failed: " << SDL_GetError();
+        LOG(ERR) << "Open controller failed: " << SDL_GetError();
         return;
     }
     uint8_t index;
@@ -215,7 +215,7 @@ void SdlInput::handleControllerAdded(const SDL_ControllerDeviceEvent& ev) {
         }
     }
     if (index >= kMaxControllers) {
-        LOG(WARNING) << "Only support 4 controllers!";
+        LOG(ERR) << "Only support 4 controllers!";
         SDL_GameControllerClose(controller);
         return;
     }

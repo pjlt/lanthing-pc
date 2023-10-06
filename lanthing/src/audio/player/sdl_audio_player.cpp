@@ -31,7 +31,7 @@
 #include "sdl_audio_player.h"
 
 #include <SDL_audio.h>
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 // 参考
 //  https://lazyfoo.net/tutorials/SDL/34_audio_recording/index.php
@@ -59,7 +59,7 @@ bool SdlAudioPlayer::initPlatform() {
 
     SDL_AudioDeviceID device_id = SDL_OpenAudioDevice(nullptr, SDL_FALSE, &desired, &obtained, 0);
     if (device_id == 0) {
-        LOG(WARNING) << "SDL_OpenAudioDevice failed:" << SDL_GetError();
+        LOG(ERR) << "SDL_OpenAudioDevice failed:" << SDL_GetError();
         return false;
     }
     SDL_PauseAudioDevice(device_id, 0);

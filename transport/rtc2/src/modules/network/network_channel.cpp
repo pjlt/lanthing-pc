@@ -32,7 +32,7 @@
 
 #include <cassert>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <uv.h>
 
 #include <modules/p2p/p2p.h>

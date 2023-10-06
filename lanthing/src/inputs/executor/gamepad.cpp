@@ -31,7 +31,7 @@
 #pragma comment(lib, "SetupAPI.lib")
 
 #include <Windows.h>
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <inputs/executor/gamepad.h>
 
 namespace lt {
@@ -79,7 +79,7 @@ bool Gamepad::plugin(uint32_t index) {
     PVIGEM_TARGET gamepad = vigem_target_x360_alloc();
     VIGEM_ERROR ret = vigem_target_add(gamepad_driver_, gamepad);
     if (!VIGEM_SUCCESS(ret)) {
-        LOG(WARNING) << "Add x360 failed";
+        LOG(ERR) << "Add x360 failed";
         vigem_target_free(gamepad);
         return false;
     }
@@ -88,7 +88,7 @@ bool Gamepad::plugin(uint32_t index) {
                                                   &Gamepad::on_gamepad_response, this);
     if (!VIGEM_SUCCESS(ret)) {
         vigem_target_x360_unregister_notification(gamepad);
-        LOG(WARNING) << "Register x360 failed";
+        LOG(ERR) << "Register x360 failed";
         vigem_target_free(gamepad);
         return false;
     }
@@ -120,7 +120,7 @@ bool Gamepad::submit(uint32_t index, const XUSB_REPORT& report) {
 
     auto ret = vigem_target_x360_update(gamepad_driver_, gamepad_target_[index], report);
     if (!VIGEM_SUCCESS(ret)) {
-        LOG(WARNING) << "Submit x360 input failed";
+        LOG(ERR) << "Submit x360 input failed";
         return false;
     }
     return true;
@@ -132,7 +132,7 @@ bool Gamepad::connect() {
     if (!VIGEM_SUCCESS(ret)) {
         vigem_free(gamepad_driver_);
         gamepad_driver_ = nullptr;
-        LOG(WARNING) << "Connect to vigem failed";
+        LOG(ERR) << "Connect to vigem failed";
         return false;
     }
     return true;

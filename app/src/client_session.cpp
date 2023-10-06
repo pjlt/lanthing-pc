@@ -34,7 +34,7 @@
 
 #include <sstream>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
@@ -141,7 +141,7 @@ bool ClientSession::start() {
         stoped_ = false;
         return true;
     } while (false);
-    LOG(WARNING) << "Launch client failed: " << GetLastError();
+    LOG(ERR) << "Launch client failed: " << GetLastError();
     CloseHandle(token);
     if (user_token) {
         CloseHandle(user_token);

@@ -34,7 +34,7 @@
 #include <iphlpapi.h>
 #include <ws2tcpip.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltproto/ltproto.h>
 #include <ltproto/peer2peer/audio_data.pb.h>
@@ -113,7 +113,7 @@ void ClientTCP::onSignalingMessage(const char* _key, const char* _value) {
 bool ClientTCP::init() {
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
-        LOG(WARNING) << "Init ClientTCP IOLoop failed";
+        LOG(ERR) << "Init ClientTCP IOLoop failed";
         return false;
     }
     task_thread_ = ltlib::TaskThread::create("ClientTCP_task");
@@ -137,7 +137,7 @@ bool ClientTCP::initTcpClient(const std::string& ip, uint16_t port) {
         std::bind(&ClientTCP::onMessage, this, std::placeholders::_1, std::placeholders::_2);
     tcp_client_ = ltlib::Client::create(params);
     if (tcp_client_ == nullptr) {
-        LOG(WARNING) << "Init ClientTCP tcp client failed";
+        LOG(ERR) << "Init ClientTCP tcp client failed";
         return false;
     }
     net_thread_ = ltlib::BlockingThread::create(
@@ -221,13 +221,13 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
         // 写的时候偷懒，让运行的时候多绕一圈
         size_t size = msg->ByteSizeLong();
         if (size > 2 * 1024 * 1024) {
-            LOG(WARNING) << "ClientTCP received message too large(" << size << " bytes)";
+            LOG(ERR) << "ClientTCP received message too large(" << size << " bytes)";
             break;
         }
         std::vector<uint8_t> data(size + 4);
         *(uint32_t*)data.data() = type;
         if (!msg->SerializeToArray(data.data() + 4, static_cast<int>(size))) {
-            LOG(WARNING) << "ClientTCP serialize data failed, size " << size;
+            LOG(ERR) << "ClientTCP serialize data failed, size " << size;
             break;
         }
         params_.on_data(data.data(), static_cast<uint32_t>(data.size()), true);
@@ -374,7 +374,7 @@ void ServerTCP::onSignalingMessage(const char* _key, const char* _value) {
 bool ServerTCP::init() {
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
-        LOG(WARNING) << "Init ServerTCP IOLoop failed";
+        LOG(ERR) << "Init ServerTCP IOLoop failed";
         return false;
     }
     if (!initTcpServer()) {
@@ -401,7 +401,7 @@ bool ServerTCP::initTcpServer() {
                                   std::placeholders::_2, std::placeholders::_3);
     tcp_server_ = ltlib::Server::create(params);
     if (tcp_server_ == nullptr) {
-        LOG(WARNING) << "Init ServerTCP tcp server failed";
+        LOG(ERR) << "Init ServerTCP tcp server failed";
         return false;
     }
     return true;
@@ -421,7 +421,7 @@ void ServerTCP::onAccepted(uint32_t fd) {
         return;
     }
     if (client_fd_ != std::numeric_limits<uint32_t>::max()) {
-        LOG(WARNING) << "New ClientTCP(" << fd
+        LOG(ERR) << "New ClientTCP(" << fd
                      << ") connected to the ServerTCP, but another ClientTCP(" << fd
                      << ") already being serve";
         tcp_server_->close(fd);
@@ -460,13 +460,13 @@ void ServerTCP::onMessage(uint32_t fd, uint32_t type,
     // 写的时候偷懒，让运行的时候多绕一圈
     size_t size = msg->ByteSizeLong();
     if (size > 2 * 1024 * 1024) {
-        LOG(WARNING) << "ServerTCP received message too large(" << size << " bytes)";
+        LOG(ERR) << "ServerTCP received message too large(" << size << " bytes)";
         return;
     }
     std::vector<uint8_t> data(size + 4);
     *(uint32_t*)data.data() = type;
     if (!msg->SerializeToArray(data.data() + 4, static_cast<int>(size))) {
-        LOG(WARNING) << "ServerTCP serialize data failed, size " << size;
+        LOG(ERR) << "ServerTCP serialize data failed, size " << size;
         return;
     }
     params_.on_data(data.data(), static_cast<uint32_t>(data.size()), true);

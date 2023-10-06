@@ -32,7 +32,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <uv.h>
 
 namespace ltlib
@@ -116,7 +116,7 @@ bool IOLoopImpl::init()
 {
     int ret = uv_loop_init(&uvloop_);
     if (ret != 0) {
-        LOG(WARNING) << "uv_loop_init failed: " << ret;
+        LOG(ERR) << "uv_loop_init failed: " << ret;
         return false;
     }
     return true;

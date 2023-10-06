@@ -31,7 +31,7 @@
 #include "reliable_message_channel.h"
 #include "ikcp.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/times.h>
 
@@ -62,7 +62,7 @@ bool ReliableMessageChannel::sendData(const uint8_t* data, uint32_t size) {
 bool ReliableMessageChannel::recvFromNetwork(const uint8_t* data, uint32_t size) {
     int ret = ikcp_input(kcp_, reinterpret_cast<const char*>(data), static_cast<int>(size));
     if (ret < 0) {
-        LOG(WARNING) << "ikcp_input " << ret;
+        LOG(ERR) << "ikcp_input " << ret;
         return false;
     }
     ret = ikcp_recv(kcp_, buffer_.data(), static_cast<int>(buffer_.size()));

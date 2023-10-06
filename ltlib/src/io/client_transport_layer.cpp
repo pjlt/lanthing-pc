@@ -29,7 +29,7 @@
  */
 
 #include "client_transport_layer.h"
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace
 {
@@ -125,7 +125,7 @@ bool LibuvCTransport::init_tcp()
     resolve_req->data = this;
     int ret = uv_getaddrinfo(uvloop(), resolve_req, &LibuvCTransport::on_dns_resolve, host_.c_str(), nullptr, nullptr);
     if (ret != 0) {
-        LOG(WARNING) << "DNS query failed:" << ret;
+        LOG(ERR) << "DNS query failed:" << ret;
         delete resolve_req;
         return false;
     }
@@ -137,7 +137,7 @@ bool LibuvCTransport::init_pipe()
     pipe_ = std::make_unique<uv_pipe_t>();
     int ret = uv_pipe_init(uvloop(), pipe_.get(), 0);
     if (ret != 0) {
-        LOG(WARNING) << "Init pipe failed: " << ret;
+        LOG(ERR) << "Init pipe failed: " << ret;
         pipe_.reset(); // reset是为了告诉析构函数，不要close这个pipe
         return false;
     }
@@ -166,7 +166,7 @@ bool LibuvCTransport::send(Buffer buff[], uint32_t buff_count, const std::functi
     uv_stream_t* stream_handle = uvstream();
     int ret = uv_write(write_req, stream_handle, uvbuf, buff_count, &LibuvCTransport::on_written);
     if (ret != 0) {
-        LOGF(WARNING, "%s write failed:%d", is_tcp() ? "TCP" : "Pipe", ret);
+        LOGF(ERR, "%s write failed:%d", is_tcp() ? "TCP" : "Pipe", ret);
         delete info;
         delete write_req;
         return false;
@@ -277,7 +277,7 @@ void LibuvCTransport::on_connected(uv_connect_t* req, int status)
         that->on_connected_();
         uv_read_start(that->uvstream(), &LibuvCTransport::on_alloc_memory, &LibuvCTransport::on_read);
     } else {
-        LOG(WARNING) << "Connect server failed with: " << status;
+        LOG(ERR) << "Connect server failed with: " << status;
         that->reconnect();
     }
 }
@@ -333,7 +333,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     auto that = reinterpret_cast<LibuvCTransport*>(req->data);
     delete req;
     if (status != 0) {
-        LOG(WARNING) << "DNS query failed:" << status;
+        LOG(ERR) << "DNS query failed:" << status;
         that->reconnect();
         return;
     }
@@ -345,14 +345,14 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
         addr = addr->ai_next;
     }
     if (addr == nullptr) {
-        LOG(WARNING) << "DNS query failed: no ipv4 address";
+        LOG(ERR) << "DNS query failed: no ipv4 address";
         that->reconnect();
         return;
     }
     that->tcp_ = std::make_unique<uv_tcp_t>();
     int ret = uv_tcp_init(that->uvloop(), that->tcp_.get());
     if (ret != 0) {
-        LOG(WARNING) << "Init tcp socket failed: " << ret;
+        LOG(ERR) << "Init tcp socket failed: " << ret;
         that->tcp_.reset(); // reset是为了告诉析构函数，不要close这个socket
         that->reconnect(); // 这个状态下，程序重试也无法继续进行下去，是否应该on_close?
         return;
@@ -364,7 +364,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
     addr4->sin_port = htons(that->port_);
     ret = uv_tcp_connect(that->conn_req_.get(), that->tcp_.get(), addr->ai_addr, &LibuvCTransport::on_connected);
     if (ret != 0) {
-        LOG(WARNING) << "Connect to server failed: " << ret;
+        LOG(ERR) << "Connect to server failed: " << ret;
         that->reconnect();
     }
 }

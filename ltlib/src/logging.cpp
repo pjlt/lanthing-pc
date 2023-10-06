@@ -6,7 +6,7 @@
  * For more information see g3log/LICENSE or refer refer to http://unlicense.org
  * ============================================================================*/
 
-#include <ltlib/log_sink.h>
+#include <ltlib/logging.h>
 
 #include <cassert>
 

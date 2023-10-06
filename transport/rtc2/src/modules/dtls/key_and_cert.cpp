@@ -32,7 +32,7 @@
 
 #include <chrono>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/pk.h>
@@ -93,18 +93,18 @@ bool KeyAndCertImpl::createInternal() {
     int ret = mbedtls_ctr_drbg_seed(drbg.get(), mbedtls_entropy_func, entropy.get(), seed.get(),
                                     MBEDTLS_ENTROPY_MAX_SEED_SIZE);
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_ctr_drbg_seed failed " << ret;
+        LOG(ERR) << "mbedtls_ctr_drbg_seed failed " << ret;
         return false;
     }
     ret = mbedtls_pk_setup(&key_, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA));
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_pk_setup failed: " << ret;
+        LOG(ERR) << "mbedtls_pk_setup failed: " << ret;
         return false;
     }
     ret =
         mbedtls_rsa_gen_key(mbedtls_pk_rsa(key_), mbedtls_ctr_drbg_random, drbg.get(), 1024, 65537);
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_rsa_gen_key failed: " << ret;
+        LOG(ERR) << "mbedtls_rsa_gen_key failed: " << ret;
         return false;
     }
     std::shared_ptr<mbedtls_x509write_cert> write_cert(new mbedtls_x509write_cert,
@@ -115,9 +115,9 @@ bool KeyAndCertImpl::createInternal() {
     mbedtls_x509write_crt_init(write_cert.get());
     mbedtls_x509write_crt_set_subject_key(write_cert.get(), &key_);
     mbedtls_x509write_crt_set_issuer_key(write_cert.get(), &key_);
-    if (mbedtls_x509write_crt_set_subject_name(write_cert.get(), "CN=mbouijoh") != 0 ||
-        mbedtls_x509write_crt_set_issuer_name(write_cert.get(), "CN=ogogvcq") != 0) {
-        LOG(WARNING) << "mbedtls_x509write_crt_set name failed";
+    if (mbedtls_x509write_crt_set_subject_name(write_cert.get(), "CN=Lanthing") != 0 ||
+        mbedtls_x509write_crt_set_issuer_name(write_cert.get(), "CN=Numbaa") != 0) {
+        LOG(ERR) << "mbedtls_x509write_crt_set name failed";
         return false;
     }
     mbedtls_x509write_crt_set_version(write_cert.get(), MBEDTLS_X509_CRT_VERSION_3);
@@ -130,7 +130,7 @@ bool KeyAndCertImpl::createInternal() {
     mbedtls_mpi_fill_random(serial.get(), 8, mbedtls_ctr_drbg_random, drbg.get());
     ret = mbedtls_x509write_crt_set_serial(write_cert.get(), serial.get());
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_x509write_crt_set_serial failed: " << ret;
+        LOG(ERR) << "mbedtls_x509write_crt_set_serial failed: " << ret;
         return false;
     }
     auto now = std::chrono::system_clock::now();
@@ -146,19 +146,19 @@ bool KeyAndCertImpl::createInternal() {
     ret = mbedtls_x509write_crt_set_validity(write_cert.get(), not_before_buffer.data(),
                                              not_after_buffer.data());
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_x509write_crt_set_validity failed: " << ret;
+        LOG(ERR) << "mbedtls_x509write_crt_set_validity failed: " << ret;
         return false;
     }
     std::vector<unsigned char> buffer(4096, 0);
     ret = mbedtls_x509write_crt_der(write_cert.get(), buffer.data(), buffer.size(),
                                     mbedtls_ctr_drbg_random, drbg.get());
     if (ret <= 0) {
-        LOG(WARNING) << "mbedtls_x509write_crt_der failed: " << ret;
+        LOG(ERR) << "mbedtls_x509write_crt_der failed: " << ret;
         return false;
     }
     ret = mbedtls_x509_crt_parse(&cert_, buffer.data() + buffer.size() - ret, ret);
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_x509_crt_parse failed: " << ret;
+        LOG(ERR) << "mbedtls_x509_crt_parse failed: " << ret;
         return false;
     }
     if (!calcDigest()) {
@@ -188,19 +188,19 @@ bool KeyAndCertImpl::calcDigest() {
     mbedtls_md_init(md_ctx.get());
     auto info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
     if (info == nullptr) {
-        LOG(WARNING) << "mbedtls_md_info_from_type(MBEDTLS_MD_SHA256) failed";
+        LOG(ERR) << "mbedtls_md_info_from_type(MBEDTLS_MD_SHA256) failed";
         return false;
     }
     int ret = mbedtls_md_setup(md_ctx.get(), info, 0);
     if (ret != 0) {
-        LOG(WARNING) << "mbedtls_md_setup failed";
+        LOG(ERR) << "mbedtls_md_setup failed";
         return false;
     }
     std::vector<uint8_t> sha256(32);
     if (mbedtls_md_starts(md_ctx.get()) != 0 ||
         mbedtls_md_update(md_ctx.get(), cert_.raw.p, cert_.raw.len) != 0 ||
         mbedtls_md_finish(md_ctx.get(), sha256.data())) {
-        LOG(WARNING) << "Calculate sha256 for cerificate failed";
+        LOG(ERR) << "Calculate sha256 for cerificate failed";
         return false;
     }
     digest_ = sha256;

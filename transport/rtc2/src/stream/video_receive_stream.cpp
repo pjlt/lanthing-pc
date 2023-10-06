@@ -31,7 +31,7 @@
 #pragma once
 #include "video_receive_stream.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <rtc2/video_frame.h>
 

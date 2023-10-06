@@ -34,7 +34,7 @@
 #include <iostream>
 #include <thread>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <ltproto/server/allocate_device_id.pb.h>
 #include <ltproto/server/allocate_device_id_ack.pb.h>
 #include <ltproto/server/login_device.pb.h>
@@ -250,14 +250,14 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         }
     }
     if (params->video_codecs_size() == 0) {
-        LOG(WARNING) << "No decodability!";
+        LOG(ERR) << "No decodability!";
         return;
     }
     {
         std::lock_guard<std::mutex> lock{session_mutex_};
         auto result = sessions_.insert({request_id, nullptr});
         if (!result.second) {
-            LOG(WARNING) << "Another task already connected/connecting to device_id:"
+            LOG(ERR) << "Another task already connected/connecting to device_id:"
                          << peerDeviceID;
             return;
         }
@@ -340,12 +340,12 @@ void App::createAndStartService() {
     std::filesystem::path bin_path(path);
     bin_path /= "lanthing.exe";
     if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
-        LOGF(WARNING, "Create service failed (name:%s, path:%s)", service_name.c_str(),
+        LOGF(ERR, "Create service failed (name:%s, path:%s)", service_name.c_str(),
              bin_path.string().c_str());
         return;
     }
     if (!ltlib::ServiceCtrl::startService(service_name)) {
-        LOGF(WARNING, "Start service(%s) failed", service_name.c_str());
+        LOGF(ERR, "Start service(%s) failed", service_name.c_str());
         return;
     }
     LOGF(INFO, "Start service(%s) success", service_name.c_str());
@@ -484,7 +484,7 @@ void App::onServerConnected() {
 }
 
 void App::onServerDisconnected() {
-    LOG(WARNING) << "Disconnected from server";
+    LOG(ERR) << "Disconnected from server";
     ui_->onLoginRet(UiCallback::ErrCode::FALIED, "backend");
 }
 
@@ -535,7 +535,7 @@ void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLit
 void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::LoginDeviceAck>(_msg);
     if (ack->err_code() != ltproto::server::LoginDeviceAck_ErrCode_Success) {
-        LOG(WARNING) << "Login with device id(" << device_id_ << ") failed";
+        LOG(ERR) << "Login with device id(" << device_id_ << ") failed";
         return;
     }
     // 登录成功才显示device id

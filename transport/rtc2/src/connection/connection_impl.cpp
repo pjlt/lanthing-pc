@@ -35,7 +35,7 @@
 #include <regex>
 #include <sstream>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace {
 
@@ -106,19 +106,19 @@ bool ConnectionImpl::init() {
     if (!params_.stun_addr.empty()) {
         net_param.stun = Address::from_str(params_.stun_addr);
         if (net_param.stun.family() == -1) {
-            LOG(WARNING) << "Invalid stun addr";
+            LOG(ERR) << "Invalid stun addr";
             return false;
         }
     }
     if (!params_.relay_addr.empty()) {
         if (params_.relay_addr.size() < 8 || params_.relay_addr.substr(0, 6) != "relay:") {
-            LOG(WARNING) << "Invalid relay addr";
+            LOG(ERR) << "Invalid relay addr";
             return false;
         }
         std::regex pattern = std::regex{"relay:(.+?:[0-9]+?):(.+?):(.+?)"};
         std::smatch sm;
         if (!std::regex_match(params_.relay_addr, sm, pattern)) {
-            LOG(WARNING) << "Invalid relay addr";
+            LOG(ERR) << "Invalid relay addr";
             return false;
         }
         net_param.relay = Address::from_str(sm[1]);
@@ -228,7 +228,7 @@ bool ConnectionImpl::sendAudio(uint32_t ssrc, const uint8_t* data, uint32_t size
 
 void ConnectionImpl::onSignalingMessage(const std::string& key, const std::string& value) {
     if (key != SigEpInfo) {
-        LOG(WARNING) << "Received unknown signaling message key:" << key;
+        LOG(ERR) << "Received unknown signaling message key:" << key;
         return;
     }
     std::istringstream iss;
@@ -238,18 +238,18 @@ void ConnectionImpl::onSignalingMessage(const std::string& key, const std::strin
     iss >> key2;
     iss >> addr;
     if (key1 != FieldType || key2 != FieldAddr || type.empty() || addr.empty()) {
-        LOG(WARNING) << "Invalid signaling message: " << value;
+        LOG(ERR) << "Invalid signaling message: " << value;
         return;
     }
     EndpointInfo info{};
     info.type = from_str<EndpointType>(type);
     if (info.type == EndpointType::Unknown) {
-        LOG(WARNING) << "Unknown EndpointType " << type;
+        LOG(ERR) << "Unknown EndpointType " << type;
         return;
     }
     info.address = Address::from_str(addr);
     if (info.address.family() != AF_INET) {
-        LOG(WARNING) << "Invalid address " << addr;
+        LOG(ERR) << "Invalid address " << addr;
         return;
     }
     network_channel_->addRemoteInfo(info);

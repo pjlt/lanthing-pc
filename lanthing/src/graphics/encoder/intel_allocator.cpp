@@ -30,7 +30,7 @@
 
 #include "intel_allocator.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace lt {
 

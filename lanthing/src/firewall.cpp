@@ -30,7 +30,7 @@
 
 #include "firewall.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #if defined(LT_WINDOWS)
 #include <atlcomcli.h>

@@ -30,7 +30,7 @@
 
 #include <rtc2/rtc2.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace rtc2 {
 

@@ -30,7 +30,7 @@
 
 #include "ffmpeg_soft_decoder.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -129,13 +129,13 @@ FFmpegSoftDecoder::~FFmpegSoftDecoder() {
 
 bool FFmpegSoftDecoder::init() {
     if (hw_ctx_ == nullptr) {
-        LOG(WARNING) << "Create FFmpegSoftDecoder without hardware context";
+        LOG(ERR) << "Create FFmpegSoftDecoder without hardware context";
         return false;
     }
     addRef(hw_ctx_);
     texture_ = createTexture(hw_ctx_, width(), height());
     if (texture_ == nullptr) {
-        LOG(WARNING) << "Create texture for xxx failed";
+        LOG(ERR) << "Create texture for xxx failed";
         return false;
     }
     AVCodecID codec_id = toAVCodecID(codecType());
@@ -145,14 +145,14 @@ bool FFmpegSoftDecoder::init() {
     }
     const AVCodec* codec = avcodec_find_decoder(codec_id);
     if (codec == nullptr) {
-        LOGF(WARNING,
+        LOGF(ERR,
              "avcodec_find_decoder(%d) failed, maybe built libavcodec with wrong parameters",
              (int)codec_id);
         return false;
     }
     AVCodecContext* codec_ctx = avcodec_alloc_context3(codec);
     if (codec_ctx == nullptr) {
-        LOGF(WARNING, "avcodec_alloc_context3(%s) failed", codec->name);
+        LOGF(ERR, "avcodec_alloc_context3(%s) failed", codec->name);
         return false;
     }
     codec_ctx_ = codec_ctx;
@@ -161,17 +161,17 @@ bool FFmpegSoftDecoder::init() {
     int ret = avcodec_open2(codec_ctx, codec, nullptr);
     if (ret != 0) {
         ret = av_strerror(ret, strbuff, kBuffLen);
-        LOG(WARNING) << "avcodec_open2() failed: " << (ret == 0 ? strbuff : "unknown error");
+        LOG(ERR) << "avcodec_open2() failed: " << (ret == 0 ? strbuff : "unknown error");
         return false;
     }
     av_frame_ = av_frame_alloc();
     if (av_frame_ == nullptr) {
-        LOG(WARNING) << "av_frame_alloc() failed";
+        LOG(ERR) << "av_frame_alloc() failed";
         return false;
     }
     av_packet_ = av_packet_alloc();
     if (av_packet_ == nullptr) {
-        LOG(WARNING) << "av_packet_alloc() failed";
+        LOG(ERR) << "av_packet_alloc() failed";
         return false;
     }
     return true;
@@ -196,7 +196,7 @@ DecodedFrame FFmpegSoftDecoder::decode(const uint8_t* data, uint32_t size) {
     }
     else {
         ret = av_strerror(ret, strbuff, kBuffLen);
-        LOG(WARNING) << "avcodec_send_packet failed: " << (ret == 0 ? strbuff : "unknown error");
+        LOG(ERR) << "avcodec_send_packet failed: " << (ret == 0 ? strbuff : "unknown error");
         frame.status = DecodeStatus::Failed;
         return frame;
     }

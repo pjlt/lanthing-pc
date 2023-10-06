@@ -37,7 +37,7 @@
 
 #include <vpl/mfx.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #define MSDK_ALIGN16(value) (((value + 15) >> 4) << 4)
 #define MSDK_ALIGN32(X) (((mfxU32)((X) + 31)) & (~(mfxU32)31))
@@ -293,7 +293,7 @@ bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     Microsoft::WRL::ComPtr<ID3D10Multithread> tmp10;
     auto hr = d3d11_ctx_.As(&tmp10);
     if (FAILED(hr)) {
-        LOG(WARNING) << "Cast to ID3D10Multithread failed with " << GetLastError();
+        LOG(ERR) << "Cast to ID3D10Multithread failed with " << GetLastError();
         return false;
     }
     tmp10->SetMultithreadProtected(true);
@@ -301,7 +301,7 @@ bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     allocator_ = std::make_unique<MfxEncoderFrameAllocator>(d3d11_dev_, d3d11_ctx_);
     mfxloader_ = MFXLoad();
     if (mfxloader_ == nullptr) {
-        LOG(WARNING) << "MFXLoad failed";
+        LOG(ERR) << "MFXLoad failed";
         return false;
     }
     if (!createMfxSession()) {
@@ -310,13 +310,13 @@ bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     mfxStatus status =
         MFXVideoCORE_SetHandle(mfxsession_, MFX_HANDLE_D3D11_DEVICE, d3d11_dev_.Get());
     if (status != MFX_ERR_NONE) {
-        LOGF(WARNING, "MFXVideoCORE_SetHandle(MFX_HANDLE_D3D11_DEVICE, %p) failed with %d",
+        LOGF(ERR, "MFXVideoCORE_SetHandle(MFX_HANDLE_D3D11_DEVICE, %p) failed with %d",
              d3d11_dev_.Get(), status);
         return false;
     }
     status = MFXVideoCORE_SetFrameAllocator(mfxsession_, allocator_.get());
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoCORE_SetFrameAllocator failed with " << status;
+        LOG(ERR) << "MFXVideoCORE_SetFrameAllocator failed with " << status;
         return false;
     }
 
@@ -364,7 +364,7 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
     // printMfxVideoParamEncode(encode_param_);
     mfxStatus status = MFXVideoENCODE_Query(mfxsession_, &encode_param_, &encode_param_);
     if (status > MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoENCODE_Query invalid parameters";
+        LOG(ERR) << "MFXVideoENCODE_Query invalid parameters";
         // 是合法的留下？？？
         // LOG(INFO) << "after query";
         // printMfxVideoParamEncode(encode_param_);
@@ -373,14 +373,14 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
         // printMfxVideoParamEncode(encode_param_);
     }
     if (status < MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoENCODE_Query failed";
+        LOG(ERR) << "MFXVideoENCODE_Query failed";
         return;
     }
     status = MFXVideoENCODE_Reset(mfxsession_, &encode_param_);
     // LOG(INFO) << "after reset";
     // printMfxVideoParamEncode(encode_param_);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoENCODE_Reset failed with " << status;
+        LOG(ERR) << "MFXVideoENCODE_Reset failed with " << status;
     }
 }
 
@@ -421,7 +421,7 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
             break;
         }
         else {
-            LOG(WARNING) << "MFXVideoVPP_RunFrameVPPAsync failed with " << status;
+            LOG(ERR) << "MFXVideoVPP_RunFrameVPPAsync failed with " << status;
             return nullptr;
         }
     }
@@ -436,7 +436,7 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
             break;
         }
         else if (status == MFX_ERR_NOT_ENOUGH_BUFFER) {
-            LOG(WARNING) << "MFXVideoENCODE_EncodeFrameAsync failed with MFX_ERR_NOT_ENOUGH_BUFFER";
+            LOG(ERR) << "MFXVideoENCODE_EncodeFrameAsync failed with MFX_ERR_NOT_ENOUGH_BUFFER";
             assert(false);
             break;
         }
@@ -475,7 +475,7 @@ bool IntelEncoderImpl::createMfxSession() {
     }
     mfxStatus status = MFXCreateSession(mfxloader_, impl_index_, &mfxsession_);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXCreateSession failed with " << status;
+        LOG(ERR) << "MFXCreateSession failed with " << status;
         return false;
     }
     LOG(INFO) << "Created mfx session(" << impl_index_ << ")";
@@ -490,7 +490,7 @@ bool IntelEncoderImpl::setConfigFilter() {
     mfxStatus status =
         MFXSetConfigFilterProperty(cfg_hw, (const mfxU8*)"mfxImplDescription.Impl", val_hw);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXSetConfigFilterProperty(mfxImplDescription.Impl=MFX_IMPL_TYPE_HARDWARE)"
+        LOG(ERR) << "MFXSetConfigFilterProperty(mfxImplDescription.Impl=MFX_IMPL_TYPE_HARDWARE)"
                         " failed with "
                      << status;
         return false;
@@ -502,7 +502,7 @@ bool IntelEncoderImpl::setConfigFilter() {
     status = MFXSetConfigFilterProperty(
         cfg_d3d11, (const mfxU8*)"mfxImplDescription.AccelerationMode", val_d3d11);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXSetConfigFilterProperty(mfxImplDescription.AccelerationMode=MFX_ACCEL_"
+        LOG(ERR) << "MFXSetConfigFilterProperty(mfxImplDescription.AccelerationMode=MFX_ACCEL_"
                         "MODE_VIA_D3D11)"
                         " failed with "
                      << status;
@@ -548,16 +548,16 @@ bool IntelEncoderImpl::initEncoder(const VplParamsHelper& params_helper) {
     mfxStatus status = MFX_ERR_NONE;
     status = MFXVideoENCODE_Init(mfxsession_, &params);
     if (status < MFX_ERR_NONE) { // FIXME: 这里会有参数不兼容的警告
-        LOG(WARNING) << "MFXVideoENCODE_Init failed with " << status;
+        LOG(ERR) << "MFXVideoENCODE_Init failed with " << status;
         return false;
     }
     else if (status > MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoENCODE_Init warn " << status;
+        LOG(ERR) << "MFXVideoENCODE_Init warn " << status;
     }
     mfxVideoParam param_out{};
     status = MFXVideoENCODE_GetVideoParam(mfxsession_, &param_out);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoENCODE_GetVideoParam failed with " << status;
+        LOG(ERR) << "MFXVideoENCODE_GetVideoParam failed with " << status;
         return false;
     }
     // LOG(INFO) << "GetVideoParam encode";
@@ -573,13 +573,13 @@ bool IntelEncoderImpl::initVpp(const VplParamsHelper& params_helper) {
     encode_texture_ = allocEncodeTexture();
     mfxStatus status = MFXVideoVPP_Init(mfxsession_, &params);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoVPP_Init failed with " << status;
+        LOG(ERR) << "MFXVideoVPP_Init failed with " << status;
         return false;
     }
     mfxVideoParam param_out{};
     status = MFXVideoVPP_GetVideoParam(mfxsession_, &param_out);
     if (status != MFX_ERR_NONE) {
-        LOG(WARNING) << "MFXVideoVPP_GetVideoParam failed with " << status;
+        LOG(ERR) << "MFXVideoVPP_GetVideoParam failed with " << status;
         return false;
     }
     LOG(INFO) << "GetVideoParam vpp";
@@ -604,7 +604,7 @@ Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::allocEncodeTexture() {
     HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, nullptr, frame.GetAddressOf());
     if (FAILED(hr)) {
         // assert(false);
-        LOG(WARNING) << "D3D11Device::CreateTexture2D failed with " << GetLastError();
+        LOG(ERR) << "D3D11Device::CreateTexture2D failed with " << GetLastError();
         return nullptr;
     }
     return frame;

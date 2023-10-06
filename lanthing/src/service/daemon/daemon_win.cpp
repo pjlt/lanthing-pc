@@ -28,7 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include "daemon_win.h"
 #include <service/service.h>
@@ -76,7 +76,7 @@ void LanthingWinService::run() {
     g_stop_service_handle = ::CreateEventW(&sa, FALSE, FALSE, event_name.c_str());
 
     if (!g_stop_service_handle) {
-        LOG(WARNING) << "Create lanthing stop event failed: " << GetLastError();
+        LOG(ERR) << "Create lanthing stop event failed: " << GetLastError();
         return;
     }
 

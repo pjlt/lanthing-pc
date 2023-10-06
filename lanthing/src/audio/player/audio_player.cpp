@@ -33,7 +33,7 @@
 
 #include <fstream>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <opus/opus.h>
 
 namespace lt {
@@ -78,7 +78,7 @@ bool AudioPlayer::initDecoder() {
     int error = 0;
     OpusDecoder* decoder = opus_decoder_create(framesPerSec(), channels(), &error);
     if (decoder == nullptr || error < 0) {
-        LOG(WARNING) << "opus_decoder_create failed with " << error;
+        LOG(ERR) << "opus_decoder_create failed with " << error;
         return false;
     }
     opus_decoder_ = decoder;
@@ -115,7 +115,7 @@ int32_t AudioPlayer::decode(const void* data, uint32_t input_size) {
     auto output_capacity = static_cast<int>(buffer_.size());
     int frames = opus_decode(decoder, input, input_size, output, output_capacity, 0);
     if (frames < 0) {
-        LOG(WARNING) << "opus_decode failed with " << frames;
+        LOG(ERR) << "opus_decode failed with " << frames;
         return frames;
     }
     return frames * channels() * sizeof(opus_int16);

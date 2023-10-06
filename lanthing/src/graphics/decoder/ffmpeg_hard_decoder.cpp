@@ -32,7 +32,7 @@
 #pragma warning(disable : 4244)
 #include "ffmpeg_hard_decoder.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -179,7 +179,7 @@ bool FFmpegHardDecoder::init() {
     }
     const AVCodec* codec = avcodec_find_decoder(codec_id);
     if (codec == nullptr) {
-        LOGF(WARNING,
+        LOGF(ERR,
              "avcodec_find_decoder(%d) failed, maybe built libavcodec with wrong parameters",
              (int)codec_id);
         return false;
@@ -187,7 +187,7 @@ bool FFmpegHardDecoder::init() {
     for (int i = 0;; i++) {
         const AVCodecHWConfig* config = avcodec_get_hw_config(codec, i);
         if (config == nullptr) {
-            LOGF(WARNING, "Decoder %s does not support device type %s", codec->name,
+            LOGF(ERR, "Decoder %s does not support device type %s", codec->name,
                  av_hwdevice_get_type_name(hw_type));
             return false;
         }
@@ -221,14 +221,14 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     // 导致多了一步OpenSharedResource
     AVBufferRef* avbuffref_hw_ctx = av_hwdevice_ctx_alloc(config->device_type);
     if (avbuffref_hw_ctx == nullptr) {
-        LOG(WARNING) << "av_hwdevice_ctx_alloc failed";
+        LOG(ERR) << "av_hwdevice_ctx_alloc failed";
         goto INIT2_FAILED;
     }
     configAVHWDeviceContext(avbuffref_hw_ctx->data, hw_dev_, hw_ctx_);
     ret = av_hwdevice_ctx_init(avbuffref_hw_ctx);
     if (ret != 0) {
         ret = av_strerror(ret, strbuff, kBuffLen);
-        LOG(WARNING) << "av_hwdevice_ctx_init() failed: " << (ret == 0 ? strbuff : "unknown error");
+        LOG(ERR) << "av_hwdevice_ctx_init() failed: " << (ret == 0 ? strbuff : "unknown error");
         goto INIT2_FAILED;
     }
     // 2
@@ -236,7 +236,7 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     // 所以自定义AVHWFramesContext
     avbuffref_hw_frames_ctx = av_hwframe_ctx_alloc(avbuffref_hw_ctx);
     if (avbuffref_hw_frames_ctx == nullptr) {
-        LOG(WARNING) << "av_hwframe_ctx_alloc failed";
+        LOG(ERR) << "av_hwframe_ctx_alloc failed";
         goto INIT2_FAILED;
     }
     hw_frames_ctx = reinterpret_cast<AVHWFramesContext*>(avbuffref_hw_frames_ctx->data);
@@ -249,7 +249,7 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     ret = av_hwframe_ctx_init(avbuffref_hw_frames_ctx);
     if (ret != 0) {
         ret = av_strerror(ret, strbuff, kBuffLen);
-        LOG(WARNING) << "av_hwframe_ctx_init() failed: " << (ret == 0 ? strbuff : "unknown error");
+        LOG(ERR) << "av_hwframe_ctx_init() failed: " << (ret == 0 ? strbuff : "unknown error");
         goto INIT2_FAILED;
     }
     textures_ = getTexturesFromAVHWFramesContext(hw_frames_ctx);
@@ -257,7 +257,7 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     // 3
     codec_ctx = avcodec_alloc_context3(codec);
     if (codec_ctx == nullptr) {
-        LOGF(WARNING, "avcodec_alloc_context3(%s) failed", codec->name);
+        LOGF(ERR, "avcodec_alloc_context3(%s) failed", codec->name);
         return false;
     }
     // codec_ctx->hw_device_ctx = avbuffref_hw_ctx; // 会被忽略
@@ -270,7 +270,7 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     ret = avcodec_open2(codec_ctx, codec, nullptr);
     if (ret != 0) {
         ret = av_strerror(ret, strbuff, kBuffLen);
-        LOG(WARNING) << "avcodec_open2() failed: " << (ret == 0 ? strbuff : "unknown error");
+        LOG(ERR) << "avcodec_open2() failed: " << (ret == 0 ? strbuff : "unknown error");
         goto INIT2_FAILED;
     }
     codec_ctx_ = codec_ctx;
@@ -297,12 +297,12 @@ INIT2_FAILED:
 bool FFmpegHardDecoder::allocatePacketAndFrames() {
     av_packet_ = av_packet_alloc();
     if (av_packet_ == nullptr) {
-        LOG(WARNING) << "av_packet_alloc failed";
+        LOG(ERR) << "av_packet_alloc failed";
         return false;
     }
     av_frame_ = av_frame_alloc();
     if (av_frame_ == nullptr) {
-        LOG(WARNING) << "av_frame_alloc failed";
+        LOG(ERR) << "av_frame_alloc failed";
         return false;
     }
     return true;
@@ -334,7 +334,7 @@ DecodedFrame FFmpegHardDecoder::decode(const uint8_t* data, uint32_t size) {
     }
     else {
         ret = av_strerror(ret, strbuff, kBuffLen);
-        LOG(WARNING) << "avcodec_send_packet failed: " << (ret == 0 ? strbuff : "unknown error");
+        LOG(ERR) << "avcodec_send_packet failed: " << (ret == 0 ? strbuff : "unknown error");
         frame.status = DecodeStatus::Failed;
         return frame;
     }

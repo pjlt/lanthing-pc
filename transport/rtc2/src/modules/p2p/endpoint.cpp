@@ -30,7 +30,7 @@
 
 #include "endpoint.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #include <ltlib/strings.h>
 
 namespace rtc2 {
@@ -94,7 +94,7 @@ void Endpoint::send_binding_request(const Address& addr) {
     int ret = sock()->sendmsg({{msg.data(), msg.size()}}, addr);
     if (ret < 0) {
         int error = socket_->error();
-        LOG(WARNING) << "Send binding request to " << remote_.address.to_string()
+        LOG(ERR) << "Send binding request to " << remote_.address.to_string()
                      << " failed with error " << error;
     }
     post_delayed_task(100, std::bind(&Endpoint::send_binding_request, this, addr));

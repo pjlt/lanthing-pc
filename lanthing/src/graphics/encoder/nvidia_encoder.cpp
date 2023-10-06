@@ -40,7 +40,7 @@
 
 #include <nvcodec/nvEncodeAPI.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/load_library.h>
 
@@ -195,14 +195,14 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
     if (codec_type_ == lt::VideoCodecType::H264 &&
         (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV420_10BIT ||
          buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT)) {
-        LOG(WARNING) << "Unsupported buffer format " << buffer_format_ << " when using h264";
+        LOG(ERR) << "Unsupported buffer format " << buffer_format_ << " when using h264";
         return false;
     }
     if (!loadNvApi()) {
         return false;
     }
     if (nvfuncs_.nvEncOpenEncodeSessionEx == nullptr) {
-        LOG(WARNING) << "nvEncodeAPI not found";
+        LOG(ERR) << "nvEncodeAPI not found";
         return false;
     }
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS nvparams = {NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER};
@@ -212,7 +212,7 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
     void* encoder = nullptr;
     NVENCSTATUS status = nvfuncs_.nvEncOpenEncodeSessionEx(&nvparams, &encoder);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncOpenEncodeSessionEx failed with " << status;
+        LOG(ERR) << "nvEncOpenEncodeSessionEx failed with " << status;
         return false;
     }
     nvencoder_ = encoder;
@@ -221,7 +221,7 @@ bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
 
     status = nvfuncs_.nvEncInitializeEncoder(nvencoder_, &init_params_);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncInitializeEncoder failed with " << status;
+        LOG(ERR) << "nvEncInitializeEncoder failed with " << status;
         return false;
     }
     if (async_) {
@@ -275,7 +275,7 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& para
     reconfigure_params.reInitEncodeParams = init_params_;
     NVENCSTATUS status = nvfuncs_.nvEncReconfigureEncoder(nvencoder_, &reconfigure_params);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncReconfigureEncoder failed with " << status;
+        LOG(ERR) << "nvEncReconfigureEncoder failed with " << status;
     }
 }
 
@@ -300,12 +300,12 @@ NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     NVENCSTATUS status = nvfuncs_.nvEncEncodePicture(nvencoder_, &params);
     if (status != NV_ENC_SUCCESS) {
         // include NV_ENC_ERR_NEED_MORE_INPUT
-        LOG(WARNING) << "nvEncEncodePicture failed with " << status;
+        LOG(ERR) << "nvEncEncodePicture failed with " << status;
         return nullptr;
     }
     if (async_) {
         if (WaitForSingleObject(event_, 20000) == WAIT_FAILED) {
-            LOG(WARNING) << "Wait encode event timeout";
+            LOG(ERR) << "Wait encode event timeout";
             return nullptr;
         }
     }
@@ -314,14 +314,14 @@ NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     lbs.doNotWait = false;
     status = nvfuncs_.nvEncLockBitstream(nvencoder_, &lbs);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncLockBitstream failed with " << status;
+        LOG(ERR) << "nvEncLockBitstream failed with " << status;
         return nullptr;
     }
     auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
     out_frame->set_frame(lbs.bitstreamBufferPtr, lbs.bitstreamSizeInBytes);
     status = nvfuncs_.nvEncUnlockBitstream(nvencoder_, lbs.outputBitstream);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncUnlockBitstream failed with " << status;
+        LOG(ERR) << "nvEncUnlockBitstream failed with " << status;
         return nullptr;
     }
 
@@ -351,7 +351,7 @@ bool NvD3d11EncoderImpl::loadNvApi() {
         reinterpret_cast<NvEncodeAPIGetMaxSupportedVersionType>(
             nvapi_->getFunc("NvEncodeAPIGetMaxSupportedVersion"));
     if (NvEncodeAPIGetMaxSupportedVersionFunc == nullptr) {
-        LOG(WARNING) << "Load 'NvEncodeAPIGetMaxSupportedVersion' from '" << lib_name << "' failed";
+        LOG(ERR) << "Load 'NvEncodeAPIGetMaxSupportedVersion' from '" << lib_name << "' failed";
         return false;
     }
 
@@ -359,11 +359,11 @@ bool NvD3d11EncoderImpl::loadNvApi() {
     uint32_t sdk_version = (NVENCAPI_MAJOR_VERSION << 4) | NVENCAPI_MINOR_VERSION;
     NVENCSTATUS status = NvEncodeAPIGetMaxSupportedVersionFunc(&machine_version);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "NvEncodeAPIGetMaxSupportedVersion failed with " << status;
+        LOG(ERR) << "NvEncodeAPIGetMaxSupportedVersion failed with " << status;
         return false;
     }
     if (machine_version < sdk_version) {
-        LOG(WARNING) << "Nvidia GPU driver too old!";
+        LOG(ERR) << "Nvidia GPU driver too old!";
         return false;
     }
 
@@ -371,14 +371,14 @@ bool NvD3d11EncoderImpl::loadNvApi() {
     auto NvEncodeAPICreateInstanceFunc = reinterpret_cast<NvEncodeAPICreateInstanceType>(
         nvapi_->getFunc("NvEncodeAPICreateInstance"));
     if (NvEncodeAPICreateInstanceFunc == nullptr) {
-        LOG(WARNING) << "Load 'NvEncodeAPICreateInstance' from '" << lib_name << "' failed";
+        LOG(ERR) << "Load 'NvEncodeAPICreateInstance' from '" << lib_name << "' failed";
         return false;
     }
 
     nvfuncs_ = {NV_ENCODE_API_FUNCTION_LIST_VER};
     status = NvEncodeAPICreateInstanceFunc(&nvfuncs_);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "NvEncodeAPICreateInstance failed with " << status;
+        LOG(ERR) << "NvEncodeAPICreateInstance failed with " << status;
         return false;
     }
     return true;
@@ -466,7 +466,7 @@ bool NvD3d11EncoderImpl::initBuffers() {
     NV_ENC_CREATE_BITSTREAM_BUFFER bits_params = {NV_ENC_CREATE_BITSTREAM_BUFFER_VER};
     NVENCSTATUS status = nvfuncs_.nvEncCreateBitstreamBuffer(nvencoder_, &bits_params);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncCreateBitstreamBuffer failed with " << status;
+        LOG(ERR) << "nvEncCreateBitstreamBuffer failed with " << status;
     }
     bitstream_output_buffer_ = bits_params.bitstreamBuffer;
     return true;
@@ -482,13 +482,13 @@ std::optional<NV_ENC_MAP_INPUT_RESOURCE> NvD3d11EncoderImpl::initInputFrame(void
     res.reg.resourceToRegister = frame;
     NVENCSTATUS status = nvfuncs_.nvEncRegisterResource(nvencoder_, &res.reg);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncRegisterResource failed with " << status;
+        LOG(ERR) << "nvEncRegisterResource failed with " << status;
         return {};
     }
     res.mapped.registeredResource = res.reg.registeredResource;
     status = nvfuncs_.nvEncMapInputResource(nvencoder_, &res.mapped);
     if (status != NV_ENC_SUCCESS) {
-        LOG(WARNING) << "nvEncMapInputResource failed with " << status;
+        LOG(ERR) << "nvEncMapInputResource failed with " << status;
         return {};
     }
     resources_.push_back(res);
@@ -500,13 +500,13 @@ bool NvD3d11EncoderImpl::uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource) {
     (void)resource;
     // NVENCSTATUS status = nvfuncs_.nvEncUnmapInputResource(nvencoder_, &resource);
     // if (status != NV_ENC_SUCCESS) {
-    //     LOG(WARNING) << "nvEncUnmapInputResource failed with " << status;
+    //     LOG(ERR) << "nvEncUnmapInputResource failed with " << status;
     //     return false;
     // }
     //  if (register_res_.registeredResource) {
     //      status = nvfuncs_.nvEncUnregisterResource(nvencoder_, register_res_.registeredResource);
     //      if (status != NV_ENC_SUCCESS) {
-    //          LOG(WARNING) << "nvEncUnregisterResource failed with " << status;
+    //          LOG(ERR) << "nvEncUnregisterResource failed with " << status;
     //          return false;
     //      }
     //      register_res_.resourceToRegister = nullptr;

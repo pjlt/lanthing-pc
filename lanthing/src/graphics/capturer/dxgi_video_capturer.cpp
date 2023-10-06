@@ -33,7 +33,7 @@
 #include <d3d11.h>
 #include <dxgi.h>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
@@ -69,7 +69,7 @@ bool DxgiVideoCapturer::init() {
         return false;
     }
     if (!impl_->InitDupl(d3d11_dev_.Get(), 0)) {
-        LOG(WARNING) << "Failed to init DUPLICATIONMANAGER";
+        LOG(ERR) << "Failed to init DUPLICATIONMANAGER";
         return false;
     }
     return true;
@@ -78,7 +78,7 @@ bool DxgiVideoCapturer::init() {
 bool DxgiVideoCapturer::initD3D11() {
     HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)dxgi_factory_.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create dxgi factory, er:%08x", hr);
+        LOGF(ERR, "Failed to create dxgi factory, er:%08x", hr);
         return false;
     }
     bool out_of_bound = false;

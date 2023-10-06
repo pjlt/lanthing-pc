@@ -10,7 +10,7 @@
 
 #include "rtp_packet.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 namespace {
 constexpr size_t kFixedHeaderSize = 12;
@@ -268,7 +268,7 @@ bool RtpPacket::parse() {
             extension_header_length = 2;
         }
         else {
-            LOGF(WARNING, "Unknown rtp magic %#x", magic);
+            LOGF(ERR, "Unknown rtp magic %#x", magic);
             return false;
         }
         uint16_t number_of_extension = 0;
@@ -303,7 +303,7 @@ bool RtpPacket::parse() {
             }
 
             if (number_of_extension + extension_header_length + length > extension_bytes) {
-                LOG(WARNING) << "Oversized rtp header extension.";
+                LOG(ERR) << "Oversized rtp header extension.";
                 return false;
             }
 

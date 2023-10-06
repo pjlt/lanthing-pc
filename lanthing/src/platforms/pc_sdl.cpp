@@ -30,7 +30,7 @@
 
 #include "pc_sdl.h"
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
@@ -212,17 +212,17 @@ CLEANUP:
 bool PcSdlImpl::initSdlSubSystems() {
     int ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
     if (ret != 0) {
-        LOG(WARNING) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
+        LOG(ERR) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
         return false;
     }
     ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
     if (ret != 0) {
-        LOG(WARNING) << "SDL_INIT_AUDIO failed:" << SDL_GetError();
+        LOG(ERR) << "SDL_INIT_AUDIO failed:" << SDL_GetError();
         return false;
     }
     ret = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     if (ret != 0) {
-        LOG(WARNING) << "SDL_INIT_GAMECONTROLLER failed:" << SDL_GetError();
+        LOG(ERR) << "SDL_INIT_GAMECONTROLLER failed:" << SDL_GetError();
         return false;
     }
     return true;

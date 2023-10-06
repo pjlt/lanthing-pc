@@ -32,7 +32,7 @@
 
 #include <fstream>
 
-#include <g3log/g3log.hpp>
+#include <ltlib/logging.h>
 
 #include <ltproto/peer2peer/audio_data.pb.h>
 #include <ltproto/peer2peer/keep_alive.pb.h>
@@ -160,7 +160,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     int32_t client_height = msg->streaming_params().video_height();
     int32_t client_refresh_rate = msg->streaming_params().screen_refresh_rate();
     if (client_width <= 0 || client_height <= 0 || client_refresh_rate < 0) {
-        LOG(WARNING) << "Received OpenConnection with invalid streaming params";
+        LOG(ERR) << "Received OpenConnection with invalid streaming params";
         return false;
     }
     std::vector<lt::VideoCodecType> client_codecs;
@@ -267,7 +267,7 @@ bool WorkerSession::initRtcServer() {
 #endif // LT_USE_LTRTC
 
     if (tp_server_ == nullptr) {
-        LOG(WARNING) << "Create rtc server failed";
+        LOG(ERR) << "Create rtc server failed";
         return false;
     }
     else {
@@ -414,7 +414,7 @@ void WorkerSession::onSignalingConnected() {
 void WorkerSession::onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::JoinRoomAck>(_msg);
     if (msg->err_code() != ltproto::signaling::JoinRoomAck_ErrCode_Success) {
-        LOG(WARNING) << "Join signaling room failed, room:" << room_id_;
+        LOG(ERR) << "Join signaling room failed, room:" << room_id_;
         join_signaling_room_success_ = false;
     }
     else {
@@ -433,7 +433,7 @@ void WorkerSession::onSignalingMessage(std::shared_ptr<google::protobuf::Message
         dispatchSignalingMessageRtc(_msg);
         break;
     default:
-        LOG(WARNING) << "Unknown signaling message level " << msg->level();
+        LOG(ERR) << "Unknown signaling message level " << msg->level();
         break;
     }
 }
@@ -445,10 +445,10 @@ void WorkerSession::onSignalingMessageAck(std::shared_ptr<google::protobuf::Mess
         // do nothing
         break;
     case ltproto::signaling::SignalingMessageAck_ErrCode_NotOnline:
-        LOG(WARNING) << "Send signaling message failed, remote device not online";
+        LOG(ERR) << "Send signaling message failed, remote device not online";
         break;
     default:
-        LOG(WARNING) << "Send signaling message failed";
+        LOG(ERR) << "Send signaling message failed";
         break;
     }
 }
@@ -481,7 +481,7 @@ bool WorkerSession::initPipeServer() {
                                   std::placeholders::_2, std::placeholders::_3);
     pipe_server_ = ltlib::Server::create(params);
     if (pipe_server_ == nullptr) {
-        LOG(WARNING) << "Init pipe server failed";
+        LOG(ERR) << "Init pipe server failed";
         return false;
     }
     return true;
@@ -592,11 +592,11 @@ void WorkerSession::onTpData(const uint8_t* data, uint32_t size, bool reliable) 
     // 来自client，发给server，的消息.
     auto msg = ltproto::create_by_type(*type);
     if (msg == nullptr) {
-        LOG(WARNING) << "Unknown message type: " << *type;
+        LOG(ERR) << "Unknown message type: " << *type;
     }
     bool success = msg->ParseFromArray(data + 4, size - 4);
     if (!success) {
-        LOG(WARNING) << "Parse message failed, type: " << *type;
+        LOG(ERR) << "Parse message failed, type: " << *type;
         return;
     }
     dispatchDcMessage(*type, msg);
@@ -630,7 +630,7 @@ void WorkerSession::onTpSignalingMessage(const std::string& key, const std::stri
     rtc_msg->set_value(value);
     std::string str = signaling_msg->SerializeAsString();
     if (str.empty()) {
-        LOG(WARNING) << "Serialize signaling rtc message failed";
+        LOG(ERR) << "Serialize signaling rtc message failed";
         return;
     }
     postTask([this, signaling_msg]() {
@@ -727,7 +727,7 @@ void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::Messag
     client_connected_ = true;
     auto msg = std::static_pointer_cast<ltproto::peer2peer::StartTransmission>(_msg);
     if (msg->token() != auth_token_) {
-        LOG(WARNING) << "Received SetupConnection with invalid token: " << msg->token();
+        LOG(ERR) << "Received SetupConnection with invalid token: " << msg->token();
         ack->set_err_code(ltproto::peer2peer::StartTransmissionAck_ErrCode_AuthFailed);
         sendMessageToRemoteClient(ltproto::id(ack), ack, true);
         return;
@@ -787,7 +787,7 @@ bool WorkerSession::sendMessageToRemoteClient(
     uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable) {
     auto packet = ltproto::Packet::create({type, msg}, false);
     if (!packet.has_value()) {
-        LOG(WARNING) << "Create Peer2Peer packet failed, type:" << type;
+        LOG(ERR) << "Create Peer2Peer packet failed, type:" << type;
         return false;
     }
     const auto& pkt = packet.value();
