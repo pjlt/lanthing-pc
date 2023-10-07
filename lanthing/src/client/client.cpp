@@ -360,6 +360,8 @@ void Client::onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> _
     case ltproto::signaling::SignalingMessage::Rtc:
     {
         auto& rtc_msg = msg->rtc_message();
+        LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
+                  << ", value:" << msg->rtc_message().value().c_str();
         tp_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
         break;
     }
@@ -461,7 +463,21 @@ std::unique_ptr<tp::Client> Client::createRtcClient() {
 
 std::unique_ptr<tp::Client> Client::createRtc2Client() {
     namespace ph = std::placeholders;
-    return nullptr;
+    rtc2::Client::Params params{};
+    params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
+    params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
+    params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
+    params.on_connected = std::bind(&Client::onTpConnected, this);
+    params.on_conn_changed = std::bind(&Client::onTpConnChanged, this);
+    params.on_failed = std::bind(&Client::onTpFailed, this);
+    params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
+    params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.audio_recv_ssrc = 687154681;
+    params.video_recv_ssrc = 541651314;
+    // TODO: key and cert合理的创建时机
+    params.key_and_cert = rtc2::KeyAndCert::create();
+    params.remote_digest;
+    return rtc2::Client::create(params);
 }
 
 void Client::onTpData(const uint8_t* data, uint32_t size, bool is_reliable) {

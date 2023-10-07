@@ -166,6 +166,7 @@ bool ConnectionImpl::init() {
 
     // message channel
     MessageChannel::Params msg_param{};
+    msg_param.network_channel = network_channel_.get();
     msg_param.reliable_ssrc = 0;
     msg_param.half_reliable_ssrc = 0;
     msg_param.mtu = 1400;

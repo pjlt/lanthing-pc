@@ -296,7 +296,26 @@ std::unique_ptr<tp::Server> WorkerSession::createRtcServer() {
 
 std::unique_ptr<tp::Server> WorkerSession::createRtc2Server() {
     namespace ph = std::placeholders;
-    return nullptr;
+    rtc2::Server::Params params{};
+    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
+    params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
+    params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
+    params.on_conn_changed = std::bind(&WorkerSession::onTpConnChanged, this);
+    params.on_data = std::bind(&WorkerSession::onTpData, this, ph::_1, ph::_2, ph::_3);
+    params.on_signaling_message =
+        std::bind(&WorkerSession::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.on_keyframe_request = std::bind(&WorkerSession::onTpRequestKeyframe, this);
+    params.on_video_bitrate_update =
+        std::bind(&WorkerSession::onTpEesimatedVideoBitreateUpdate, this, ph::_1);
+    params.on_loss_rate_update = std::bind(&WorkerSession::onTpLossRateUpdate, this, ph::_1);
+    params.remote_digest;
+    params.key_and_cert = rtc2::KeyAndCert::create();
+    if (params.key_and_cert == nullptr) {
+        return nullptr;
+    }
+    params.video_send_ssrc = 541651314;
+    params.audio_send_ssrc = 687154681;
+    return rtc2::Server::create(params);
 }
 
 void WorkerSession::mainLoop(const std::function<void()>& i_am_alive) {
@@ -479,6 +498,8 @@ void WorkerSession::onSignalingMessageAck(std::shared_ptr<google::protobuf::Mess
 void WorkerSession::dispatchSignalingMessageRtc(
     std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
+    LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
+              << ", value:" << msg->rtc_message().value().c_str();
     tp_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
                                    msg->rtc_message().value().c_str());
 }

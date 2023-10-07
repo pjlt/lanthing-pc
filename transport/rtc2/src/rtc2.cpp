@@ -132,7 +132,7 @@ std::unique_ptr<Server> Server::create(const Params& params) {
     data_param.on_data = params.on_data;
     conn_params.data = data_param;
     // others
-    conn_params.is_server = false;
+    conn_params.is_server = true;
     conn_params.key_and_cert = params.key_and_cert;
     conn_params.remote_digest = params.remote_digest;
     //

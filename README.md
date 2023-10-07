@@ -9,6 +9,6 @@ $> ./build.ps1 build [Debug|Release]
 ```
 或者：
 ```
-$> cmake -B build/[Debug|Release] --DCMAKE_BUILD_TYPE=[Debug|Release] -DCMAKE_INSTALL_PREFIX=install/[Debug|Release]
+$> cmake -B build/[Debug|Release] -DCMAKE_BUILD_TYPE=[Debug|Release] -DCMAKE_INSTALL_PREFIX=install/[Debug|Release]
 $> cmake --build build/[Debug|Release] --config [Debug|Release] --target install
 ```

@@ -82,6 +82,10 @@ void sigint_handler(int) {
     ::exit(0);
 }
 
+void terminateCallback(const std::string& last_word) {
+    LOG(INFO) << "Last words: " << last_word;
+}
+
 void initLogAndMinidump(Role role) {
     std::string prefix;
     std::string rtc_prefix;
@@ -127,8 +131,6 @@ void initLogAndMinidump(Role role) {
     g3::log_levels::disable(DEBUG);
     g3::only_change_at_initialization::addLogLevel(ERR);
     g3::initializeLogging(g_log_worker.get());
-    ltlib::ThreadWatcher::instance()->registerTerminateCallback(
-        [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
 #if LT_USE_LTRTC
         rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
@@ -139,7 +141,13 @@ void initLogAndMinidump(Role role) {
     // g3log必须再minidump前初始化
     g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     signal(SIGINT, sigint_handler);
-    // ltlib::ThreadWatcher::instance()->disable_crash_on_timeout();
+    if (LT_CRASH_ON_THREAD_HANGS) {
+        ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
+        ltlib::ThreadWatcher::instance()->registerTerminateCallback(terminateCallback);
+    }
+    else {
+        ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
+    }
 }
 
 std::map<std::string, std::string> parseOptions(int argc, char* argv[]) {

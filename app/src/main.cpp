@@ -62,6 +62,10 @@ void sigint_handler(int) {
     std::terminate();
 }
 
+void terminateCallback(const std::string& last_word) {
+    LOG(INFO) << "Last words: " << last_word;
+}
+
 void initLogging() {
     std::string bin_path = ltlib::getProgramFullpath<char>();
     std::string bin_dir = ltlib::getProgramPath<char>();
@@ -88,13 +92,18 @@ void initLogging() {
     g3::only_change_at_initialization::addLogLevel(ERR);
     g3::log_levels::disable(DEBUG);
     g3::initializeLogging(g_logWorker.get());
-    ltlib::ThreadWatcher::instance()->registerTerminateCallback(
-        [](const std::string& last_word) { LOG(INFO) << "Last words: " << last_word; });
 
     LOG(INFO) << "Log system initialized";
 
     g_minidumpGenertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     signal(SIGINT, sigint_handler);
+    if (LT_CRASH_ON_THREAD_HANGS) {
+        ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
+        ltlib::ThreadWatcher::instance()->registerTerminateCallback(terminateCallback);
+    }
+    else {
+        ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
+    }
 }
 
 } // namespace

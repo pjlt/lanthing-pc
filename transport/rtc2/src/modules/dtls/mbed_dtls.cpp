@@ -109,7 +109,7 @@ bool MbedDtls::init() {
     if (!tls_init_context()) {
         return false;
     }
-    if (tls_init_engine()) {
+    if (!tls_init_engine()) {
         return false;
     }
     return true;
@@ -238,7 +238,7 @@ bool MbedDtls::tls_init_context() {
         const mbedtls_ssl_ciphersuite_t* c = mbedtls_ssl_ciphersuite_from_string(name.c_str());
         if (c != nullptr) {
             ciphersuites_.push_back(c->MBEDTLS_PRIVATE(id));
-            printf("Adding ciphersuite (%#x) %s\n", c->MBEDTLS_PRIVATE(id), name.c_str());
+            LOGF(DEBUG, "Adding ciphersuite (%#x) %s\n", c->MBEDTLS_PRIVATE(id), name.c_str());
         }
     }
     if (ciphersuites_.empty()) {
@@ -251,9 +251,8 @@ bool MbedDtls::tls_init_context() {
     mbedtls_ssl_conf_min_version(&ssl_cfg_, MBEDTLS_SSL_MAJOR_VERSION_3,
                                  MBEDTLS_SSL_MINOR_VERSION_3);
     mbedtls_ssl_conf_verify(&ssl_cfg_, &verify_cert, this);
-    std::unique_ptr<uint8_t[]> seed{new uint8_t[MBEDTLS_ENTROPY_MAX_SEED_SIZE]};
-    int ret = mbedtls_ctr_drbg_seed(&drbg_, mbedtls_entropy_func, &entropy_, seed.get(),
-                                    MBEDTLS_ENTROPY_MAX_SEED_SIZE);
+    std::unique_ptr<uint8_t[]> seed{new uint8_t[128]};
+    int ret = mbedtls_ctr_drbg_seed(&drbg_, mbedtls_entropy_func, &entropy_, seed.get(), 128);
     if (ret != 0) {
         LOG(ERR) << "mbedtls_ctr_drbg_seed failed " << ret;
         return false;

@@ -213,7 +213,6 @@ bool Worker::init() {
         }
     }
 
-    ioloop_->postDelay(500 /*ms*/, std::bind(&Worker::checkCimeout, this));
     std::promise<void> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
@@ -222,6 +221,7 @@ bool Worker::init() {
             mainLoop(i_am_alive);
         });
     future.get();
+    ioloop_->postDelay(500 /*ms*/, std::bind(&Worker::checkCimeout, this));
     return true;
 } // namespace lt
 

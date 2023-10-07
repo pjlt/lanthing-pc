@@ -63,6 +63,8 @@ add_definitions(-DLT_TRANSPORT_RTC=${LT_TRANSPORT_RTC})
 add_definitions(-DLT_TRANSPORT_RTC2=${LT_TRANSPORT_RTC2})
 add_definitions(-DLT_TRANSPORT_TCP=${LT_TRANSPORT_TCP})
 add_definitions(-DLT_TRANSPORT_TYPE=${LT_TRANSPORT_TYPE})
+#misc
+add_definitions(-DLT_CRASH_ON_THREAD_HANGS=$<IF:$<BOOL:${LT_CRASH_ON_THREAD_HANGS}>,true,false>)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
 
