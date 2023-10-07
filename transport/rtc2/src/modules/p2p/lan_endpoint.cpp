@@ -30,6 +30,8 @@
 
 #include "lan_endpoint.h"
 
+#include <ltlib/logging.h>
+
 namespace rtc2 {
 
 std::unique_ptr<LanEndpoint> LanEndpoint::create(const Params& params) {
@@ -37,13 +39,15 @@ std::unique_ptr<LanEndpoint> LanEndpoint::create(const Params& params) {
     if (udp_socket == nullptr) {
         return nullptr;
     }
-
+    uint16_t port = udp_socket->port();
     std::unique_ptr<LanEndpoint> ep{new LanEndpoint(std::move(udp_socket), params.network_channel,
                                                     params.on_connected, params.on_read)};
     ep->init();
     EndpointInfo info{};
     info.address = params.addr;
+    info.address.set_port(port);
     info.type = EndpointType::Lan;
+    LOG(INFO) << "on_epointinfo " << info.address.to_string();
     ep->set_local_info(info);
     params.on_endpoint_info(info);
     return ep;

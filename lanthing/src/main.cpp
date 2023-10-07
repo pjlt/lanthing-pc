@@ -50,9 +50,9 @@
 #include <service/service.h>
 #endif
 
-#if LT_USE_LTRTC
+#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
 #include <rtc/rtc.h>
-#endif // LT_USE_LTRTC
+#endif
 
 #include "firewall.h"
 
@@ -126,15 +126,16 @@ void initLogAndMinidump(Role role) {
         }
     }
     g_log_worker = g3::LogWorker::createLogWorker();
-    g_log_worker->addSink(std::make_unique<ltlib::LogSink>(prefix, log_dir.string()),
-                          &ltlib::LogSink::fileWrite);
+    g_log_worker->addSink(
+        std::make_unique<ltlib::LogSink>(prefix, log_dir.string(), 30 /*flush_every_30_logs*/),
+        &ltlib::LogSink::fileWrite);
     g3::log_levels::disable(DEBUG);
     g3::only_change_at_initialization::addLogLevel(ERR);
     g3::initializeLogging(g_log_worker.get());
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
-#if LT_USE_LTRTC
+#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
         rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
-#endif // LT_USE_LTRTC
+#endif
     }
     LOG(INFO) << "Log system initialized";
 
@@ -252,7 +253,7 @@ int main(int argc, char* argv[]) {
     }
     else if (iter->second == "client") {
         // 方便调试attach
-        // std::this_thread::sleep_for(std::chrono::seconds { 15 });
+        // std::this_thread::sleep_for(std::chrono::seconds{15});
         return runAsClient(options);
     }
     else if (iter->second == "worker") {

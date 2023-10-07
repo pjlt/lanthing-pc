@@ -120,6 +120,7 @@ void P2P::post_delayed_task(uint32_t delayed_ms, const std::function<void()>& ta
 }
 
 void P2P::create_lan_endpoint() {
+    LOG(INFO) << "create_lan_endpoint";
     Address netcard_addr = getNetcardAddress();
     if (netcard_addr.family() == -1) {
         LOG(WARNING) << "getNetcardAddress failed, no NIC";
