@@ -44,7 +44,7 @@ public:
     };
 
 public:
-    static std::unique_ptr<LanEndpoint> create(const Params& params);
+    static std::shared_ptr<LanEndpoint> create(const Params& params);
     int32_t send(std::vector<std::span<const uint8_t>> spans) override;
     EndpointType type() const override;
 

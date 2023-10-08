@@ -30,19 +30,22 @@
 
 #include "lan_endpoint.h"
 
+#include <ltlib/logging.h>
+
 namespace rtc2 {
 
-std::unique_ptr<LanEndpoint> LanEndpoint::create(const Params& params) {
+std::shared_ptr<LanEndpoint> LanEndpoint::create(const Params& params) {
     auto udp_socket = params.network_channel->createUDPSocket(params.addr);
     if (udp_socket == nullptr) {
         return nullptr;
     }
-
-    std::unique_ptr<LanEndpoint> ep{new LanEndpoint(std::move(udp_socket), params.network_channel,
+    uint16_t port = udp_socket->port();
+    std::shared_ptr<LanEndpoint> ep{new LanEndpoint(std::move(udp_socket), params.network_channel,
                                                     params.on_connected, params.on_read)};
     ep->init();
     EndpointInfo info{};
     info.address = params.addr;
+    info.address.set_port(port);
     info.type = EndpointType::Lan;
     ep->set_local_info(info);
     params.on_endpoint_info(info);
@@ -66,23 +69,23 @@ void LanEndpoint::on_binding_request(const StunMessage& msg, const Address& remo
                                      const int64_t& packet_time_us) {
     (void)msg;
     (void)packet_time_us;
-    // 此处只验证对方IP:Port，不浪费更多资源，因为上面还有一层DTLS验证
-    // 后面如果确实想要在此处做进一步验证，可以用传入的p2p_username和p2p_password做HMAC校验
+    LOG(INFO) << "on_binding_request";
     if (remote_addr != remote_info().address) {
         return;
     }
     set_received_request();
+    send_binding_response(remote_addr, msg.id());
 }
 
 void LanEndpoint::on_binding_response(const StunMessage& msg, const Address& remote_addr,
                                       const int64_t& packet_time_us) {
     (void)msg;
     (void)packet_time_us;
-    // 此处只验证对方IP:Port，不浪费更多资源，因为上面还有一层DTLS验证
-    // 后面如果确实想要在此处做进一步验证，可以用传入的p2p_username和p2p_password做HMAC校验
+    LOG(INFO) << "on_binding_response";
     if (remote_addr != remote_info().address) {
         return;
     }
     set_received_response();
 }
+
 } // namespace rtc2

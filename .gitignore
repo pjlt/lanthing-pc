@@ -36,6 +36,7 @@
 /.vscode
 /.vs
 /build
+/install
 CMakeSettings.json
 options-user.cmake
 

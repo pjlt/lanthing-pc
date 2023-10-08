@@ -39,9 +39,35 @@
 
 namespace rtc2 {
 
+// static void printNetworkAdapters() {
+//     uv_interface_address_t* info;
+//     int count;
+//     char buf[512];
+//     uv_interface_addresses(&info, &count);
+//     for (int i = 0; i < count; i++) {
+//         uv_interface_address_t interface_a = info[i];
+//         if (interface_a.address.address4.sin_family == AF_INET) {
+//
+//             uv_ip4_name(&interface_a.address.address4, buf, sizeof(buf));
+//
+//             printf("IPv4 address: %s\n", buf);
+//         }
+//
+//         else if (interface_a.address.address4.sin_family == AF_INET6) {
+//
+//             uv_ip6_name(&interface_a.address.address6, buf, sizeof(buf));
+//
+//             printf("IPv6 address: %s\n", buf);
+//         }
+//         LOG(INFO) << interface_a.name << " " << interface_a.is_internal << " " << buf << " "
+//                   << std::string(&interface_a.phys_addr[0], 6).c_str();
+//     }
+// }
+
 NetworkChannel::NetworkChannel(const Params& p)
     : on_error_{p.on_error}
     , on_endpoint_info_gathered_{p.on_endpoint_info_gathered} {
+    // printNetworkAdapters();
     P2P::Params params{};
     params.is_server = p.is_server;
     params.network_channel = this;
@@ -96,7 +122,12 @@ void NetworkChannel::setOnConnChanged(
     on_conn_changed_ = on_conn_changed;
 }
 
+// 跑在用户线程 | 跑在网络线程
 void NetworkChannel::addRemoteInfo(const EndpointInfo& info) {
+    if (ioloop_->isNotCurrentThread()) {
+        post(std::bind(&NetworkChannel::addRemoteInfo, this, info));
+        return;
+    }
     p2p_->add_remote_info(info);
 }
 

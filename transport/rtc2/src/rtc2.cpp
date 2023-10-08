@@ -76,6 +76,10 @@ std::unique_ptr<Client> Client::create(const Params& params) {
     conn_params.is_server = false;
     conn_params.key_and_cert = params.key_and_cert;
     conn_params.remote_digest = params.remote_digest;
+    conn_params.on_signaling_message =
+        [cb = params.on_signaling_message](const std::string& key, const std::string& value) {
+            cb(key.c_str(), value.c_str());
+        };
     //
     auto conn = Connection::create(conn_params);
     if (conn == nullptr) {
@@ -132,9 +136,13 @@ std::unique_ptr<Server> Server::create(const Params& params) {
     data_param.on_data = params.on_data;
     conn_params.data = data_param;
     // others
-    conn_params.is_server = false;
+    conn_params.is_server = true;
     conn_params.key_and_cert = params.key_and_cert;
     conn_params.remote_digest = params.remote_digest;
+    conn_params.on_signaling_message =
+        [cb = params.on_signaling_message](const std::string& key, const std::string& value) {
+            cb(key.c_str(), value.c_str());
+        };
     //
     auto conn = Connection::create(conn_params);
     if (conn == nullptr) {

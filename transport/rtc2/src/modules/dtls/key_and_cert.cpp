@@ -89,9 +89,9 @@ bool KeyAndCertImpl::createInternal() {
                                                    });
     mbedtls_entropy_init(entropy.get());
     mbedtls_ctr_drbg_init(drbg.get());
-    std::unique_ptr<uint8_t[]> seed{new uint8_t[MBEDTLS_ENTROPY_MAX_SEED_SIZE]};
-    int ret = mbedtls_ctr_drbg_seed(drbg.get(), mbedtls_entropy_func, entropy.get(), seed.get(),
-                                    MBEDTLS_ENTROPY_MAX_SEED_SIZE);
+    std::unique_ptr<uint8_t[]> seed{new uint8_t[128]};
+    int ret =
+        mbedtls_ctr_drbg_seed(drbg.get(), mbedtls_entropy_func, entropy.get(), seed.get(), 128);
     if (ret != 0) {
         LOG(ERR) << "mbedtls_ctr_drbg_seed failed " << ret;
         return false;

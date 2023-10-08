@@ -49,11 +49,9 @@
 #include <ltlib/time_sync.h>
 #include <string_keys.h>
 
-#if LT_USE_LTRTC
-#include <rtc/rtc.h>
-#else // LT_USE_LTRTC
+#include <transport/transport_rtc.h>
+#include <transport/transport_rtc2.h>
 #include <transport/transport_tcp.h>
-#endif // LT_USE_LTRTC
 
 namespace {
 
@@ -74,11 +72,17 @@ lt::VideoCodecType to_ltrtc(std::string codec_str) {
 }
 
 lt::AudioCodecType atype() {
-#if LT_USE_LTRTC
-    return lt::AudioCodecType::PCM;
-#else
-    return lt::AudioCodecType::OPUS;
-#endif
+    switch (LT_TRANSPORT_TYPE) {
+    case LT_TRANSPORT_RTC:
+        return lt::AudioCodecType::PCM;
+    case LT_TRANSPORT_RTC2:
+        return lt::AudioCodecType::PCM;
+    case LT_TRANSPORT_TCP:
+        return lt::AudioCodecType::OPUS;
+    default:
+        LOG(FATAL) << "Unknown transport type";
+        return lt::AudioCodecType::OPUS;
+    }
 }
 
 } // namespace
@@ -356,6 +360,8 @@ void Client::onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> _
     case ltproto::signaling::SignalingMessage::Rtc:
     {
         auto& rtc_msg = msg->rtc_message();
+        LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
+                  << ", value:" << msg->rtc_message().value().c_str();
         tp_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
         break;
     }
@@ -380,8 +386,47 @@ void Client::onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite
 }
 
 bool Client::initTransport() {
+    switch (LT_TRANSPORT_TYPE) {
+    case LT_TRANSPORT_TCP:
+        tp_client_ = createTcpClient();
+        break;
+    case LT_TRANSPORT_RTC:
+        tp_client_ = createRtcClient();
+        break;
+    case LT_TRANSPORT_RTC2:
+        tp_client_ = createRtc2Client();
+        break;
+    default:
+        break;
+    }
+    if (tp_client_ == nullptr) {
+        LOG(ERR) << "Create lt::tp::Client failed";
+        return false;
+    }
+
+    if (!tp_client_->connect()) {
+        LOG(INFO) << "lt::tp::Client connect failed";
+        return false;
+    }
+    return true;
+}
+
+std::unique_ptr<tp::Client> Client::createTcpClient() {
     namespace ph = std::placeholders;
-#if LT_USE_LTRTC
+    lt::tp::ClientTCP::Params params{};
+    params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
+    params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
+    params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
+    params.on_connected = std::bind(&Client::onTpConnected, this);
+    params.on_failed = std::bind(&Client::onTpFailed, this);
+    params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
+    params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.video_codec_type = video_params_.codec_type;
+    return lt::tp::ClientTCP::create(params);
+}
+
+std::unique_ptr<tp::Client> Client::createRtcClient() {
+    namespace ph = std::placeholders;
     rtc::Client::Params params{};
     params.use_nbp2p = true;
     std::vector<const char*> reflex_servers;
@@ -413,29 +458,26 @@ bool Client::initTransport() {
     params.video_codec_type = video_params_.codec_type;
     params.audio_channels = audio_params_.channels;
     params.audio_sample_rate = audio_params_.frames_per_second;
-    tp_client_ = rtc::Client::create(std::move(params));
-#else  // LT_USE_LTRTC
-    lt::tp::ClientTCP::Params params{};
+    return rtc::Client::create(std::move(params));
+}
+
+std::unique_ptr<tp::Client> Client::createRtc2Client() {
+    namespace ph = std::placeholders;
+    rtc2::Client::Params params{};
     params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
     params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
     params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
     params.on_connected = std::bind(&Client::onTpConnected, this);
+    params.on_conn_changed = std::bind(&Client::onTpConnChanged, this);
     params.on_failed = std::bind(&Client::onTpFailed, this);
     params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
-    params.onSignalingMessage = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
-    params.video_codec_type = video_params_.codec_type;
-    tp_client_ = lt::tp::ClientTCP::create(params);
-#endif // LT_USE_LTRTC
-
-    if (tp_client_ == nullptr) {
-        LOG(INFO) << "Create rtc client failed";
-        return false;
-    }
-    if (!tp_client_->connect()) {
-        LOG(INFO) << "LTClient connect failed";
-        return false;
-    }
-    return true;
+    params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.audio_recv_ssrc = 687154681;
+    params.video_recv_ssrc = 541651314;
+    // TODO: key and cert合理的创建时机
+    params.key_and_cert = rtc2::KeyAndCert::create();
+    params.remote_digest;
+    return rtc2::Client::create(params);
 }
 
 void Client::onTpData(const uint8_t* data, uint32_t size, bool is_reliable) {

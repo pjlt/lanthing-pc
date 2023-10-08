@@ -65,14 +65,6 @@ void Endpoint::post_delayed_task(uint32_t delayed_ms, const std::function<void()
     });
 }
 
-void Endpoint::add_remote_info(const EndpointInfo& info) {
-    if (remote_.type != EndpointType::Unknown) {
-        return;
-    }
-    remote_ = info;
-    send_binding_request(remote_.address);
-}
-
 Endpoint::Endpoint(std::unique_ptr<UDPSocket>&& socket, NetworkChannel* network_channel,
                    std::function<void(Endpoint*)> on_connected,
                    std::function<void(Endpoint*, const uint8_t*, uint32_t, int64_t)> on_read)
@@ -94,10 +86,29 @@ void Endpoint::send_binding_request(const Address& addr) {
     int ret = sock()->sendmsg({{msg.data(), msg.size()}}, addr);
     if (ret < 0) {
         int error = socket_->error();
-        LOG(ERR) << "Send binding request to " << remote_.address.to_string()
-                     << " failed with error " << error;
+        LOG(ERR) << "Send binding request to " << addr.to_string() << " failed with error "
+                 << error;
     }
     post_delayed_task(100, std::bind(&Endpoint::send_binding_request, this, addr));
+}
+
+void Endpoint::send_binding_response(const Address& addr, const std::vector<uint8_t>& id) {
+    StunMessage msg{StunMessage::Type::BindingResponse,
+                    reinterpret_cast<const uint8_t*>(id.data())};
+    int ret = sock()->sendmsg({{msg.data(), msg.size()}}, addr);
+    if (ret < 0) {
+        int error = socket_->error();
+        LOG(ERR) << "Send binding response to " << addr.to_string() << " failed with error "
+                 << error;
+    }
+}
+
+void Endpoint::add_remote_info(const EndpointInfo& info) {
+    if (remote_.type != EndpointType::Unknown) {
+        return;
+    }
+    remote_ = info;
+    send_binding_request(remote_.address);
 }
 
 bool Endpoint::connected() const {
@@ -106,10 +117,12 @@ bool Endpoint::connected() const {
 
 void Endpoint::set_received_request() {
     received_request_ = true;
+    maybe_connected();
 }
 
 void Endpoint::set_received_response() {
     received_response_ = true;
+    maybe_connected();
 }
 
 void Endpoint::set_local_info(const EndpointInfo& info) {
@@ -117,6 +130,7 @@ void Endpoint::set_local_info(const EndpointInfo& info) {
 }
 
 void Endpoint::maybe_connected() {
+    LOG(DEBUG) << "maybe_connected";
     if (connected()) {
         on_connected_(this);
     }
@@ -126,6 +140,7 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
                        const Address& remote_addr, const int64_t& packet_time_us) {
     auto shared_this = weak_this.lock();
     if (shared_this == nullptr) {
+        LOG(WARNING) << "shared_this<Endpoint> == nullptr";
         return;
     }
     StunMessage msg{reinterpret_cast<const uint8_t*>(data),
@@ -145,7 +160,11 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
     }
     else {
         if (connected()) {
+            LOG(INFO) << "ON_READ_ CONNECTED";
             on_read_(this, data, size, packet_time_us);
+        }
+        else {
+            LOG(INFO) << "Onread but not connected";
         }
     }
 }

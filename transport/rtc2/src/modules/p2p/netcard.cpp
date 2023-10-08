@@ -37,11 +37,12 @@
 #else
 #endif
 
+#include <ltlib/logging.h>
+
 namespace rtc2 {
 
 #if defined(LT_WINDOWS)
 
-// 后面试试libuv，不搞那么多#if
 Address getNetcardAddress() {
     Address result{};
     ULONG flags = (GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
@@ -69,10 +70,8 @@ Address getNetcardAddress() {
         }
         PIP_ADAPTER_UNICAST_ADDRESS address = adapters->FirstUnicastAddress;
         if (address != nullptr) {
-            sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(address->Address.lpSockaddr);
-            sockaddr_storage storage{};
-            memcpy(&storage, addr, sizeof(sockaddr_in));
-            result = Address::from_storage(storage);
+            sockaddr* addr = reinterpret_cast<sockaddr*>(address->Address.lpSockaddr);
+            result = Address::from_sockaddr(addr);
             return result;
         }
         adapters = adapters->Next;

@@ -285,20 +285,28 @@ sockaddr_storage Address::to_storage() const {
 }
 
 Address Address::from_storage(const sockaddr_storage& storage) {
+    return from_storage(&storage);
+}
+
+Address Address::from_storage(const sockaddr_storage* storage) {
     Address addr{};
-    if (storage.ss_family == AF_INET) {
-        const sockaddr_in* in4 = reinterpret_cast<const sockaddr_in*>(&storage);
+    if (storage->ss_family == AF_INET) {
+        const sockaddr_in* in4 = reinterpret_cast<const sockaddr_in*>(storage);
         addr.family_ = AF_INET;
-        addr.port_ = in4->sin_port;
+        addr.port_ = ntohs(in4->sin_port);
         addr.ip_.v4 = in4->sin_addr;
     }
-    else if (storage.ss_family == AF_INET6) {
-        const sockaddr_in6* in6 = reinterpret_cast<const sockaddr_in6*>(&storage);
+    else if (storage->ss_family == AF_INET6) {
+        const sockaddr_in6* in6 = reinterpret_cast<const sockaddr_in6*>(storage);
         addr.family_ = AF_INET6;
-        addr.port_ = in6->sin6_port;
+        addr.port_ = ntohs(in6->sin6_port);
         addr.ip_.v6 = in6->sin6_addr;
     }
     return addr;
+}
+
+Address Address::from_sockaddr(const sockaddr* sockaddr) {
+    return from_storage(reinterpret_cast<const sockaddr_storage*>(sockaddr));
 }
 
 Address Address::from_str(const std::string& str) {

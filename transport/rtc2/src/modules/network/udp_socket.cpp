@@ -69,7 +69,7 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
         return nullptr;
     }
     auto storage = bind_addr.to_storage();
-    ret = uv_udp_bind(udp, reinterpret_cast<const sockaddr*>(&storage), UV_UDP_REUSEADDR);
+    ret = uv_udp_bind(udp, reinterpret_cast<const sockaddr*>(&storage), 0);
     if (ret != 0) {
         uv_close((uv_handle_t*)udp, [](uv_handle_t* handle) {
             auto udp = (uv_udp_t*)handle;
@@ -78,6 +78,18 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
         LOG(ERR) << "uv_udp_bind failed with " << ret;
         return nullptr;
     }
+    sockaddr_storage local_storage{};
+    int socksize = sizeof(local_storage);
+    ret = uv_udp_getsockname(udp, reinterpret_cast<sockaddr*>(&local_storage), &socksize);
+    if (ret != 0) {
+        uv_close((uv_handle_t*)udp, [](uv_handle_t* handle) {
+            auto udp = (uv_udp_t*)handle;
+            delete udp;
+        });
+        LOG(ERR) << "uv_udp_getsockname failed with " << ret;
+        return nullptr;
+    }
+    Address local_addr = Address::from_storage(local_storage);
     ret = uv_udp_recv_start(udp, UDPSocketImpl::on_alloc_memory, UDPSocketImpl::on_udp_recv);
     if (ret != 0) {
         uv_close((uv_handle_t*)udp, [](uv_handle_t* handle) {
@@ -90,7 +102,7 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
     auto udp_socket = std::make_unique<UDPSocketImpl>();
     udp->data = udp_socket.get();
     udp_socket->udp_ = udp;
-    udp_socket->bind_addr_ = bind_addr;
+    udp_socket->bind_addr_ = local_addr;
     return udp_socket;
 }
 
@@ -147,15 +159,14 @@ void UDPSocketImpl::on_udp_recv(uv_udp_t* handle, ssize_t nread, const uv_buf_t*
     // 在我的使用场景里，这个flags似乎不用处理
     (void)flags;
     auto that = reinterpret_cast<UDPSocketImpl*>(handle->data);
-    if (nread < 0) {
+    if (nread <= 0) {
         that->error_ = static_cast<int32_t>(nread);
         delete buf->base;
         // TODO: 通知错误
         return;
     }
     if (that->on_read_ != nullptr) {
-        // 整个过程没有复制，IPv4情况下应该不会爆炸吧？
-        auto address = Address::from_storage(*reinterpret_cast<const sockaddr_storage*>(addr));
+        auto address = Address::from_sockaddr(addr);
         that->on_read_(reinterpret_cast<const uint8_t*>(buf->base), static_cast<uint32_t>(nread),
                        address, ltlib::steady_now_us());
     }

@@ -69,6 +69,7 @@ protected:
              std::function<void(Endpoint*, const uint8_t*, uint32_t, int64_t)> on_read);
     UDPSocket* sock();
     void send_binding_request(const Address& addr);
+    void send_binding_response(const Address& addr, const std::vector<uint8_t>& id);
     bool connected() const;
     void set_received_request();
     void set_received_response();

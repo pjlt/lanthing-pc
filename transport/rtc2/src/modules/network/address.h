@@ -103,6 +103,8 @@ public:
     sockaddr_storage& to_storage(sockaddr_storage& storage) const;
     sockaddr_storage to_storage() const;
     static Address from_storage(const sockaddr_storage& storage);
+    static Address from_storage(const sockaddr_storage* storage);
+    static Address from_sockaddr(const sockaddr* sockaddr);
     static Address from_str(const std::string& str);
 
 private:

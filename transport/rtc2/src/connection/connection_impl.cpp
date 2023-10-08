@@ -166,6 +166,7 @@ bool ConnectionImpl::init() {
 
     // message channel
     MessageChannel::Params msg_param{};
+    msg_param.network_channel = network_channel_.get();
     msg_param.reliable_ssrc = 0;
     msg_param.half_reliable_ssrc = 0;
     msg_param.mtu = 1400;
@@ -191,15 +192,12 @@ bool ConnectionImpl::init() {
     if (dtls_ == nullptr) {
         return false;
     }
-
     return true;
 }
 
 void ConnectionImpl::start() {
+    started_ = true;
     network_channel_->start();
-    // TODO: 改成连接成功建立后post
-    send_thread_->post_delay(ltlib::TimeDelta{1000} /*us*/,
-                             std::bind(&Pacer::process, pacer_.get(), pacer_->weak_from_this()));
 }
 
 bool ConnectionImpl::sendData(const uint8_t* data, uint32_t size) {
@@ -231,7 +229,7 @@ void ConnectionImpl::onSignalingMessage(const std::string& key, const std::strin
         LOG(ERR) << "Received unknown signaling message key:" << key;
         return;
     }
-    std::istringstream iss;
+    std::istringstream iss(value);
     std::string key1, key2, type, addr;
     iss >> key1;
     iss >> type;
@@ -251,6 +249,10 @@ void ConnectionImpl::onSignalingMessage(const std::string& key, const std::strin
     if (info.address.family() != AF_INET) {
         LOG(ERR) << "Invalid address " << addr;
         return;
+    }
+    if (params_.is_server && !started_) {
+        started_ = true;
+        network_channel_->start();
     }
     network_channel_->addRemoteInfo(info);
 }
@@ -323,15 +325,13 @@ void ConnectionImpl::onDtlsPacket(const uint8_t* data, uint32_t size, int64_t ti
 }
 
 void ConnectionImpl::onDtlsConnected() {
-    // LOG(INFO) << "";
+    LOG(INFO) << "Connected";
 }
 
 void ConnectionImpl::onDtlsDisconnected() {
-    // TODO: 整个断链
+    LOG(INFO) << "Disconnected";
 }
 
-// 原本让EndpointInfo回调到上层，让上层按照自己的方式做序列化会更好
-// 但具体到这个项目，lanthing和rtc2是一体的，你我之间不必拿刻度尺分太清，怎么方便怎么来
 void ConnectionImpl::onEndpointInfo(const EndpointInfo& info) {
     std::ostringstream oss;
     oss << FieldType << " " << to_str(info.type) << " " << FieldAddr << " "

@@ -85,6 +85,7 @@ private:
     std::vector<std::shared_ptr<AudioReceiveStream>> audio_receive_streams_;
     std::shared_ptr<MessageChannel> message_channel_;
     std::shared_ptr<DtlsChannel> dtls_;
+    std::atomic<bool> started_ = false;
 };
 
 } // namespace rtc2

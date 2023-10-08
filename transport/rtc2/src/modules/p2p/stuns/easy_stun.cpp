@@ -81,6 +81,10 @@ const uint8_t* StunMessage::data() const {
     return msg_->data();
 }
 
+std::vector<uint8_t> StunMessage::id() const {
+    return msg_->id();
+}
+
 uint8_t* StunMessage::data() {
     return msg_->data();
 }

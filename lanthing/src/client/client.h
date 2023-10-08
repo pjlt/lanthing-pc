@@ -113,6 +113,9 @@ private:
 
     // transport
     bool initTransport();
+    std::unique_ptr<tp::Client> createTcpClient();
+    std::unique_ptr<tp::Client> createRtcClient();
+    std::unique_ptr<tp::Client> createRtc2Client();
     void onTpData(const uint8_t* data, uint32_t size, bool is_reliable);
     void onTpVideoFrame(const lt::VideoFrame& frame);
     void onTpAudioData(const lt::AudioData& audio_data);
