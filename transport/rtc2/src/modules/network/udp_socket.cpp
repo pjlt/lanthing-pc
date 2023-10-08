@@ -90,7 +90,6 @@ std::shared_ptr<UDPSocketImpl> UDPSocketImpl::create(ltlib::IOLoop* ioloop,
         return nullptr;
     }
     Address local_addr = Address::from_storage(local_storage);
-    LOG(INFO) << "local_addr " << local_addr.to_string();
     ret = uv_udp_recv_start(udp, UDPSocketImpl::on_alloc_memory, UDPSocketImpl::on_udp_recv);
     if (ret != 0) {
         uv_close((uv_handle_t*)udp, [](uv_handle_t* handle) {
@@ -123,8 +122,6 @@ int32_t UDPSocketImpl::sendmsg(std::vector<std::span<const uint8_t>> spans, cons
     for (size_t i = 0; i < spans.size(); i++) {
         buffs[i].base = reinterpret_cast<char*>(const_cast<uint8_t*>(spans[i].data()));
         buffs[i].len = static_cast<decltype(uv_buf_t::len)>(spans[i].size());
-        LOG(INFO) << "sendmsg " << i << " " << (void*)buffs[i].base << " " << buffs[i].len << " "
-                  << addr.to_string();
     }
     send_req->data = this;
     auto storage = addr.to_storage();
@@ -161,7 +158,6 @@ void UDPSocketImpl::on_udp_recv(uv_udp_t* handle, ssize_t nread, const uv_buf_t*
                                 const sockaddr* addr, unsigned flags) {
     // 在我的使用场景里，这个flags似乎不用处理
     (void)flags;
-    LOG(INFO) << "nread " << nread << " buf " << buf << " addr " << addr << " flags " << flags;
     auto that = reinterpret_cast<UDPSocketImpl*>(handle->data);
     if (nread <= 0) {
         that->error_ = static_cast<int32_t>(nread);

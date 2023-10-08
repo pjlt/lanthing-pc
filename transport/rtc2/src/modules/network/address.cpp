@@ -293,13 +293,13 @@ Address Address::from_storage(const sockaddr_storage* storage) {
     if (storage->ss_family == AF_INET) {
         const sockaddr_in* in4 = reinterpret_cast<const sockaddr_in*>(storage);
         addr.family_ = AF_INET;
-        addr.port_ = in4->sin_port;
+        addr.port_ = ntohs(in4->sin_port);
         addr.ip_.v4 = in4->sin_addr;
     }
     else if (storage->ss_family == AF_INET6) {
         const sockaddr_in6* in6 = reinterpret_cast<const sockaddr_in6*>(storage);
         addr.family_ = AF_INET6;
-        addr.port_ = in6->sin6_port;
+        addr.port_ = ntohs(in6->sin6_port);
         addr.ip_.v6 = in6->sin6_addr;
     }
     return addr;

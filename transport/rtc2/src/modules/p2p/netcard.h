@@ -36,6 +36,6 @@
 
 namespace rtc2 {
 
-std::vector<Address> getNetcardAddress();
+Address getNetcardAddress();
 
 } // namespace rtc2

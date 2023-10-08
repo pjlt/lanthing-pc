@@ -121,13 +121,13 @@ void P2P::post_delayed_task(uint32_t delayed_ms, const std::function<void()>& ta
 
 void P2P::create_lan_endpoint() {
     LOG(INFO) << "create_lan_endpoint";
-    std::vector<Address> netcard_addrs = getNetcardAddress();
-    if (netcard_addrs.empty()) {
+    Address netcard_addr = getNetcardAddress();
+    if (netcard_addr.family() == -1) {
         LOG(WARNING) << "getNetcardAddress failed, no NIC";
         return;
     }
     LanEndpoint::Params params{};
-    params.addrs = netcard_addrs;
+    params.addr = netcard_addr;
     params.network_channel = network_channel_;
     params.on_connected = std::bind(&P2P::on_connected, this, std::placeholders::_1);
     params.on_endpoint_info = std::bind(&P2P::on_endpoint_info, this, std::placeholders::_1);

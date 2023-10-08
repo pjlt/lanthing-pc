@@ -34,36 +34,26 @@
 
 namespace rtc2 {
 
-std::unique_ptr<LanEndpoint> LanEndpoint::create(const Params& params) {
-    Address bind_addr = Address::from_str("0.0.0.0:0");
-    auto udp_socket = params.network_channel->createUDPSocket(bind_addr);
+std::shared_ptr<LanEndpoint> LanEndpoint::create(const Params& params) {
+    auto udp_socket = params.network_channel->createUDPSocket(params.addr);
     if (udp_socket == nullptr) {
         return nullptr;
     }
     uint16_t port = udp_socket->port();
-    std::unique_ptr<LanEndpoint> ep{new LanEndpoint(std::move(udp_socket), params.network_channel,
+    std::shared_ptr<LanEndpoint> ep{new LanEndpoint(std::move(udp_socket), params.network_channel,
                                                     params.on_connected, params.on_read)};
     ep->init();
-    EndpointInfo epinfo{};
-    epinfo.address = bind_addr;
-    epinfo.type = EndpointType::Lan;
-    ep->set_local_info(epinfo);
-    for (auto& addr : params.addrs) {
-        EndpointInfo info{};
-        info.address = addr;
-        info.address.set_port(port);
-        info.type = EndpointType::Lan;
-        LOG(INFO) << "on_epointinfo " << info.address.to_string();
-        params.on_endpoint_info(info);
-    }
+    EndpointInfo info{};
+    info.address = params.addr;
+    info.address.set_port(port);
+    info.type = EndpointType::Lan;
+    ep->set_local_info(info);
+    params.on_endpoint_info(info);
     return ep;
 }
 
 int32_t LanEndpoint::send(std::vector<std::span<const uint8_t>> spans) {
-    if (index_ == -1) {
-        return -1;
-    }
-    return sock()->sendmsg(spans, addr_infos_[index_].addr);
+    return sock()->sendmsg(spans, remote_info().address);
 }
 
 EndpointType LanEndpoint::type() const {
@@ -79,68 +69,23 @@ void LanEndpoint::on_binding_request(const StunMessage& msg, const Address& remo
                                      const int64_t& packet_time_us) {
     (void)msg;
     (void)packet_time_us;
-    if (connected()) {
+    LOG(INFO) << "on_binding_request";
+    if (remote_addr != remote_info().address) {
         return;
     }
-    // 此处只验证对方IP:Port，不浪费更多资源，因为上面还有一层DTLS验证
-    // 后面如果确实想要在此处做进一步验证，可以用传入的p2p_username和p2p_password做HMAC校验
-    for (int i = 0; i < addr_infos_.size(); i++) {
-        if (addr_infos_[i].addr == remote_addr) {
-            addr_infos_[i].received_request = true;
-            if (addr_infos_[i].received_response) {
-                index_ = i;
-                EndpointInfo epinfo{};
-                epinfo.address = remote_addr;
-                epinfo.type = EndpointType::Lan;
-                set_received_request();
-                set_received_response();
-            }
-        }
-    }
+    set_received_request();
+    send_binding_response(remote_addr, msg.id());
 }
 
 void LanEndpoint::on_binding_response(const StunMessage& msg, const Address& remote_addr,
                                       const int64_t& packet_time_us) {
     (void)msg;
     (void)packet_time_us;
-    // 此处只验证对方IP:Port，不浪费更多资源，因为上面还有一层DTLS验证
-    // 后面如果确实想要在此处做进一步验证，可以用传入的p2p_username和p2p_password做HMAC校验
-    if (connected()) {
+    LOG(INFO) << "on_binding_response";
+    if (remote_addr != remote_info().address) {
         return;
     }
-    // 此处只验证对方IP:Port，不浪费更多资源，因为上面还有一层DTLS验证
-    // 后面如果确实想要在此处做进一步验证，可以用传入的p2p_username和p2p_password做HMAC校验
-    for (int i = 0; i < addr_infos_.size(); i++) {
-        if (addr_infos_[i].addr == remote_addr) {
-            addr_infos_[i].received_response = true;
-            if (addr_infos_[i].received_request) {
-                index_ = i;
-                EndpointInfo epinfo{};
-                epinfo.address = remote_addr;
-                epinfo.type = EndpointType::Lan;
-                set_received_request();
-                set_received_response();
-            }
-        }
-    }
+    set_received_response();
 }
-void LanEndpoint::add_remote_info(const EndpointInfo& info) {
-    AddressInfo addr_info{};
-    addr_info.addr = info.address;
-    addr_info.received_request = false;
-    addr_info.received_response = false;
-    addr_infos_.push_back(addr_info);
-    if (addr_infos_.size() == 1) {
-        send_binding_requests();
-    }
-}
-void LanEndpoint::send_binding_requests() {
-    if (connected()) {
-        return;
-    }
-    for (auto& info : addr_infos_) {
-        send_binding_request(info.addr);
-    }
-    post_delayed_task(50, std::bind(&LanEndpoint::send_binding_requests, this));
-}
+
 } // namespace rtc2

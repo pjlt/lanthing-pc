@@ -36,7 +36,7 @@ namespace rtc2 {
 class LanEndpoint : public Endpoint {
 public:
     struct Params {
-        std::vector<Address> addrs;
+        Address addr;
         std::function<void(const EndpointInfo&)> on_endpoint_info;
         std::function<void(Endpoint*)> on_connected;
         std::function<void(Endpoint*, const uint8_t*, uint32_t, int64_t)> on_read;
@@ -44,7 +44,7 @@ public:
     };
 
 public:
-    static std::unique_ptr<LanEndpoint> create(const Params& params);
+    static std::shared_ptr<LanEndpoint> create(const Params& params);
     int32_t send(std::vector<std::span<const uint8_t>> spans) override;
     EndpointType type() const override;
 
@@ -56,17 +56,6 @@ private:
                             const int64_t& packet_time_us) override;
     void on_binding_response(const StunMessage& msg, const Address& remote_addr,
                              const int64_t& packet_time_us) override;
-    void add_remote_info(const EndpointInfo& info) override;
-    void send_binding_requests();
-
-private:
-    struct AddressInfo {
-        Address addr;
-        bool received_request = false;
-        bool received_response = false;
-    };
-    int index_ = -1;
-    std::vector<AddressInfo> addr_infos_;
 };
 
 } // namespace rtc2

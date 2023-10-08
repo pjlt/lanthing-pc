@@ -35,6 +35,14 @@
 
 namespace rtc2 {
 
+const EndpointInfo& Endpoint::local_info() const {
+    return local_;
+}
+
+const EndpointInfo& Endpoint::remote_info() const {
+    return remote_;
+}
+
 void Endpoint::post_task(const std::function<void()>& task) {
     auto weak_this = weak_from_this();
     network_channel_->post([weak_this, task]() {
@@ -81,6 +89,26 @@ void Endpoint::send_binding_request(const Address& addr) {
         LOG(ERR) << "Send binding request to " << addr.to_string() << " failed with error "
                  << error;
     }
+    post_delayed_task(100, std::bind(&Endpoint::send_binding_request, this, addr));
+}
+
+void Endpoint::send_binding_response(const Address& addr, const std::vector<uint8_t>& id) {
+    StunMessage msg{StunMessage::Type::BindingResponse,
+                    reinterpret_cast<const uint8_t*>(id.data())};
+    int ret = sock()->sendmsg({{msg.data(), msg.size()}}, addr);
+    if (ret < 0) {
+        int error = socket_->error();
+        LOG(ERR) << "Send binding response to " << addr.to_string() << " failed with error "
+                 << error;
+    }
+}
+
+void Endpoint::add_remote_info(const EndpointInfo& info) {
+    if (remote_.type != EndpointType::Unknown) {
+        return;
+    }
+    remote_ = info;
+    send_binding_request(remote_.address);
 }
 
 bool Endpoint::connected() const {
@@ -97,7 +125,12 @@ void Endpoint::set_received_response() {
     maybe_connected();
 }
 
+void Endpoint::set_local_info(const EndpointInfo& info) {
+    local_ = info;
+}
+
 void Endpoint::maybe_connected() {
+    LOG(DEBUG) << "maybe_connected";
     if (connected()) {
         on_connected_(this);
     }
@@ -107,6 +140,7 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
                        const Address& remote_addr, const int64_t& packet_time_us) {
     auto shared_this = weak_this.lock();
     if (shared_this == nullptr) {
+        LOG(WARNING) << "shared_this<Endpoint> == nullptr";
         return;
     }
     StunMessage msg{reinterpret_cast<const uint8_t*>(data),
@@ -126,7 +160,11 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
     }
     else {
         if (connected()) {
+            LOG(INFO) << "ON_READ_ CONNECTED";
             on_read_(this, data, size, packet_time_us);
+        }
+        else {
+            LOG(INFO) << "Onread but not connected";
         }
     }
 }

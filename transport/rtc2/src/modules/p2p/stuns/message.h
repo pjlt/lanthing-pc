@@ -641,6 +641,12 @@ public:
     uint8_t* data() { return buffer_.data(); }
     const uint8_t* data() const { return buffer_.data(); }
 
+    std::vector<uint8_t> id() const {
+        std::vector<uint8_t> tid(12);
+        memcpy(tid.data(), hdr()->tsx_id, 12);
+        return tid;
+    }
+
     size_t size() const { return stun_msg_len(hdr()); }
 
     bool verify() const { return stun_msg_verify(hdr(), capacity()) == 0 ? false : true; }

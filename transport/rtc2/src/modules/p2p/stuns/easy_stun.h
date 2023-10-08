@@ -33,6 +33,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include <modules/network/address.h>
 
@@ -60,6 +61,7 @@ public:
     bool verify() const;
     Type type() const;
     const uint8_t* data() const;
+    std::vector<uint8_t> id() const;
     uint8_t* data();
     size_t size() const;
     std::optional<Address> mapped_address() const;
