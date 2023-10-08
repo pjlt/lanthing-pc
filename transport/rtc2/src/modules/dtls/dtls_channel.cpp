@@ -112,7 +112,6 @@ void DtlsChannel::startHandshake() {
         return;
     }
     if (!mbed_->startHandshake()) {
-        LOG(INFO) << "START HANDSHAKE FAILED";
         dtls_state_ = DtlsState::Failed;
         return;
     }
@@ -121,8 +120,14 @@ void DtlsChannel::startHandshake() {
 }
 
 void DtlsChannel::onHandshakeDone(bool success) {
-    dtls_state_ = success ? DtlsState::Connected : DtlsState::Failed;
-    on_disconnected_();
+    if (success) {
+        dtls_state_ = DtlsState::Connected;
+        on_connected_();
+    }
+    else {
+        dtls_state_ = DtlsState::Failed;
+        on_disconnected_();
+    }
 }
 
 void DtlsChannel::writeToNetwork(const uint8_t* data, uint32_t size) {
