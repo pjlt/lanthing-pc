@@ -160,7 +160,6 @@ void P2P::on_endpoint_info(const EndpointInfo& info) {
 
 void P2P::on_read(Endpoint* ep, const uint8_t* data, uint32_t size, int64_t time_us) {
     (void)ep;
-    LOG(INFO) << "ON READ " << size;
     on_read_(data, size, time_us);
 }
 

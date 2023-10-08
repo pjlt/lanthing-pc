@@ -102,7 +102,7 @@ bool KeyAndCertImpl::createInternal() {
         return false;
     }
     ret =
-        mbedtls_rsa_gen_key(mbedtls_pk_rsa(key_), mbedtls_ctr_drbg_random, drbg.get(), 1024, 65537);
+        mbedtls_rsa_gen_key(mbedtls_pk_rsa(key_), mbedtls_ctr_drbg_random, drbg.get(), 2048, 65537);
     if (ret != 0) {
         LOG(ERR) << "mbedtls_rsa_gen_key failed: " << ret;
         return false;

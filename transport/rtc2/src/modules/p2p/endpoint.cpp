@@ -143,17 +143,14 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
         LOG(WARNING) << "shared_this<Endpoint> == nullptr";
         return;
     }
-    LOG(INFO) << "Endpoint on read";
     StunMessage msg{reinterpret_cast<const uint8_t*>(data),
                     reinterpret_cast<const uint8_t*>(data) + size};
     if (msg.verify()) {
         switch (msg.type()) {
         case StunMessage::Type::BindingRequest:
-            LOG(INFO) << "BindingRequest";
             on_binding_request(msg, remote_addr, packet_time_us);
             break;
         case StunMessage::Type::BindingResponse:
-            LOG(INFO) << "BindingrResponse";
             on_binding_response(msg, remote_addr, packet_time_us);
             break;
         default:
@@ -163,11 +160,10 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
     }
     else {
         if (connected()) {
-            LOG(INFO) << "ON_READ_ CONNECTED";
             on_read_(this, data, size, packet_time_us);
         }
         else {
-            LOG(INFO) << "Onread but not connected";
+            LOG(INFO) << "Endpoint::on_read but not connected";
         }
     }
 }

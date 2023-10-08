@@ -120,7 +120,6 @@ bool MbedDtls::onNetworkData(const uint8_t* data, uint32_t size) {
     }
     int state = ssl_.MBEDTLS_PRIVATE(state);
     if (is_handshake_continue(state)) {
-        LOG(INFO) << "CONTINUE HANSHAKE";
         auto hs_state = continue_handshake();
         if (hs_state == HandshakeState::COMPLETE) {
             on_handshake_done_(true);
@@ -131,7 +130,6 @@ bool MbedDtls::onNetworkData(const uint8_t* data, uint32_t size) {
         }
     }
     else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
-        LOG(INFO) << "HANSHAKE OVER";
         enum TLS_RESULT rc = (TLS_RESULT)read_app_from_ssl();
         switch (rc) {
         case TLS_OK:
@@ -199,6 +197,7 @@ bool MbedDtls::tls_init_context() {
     mbedtls_ssl_conf_read_timeout(&ssl_cfg_, 1000);
 
     mbedtls_ssl_conf_own_cert(&ssl_cfg_, key_cert_->cert(), key_cert_->key());
+    mbedtls_ssl_conf_ca_chain(&ssl_cfg_, key_cert_->cert(), nullptr);
 
     if (is_server_) {
         // 这个场景不用管DoS，禁掉cookie没问题
@@ -358,7 +357,6 @@ int MbedDtls::BIO::put(const uint8_t* buf, size_t len) {
     STAILQ_INSERT_TAIL(&message_q, m, next);
     available += len;
     qlen += 1;
-    LOG(INFO) << "AVAIABLE " << available;
 
     return static_cast<int>(len);
 }

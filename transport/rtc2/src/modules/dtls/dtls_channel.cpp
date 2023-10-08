@@ -193,7 +193,6 @@ void DtlsChannel::onNetworkConnected(const EndpointInfo& local, const EndpointIn
     (void)used_time_ms;
     (void)local;
     (void)remote;
-    LOG(INFO) << "DtlsChannel::onNetworkConnected";
     if (network_connected_) {
         LOG(INFO) << "Underlying network changed";
         return;
@@ -211,7 +210,6 @@ void DtlsChannel::onNetworkConnected(const EndpointInfo& local, const EndpointIn
 }
 
 void DtlsChannel::onReadNetPacket(const uint8_t* data, uint32_t size, int64_t time_us) {
-    LOG(INFO) << "onReadNetPacket " << size;
     switch (dtls_state()) {
     case DtlsState::New:
         // 没有收到onConnected事件却收到包，说明写bug了。暂时保留WebRTC的逻辑，后面再做错误处理
