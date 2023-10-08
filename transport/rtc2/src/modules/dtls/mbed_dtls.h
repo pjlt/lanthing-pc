@@ -96,14 +96,13 @@ private:
     bool init();
     bool tls_init_context();
     bool tls_init_engine();
-    int tls_write(const uint8_t* data, uint32_t data_len, uint8_t* out, uint32_t* out_bytes,
-                  uint32_t maxout);
-    int tls_read(const uint8_t* ssl_in, uint32_t ssl_in_len, uint8_t* out, uint32_t* out_bytes,
-                 uint32_t maxout);
-    HandshakeState continue_handshake(const uint8_t* in, uint32_t in_bytes, uint8_t* out,
-                                      uint32_t* out_bytes, uint32_t maxout);
-    static int mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len);
-    static int mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len);
+    // 将业务数据写入SSL
+    int write_app_to_ssl(const uint8_t* data, uint32_t data_len);
+    // 将解密后的业务数据从SSL中读出来
+    int read_app_from_ssl();
+    HandshakeState continue_handshake();
+    static int ssl_send_cb(void* ctx, const uint8_t* buf, size_t len);
+    static int ssl_recv_cb(void* ctx, uint8_t* buf, size_t len);
     static int verify_cert(void* data, mbedtls_x509_crt* crt, int depth, uint32_t* flags);
 
 private:
@@ -121,9 +120,8 @@ private:
     mbedtls_ssl_context ssl_;
     mbedtls_ctr_drbg_context drbg_;
     mbedtls_entropy_context entropy_;
-    mbedtls_timing_delay_context timer_;
+    mbedtls_timing_delay_context timer_{};
     BIO* bio_in_ = nullptr;
-    BIO* bio_out_ = nullptr;
     std::vector<int> ciphersuites_;
 };
 

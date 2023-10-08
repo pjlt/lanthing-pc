@@ -81,12 +81,6 @@ MbedDtls::~MbedDtls() {
     mbedtls_ssl_free(&ssl_);
     mbedtls_entropy_free(&entropy_);
     mbedtls_ctr_drbg_free(&drbg_);
-    if (bio_in_ != nullptr) {
-        BIO::destroy(bio_in_);
-    }
-    if (bio_out_ != nullptr) {
-        BIO::destroy(bio_out_);
-    }
 }
 
 MbedDtls::MbedDtls(const Params& params)
@@ -116,24 +110,15 @@ bool MbedDtls::init() {
 }
 
 bool MbedDtls::startHandshake() {
-    uint32_t buffer_len = 0;
-    continue_handshake(nullptr, 0, buffer_.data(), &buffer_len,
-                       static_cast<uint32_t>(buffer_.size()));
-    if (buffer_len != 0) {
-        write_to_network_(buffer_.data(), buffer_len);
-    }
+    continue_handshake();
     return true;
 }
 
 bool MbedDtls::onNetworkData(const uint8_t* data, uint32_t size) {
+    bio_in_->put(data, size);
     int state = ssl_.MBEDTLS_PRIVATE(state);
     if (is_handshake_continue(state)) {
-        uint32_t buff_len;
-        auto hs_state = continue_handshake(data, size, buffer_.data(), &buff_len,
-                                           static_cast<uint32_t>(buffer_.size()));
-        if (buff_len > 0) {
-            write_to_network_(buffer_.data(), buff_len);
-        }
+        auto hs_state = continue_handshake();
         if (hs_state == HandshakeState::COMPLETE) {
             on_handshake_done_(true);
         }
@@ -143,75 +128,24 @@ bool MbedDtls::onNetworkData(const uint8_t* data, uint32_t size) {
         }
     }
     else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
-        uint32_t outbuff_len = 0;
-        enum TLS_RESULT rc = TLS_MORE_AVAILABLE;
-        while (rc == TLS_MORE_AVAILABLE || rc == TLS_READ_AGAIN) {
-            rc = (TLS_RESULT)tls_read(data, size, buffer_.data(), &outbuff_len,
-                                      static_cast<uint32_t>(buffer_.size()));
-            switch (rc) {
-            case TLS_OK:
-                if (outbuff_len > 0) {
-                    on_receive_(buffer_.data(), outbuff_len);
-                }
-                break;
-            case TLS_EOF:
-                if (outbuff_len > 0) {
-                    on_receive_(buffer_.data(), outbuff_len);
-                }
-                on_eof_();
-                return false;
-            case TLS_READ_AGAIN:
-            case TLS_MORE_AVAILABLE:
-                if (outbuff_len > 0) {
-                    on_receive_(buffer_.data(), outbuff_len);
-                }
-                //??
-                break;
-            case TLS_HAS_WRITE:
-            {
-                std::vector<uint8_t> writebuf(32 * 1023);
-                uint32_t writebuf_len = 0;
-                int tls_rc = tls_write(nullptr, 0, writebuf.data(), &writebuf_len,
-                                       static_cast<uint32_t>(writebuf.size()));
-                (void)tls_rc; // FIXME: handle tls_rc，不过给了32KB的buffer，应该不用处理？
-                if (writebuf_len > 0) {
-                    write_to_network_(writebuf.data(), writebuf_len);
-                }
-                break;
-            }
-            case TLS_ERR:
-            default:
-                if (outbuff_len > 0) {
-                    on_receive_(buffer_.data(), outbuff_len);
-                }
-                LOG(ERR) << "Unexpected TLS result:" << rc;
-                on_tls_error_(); // 有必要？
-                return false;
-            }
+        enum TLS_RESULT rc = (TLS_RESULT)read_app_from_ssl();
+        switch (rc) {
+        case TLS_OK:
+            break;
+        case TLS_EOF:
+            on_eof_();
+            break;
+        case TLS_ERR:
+        default:
+            on_tls_error_();
+            return false;
         }
     }
     return true;
 }
 
 bool MbedDtls::send(const uint8_t* data, uint32_t size) {
-    uint32_t out_size = 0;
-    int tls_rc = tls_write(data, size, nullptr, &out_size, 0);
-    if (tls_rc < 0) {
-        return false;
-    }
-    else if (tls_rc > 0) {
-        tls_rc = tls_write(nullptr, 0, buffer_.data(), &out_size, tls_rc);
-        if (tls_rc < 0) {
-            return false;
-        }
-        else {
-            write_to_network_(buffer_.data(), out_size);
-            return true;
-        }
-    }
-    else {
-        return true;
-    }
+    return write_app_to_ssl(data, size) >= 0;
 }
 
 bool MbedDtls::tls_init_context() {
@@ -283,14 +217,12 @@ bool MbedDtls::tls_init_engine() {
     mbedtls_ssl_set_mtu(&ssl_, 1400); // 可否中途换
     mbedtls_ssl_set_timer_cb(&ssl_, &timer_, mbedtls_timing_set_delay, mbedtls_timing_get_delay);
     bio_in_ = BIO::create();
-    bio_out_ = BIO::create();
-    mbedtls_ssl_set_bio(&ssl_, this, mbed_ssl_send, mbed_ssl_recv, nullptr);
+    mbedtls_ssl_set_bio(&ssl_, this, ssl_send_cb, ssl_recv_cb, nullptr);
     return true;
 }
 
-int MbedDtls::tls_write(const uint8_t* data, uint32_t data_len, uint8_t* out, uint32_t* out_bytes,
-                        uint32_t maxout) {
-    size_t wrote = 0;
+int MbedDtls::write_app_to_ssl(const uint8_t* data, uint32_t data_len) {
+    uint32_t wrote = 0;
     while (data_len > wrote) {
         int rc = mbedtls_ssl_write(&ssl_, (const unsigned char*)(data + wrote), data_len - wrote);
         if (rc < 0) {
@@ -298,62 +230,38 @@ int MbedDtls::tls_write(const uint8_t* data, uint32_t data_len, uint8_t* out, ui
         }
         wrote += rc;
     }
-    *out_bytes = bio_out_->read(reinterpret_cast<uint8_t*>(out), maxout);
-    return static_cast<int>(bio_out_->available);
+    return wrote;
 }
 
-int MbedDtls::tls_read(const uint8_t* ssl_in, uint32_t ssl_in_len, uint8_t* out,
-                       uint32_t* out_bytes, uint32_t maxout) {
-    if (ssl_in_len > 0 && ssl_in != NULL) {
-        bio_in_->put(reinterpret_cast<const uint8_t*>(ssl_in), ssl_in_len);
-    }
-
-    int rc;
-    uint8_t* writep = (uint8_t*)out;
-    size_t total_out = 0;
-
-    do {
-        rc = mbedtls_ssl_read(&ssl_, writep, maxout - total_out);
-
-        if (rc > 0) {
-            total_out += rc;
-            writep += rc;
+int MbedDtls::read_app_from_ssl() {
+    int ret = 1;
+    while (ret > 0) {
+        ret = mbedtls_ssl_read(&ssl_, buffer_.data(), buffer_.size());
+        if (ret > 0) {
+            on_receive_(buffer_.data(), ret);
         }
-    } while (rc > 0 && (maxout - total_out) > 0);
-
-    *out_bytes = static_cast<uint32_t>(total_out);
-
-    if (rc == MBEDTLS_ERR_SSL_WANT_READ) {
-        return bio_out_->available > 0 ? TLS_HAS_WRITE : TLS_OK;
     }
 
-    if (rc == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
+        return TLS_OK;
+    }
+
+    if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
         return TLS_EOF;
     }
 
-    if (rc < 0) {
+    if (ret < 0) {
         char err[1024];
-        mbedtls_strerror(rc, err, 1024);
-        LOGF(ERR, "TLS error: %#x(%s)", rc, err);
+        mbedtls_strerror(ret, err, 1024);
+        LOGF(ERR, "TLS error: %#x(%s)", ret, err);
         return TLS_ERR;
     }
-
-    if (bio_in_->available > 0 || mbedtls_ssl_check_pending(&ssl_)) {
-        return TLS_MORE_AVAILABLE;
-    }
-
     return TLS_OK;
 }
 
-MbedDtls::HandshakeState MbedDtls::continue_handshake(const uint8_t* in, uint32_t in_bytes,
-                                                      uint8_t* out, uint32_t* out_bytes,
-                                                      uint32_t maxout) {
-    if (in_bytes > 0) {
-        bio_in_->put(reinterpret_cast<const uint8_t*>(in), in_bytes);
-    }
+MbedDtls::HandshakeState MbedDtls::continue_handshake() {
     // FIXME: 这里没有处理MBEDTLS_SSL_HELLO_REQUEST，会不会出问题？
     int state = mbedtls_ssl_handshake(&ssl_);
-    *out_bytes = bio_out_->read(reinterpret_cast<uint8_t*>(out), maxout);
 
     if (ssl_.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HANDSHAKE_OVER) {
         return HandshakeState::COMPLETE;
@@ -369,13 +277,13 @@ MbedDtls::HandshakeState MbedDtls::continue_handshake(const uint8_t* in, uint32_
     }
 }
 
-int MbedDtls::mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len) {
+int MbedDtls::ssl_send_cb(void* ctx, const uint8_t* buf, size_t len) {
     auto that = reinterpret_cast<MbedDtls*>(ctx);
-    that->bio_out_->put(buf, len);
+    that->write_to_network_(buf, static_cast<uint32_t>(len));
     return static_cast<int>(len);
 }
 
-int MbedDtls::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len) {
+int MbedDtls::ssl_recv_cb(void* ctx, uint8_t* buf, size_t len) {
     auto that = reinterpret_cast<MbedDtls*>(ctx);
     if (that->bio_in_->available == 0) {
         return MBEDTLS_ERR_SSL_WANT_READ;
