@@ -108,16 +108,16 @@ bool DtlsChannel::init() {
 }
 
 void DtlsChannel::startHandshake() {
+    if (dtls_state() != DtlsState::New && dtls_state() != DtlsState::Connecting) {
+        return;
+    }
     if (!mbed_->startHandshake()) {
+        LOG(INFO) << "START HANDSHAKE FAILED";
         dtls_state_ = DtlsState::Failed;
         return;
     }
     dtls_state_ = DtlsState::Connecting;
-    if (!cached_client_hello_.empty()) {
-        checkAndHandleDtlsPacket(cached_client_hello_.data(),
-                                 static_cast<uint32_t>(cached_client_hello_.size()));
-        cached_client_hello_.clear();
-    }
+    network_channel_->postDelay(50, std::bind(&DtlsChannel::startHandshake, this));
 }
 
 void DtlsChannel::onHandshakeDone(bool success) {
@@ -185,7 +185,7 @@ bool DtlsChannel::checkAndHandleDtlsPacket(const uint8_t* data, uint32_t size) {
         tmp_data += record_len + kDtlsRecordHeaderLen;
         tmp_size -= record_len + kDtlsRecordHeaderLen;
     }
-    return mbed_->onNetworkData(tmp_data, tmp_size);
+    return mbed_->onNetworkData(data, size);
 }
 
 void DtlsChannel::onNetworkConnected(const EndpointInfo& local, const EndpointInfo& remote,
@@ -193,6 +193,7 @@ void DtlsChannel::onNetworkConnected(const EndpointInfo& local, const EndpointIn
     (void)used_time_ms;
     (void)local;
     (void)remote;
+    LOG(INFO) << "DtlsChannel::onNetworkConnected";
     if (network_connected_) {
         LOG(INFO) << "Underlying network changed";
         return;
@@ -210,20 +211,17 @@ void DtlsChannel::onNetworkConnected(const EndpointInfo& local, const EndpointIn
 }
 
 void DtlsChannel::onReadNetPacket(const uint8_t* data, uint32_t size, int64_t time_us) {
+    LOG(INFO) << "onReadNetPacket " << size;
     switch (dtls_state()) {
     case DtlsState::New:
         // 没有收到onConnected事件却收到包，说明写bug了。暂时保留WebRTC的逻辑，后面再做错误处理
         LOG(WARNING) << "Packet received before DTLS started.";
 
         if (IsDtlsClientHelloPacket(data, size)) {
-            LOG(INFO) << "Caching DTLS ClientHello packet until DTLS is "
-                         "started.";
-            cached_client_hello_.resize(size);
-            memcpy(cached_client_hello_.data(), data, size);
-            startHandshake();
+            LOG(ERR) << "Received DTLS ClientHello before connected";
         }
         else {
-            LOG(INFO) << "Not a DTLS ClientHello packet; dropping.";
+            LOG(INFO) << "Received unknown packet before connected";
         }
         break;
 
