@@ -123,6 +123,8 @@ int32_t UDPSocketImpl::sendmsg(std::vector<std::span<const uint8_t>> spans, cons
     for (size_t i = 0; i < spans.size(); i++) {
         buffs[i].base = reinterpret_cast<char*>(const_cast<uint8_t*>(spans[i].data()));
         buffs[i].len = static_cast<decltype(uv_buf_t::len)>(spans[i].size());
+        LOG(INFO) << "sendmsg " << i << " " << (void*)buffs[i].base << " " << buffs[i].len << " "
+                  << addr.to_string();
     }
     send_req->data = this;
     auto storage = addr.to_storage();
@@ -159,16 +161,16 @@ void UDPSocketImpl::on_udp_recv(uv_udp_t* handle, ssize_t nread, const uv_buf_t*
                                 const sockaddr* addr, unsigned flags) {
     // 在我的使用场景里，这个flags似乎不用处理
     (void)flags;
+    LOG(INFO) << "nread " << nread << " buf " << buf << " addr " << addr << " flags " << flags;
     auto that = reinterpret_cast<UDPSocketImpl*>(handle->data);
-    if (nread < 0) {
+    if (nread <= 0) {
         that->error_ = static_cast<int32_t>(nread);
         delete buf->base;
         // TODO: 通知错误
         return;
     }
     if (that->on_read_ != nullptr) {
-        // 整个过程没有复制，IPv4情况下应该不会爆炸吧？
-        auto address = Address::from_storage(*reinterpret_cast<const sockaddr_storage*>(addr));
+        auto address = Address::from_sockaddr(addr);
         that->on_read_(reinterpret_cast<const uint8_t*>(buf->base), static_cast<uint32_t>(nread),
                        address, ltlib::steady_now_us());
     }

@@ -35,14 +35,6 @@
 
 namespace rtc2 {
 
-const EndpointInfo& Endpoint::local_info() const {
-    return local_;
-}
-
-const EndpointInfo& Endpoint::remote_info() const {
-    return remote_;
-}
-
 void Endpoint::post_task(const std::function<void()>& task) {
     auto weak_this = weak_from_this();
     network_channel_->post([weak_this, task]() {
@@ -63,14 +55,6 @@ void Endpoint::post_delayed_task(uint32_t delayed_ms, const std::function<void()
         }
         task();
     });
-}
-
-void Endpoint::add_remote_info(const EndpointInfo& info) {
-    if (remote_.type != EndpointType::Unknown) {
-        return;
-    }
-    remote_ = info;
-    send_binding_request(remote_.address);
 }
 
 Endpoint::Endpoint(std::unique_ptr<UDPSocket>&& socket, NetworkChannel* network_channel,
@@ -94,10 +78,9 @@ void Endpoint::send_binding_request(const Address& addr) {
     int ret = sock()->sendmsg({{msg.data(), msg.size()}}, addr);
     if (ret < 0) {
         int error = socket_->error();
-        LOG(ERR) << "Send binding request to " << remote_.address.to_string()
-                     << " failed with error " << error;
+        LOG(ERR) << "Send binding request to " << addr.to_string() << " failed with error "
+                 << error;
     }
-    post_delayed_task(100, std::bind(&Endpoint::send_binding_request, this, addr));
 }
 
 bool Endpoint::connected() const {
@@ -106,14 +89,12 @@ bool Endpoint::connected() const {
 
 void Endpoint::set_received_request() {
     received_request_ = true;
+    maybe_connected();
 }
 
 void Endpoint::set_received_response() {
     received_response_ = true;
-}
-
-void Endpoint::set_local_info(const EndpointInfo& info) {
-    local_ = info;
+    maybe_connected();
 }
 
 void Endpoint::maybe_connected() {

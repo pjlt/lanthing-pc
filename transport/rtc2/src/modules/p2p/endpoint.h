@@ -56,9 +56,9 @@ public:
     virtual int32_t send(std::vector<std::span<const uint8_t>> spans) = 0;
     virtual EndpointType type() const = 0;
 
-    void add_remote_info(const EndpointInfo& info);
-    const EndpointInfo& local_info() const;
-    const EndpointInfo& remote_info() const;
+    virtual void add_remote_info(const EndpointInfo& info) = 0;
+    virtual const EndpointInfo& local_info() const = 0;
+    virtual const EndpointInfo& remote_info() const = 0;
 
     void post_task(const std::function<void()>& task);
     void post_delayed_task(uint32_t delayed_ms, const std::function<void()>& task);
@@ -72,7 +72,6 @@ protected:
     bool connected() const;
     void set_received_request();
     void set_received_response();
-    void set_local_info(const EndpointInfo& info);
 
 private:
     void maybe_connected();
@@ -89,8 +88,6 @@ private:
     std::function<void(Endpoint*)> on_connected_;
     bool received_request_ = false;
     bool received_response_ = false;
-    EndpointInfo local_{};
-    EndpointInfo remote_{};
     NetworkChannel* network_channel_;
 };
 

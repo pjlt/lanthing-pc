@@ -37,13 +37,14 @@
 #else
 #endif
 
+#include <ltlib/logging.h>
+
 namespace rtc2 {
 
 #if defined(LT_WINDOWS)
 
-// 后面试试libuv，不搞那么多#if
-Address getNetcardAddress() {
-    Address result{};
+std::vector<Address> getNetcardAddress() {
+    std::vector<Address> result{};
     ULONG flags = (GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
                    GAA_FLAG_INCLUDE_PREFIX);
     ULONG buffer_size = 16 * 16384;
@@ -63,8 +64,22 @@ Address getNetcardAddress() {
             adapters = adapters->Next;
             continue;
         }
-        if (adapters->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
-            adapters = adapters->Next;
+
+        // if (adapters->FirstUnicastAddress) {
+        //     sockaddr_in* addr =
+        //         reinterpret_cast<sockaddr_in*>(adapters->FirstUnicastAddress->Address.lpSockaddr);
+        //     sockaddr_storage storage{};
+        //     memcpy(&storage, addr, sizeof(sockaddr_in));
+        //     auto toprint = Address::from_storage(storage);
+        //     // 昏古7了，WSL的IfType居然是IF_TYPE_ETHERNET_CSMACD
+        //     // 只能把所有地址都回调出去，哪个通了用哪个
+        //     LOG(INFO) << adapters->IfType << " " << toprint.to_string();
+        // }
+        if (adapters->IfType != IF_TYPE_ETHERNET_CSMACD &&
+            adapters->IfType != IF_TYPE_ETHERNET_3MBIT && adapters->IfType != IF_TYPE_IEEE80212 &&
+            adapters->IfType != IF_TYPE_FASTETHER && adapters->IfType != IF_TYPE_FASTETHER_FX &&
+            adapters->IfType != IF_TYPE_GIGABITETHERNET && adapters->IfType != IF_TYPE_IEEE80211 &&
+            adapters->IfType != IF_TYPE_WWANPP && adapters->IfType != IF_TYPE_WWANPP2) {
             continue;
         }
         PIP_ADAPTER_UNICAST_ADDRESS address = adapters->FirstUnicastAddress;
@@ -72,8 +87,8 @@ Address getNetcardAddress() {
             sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(address->Address.lpSockaddr);
             sockaddr_storage storage{};
             memcpy(&storage, addr, sizeof(sockaddr_in));
-            result = Address::from_storage(storage);
-            return result;
+            auto new_addr = Address::from_storage(storage);
+            result.push_back(new_addr);
         }
         adapters = adapters->Next;
     }

@@ -192,13 +192,11 @@ bool ConnectionImpl::init() {
     if (dtls_ == nullptr) {
         return false;
     }
-    if (params_.is_server) {
-        network_channel_->start();
-    }
     return true;
 }
 
 void ConnectionImpl::start() {
+    started_ = true;
     network_channel_->start();
 }
 
@@ -251,6 +249,10 @@ void ConnectionImpl::onSignalingMessage(const std::string& key, const std::strin
     if (info.address.family() != AF_INET) {
         LOG(ERR) << "Invalid address " << addr;
         return;
+    }
+    if (params_.is_server && !started_) {
+        started_ = true;
+        network_channel_->start();
     }
     network_channel_->addRemoteInfo(info);
 }
@@ -330,8 +332,6 @@ void ConnectionImpl::onDtlsDisconnected() {
     LOG(INFO) << "Disconnected";
 }
 
-// 原本让EndpointInfo回调到上层，让上层按照自己的方式做序列化会更好
-// 但具体到这个项目，lanthing和rtc2是一体的，你我之间不必拿刻度尺分太清，怎么方便怎么来
 void ConnectionImpl::onEndpointInfo(const EndpointInfo& info) {
     std::ostringstream oss;
     oss << FieldType << " " << to_str(info.type) << " " << FieldAddr << " "
