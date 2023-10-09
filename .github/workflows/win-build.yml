@@ -1,0 +1,10 @@
+name: Windows
+# for test
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Echo Test
+        run: |
+          echo "It works."
