@@ -35,6 +35,14 @@ function check_build_type() {
     }
 }
 
+function rtc_fetch() {
+    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.1.0/rtc.zip"
+    New-Item -ItemType Directory -ErrorAction SilentlyContinue transport/rtc
+    echo "Fetch $RtcUri"
+    Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.zip
+    Expand-Archive ./third_party/prebuilt/rtc.zip -DestinationPath ./transport/rtc
+}
+
 class BuiltLib {
     [string]$Name
     [string]$Uri
@@ -71,6 +79,8 @@ function prebuilt_fetch() {
         Expand-Archive ./third_party/prebuilt/$LibName.zip -DestinationPath ./third_party/prebuilt/$LibName
         # exit_if_fail
     }
+
+    rtc_fetch
 }
 
 function prebuilt_clean() {

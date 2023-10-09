@@ -13,6 +13,3 @@
 [submodule "third_party/imgui"]
 	path = third_party/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "transport/rtc"]
-	path = transport/rtc
-	url = https://github.com/pjlt/rtc.git
