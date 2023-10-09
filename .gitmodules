@@ -1,48 +1,18 @@
-[submodule "third_party/g3log"]
-	path = third_party/g3log
-	url = https://github.com/KjellKod/g3log.git
-[submodule "third_party/libuv"]
-	path = third_party/libuv
-	url = https://github.com/libuv/libuv.git
-[submodule "third_party/protobuf"]
-	path = third_party/protobuf
-	url = https://github.com/protocolbuffers/protobuf.git
 [submodule "third_party/utfcpp"]
 	path = third_party/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git
-[submodule "third_party/mbedtls"]
-	path = third_party/mbedtls
-	url = https://github.com/Mbed-TLS/mbedtls.git
-[submodule "third_party/SDL"]
-	path = third_party/SDL
-	url = https://github.com/libsdl-org/SDL.git
 [submodule "ltproto"]
 	path = ltproto
 	url = https://github.com/pjlt/ltproto.git
-[submodule "third_party/googletest"]
-	path = third_party/googletest
-	url = https://github.com/google/googletest.git
 [submodule "third_party/breakpad"]
 	path = third_party/breakpad
 	url = https://github.com/google/breakpad.git
-[submodule "third_party/ffmpeg"]
-	path = third_party/ffmpeg
-	url = https://github.com/pjlt/ffmpeg.git
 [submodule "rtc"]
 	path = rtc
 	url = https://github.com/pjlt/rtc.git
-[submodule "third_party/oneVPL"]
-	path = third_party/oneVPL
-	url = https://github.com/oneapi-src/oneVPL.git
-[submodule "third_party/opus"]
-	path = third_party/opus
-	url = https://github.com/xiph/opus.git
 [submodule "third_party/imgui"]
 	path = third_party/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "third_party/ViGEmClient"]
-	path = third_party/ViGEmClient
-	url = https://github.com/nefarius/ViGEmClient.git
 [submodule "transport/rtc"]
 	path = transport/rtc
 	url = https://github.com/pjlt/rtc.git
