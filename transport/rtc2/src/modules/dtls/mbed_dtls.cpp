@@ -147,6 +147,7 @@ bool MbedDtls::onNetworkData(const uint8_t* data, uint32_t size) {
 }
 
 bool MbedDtls::send(const uint8_t* data, uint32_t size) {
+    LOG(DEBUG) << "MbedDtls::send " << size;
     return write_app_to_ssl(data, size) >= 0;
 }
 

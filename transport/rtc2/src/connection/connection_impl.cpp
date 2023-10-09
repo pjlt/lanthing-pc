@@ -164,16 +164,6 @@ bool ConnectionImpl::init() {
         audio_receive_streams_.push_back(std::make_shared<AudioReceiveStream>(param));
     }
 
-    // message channel
-    MessageChannel::Params msg_param{};
-    msg_param.network_channel = network_channel_.get();
-    msg_param.reliable_ssrc = 0;
-    msg_param.half_reliable_ssrc = 0;
-    msg_param.mtu = 1400;
-    msg_param.sndwnd = 128;
-    msg_param.rcvwnd = 128;
-    message_channel_ = std::make_shared<MessageChannel>(msg_param);
-
     // dtls channel
     DtlsChannel::Params dtls_params{};
     dtls_params.is_server = params_.is_server;
@@ -192,6 +182,25 @@ bool ConnectionImpl::init() {
     if (dtls_ == nullptr) {
         return false;
     }
+
+    // message channel
+    MessageChannel::Params msg_param{};
+    msg_param.reliable_ssrc = 0;
+    msg_param.half_reliable_ssrc = 0;
+    msg_param.dtls = dtls_.get();
+    msg_param.network_channel = network_channel_.get();
+    msg_param.callback_thread = recv_thread_.get();
+    // msg_param.on_message = params_.data.on_data;
+    // 测试用
+    msg_param.on_message = [](const uint8_t* data, uint32_t size, bool) {
+        std::string msg{reinterpret_cast<const char*>(data), size};
+        LOG(INFO) << "received: " << msg.c_str();
+    };
+    msg_param.mtu = 1400;
+    msg_param.sndwnd = 128;
+    msg_param.rcvwnd = 128;
+    message_channel_ = MessageChannel::create(msg_param);
+
     return true;
 }
 
@@ -326,6 +335,8 @@ void ConnectionImpl::onDtlsPacket(const uint8_t* data, uint32_t size, int64_t ti
 
 void ConnectionImpl::onDtlsConnected() {
     LOG(INFO) << "Connected";
+    std::vector<uint8_t> msg = {'h', 'e', 'l', 'l', 'o'};
+    message_channel_->sendMessage(msg.data(), static_cast<uint32_t>(msg.size()), true);
 }
 
 void ConnectionImpl::onDtlsDisconnected() {

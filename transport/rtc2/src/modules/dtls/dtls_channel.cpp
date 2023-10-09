@@ -131,6 +131,7 @@ void DtlsChannel::onHandshakeDone(bool success) {
 }
 
 void DtlsChannel::writeToNetwork(const uint8_t* data, uint32_t size) {
+    LOG(DEBUG) << "writeToNetwork " << size;
     std::span<const uint8_t> span{data, data + size};
     network_channel_->sendPacket({span});
 }
@@ -156,7 +157,7 @@ DtlsState DtlsChannel::dtls_state() const {
 }
 
 int DtlsChannel::sendPacket(const uint8_t* data, uint32_t size, bool bypass) {
-
+    LOG(DEBUG) << "DTLS send packet " << size;
     switch (dtls_state()) {
     case DtlsState::Connected:
         if (bypass) {

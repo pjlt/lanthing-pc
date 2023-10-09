@@ -67,11 +67,12 @@ public:
     };
 
 public:
-    MessageChannel(const Params& params);
+    static std::shared_ptr<MessageChannel> create(const Params& params);
     bool sendMessage(const uint8_t* data, uint32_t size, bool reliable);
     void onRecvData(const uint8_t* data, uint32_t size, int64_t time_us);
 
 private:
+    MessageChannel(const Params& params);
     void sendToNetwork(const uint8_t* data, uint32_t size);
     void onRecvReliable(const uint8_t* data, uint32_t size);
     void periodicUpdate(std::weak_ptr<MessageChannel> weak_this);
