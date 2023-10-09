@@ -7,4 +7,4 @@ jobs:
     steps:
       - name: Echo Test
         run: |
-          echo "It works."
+          echo "It works2."
