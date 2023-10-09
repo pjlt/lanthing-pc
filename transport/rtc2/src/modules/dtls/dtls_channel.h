@@ -96,7 +96,6 @@ private:
     DtlsState dtls_state_ = DtlsState::New;
     bool is_server_ = false;
     bool network_connected_ = false;
-    std::vector<uint8_t> cached_client_hello_;
     std::function<void()> on_connected_;
     std::function<void()> on_disconnected_;
     std::function<void(const uint8_t*, uint32_t, int64_t)> on_read_packet_;

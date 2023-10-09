@@ -38,6 +38,15 @@
 
 namespace rtc2 {
 
+std::shared_ptr<MessageChannel> MessageChannel::create(const Params& params) {
+    std::shared_ptr<MessageChannel> channel{new MessageChannel{params}};
+    // 构造函数不能用weak_from_this
+    params.network_channel->postDelay(
+        10 /*ms*/,
+        std::bind(&MessageChannel::periodicUpdate, channel.get(), channel->weak_from_this()));
+    return channel;
+}
+
 MessageChannel::MessageChannel(const Params& params)
     : reliable_ssrc_{params.reliable_ssrc}
     , half_reliable_ssrc_{params.half_reliable_ssrc}
@@ -52,8 +61,6 @@ MessageChannel::MessageChannel(const Params& params)
     reliable_params.on_recv = std::bind(&MessageChannel::onRecvReliable, this,
                                         std::placeholders::_1, std::placeholders::_2);
     reliable_ = std::make_shared<ReliableMessageChannel>(reliable_params);
-    network_channel_->postDelay(10 /*ms*/,
-                                std::bind(&MessageChannel::periodicUpdate, this, weak_from_this()));
 }
 
 // 跑在用户线程

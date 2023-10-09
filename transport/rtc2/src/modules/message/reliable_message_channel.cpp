@@ -32,7 +32,6 @@
 #include "ikcp.h"
 
 #include <ltlib/logging.h>
-
 #include <ltlib/times.h>
 
 namespace rtc2 {
@@ -55,6 +54,7 @@ ReliableMessageChannel::~ReliableMessageChannel() {
 }
 
 bool ReliableMessageChannel::sendData(const uint8_t* data, uint32_t size) {
+    LOG(DEBUG) << "reliable senddata " << size;
     int ret = ikcp_send(kcp_, reinterpret_cast<const char*>(data), static_cast<int>(size));
     return ret >= 0;
 }
@@ -78,6 +78,7 @@ void ReliableMessageChannel::periodicUpdate() {
 
 int ReliableMessageChannel::onKcpOutput(const char* buf, int len, ikcpcb* kcp, void* user) {
     (void)kcp;
+    LOG(DEBUG) << "kcp output " << len;
     auto that = reinterpret_cast<ReliableMessageChannel*>(user);
     that->send_to_network_(reinterpret_cast<const uint8_t*>(buf), static_cast<uint32_t>(len));
     return len;

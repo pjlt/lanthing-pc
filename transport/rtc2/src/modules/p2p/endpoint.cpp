@@ -160,11 +160,10 @@ void Endpoint::on_read(std::weak_ptr<Endpoint> weak_this, const uint8_t* data, u
     }
     else {
         if (connected()) {
-            LOG(INFO) << "ON_READ_ CONNECTED";
             on_read_(this, data, size, packet_time_us);
         }
         else {
-            LOG(INFO) << "Onread but not connected";
+            LOG(INFO) << "Endpoint::on_read but not connected";
         }
     }
 }
