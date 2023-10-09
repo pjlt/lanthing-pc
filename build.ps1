@@ -8,27 +8,27 @@ function exit_if_fail {
 }
 
 function cmake_configure() {
-    Invoke-Expression "cmake -B build/$script:target_type -DCMAKE_BUILD_TYPE=$script:target_type -DCMAKE_INSTALL_PREFIX=install/$script:target_type"
+    Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     exit_if_fail
 }
 
 function cmake_build() {
     # Github Actions runners only have 2 cores
-    Invoke-Expression "cmake --build build/$script:target_type --parallel 2 --config $script:target_type --target install"
+    Invoke-Expression "cmake --build build/$script:build_type --parallel 2 --config $script:build_type --target install"
     exit_if_fail
 }
 
 function cmake_clean() {
-    Invoke-Expression "cmake --build build/$script:target_type --target clean"
+    Invoke-Expression "cmake --build build/$script:build_type --target clean"
 }
 
-function check_target_type() {
-    if ($script:target_type -eq "debug") {
-        $script:target_type = "Debug"
+function check_build_type() {
+    if ($script:build_type -eq "debug") {
+        $script:build_type = "Debug"
         Write-Host -ForegroundColor Green Debug
-    } elseif ($script:target_type -eq "release") {
+    } elseif ($script:build_type -eq "release") {
         Write-Host -ForegroundColor Green Release
-        $script:target_type = "Release"
+        $script:build_type = "Release"
     } else {
         Write-Host -ForegroundColor Red 'Please specify target type [ Debug | Release ]'
         Exit -1
@@ -63,7 +63,8 @@ function prebuilt_fetch() {
 
     foreach ($lib in $libs) {
         $LibName = $lib.Name
-        echo "Fetch $lib.Uri"
+        $LibUri = $lib.Uri
+        echo "Fetch $LibUri"
         Invoke-WebRequest -Uri $lib.Uri -OutFile ./third_party/prebuilt/$LibName.zip
         # exit_if_fail
         echo "Unzip $LibName"
@@ -96,12 +97,12 @@ if ($action -eq "prebuilt") {
         Exit -1
     }
 } elseif ($action -eq "clean") {
-    $script:target_type=$args[1]
-    check_target_type
+    $script:build_type=$args[1]
+    check_build_type
     cmake_clean
 } elseif ($action -eq "build") {
-    $script:target_type=$args[1]
-    check_target_type
+    $script:build_type=$args[1]
+    check_build_type
     cmake_configure
     cmake_build
 } else {
