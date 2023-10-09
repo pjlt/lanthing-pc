@@ -13,7 +13,8 @@ function cmake_configure() {
 }
 
 function cmake_build() {
-    Invoke-Expression "cmake --build build/$script:target_type --config $script:target_type --target install"
+    # Github Actions runners only have 2 cores
+    Invoke-Expression "cmake --build build/$script:target_type --parallel 2 --config $script:target_type --target install"
     exit_if_fail
 }
 
@@ -54,7 +55,7 @@ function prebuilt_fetch() {
         [BuiltLib]::new("opus", "https://github.com/numbaa/opus-build/releases/download/v1.4-1/opus.zip"),
         [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-1/g3log.zip"),
         [BuiltLib]::new("googletest", "https://github.com/numbaa/googletest-build/releases/download/v1.13.0-1/googletest.zip"),
-        [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v4.4.4-2/ffmpeg.zip"),
+        [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-3/ffmpeg.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-1/protobuf.zip")
     )
 
@@ -62,8 +63,12 @@ function prebuilt_fetch() {
 
     foreach ($lib in $libs) {
         $LibName = $lib.Name
+        echo "Fetch $lib.Uri"
         Invoke-WebRequest -Uri $lib.Uri -OutFile ./third_party/prebuilt/$LibName.zip
+        # exit_if_fail
+        echo "Unzip $LibName"
         Expand-Archive ./third_party/prebuilt/$LibName.zip -DestinationPath ./third_party/prebuilt/$LibName
+        # exit_if_fail
     }
 }
 
@@ -91,12 +96,13 @@ if ($action -eq "prebuilt") {
         Exit -1
     }
 } elseif ($action -eq "clean") {
+    $script:target_type=$args[1]
     check_target_type
     cmake_clean
 } elseif ($action -eq "build") {
     $script:target_type=$args[1]
     check_target_type
-    cmake_project
+    cmake_configure
     cmake_build
 } else {
     print_usage
