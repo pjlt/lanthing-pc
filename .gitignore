@@ -37,12 +37,14 @@
 /.vs
 /build
 /install
+/third_party/prebuilt
+/transport/rtc
 CMakeSettings.json
 options-user.cmake
 
+
 # misc
 draft.txt
-/third_party/Video_Codec*
 fonts/
 icons/
 .VSCodeCounter
