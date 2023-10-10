@@ -120,7 +120,7 @@ void Service::mainLoop(const std::function<void()>& i_am_alive) {
 }
 
 bool Service::initSettings() {
-    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Toml);
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
     return settings_ != nullptr;
 }
 

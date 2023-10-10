@@ -146,7 +146,7 @@ bool App::init() {
 }
 
 bool App::initSettings() {
-    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Toml);
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
     return settings_ != nullptr;
 }
 
@@ -257,8 +257,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         std::lock_guard<std::mutex> lock{session_mutex_};
         auto result = sessions_.insert({request_id, nullptr});
         if (!result.second) {
-            LOG(ERR) << "Another task already connected/connecting to device_id:"
-                         << peerDeviceID;
+            LOG(ERR) << "Another task already connected/connecting to device_id:" << peerDeviceID;
             return;
         }
     }

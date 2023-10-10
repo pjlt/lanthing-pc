@@ -65,6 +65,7 @@ function prebuilt_fetch() {
         [BuiltLib]::new("googletest", "https://github.com/numbaa/googletest-build/releases/download/v1.13.0-1/googletest.zip"),
         [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-3/ffmpeg.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-1/protobuf.zip")
+        [BuiltLib]::new("sqlite", "https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-4/sqlite3.zip")
     )
 
     New-Item -ItemType Directory -ErrorAction SilentlyContinue third_party/prebuilt

@@ -37,7 +37,6 @@
 /.vs
 /build
 /install
-/third_party/prebuilt
 /transport/rtc
 CMakeSettings.json
 options-user.cmake
@@ -48,3 +47,16 @@ draft.txt
 fonts/
 icons/
 .VSCodeCounter
+
+/third_party/prebuilt
+/third_party/SDL
+/third_party/ViGEmClient
+/third_party/ffmpeg
+/third_party/g3log
+/third_party/googletest
+/third_party/libuv
+/third_party/mbedtls
+/third_party/oneVPL
+/third_party/opus
+/third_party/protobuf
+/third_party/tinyxml2
