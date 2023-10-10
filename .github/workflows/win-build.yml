@@ -6,12 +6,6 @@ jobs:
   build:
     runs-on: windows-2022
     steps:
-      - name: Print $GITHUB_WORKSPACE
-        run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo GITHUB_WORKSPACE=$GITHUB_WORKSPACE
-          echo github.workspace=${{ github.workspace }}
-          echo "github.workspace=${{ github.workspace }}"
       - name: Checkout
         with:
           submodules: true
@@ -32,6 +26,6 @@ jobs:
         run: ./build.ps1 build Release
       - name: Run Tests
         run: |
-          $Env:PATH = "$GITHUB_WORKSPACE/install/Release/bin;$Env:PATH"
+          $Env:PATH = "${{ github.workspace }}/install/Release/bin;$Env:PATH"
           cd ./build/Release
           ctest -C Release -V
