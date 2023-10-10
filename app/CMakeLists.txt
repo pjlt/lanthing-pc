@@ -6,9 +6,6 @@ set(CMAKE_AUTORCC ON)
 include (deploy_dlls)
 include (deploy_qt6)
 
-if(NOT DEFINED LT_QT_CMAKE_PATH)
-    message(FATAL_ERROR "LT_QT_CMAKE_PATH not set!")
-endif()
 list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui)
