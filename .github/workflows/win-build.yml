@@ -7,7 +7,11 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Print $GITHUB_WORKSPACE
-        run: echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo GITHUB_WORKSPACE=$GITHUB_WORKSPACE
+          echo github.workspace=${{ github.workspace }}
+          echo "github.workspace=${{ github.workspace }}"
       - name: Checkout
         with:
           submodules: true
