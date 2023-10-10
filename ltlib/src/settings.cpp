@@ -207,9 +207,10 @@ namespace ltlib {
 
 class SettingsToml : public Settings {
 public:
-    SettingsToml() = default;
+    SettingsToml(const std::string& path);
     ~SettingsToml() override = default;
     bool init() override;
+    Storage type() const override { return Storage::Toml; }
     void setBoolean(const std::string& key, bool value) override;
     auto getBoolean(const std::string& key) -> std::optional<bool> override;
     void setInteger(const std::string& key, int64_t value) override;
@@ -260,14 +261,10 @@ private:
     std::string filepath_;
 };
 
+SettingsToml::SettingsToml(const std::string& path)
+    : filepath_{path} {}
+
 bool SettingsToml::init() {
-    std::string appdatapath = ltlib::getAppdataPath(ltlib::isRunAsService());
-    if (appdatapath.empty()) {
-        return false;
-    }
-    std::filesystem::path filepath = appdatapath;
-    filepath = filepath / "lanthing" / "settings.toml";
-    filepath_ = filepath.string();
     auto file = std::fstream{filepath_, std::ios::in | std::ios::out | std::ios::app};
     if (file.fail()) {
         return false;
@@ -323,9 +320,10 @@ static bool validateStr(const std::string& str) {
 // 算了， TODO: 校验key和value
 class SettingsSqlite : public Settings {
 public:
-    SettingsSqlite() = default;
+    SettingsSqlite(const std::string& path);
     ~SettingsSqlite() override;
     bool init() override;
+    Storage type() const override { return Storage::Sqlite; }
     void setBoolean(const std::string& key, bool value) override;
     auto getBoolean(const std::string& key) -> std::optional<bool> override;
     void setInteger(const std::string& key, int64_t value) override;
@@ -337,6 +335,9 @@ private:
     sqlite3* db_ = nullptr;
     std::string filepath_;
 };
+
+SettingsSqlite::SettingsSqlite(const std::string& path)
+    : filepath_{path} {}
 
 SettingsSqlite::~SettingsSqlite() {
     if (db_ != nullptr) {
@@ -356,13 +357,6 @@ CREATE TABLE IF NOT EXISTS kv_settings(
 	"str_val"       TEXT,
 	"blob_val"      BLOB
 );)";
-    std::string appdatapath = ltlib::getAppdataPath(ltlib::isRunAsService());
-    if (appdatapath.empty()) {
-        return false;
-    }
-    std::filesystem::path filepath = appdatapath;
-    filepath = filepath / "lanthing" / "settings.db";
-    filepath_ = filepath.string();
     int ret = sqlite3_open(filepath_.c_str(), &db_);
     if (ret != SQLITE_OK) {
         LOG(ERR) << "sqlite3_open failed with " << ret;
@@ -489,7 +483,8 @@ void SettingsSqlite::setString(const std::string& key, const std::string& value)
     if (!validateStr(key)) {
         return;
     }
-    if (!validateStr(value)) {
+    // 允许空字符串
+    if (!value.empty() && !validateStr(value)) {
         return;
     }
     const char sql[] = R"(INSERT OR IGNORE INTO kv_settings (name, str_val) VALUES ('%s', '%s');
@@ -545,13 +540,24 @@ auto SettingsSqlite::getString(const std::string& key) -> std::optional<std::str
 //****************************************************************************
 
 std::unique_ptr<Settings> Settings::create(Storage type) {
+    std::string appdatapath = ltlib::getAppdataPath(ltlib::isRunAsService());
+    if (appdatapath.empty()) {
+        return nullptr;
+    }
+    std::filesystem::path filepath = appdatapath;
+    std::string filename = type == Storage::Toml ? "settings.toml" : "settings.db";
+    filepath = filepath / "lanthing" / filename;
+    return createWithPathForTest(type, filepath.string());
+}
+
+std::unique_ptr<Settings> Settings::createWithPathForTest(Storage type, const std::string& path) {
     std::unique_ptr<Settings> settings;
     switch (type) {
     case Settings::Storage::Toml:
-        settings = std::make_unique<SettingsToml>();
+        settings = std::make_unique<SettingsToml>(path);
         break;
     case Settings::Storage::Sqlite:
-        settings = std::make_unique<SettingsSqlite>();
+        settings = std::make_unique<SettingsSqlite>(path);
         break;
     default:
         break;

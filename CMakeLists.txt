@@ -78,6 +78,10 @@ else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 endif()
 
+if(${LT_ENABLE_TEST})
+    include(CTest)
+endif()
+
 add_subdirectory(third_party/tomlplusplus)
 add_subdirectory(third_party/utfcpp)
 add_subdirectory(third_party/nvcodec)

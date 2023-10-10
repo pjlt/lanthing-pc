@@ -24,3 +24,8 @@ jobs:
         run: ./build.ps1 prebuilt fetch
       - name: Build lanthing-pc
         run: ./build.ps1 build Release
+      - name: Run Tests
+        run: |
+          $Env:PATH = "$GITHUB_WORKSPACE/install/Release/bin;$Env:PATH"
+          cd ./build/Release
+          ctest -V
