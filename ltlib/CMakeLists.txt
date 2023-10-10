@@ -63,6 +63,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
      	winmm.lib
         utf8cpp
+        sqlite3
         protobuf::libprotobuf-lite
         uv
         tomlpp

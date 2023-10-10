@@ -85,6 +85,7 @@ add_subdirectory(third_party/amf)
 add_subdirectory(third_party/prebuilt/ffmpeg)
 add_subdirectory(third_party/breakpad_builder)
 #add_subdirectory(third_party/lodepng)
+add_subdirectory(third_party/prebuilt/sqlite)
 
 #protobuf依赖absl
 find_package(absl REQUIRED PATHS third_party/prebuilt/protobuf/${THIRD_PARTY_BUILD_TYPE}/lib/cmake)
