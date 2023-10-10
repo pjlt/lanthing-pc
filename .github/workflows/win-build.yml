@@ -6,6 +6,8 @@ jobs:
   build:
     runs-on: windows-2022
     steps:
+      - name: Print $GITHUB_WORKSPACE
+        run: echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
       - name: Checkout
         with:
           submodules: true
