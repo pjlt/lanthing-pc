@@ -431,7 +431,7 @@ void SettingsSqlite::setInteger(const std::string& key, int64_t value) {
         return;
     }
     const char sql[] = "INSERT OR IGNORE INTO kv_settings (name, int_val) VALUES ('%s', %" PRId64
-                       "); UPDATE kv_settings SET bool_val = %" PRId64 " WHERE name = '%s';";
+                       "); UPDATE kv_settings SET int_val = %" PRId64 " WHERE name = '%s';";
     std::array<char, 512> buff = {0};
     if (key.size() * 2 + sizeof(sql) > buff.size()) {
         LOG(ERR) << "setInteger failed, key too long";
