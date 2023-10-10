@@ -28,4 +28,4 @@ jobs:
         run: |
           $Env:PATH = "$GITHUB_WORKSPACE/install/Release/bin;$Env:PATH"
           cd ./build/Release
-          ctest -V
+          ctest -C Release -V
