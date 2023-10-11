@@ -9,22 +9,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="108"/>
+        <location filename="../src/views/link/mainpage.ui" line="111"/>
         <source>DEVICE ID</source>
         <translation>设备码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="115"/>
+        <location filename="../src/views/link/mainpage.ui" line="118"/>
         <source>ACCESS TOKEN</source>
         <translation>验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="122"/>
+        <location filename="../src/views/link/mainpage.ui" line="125"/>
         <source>********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="147"/>
+        <location filename="../src/views/link/mainpage.ui" line="150"/>
         <source>*********</source>
         <translation></translation>
     </message>
@@ -33,8 +33,8 @@
     <name>MainWindow</name>
     <message>
         <location filename="../src/views/mainwindow.ui" line="14"/>
-        <source>MainWindow</source>
-        <translation></translation>
+        <source>Lanthing</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -67,6 +67,16 @@
         <location filename="../src/views/menu/menu.ui" line="193"/>
         <source>Connecting server ...</source>
         <translation>正在连接服务器...</translation>
+    </message>
+    <message>
+        <location filename="../src/views/menu/menu.cpp" line="70"/>
+        <source>Connected with server</source>
+        <translation>已连接服务器</translation>
+    </message>
+    <message>
+        <location filename="../src/views/menu/menu.cpp" line="76"/>
+        <source>Disconnected with server</source>
+        <translation>连接已断开</translation>
     </message>
 </context>
 <context>
@@ -114,6 +124,21 @@
         <location filename="../src/views/setting/settingpage.ui" line="67"/>
         <source>Confirm</source>
         <translation>确认</translation>
+    </message>
+    <message>
+        <location filename="../src/views/setting/settingpage.ui" line="88"/>
+        <source>Fullscreen Mode</source>
+        <translation>全屏模式</translation>
+    </message>
+    <message>
+        <location filename="../src/views/setting/settingpage.ui" line="95"/>
+        <source>Fullscreen</source>
+        <translation>全屏独占</translation>
+    </message>
+    <message>
+        <location filename="../src/views/setting/settingpage.ui" line="102"/>
+        <source>Windowed Fullscreen</source>
+        <translation>窗口化全屏</translation>
     </message>
 </context>
 </TS>

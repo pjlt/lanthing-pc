@@ -43,9 +43,9 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>270</y>
+     <y>330</y>
      <width>391</width>
-     <height>181</height>
+     <height>121</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -69,6 +69,39 @@
        </widget>
       </item>
      </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="verticalLayoutWidget_2">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>200</y>
+     <width>301</width>
+     <height>91</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QLabel" name="label_fullscreen">
+      <property name="text">
+       <string>Fullscreen Mode</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="radio_fullscreen">
+      <property name="text">
+       <string>Fullscreen</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="radio_windowed_fullscreen">
+      <property name="text">
+       <string>Windowed Fullscreen</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

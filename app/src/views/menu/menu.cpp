@@ -67,13 +67,13 @@ void Menu::setLoginStatus(LoginStatus status) {
     else if (status == LoginStatus::LOGIN_SUCCESS) {
         ui->login_status_layout->removeWidget(login_progress_);
         login_progress_->setVisible(false);
-        ui->info_label->setText("connected with server");
+        ui->info_label->setText(tr("Connected with server"));
         ui->info_label->setStyleSheet("QLabel{}");
     }
     else if (status == LoginStatus::LOGIN_FAILED) {
         ui->login_status_layout->removeWidget(login_progress_);
         login_progress_->setVisible(false);
-        ui->info_label->setText("disconnected with server");
+        ui->info_label->setText(tr("Disconnected with server"));
         ui->info_label->setStyleSheet("QLabel{color: red}");
     }
 }

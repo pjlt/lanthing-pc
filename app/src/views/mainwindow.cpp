@@ -47,6 +47,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QStackedLayout>
 #include <QtWidgets/qmessagebox.h>
+#include <QtWidgets/qscrollarea.h>
 
 MainWindow::MainWindow(lt::App* a, QWidget* parent)
     : QMainWindow(parent)
@@ -67,8 +68,12 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
     auto* pages_layout = new QStackedLayout();
     auto* main_page = new QWidget();
     auto* setting_page = new QWidget();
-    pages_layout->addWidget(main_page);    // index 0
-    pages_layout->addWidget(setting_page); // index 1
+    auto* setting_scroll = new QScrollArea();
+    setting_scroll->setWidget(setting_page);
+    setting_scroll->setFrameShape(QFrame::Shape::NoFrame);
+    setting_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    pages_layout->addWidget(main_page);      // index 0
+    pages_layout->addWidget(setting_scroll); // index 1
     switch_to_main_page_ = [pages_layout]() { pages_layout->setCurrentIndex(0); };
     switch_to_setting_page_ = [pages_layout]() { pages_layout->setCurrentIndex(1); };
 

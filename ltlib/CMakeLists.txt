@@ -16,6 +16,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/settings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/time_sync.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/logging.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/singleton_process.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/client.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/server.h
@@ -35,6 +36,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/time_sync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/buffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/ioloop.cpp

@@ -97,7 +97,7 @@ void setLanguage(QApplication& application, QTranslator& translator) {
     QLocale locale;
     switch (locale.language()) {
     case QLocale::Chinese:
-        if (translator.load(":/i18n/zh_CN")) {
+        if (translator.load(":/i18n/lt-zh_CN")) {
             LOG(INFO) << "Language Chinese";
             application.installTranslator(&translator);
         }

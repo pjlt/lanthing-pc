@@ -51,7 +51,7 @@ add_executable(${PROJECT_NAME}
 
 qt_add_translations(${PROJECT_NAME}
     TS_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/zh_CN.ts
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/lt-zh_CN.ts
 )
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_lupdate)
 

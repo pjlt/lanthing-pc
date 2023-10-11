@@ -37,9 +37,9 @@
 
 #include <g3log/logworker.hpp>
 #include <lt_minidump_generator.h>
-#include <ltlib/logging.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/singleton_process.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -109,10 +109,12 @@ void initLogging() {
 } // namespace
 
 int main(int argc, char** argv) {
+    if (ltlib::makeSingletonProcess("lanthing_app")) {
+        printf("Another instance is running.\n");
+        return 0;
+    }
     auto now = time(nullptr);
-    ::srand(now); // 为什么这个srand不生效?
-    // auto rnd = rand();
-    // printf("main.now %lld, main.rnd %d", now, rnd);
+    ::srand(now);
     initLogging();
     std::unique_ptr<lt::App> app = lt::App::create();
     if (app == nullptr) {
