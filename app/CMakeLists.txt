@@ -21,8 +21,15 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client_session.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client_session.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_session.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_session.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_manager.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service_manager.cpp
+
     # views
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow.cpp

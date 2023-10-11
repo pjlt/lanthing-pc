@@ -34,6 +34,6 @@
 
 namespace ltlib {
 
-bool makeSingletonProcess(const std::string& name);
+bool LT_API makeSingletonProcess(const std::string& name);
 
 } // namespace ltlib

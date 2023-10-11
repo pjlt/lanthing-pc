@@ -82,17 +82,17 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/app.cpp" line="182"/>
+        <location filename="../src/app.cpp" line="222"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/app.cpp" line="183"/>
+        <location filename="../src/app.cpp" line="223"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/app.cpp" line="184"/>
+        <location filename="../src/app.cpp" line="224"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
