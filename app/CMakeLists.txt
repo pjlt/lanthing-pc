@@ -8,7 +8,7 @@ include (deploy_qt6)
 
 list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui LinguistTools)
 qt_standard_project_setup()
 get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
@@ -49,6 +49,12 @@ add_executable(${PROJECT_NAME}
     # VS安装QT扩展工具可以直接编辑
     ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
 
+qt_add_translations(${PROJECT_NAME}
+    TS_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/zh_CN.ts
+)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_lupdate)
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src FILES ${APP_SRCS} ${APP_UI_VIEWS})
 
 target_include_directories(${PROJECT_NAME}
@@ -70,6 +76,7 @@ target_link_libraries(${PROJECT_NAME}
         ltproto
         rtc
 )
+
 deploy_dlls(${PROJECT_NAME})
 deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 

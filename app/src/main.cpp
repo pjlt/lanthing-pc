@@ -109,7 +109,10 @@ void initLogging() {
 } // namespace
 
 int main(int argc, char** argv) {
-    ::srand(time(nullptr)); // 为什么这个srand不生效?
+    auto now = time(nullptr);
+    ::srand(now); // 为什么这个srand不生效?
+    // auto rnd = rand();
+    // printf("main.now %lld, main.rnd %d", now, rnd);
     initLogging();
     std::unique_ptr<lt::App> app = lt::App::create();
     if (app == nullptr) {

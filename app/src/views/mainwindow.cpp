@@ -96,8 +96,8 @@ MainWindow::MainWindow(lt::App* a, QWidget* parent)
     connect(setting_page_ui, &SettingPage::relayServerChanged,
             [this](const std::string& svr) { app->setRelayServer(svr); });
 
-    // FIXME: 还没有实现"登录逻辑"
     menu_ui->setLoginStatus(Menu::LoginStatus::LOGINING);
+    setFixedSize(sizeHint());
 }
 
 MainWindow::~MainWindow() {
@@ -144,7 +144,7 @@ void MainWindow::onLoginRet(ErrCode code, const std::string& err) {
             break;
         default:
             menu_ui->setLoginStatus(Menu::LoginStatus::LOGIN_FAILED);
-            LOG(FATAL) << "Unknown LoginRet " << static_cast<int32_t>(code);
+            LOG(WARNING) << "Unknown LoginRet " << static_cast<int32_t>(code);
             break;
         }
     });

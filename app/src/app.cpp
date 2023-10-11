@@ -50,6 +50,8 @@
 #include <QtWidgets/qmenu.h>
 #include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qwidget.h>
+#include <qobject.h>
+#include <qtranslator.h>
 
 using namespace ltlib::time;
 
@@ -89,6 +91,21 @@ std::string generateAccessToken() {
     }
     LOG(DEBUG) << "Generated access token: " << str.c_str();
     return str;
+}
+
+void setLanguage(QApplication& application, QTranslator& translator) {
+    QLocale locale;
+    switch (locale.language()) {
+    case QLocale::Chinese:
+        if (translator.load(":/i18n/zh_CN")) {
+            LOG(INFO) << "Language Chinese";
+            application.installTranslator(&translator);
+        }
+        break;
+    default:
+        LOG(INFO) << "Language English";
+        break;
+    }
 }
 
 } // namespace
@@ -133,8 +150,6 @@ bool App::init() {
     }
     else {
         access_token_ = generateAccessToken();
-        // FIXME: 对文件加锁、解锁、加锁太快会崩，这里的sleep是临时解决方案
-        std::this_thread::sleep_for(std::chrono::milliseconds{5});
         settings_->setString("access_token", access_token_);
     }
     ioloop_ = ltlib::IOLoop::create();
@@ -152,6 +167,8 @@ bool App::initSettings() {
 
 int App::exec(int argc, char** argv) {
     QApplication a(argc, argv);
+    QTranslator translator;
+    setLanguage(a, translator);
 
     QIcon icon(":/icons/icons/pc.png");
     QApplication::setWindowIcon(icon);
@@ -162,9 +179,9 @@ int App::exec(int argc, char** argv) {
 
     QSystemTrayIcon sys_tray_icon;
     QMenu* menu = new QMenu();
-    QAction* a0 = new QAction("主界面");
-    QAction* a1 = new QAction("设置");
-    QAction* a2 = new QAction("退出");
+    QAction* a0 = new QAction(QObject::tr("Main Page"));
+    QAction* a1 = new QAction(QObject::tr("Settings"));
+    QAction* a2 = new QAction(QObject::tr("Exit"));
     QObject::connect(a0, &QAction::triggered, [&w]() { w.show(); });
     QObject::connect(a1, &QAction::triggered, [&w]() {
         w.switchToSettingPage();
