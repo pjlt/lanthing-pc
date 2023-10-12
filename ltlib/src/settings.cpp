@@ -44,11 +44,7 @@
 #include <sstream>
 
 #include <sqlite3.h>
-//#pragma warning(disable : 6011)
-//#pragma warning(disable : 28119)
 #include <toml++/toml.h>
-//#pragma warning(default : 6011)
-//#pragma warning(default : 28119)
 
 #include <ltlib/logging.h>
 #include <ltlib/strings.h>
@@ -360,8 +356,8 @@ bool SettingsSqlite::init() {
     const char* kCreateTableSQL = R"(
 CREATE TABLE IF NOT EXISTS kv_settings(
 	"id"	        INTEGER PRIMARY KEY,
-	"created_at"	DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), 
-	"updated_at"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'localtime')),
+	"created_at"	DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP)),
+	"updated_at"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
 	"name"          TEXT UNIQUE NOT NULL,
 	"bool_val"      INTEGER,
 	"int_val"       INTEGER,
@@ -380,7 +376,6 @@ CREATE TABLE IF NOT EXISTS kv_settings(
         sqlite3_free(errmsg);
         return false;
     }
-    getUpdateTime("device_id");
     return true;
 }
 
@@ -553,7 +548,7 @@ auto SettingsSqlite::getUpdateTime(const std::string& key) -> std::optional<int6
     if (!validateStr(key)) {
         return std::nullopt;
     }
-    const char sql[] = "SELECT strftime('%s', updated_at) FROM kv_settings WHERE name = '%s';";
+    const char sql[] = "SELECT strftime('%%s', updated_at) FROM kv_settings WHERE name = '%s';";
     std::array<char, 128> buff = {0};
     if (key.size() + sizeof(sql) > buff.size()) {
         LOG(ERR) << "getString failed, key too long";
@@ -567,7 +562,7 @@ auto SettingsSqlite::getUpdateTime(const std::string& key) -> std::optional<int6
         [](void* op, int argc, char** argv, char**) -> int {
             std::optional<int64_t>* result = reinterpret_cast<std::optional<int64_t>*>(op);
             if (argc != 1 || argv[0] == nullptr) {
-                LOG(ERR) << "SELECT update_at failed";
+                LOG(ERR) << "SELECT updated_at failed";
                 return 0;
             }
             int64_t val = std::atoll(argv[0]);
