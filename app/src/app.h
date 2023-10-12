@@ -33,6 +33,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <QApplication>
 #include <google/protobuf/message_lite.h>
 
 #include <ltlib/io/client.h>
@@ -40,10 +41,9 @@
 #include <ltlib/settings.h>
 #include <ltlib/threads.h>
 
-#include "client/client_manager.h"
-
-#include "views/mainwindow.h"
-#include <QApplication>
+#include <client/client_manager.h>
+#include <service/service_manager.h>
+#include <views/mainwindow.h>
 
 namespace lt {
 
@@ -95,10 +95,13 @@ private:
     void loginDevice();
     void allocateDeviceID();
 
-    // message handler
     void handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    // service
+    bool initServiceManager();
+    void onConfirmConnection(int64_t device_id);
 
 private:
     std::mutex ioloop_mutex_;
@@ -106,6 +109,7 @@ private:
     std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::Settings> settings_;
     std::unique_ptr<ClientManager> client_manager_;
+    std::unique_ptr<ServiceManager> service_manager_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     int64_t device_id_ = 0;
     std::string access_token_;

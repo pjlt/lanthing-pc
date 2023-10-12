@@ -75,6 +75,9 @@ bool Service::init() {
     if (!initTcpClient()) {
         return false;
     }
+    if (!initAppClient()) {
+        return false;
+    }
     std::promise<void> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
@@ -115,6 +118,21 @@ bool Service::initTcpClient() {
 #undef MACRO_TO_STRING
 #undef MACRO_TO_STRING_HELPER
 
+bool Service::initAppClient() {
+    ltlib::Client::Params params{};
+    params.stype = ltlib::StreamType::Pipe;
+    params.ioloop = ioloop_.get();
+    params.pipe_name = "\\\\?\\pipe\\lanthing_service_manager";
+    params.is_tls = false;
+    params.on_closed = std::bind(&Service::onAppDisconnected, this);
+    params.on_connected = std::bind(&Service::onAppConnected, this);
+    params.on_message =
+        std::bind(&Service::onAppMessage, this, std::placeholders::_1, std::placeholders::_2);
+    params.on_reconnecting = std::bind(&Service::onAppReconnecting, this);
+    app_client_ = ltlib::Client::create(params);
+    return app_client_ != nullptr;
+}
+
 void Service::mainLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Lanthing service enter main loop";
     ioloop_->run(i_am_alive);
@@ -151,9 +169,18 @@ void Service::destroySession(const std::string& session_name) {
 }
 
 void Service::letUserConfirm(int64_t device_id) {
+    if (!app_connected_) {
+        LOG(WARNING) << "App not online, can't confirm connection";
+        auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        tcp_client_->send(ltproto::id(ack), ack);
+        worker_sessions_.erase(cached_worker_params_->name);
+        cached_worker_params_ = std::nullopt;
+        return;
+    }
     auto msg = std::make_shared<ltproto::peer2peer::ConfirmConnection>();
     msg->set_device_id(device_id);
-    // TODO: CLIENT
+    app_client_->send(ltproto::id(msg), msg);
 }
 
 void Service::postTask(const std::function<void()>& task) {

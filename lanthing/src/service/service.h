@@ -49,6 +49,7 @@ public:
 
 private:
     bool initTcpClient();
+    bool initAppClient();
     void mainLoop(const std::function<void()>& i_am_alive);
     bool initSettings();
     void createSession(const WorkerSession::Params& params);
@@ -96,6 +97,7 @@ private:
     std::map<std::string, std::shared_ptr<WorkerSession>> worker_sessions_;
     std::unique_ptr<ltlib::Settings> settings_;
     int64_t device_id_ = 0;
+    bool app_connected_ = false;
     std::optional<WorkerSession::Params> cached_worker_params_;
 };
 

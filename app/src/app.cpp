@@ -141,11 +141,11 @@ void setLanguage(QApplication& application, QTranslator& translator) {
             LOG(INFO) << "Language Chinese";
             application.installTranslator(&translator);
         }
-        break;
+        return;
     default:
-        LOG(INFO) << "Language English";
         break;
     }
+    LOG(INFO) << "Language English";
 }
 
 } // namespace
@@ -260,7 +260,9 @@ int App::exec(int argc, char** argv) {
     if (!initTcpClient()) {
         return false;
     }
-
+    if (!initServiceManager()) {
+        return false;
+    }
     thread_ = ltlib::BlockingThread::create(
         "io_thread", [this](const std::function<void()>& i_am_alive) { ioLoop(i_am_alive); });
 
@@ -536,6 +538,19 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
 
 void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     client_manager_->onRequestConnectionAck(msg);
+}
+
+bool App::initServiceManager() {
+    ServiceManager::Params params{};
+    params.ioloop = ioloop_.get();
+    params.on_confirm_connection =
+        std::bind(&App::onConfirmConnection, this, std::placeholders::_1);
+    service_manager_ = ServiceManager::create(params);
+    return service_manager_ != nullptr;
+}
+
+void App::onConfirmConnection(int64_t device_id) {
+    ui_->onConfirmConnection(device_id);
 }
 
 } // namespace lt

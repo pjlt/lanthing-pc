@@ -70,7 +70,7 @@ void initLogging() {
     std::string bin_path = ltlib::getProgramFullpath<char>();
     std::string bin_dir = ltlib::getProgramPath<char>();
     std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
-    std::string kPrefix = "ui";
+    std::string kPrefix = "app";
     std::filesystem::path log_dir;
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;

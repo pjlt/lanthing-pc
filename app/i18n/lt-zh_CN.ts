@@ -36,6 +36,16 @@
         <source>Lanthing</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../src/views/mainwindow.cpp" line="175"/>
+        <source>New Connection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow.cpp" line="176"/>
+        <source>Device %</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Menu</name>

@@ -30,13 +30,16 @@
 
 #include "service_manager.h"
 
+#include <ltproto/ltproto.h>
+#include <ltproto/peer2peer/confirm_connection.pb.h>
+
 #include <ltlib/logging.h>
 
 namespace lt {
 
 std::unique_ptr<ServiceManager> ServiceManager::create(const Params& params) {
     std::unique_ptr<ServiceManager> mgr{new ServiceManager{params}};
-    if (!mgr->init(params.ioloo)) {
+    if (!mgr->init(params.ioloop)) {
         return nullptr;
     }
     return mgr;
@@ -65,16 +68,31 @@ bool ServiceManager::init(ltlib::IOLoop* ioloop) {
 
 void ServiceManager::onPipeAccepted(uint32_t fd) {
     LOG(INFO) << "Service accepted " << fd;
+    fd_ = fd;
 }
 
 void ServiceManager::onPipeDisconnected(uint32_t fd) {
     LOG(INFO) << "Service disconnected " << fd;
+    fd_ = std::numeric_limits<uint32_t>::max();
 }
 
 void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     (void)msg;
     LOGF(DEBUG, "Received service %u msg %u", fd, type);
+    switch (type) {
+    case ltproto::type::kConfirmConnection:
+        onConfirmConnection(msg);
+        break;
+    default:
+        LOG(WARNING) << "ServiceManager received unknown messge type " << type;
+        break;
+    }
+}
+
+void ServiceManager::onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::peer2peer::ConfirmConnection>(_msg);
+    on_confirm_connection_(msg->device_id());
 }
 
 } // namespace lt

@@ -29,6 +29,7 @@
  */
 
 #pragma once
+#include <functional>
 #include <memory>
 
 #include <ltlib/io/ioloop.h>
@@ -40,7 +41,8 @@ namespace lt {
 class ServiceManager {
 public:
     struct Params {
-        ltlib::IOLoop* ioloo;
+        ltlib::IOLoop* ioloop;
+        std::function<void(int64_t)> on_confirm_connection;
     };
 
 public:
@@ -54,8 +56,11 @@ private:
     void onPipeMessage(uint32_t fd, uint32_t type,
                        std::shared_ptr<google::protobuf::MessageLite> msg);
 
+    void onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+
 private:
     std::unique_ptr<ltlib::Server> pipe_server_;
     uint32_t fd_ = std::numeric_limits<uint32_t>::max();
+    std::function<void(int64_t)> on_confirm_connection_;
 };
 } // namespace lt

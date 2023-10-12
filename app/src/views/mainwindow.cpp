@@ -169,6 +169,32 @@ void MainWindow::onLocalAccessToken(const std::string& access_token) {
         [this, access_token]() { main_page_ui->onUpdateLocalAccessToken(access_token); });
 }
 
+void MainWindow::onConfirmConnection(int64_t device_id) {
+    DispatchToMainThread([this, device_id]() {
+        QMessageBox msgbox{this};
+        msgbox.setWindowTitle(tr("New Connection"));
+        QString message = tr("Device %" PRId64 " is requesting connection");
+        msgbox.setText(message);
+        auto btn_accept = msgbox.addButton(tr(""), QMessageBox::ButtonRole::AcceptRole);
+        auto btn_yes_all = msgbox.addButton(tr(""), QMessageBox::ButtonRole::YesRole);
+        auto btn_reject = msgbox.addButton(tr(""), QMessageBox::ButtonRole::RejectRole);
+        msgbox.exec();
+        auto clicked_btn = msgbox.clickedButton();
+        if (clicked_btn == btn_accept) {
+            LOG(INFO) << "accept btn";
+        }
+        else if (clicked_btn == btn_yes_all) {
+            LOG(INFO) << "yes all btn";
+        }
+        else if (clicked_btn == btn_reject) {
+            LOG(INFO) << "REJECT btn";
+        }
+        else {
+            LOG(INFO) << "Unknown button";
+        }
+    });
+}
+
 void MainWindow::doInvite(const std::string& dev_id, const std::string& token) {
     int64_t deviceID = std::atoll(dev_id.c_str());
     if (deviceID != 0) {

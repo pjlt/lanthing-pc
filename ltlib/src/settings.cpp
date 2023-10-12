@@ -597,6 +597,7 @@ std::unique_ptr<Settings> Settings::createWithPathForTest(Storage type, const st
         settings = std::make_unique<SettingsSqlite>(path);
         break;
     case Settings::Storage::Toml:
+        [[fallthrough]];
     default:
         break;
     }

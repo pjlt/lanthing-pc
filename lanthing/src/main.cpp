@@ -188,12 +188,12 @@ int runAsClient(std::map<std::string, std::string> options) {
 }
 
 int runAsService(std::map<std::string, std::string> options) {
-    initLogAndMinidump(Role::Service);
-    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
-    if (ltlib::makeSingletonProcess("lanthing")) {
+    if (!ltlib::makeSingletonProcess("lanthing")) {
         printf("Another instance is running.\n");
         return -1;
     }
+    initLogAndMinidump(Role::Service);
+    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
     lt::svc::LanthingWinService svc;
     ltlib::ServiceApp app{&svc};

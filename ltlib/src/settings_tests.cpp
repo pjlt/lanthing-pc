@@ -62,7 +62,7 @@ TEST_F(SettingsSqliteTest, UpdateValue) {
 }
 
 TEST_F(SettingsSqliteTest, UpdateTime) {
-    // 不好测真正的update time
+    // UpdateTime是有Bug的，时间戳不更新，待修复
     auto now = ltlib::utc_now_ms() / 1000;
     settings_->setInteger("int_key", 1);
     auto updated_at = settings_->getUpdateTime("int_key");
