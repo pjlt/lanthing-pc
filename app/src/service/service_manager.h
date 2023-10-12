@@ -35,6 +35,8 @@
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/server.h>
 
+#include <ui.h>
+
 namespace lt {
 
 //
@@ -47,6 +49,7 @@ public:
 
 public:
     static std::unique_ptr<ServiceManager> create(const Params& params);
+    void onUserConfirmedConnection(int64_t device_id, ConfirmResult result);
 
 private:
     ServiceManager(const Params& params);

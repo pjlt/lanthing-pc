@@ -34,17 +34,32 @@
     <message>
         <location filename="../src/views/mainwindow.ui" line="14"/>
         <source>Lanthing</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow.cpp" line="175"/>
         <source>New Connection</source>
-        <translation type="unfinished"></translation>
+        <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow.cpp" line="176"/>
-        <source>Device %</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/views/mainwindow.cpp" line="177"/>
+        <source>Device %s is requesting connection</source>
+        <translation type="unfinished">设备 %s 正在请求连接</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow.cpp" line="181"/>
+        <source>Accept</source>
+        <translation>同意</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow.cpp" line="183"/>
+        <source>Accept, as well as next time</source>
+        <translation>同意，下次不再提醒</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow.cpp" line="184"/>
+        <source>Reject</source>
+        <translation>拒绝</translation>
     </message>
 </context>
 <context>
@@ -92,17 +107,17 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/app.cpp" line="222"/>
+        <location filename="../src/app.cpp" line="231"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/app.cpp" line="223"/>
+        <location filename="../src/app.cpp" line="232"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/app.cpp" line="224"/>
+        <location filename="../src/app.cpp" line="233"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>

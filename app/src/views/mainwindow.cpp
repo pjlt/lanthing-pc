@@ -173,25 +173,35 @@ void MainWindow::onConfirmConnection(int64_t device_id) {
     DispatchToMainThread([this, device_id]() {
         QMessageBox msgbox{this};
         msgbox.setWindowTitle(tr("New Connection"));
-        QString message = tr("Device %" PRId64 " is requesting connection");
-        msgbox.setText(message);
-        auto btn_accept = msgbox.addButton(tr(""), QMessageBox::ButtonRole::AcceptRole);
-        auto btn_yes_all = msgbox.addButton(tr(""), QMessageBox::ButtonRole::YesRole);
-        auto btn_reject = msgbox.addButton(tr(""), QMessageBox::ButtonRole::RejectRole);
+        std::string id_str = std::to_string(device_id);
+        QString message = tr("Device %s is requesting connection");
+        std::vector<char> buffer(128);
+        snprintf(buffer.data(), buffer.size(), message.toStdString().c_str(), id_str.c_str());
+        msgbox.setText(buffer.data());
+        auto btn_accept = msgbox.addButton(tr("Accept"), QMessageBox::ButtonRole::YesRole);
+        auto btn_accept_next_time =
+            msgbox.addButton(tr("Accept, as well as next time"), QMessageBox::ButtonRole::YesRole);
+        auto btn_reject = msgbox.addButton(tr("Reject"), QMessageBox::ButtonRole::RejectRole);
         msgbox.exec();
         auto clicked_btn = msgbox.clickedButton();
+        lt::ConfirmResult result = lt::ConfirmResult::Reject;
         if (clicked_btn == btn_accept) {
-            LOG(INFO) << "accept btn";
+            result = lt::ConfirmResult::Accept;
+            LOG(INFO) << "User accept";
         }
-        else if (clicked_btn == btn_yes_all) {
-            LOG(INFO) << "yes all btn";
+        else if (clicked_btn == btn_accept_next_time) {
+            result = lt::ConfirmResult::AcceptWithNextTime;
+            LOG(INFO) << "User accept, as well as next time";
         }
         else if (clicked_btn == btn_reject) {
-            LOG(INFO) << "REJECT btn";
+            result = lt::ConfirmResult::Reject;
+            LOG(INFO) << "User reject";
         }
         else {
-            LOG(INFO) << "Unknown button";
+            result = lt::ConfirmResult::Reject;
+            LOG(INFO) << "Unknown button, treat as reject";
         }
+        app->onUserConfirmedConnection(device_id, result);
     });
 }
 

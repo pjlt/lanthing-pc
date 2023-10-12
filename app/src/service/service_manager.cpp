@@ -32,6 +32,7 @@
 
 #include <ltproto/ltproto.h>
 #include <ltproto/peer2peer/confirm_connection.pb.h>
+#include <ltproto/peer2peer/confirm_connection_ack.pb.h>
 
 #include <ltlib/logging.h>
 
@@ -45,9 +46,8 @@ std::unique_ptr<ServiceManager> ServiceManager::create(const Params& params) {
     return mgr;
 }
 
-ServiceManager::ServiceManager(const Params& params) {
-    (void)params;
-}
+ServiceManager::ServiceManager(const Params& params)
+    : on_confirm_connection_{params.on_confirm_connection} {}
 
 bool ServiceManager::init(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
@@ -93,6 +93,25 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
 void ServiceManager::onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::peer2peer::ConfirmConnection>(_msg);
     on_confirm_connection_(msg->device_id());
+}
+
+void ServiceManager::onUserConfirmedConnection(int64_t device_id, ConfirmResult result) {
+    auto ack = std::make_shared<ltproto::peer2peer::ConfirmConnectionAck>();
+    ack->set_device_id(device_id);
+    switch (result) {
+    case ConfirmResult::Accept:
+        ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Agree);
+        break;
+    case ConfirmResult::AcceptWithNextTime:
+        ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_AgreeNextTime);
+        break;
+    case ConfirmResult::Reject:
+        [[fallthrough]];
+    default:
+        ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Reject);
+        break;
+    }
+    pipe_server_->send(fd_, ltproto::id(ack), ack);
 }
 
 } // namespace lt

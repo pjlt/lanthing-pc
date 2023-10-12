@@ -196,6 +196,15 @@ bool App::init() {
     if (ioloop_ == nullptr) {
         return false;
     }
+    if (!initTcpClient()) {
+        return false;
+    }
+    if (!initServiceManager()) {
+        return false;
+    }
+    if (!initClientManager()) {
+        return false;
+    }
     loadHistoryIDs();
     return true;
 }
@@ -256,13 +265,6 @@ int App::exec(int argc, char** argv) {
     sys_tray_icon.show();
     w.show();
 
-    // XXX: 暂时先放到这里
-    if (!initTcpClient()) {
-        return false;
-    }
-    if (!initServiceManager()) {
-        return false;
-    }
     thread_ = ltlib::BlockingThread::create(
         "io_thread", [this](const std::function<void()>& i_am_alive) { ioLoop(i_am_alive); });
 
@@ -311,6 +313,10 @@ void App::enableRunAsDaemon(bool enable) {
 void App::setRelayServer(const std::string& svr) {
     relay_server_ = svr;
     settings_->setString("relay", svr);
+}
+
+void App::onUserConfirmedConnection(int64_t device_id, ConfirmResult result) {
+    service_manager_->onUserConfirmedConnection(device_id, result);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -551,6 +557,19 @@ bool App::initServiceManager() {
 
 void App::onConfirmConnection(int64_t device_id) {
     ui_->onConfirmConnection(device_id);
+}
+
+bool App::initClientManager() {
+    ClientManager::Params params{};
+    params.ioloop = ioloop_.get();
+    params.on_launch_client_success;
+    params.post_delay_task =
+        std::bind(&App::postDelayTask, this, std::placeholders::_1, std::placeholders ::_2);
+    params.post_task = std::bind(&App::postTask, this, std::placeholders::_1);
+    params.send_message =
+        std::bind(&App::sendMessage, this, std::placeholders::_1, std::placeholders ::_2);
+    client_manager_ = ClientManager::create(params);
+    return client_manager_ != NULL;
 }
 
 } // namespace lt

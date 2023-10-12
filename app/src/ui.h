@@ -37,6 +37,8 @@
 
 namespace lt {
 
+enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
+
 class UiCallback {
 public:
     enum class ErrCode : uint8_t {

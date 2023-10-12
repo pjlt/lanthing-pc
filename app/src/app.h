@@ -66,6 +66,7 @@ public:
     void enableRefreshAccessToken(bool enable);
     void enableRunAsDaemon(bool enable);
     void setRelayServer(const std::string& svr);
+    void onUserConfirmedConnection(int64_t device_id, ConfirmResult result);
 
 private:
     App();
@@ -102,6 +103,9 @@ private:
     // service
     bool initServiceManager();
     void onConfirmConnection(int64_t device_id);
+
+    //
+    bool initClientManager();
 
 private:
     std::mutex ioloop_mutex_;

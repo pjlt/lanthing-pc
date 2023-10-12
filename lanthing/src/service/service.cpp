@@ -180,7 +180,7 @@ void Service::letUserConfirm(int64_t device_id) {
     }
     auto msg = std::make_shared<ltproto::peer2peer::ConfirmConnection>();
     msg->set_device_id(device_id);
-    app_client_->send(ltproto::id(msg), msg);
+    sendMessageToApp(ltproto::id(msg), msg);
 }
 
 void Service::postTask(const std::function<void()>& task) {
@@ -275,6 +275,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3);
+    cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
     constexpr int64_t kSecondsPerWeek = int64_t(60) * 60 * 24 * 7;
@@ -391,15 +392,25 @@ void Service::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::Mess
     }
 }
 
-void Service::onAppDisconnected() {}
+void Service::onAppDisconnected() {
+    LOG(INFO) << "Disconnected from App";
+    app_connected_ = false;
+}
 
-void Service::onAppReconnecting() {}
+void Service::onAppReconnecting() {
+    if (app_connected_) {
+        LOG(INFO) << "Reconnecting to App...";
+        app_connected_ = false;
+    }
+}
 
-void Service::onAppConnected() {}
+void Service::onAppConnected() {
+    LOG(INFO) << "Connected to App";
+    app_connected_ = true;
+}
 
 void Service::sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    (void)type;
-    (void)msg;
+    app_client_->send(type, msg);
 }
 
 void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
