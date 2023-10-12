@@ -371,6 +371,7 @@ void Service::onAppReconnecting() {}
 void Service::onAppConnected() {}
 
 void Service::sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)type;
     (void)msg;
 }
 

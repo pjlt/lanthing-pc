@@ -163,8 +163,8 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
 void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::RequestConnectionAck>(_msg);
     if (ack->err_code() != ltproto::server::RequestConnectionAck_ErrCode_Success) {
-        LOGF(WARNING, "RequestConnection(device_id:%d, request_id:%d) failed", ack->device_id(),
-             ack->request_id());
+        LOGF(WARNING, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
+             ack->device_id(), ack->request_id());
         std::lock_guard<std::mutex> lock{session_mutex_};
         sessions_.erase(ack->request_id());
         return;
@@ -195,26 +195,30 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
         std::lock_guard<std::mutex> lock{session_mutex_};
         auto iter = sessions_.find(ack->request_id());
         if (iter == sessions_.end()) {
-            LOGF(INFO, "Received RequestConnectionAck(device_id:%d, request_id:%d), but too late",
+            LOGF(INFO,
+                 "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64
+                 "), but too late",
                  ack->device_id(), ack->request_id());
             return;
         }
         else if (iter->second != nullptr) {
             LOGF(INFO,
-                 "Received RequestConnectionAck(device_id:%d, request_id:%d), but another session "
+                 "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64
+                 "), but another session "
                  "already started",
                  ack->device_id(), ack->request_id());
             return;
         }
         else {
             iter->second = session;
-            LOGF(INFO, "Received RequestConnectionAck(device_id:, request_id:%d)", ack->device_id(),
-                 ack->request_id());
+            LOGF(INFO,
+                 "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64 ")",
+                 ack->device_id(), ack->request_id());
         }
     }
     if (!session->start()) {
-        LOGF(INFO, "Start session(device_id:%d, request_id:%d) failed", ack->device_id(),
-             ack->request_id());
+        LOGF(INFO, "Start session(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
+             ack->device_id(), ack->request_id());
         std::lock_guard<std::mutex> lock{session_mutex_};
         sessions_.erase(ack->request_id());
     }
