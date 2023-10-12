@@ -69,7 +69,7 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set_code_analysis(${PROJECT_NAME})
+set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
 
@@ -90,7 +90,7 @@ deploy_dlls(${PROJECT_NAME})
 deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 
 install(TARGETS ${PROJECT_NAME})
-install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
+install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
 
 # …Ë÷√VSµ˜ ‘¬∑æ∂
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

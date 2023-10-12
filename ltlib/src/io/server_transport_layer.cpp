@@ -296,6 +296,7 @@ void LibuvSTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         if (!that->on_read_(conn->fd, buff)) {
             that->close(conn->fd);
         }
+        delete uvbuf->base;
     }
 }
 

@@ -298,6 +298,7 @@ void LibuvCTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         if (!that->on_read_(buff)) {
             that->reconnect();
         }
+        delete uvbuf->base;
     }
 }
 

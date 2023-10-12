@@ -562,7 +562,8 @@ void App::onConfirmConnection(int64_t device_id) {
 bool App::initClientManager() {
     ClientManager::Params params{};
     params.ioloop = ioloop_.get();
-    params.on_launch_client_success;
+    params.on_launch_client_success =
+        std::bind(&App::onLaunchClientSuccess, this, std::placeholders::_1);
     params.post_delay_task =
         std::bind(&App::postDelayTask, this, std::placeholders::_1, std::placeholders ::_2);
     params.post_task = std::bind(&App::postTask, this, std::placeholders::_1);

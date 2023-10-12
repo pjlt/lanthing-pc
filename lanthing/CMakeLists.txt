@@ -155,7 +155,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DBUILDING_LT_EXE=1)
 
-set_code_analysis(${PROJECT_NAME})
+set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
 
 if(LT_WINDOWS)
