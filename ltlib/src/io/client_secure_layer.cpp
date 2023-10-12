@@ -29,28 +29,26 @@
  */
 
 #include "client_secure_layer.h"
-#include <ltlib/logging.h>
-#include <mbedtls/error.h>
 #include "client_transport_layer.h"
 
-namespace
-{
+#include <mbedtls/error.h>
 
-void tls_debug_log(void* ctx, int level, const char* file, int line, const char* str)
-{
+#include <ltlib/logging.h>
+
+namespace {
+
+void tls_debug_log(void* ctx, int level, const char* file, int line, const char* str) {
     (void)ctx;
     LOGF(DEBUG, "tlslog: [%d] [%s:%d] %s", level, file, line, str);
 }
 
 } // namespace
 
-namespace ltlib
-{
+namespace ltlib {
 
 constexpr uint32_t TLS_BUF_SZ = 32 * 1024;
 
-enum TLS_RESULT
-{
+enum TLS_RESULT {
     TLS_OK = 0,
     TLS_ERR = -1,
     TLS_EOF = -2,
@@ -59,8 +57,7 @@ enum TLS_RESULT
     TLS_HAS_WRITE = -5,
 };
 
-struct msg
-{
+struct msg {
     size_t len;
     uint8_t* buf;
 
@@ -68,29 +65,24 @@ struct msg
     next;
 };
 
-bool is_handshake_continue(int state)
-{
+bool is_handshake_continue(int state) {
     return state != MBEDTLS_SSL_HANDSHAKE_OVER && state != MBEDTLS_SSL_HELLO_REQUEST;
 }
 
 MbedtlsCTransport::MbedtlsCTransport(const Params& params)
-    : uvtransport_ { make_uv_params(params) }
-    , on_connected_ { params.on_connected }
-    , on_closed_ { params.on_closed }
-    , on_reconnecting_ { params.on_reconnecting }
-    , on_read_ { params.on_read }
+    : uvtransport_{make_uv_params(params)}
+    , on_connected_{params.on_connected}
+    , on_closed_{params.on_closed}
+    , on_reconnecting_{params.on_reconnecting}
+    , on_read_{params.on_read}
     , more_buffer_(TLS_BUF_SZ)
-    , cert_content_ { params.cert }
-{
-}
+    , cert_content_{params.cert} {}
 
-MbedtlsCTransport::~MbedtlsCTransport()
-{
+MbedtlsCTransport::~MbedtlsCTransport() {
     mbedtls_ctr_drbg_free(&drbg_);
 }
 
-bool MbedtlsCTransport::init()
-{
+bool MbedtlsCTransport::init() {
     if (!tls_init_context()) {
         return false;
     }
@@ -103,21 +95,24 @@ bool MbedtlsCTransport::init()
     return true;
 }
 
-bool MbedtlsCTransport::tls_init_context()
-{
+bool MbedtlsCTransport::tls_init_context() {
     mbedtls_ssl_config_init(&ssl_cfg_);
     mbedtls_ssl_conf_dbg(&ssl_cfg_, tls_debug_log, nullptr);
-    mbedtls_ssl_config_defaults(&ssl_cfg_, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+    mbedtls_ssl_config_defaults(&ssl_cfg_, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
+                                MBEDTLS_SSL_PRESET_DEFAULT);
     mbedtls_ssl_conf_renegotiation(&ssl_cfg_, MBEDTLS_SSL_RENEGOTIATION_ENABLED);
     mbedtls_ssl_conf_authmode(&ssl_cfg_, MBEDTLS_SSL_VERIFY_REQUIRED);
     ::memset(&entropy_, 0, sizeof(entropy_));
     mbedtls_entropy_init(&entropy_);
     mbedtls_ctr_drbg_init(&drbg_);
-    std::unique_ptr<uint8_t[]> seed { new uint8_t[MBEDTLS_ENTROPY_MAX_SEED_SIZE] };
-    mbedtls_ctr_drbg_seed(&drbg_, mbedtls_entropy_func, &entropy_, seed.get(), MBEDTLS_ENTROPY_MAX_SEED_SIZE);
+    std::unique_ptr<uint8_t[]> seed{new uint8_t[MBEDTLS_ENTROPY_MAX_SEED_SIZE]};
+    mbedtls_ctr_drbg_seed(&drbg_, mbedtls_entropy_func, &entropy_, seed.get(),
+                          MBEDTLS_ENTROPY_MAX_SEED_SIZE);
     mbedtls_ssl_conf_rng(&ssl_cfg_, mbedtls_ctr_drbg_random, &drbg_);
     mbedtls_x509_crt_init(&own_cert_);
-    int ret = mbedtls_x509_crt_parse(&own_cert_, reinterpret_cast<const unsigned char*>(cert_content_.c_str()), cert_content_.size() + 1);
+    int ret = mbedtls_x509_crt_parse(&own_cert_,
+                                     reinterpret_cast<const unsigned char*>(cert_content_.c_str()),
+                                     cert_content_.size() + 1);
     if (ret != 0) {
         LOG(ERR) << "Parse cert file failed: " << ret;
         return false;
@@ -126,11 +121,11 @@ bool MbedtlsCTransport::tls_init_context()
     return true;
 }
 
-bool MbedtlsCTransport::tls_init_engine()
-{
+bool MbedtlsCTransport::tls_init_engine() {
     mbedtls_ssl_init(&ssl_);
     mbedtls_ssl_setup(&ssl_, &ssl_cfg_);
-    const std::string& hostname = uvtransport_.is_tcp() ? uvtransport_.host() : uvtransport_.pipe_name();
+    const std::string& hostname =
+        uvtransport_.is_tcp() ? uvtransport_.host() : uvtransport_.pipe_name();
     // std::string hostname = "lanthing.net";
     mbedtls_ssl_set_hostname(&ssl_, hostname.c_str());
     memset(&session_, 0, sizeof(session_));
@@ -140,8 +135,7 @@ bool MbedtlsCTransport::tls_init_engine()
     return true;
 }
 
-int MbedtlsCTransport::tls_reset_engine()
-{
+int MbedtlsCTransport::tls_reset_engine() {
     if (mbedtls_ssl_get_session(&ssl_, session_.get()) != 0) {
         mbedtls_ssl_session_free(session_.get());
     }
@@ -156,8 +150,8 @@ int MbedtlsCTransport::tls_reset_engine()
     return mbedtls_ssl_session_reset(&ssl_);
 }
 
-int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out, uint32_t* out_bytes, uint32_t maxout)
-{
+int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
+                                 uint32_t* out_bytes, uint32_t maxout) {
     size_t wrote = 0;
     while (data_len > wrote) {
         int rc = mbedtls_ssl_write(&ssl_, (const unsigned char*)(data + wrote), data_len - wrote);
@@ -171,8 +165,8 @@ int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
     return static_cast<int>(bio_out_->available);
 }
 
-int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out, uint32_t* out_bytes, uint32_t maxout)
-{
+int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out,
+                                uint32_t* out_bytes, uint32_t maxout) {
     if (ssl_in_len > 0 && ssl_in != NULL) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(ssl_in), ssl_in_len);
     }
@@ -216,8 +210,7 @@ int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* o
     return TLS_OK;
 }
 
-CTransport::Params MbedtlsCTransport::make_uv_params(const Params& params)
-{
+CTransport::Params MbedtlsCTransport::make_uv_params(const Params& params) {
     Params uvparams = params;
     uvparams.on_connected = std::bind(&MbedtlsCTransport::on_uv_connected, this);
     uvparams.on_closed = std::bind(&MbedtlsCTransport::on_uv_closed, this);
@@ -226,11 +219,10 @@ CTransport::Params MbedtlsCTransport::make_uv_params(const Params& params)
     return uvparams;
 }
 
-bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
-{
+bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf) {
     int state = ssl_.MBEDTLS_PRIVATE(state);
     if (is_handshake_continue(state)) {
-        Buffer buff { TLS_BUF_SZ };
+        Buffer buff{TLS_BUF_SZ};
         auto hs_state = continue_handshake(uvbuf.base, uvbuf.len, buff.base, &buff.len, TLS_BUF_SZ);
         if (buff.len > 0) {
             int success = uvtransport_.send(&buff, 1, [buff]() { delete buff.base; });
@@ -238,23 +230,27 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
                 delete buff.base;
                 return false;
             }
-        } else {
+        }
+        else {
             delete buff.base;
         }
         if (hs_state == HandshakeState::COMPLETE) {
             return on_connected_();
-        } else if (hs_state == HandshakeState::ERROR_) {
+        }
+        else if (hs_state == HandshakeState::ERROR_) {
             char errbuf[1024];
             mbedtls_strerror(error_, errbuf, sizeof(errbuf));
             LOG(ERR) << "TLS handshake error:" << errbuf;
             return false;
         }
-    } else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
+    }
+    else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
         Buffer outbuff = uvbuf;
         enum TLS_RESULT rc = TLS_MORE_AVAILABLE;
         while (rc == TLS_MORE_AVAILABLE || rc == TLS_READ_AGAIN) {
             // uint32_t out_bytes = 0;
-            rc = (TLS_RESULT)tls_read(uvbuf.base, uvbuf.len, outbuff.base, &outbuff.len, outbuff.len);
+            rc = (TLS_RESULT)tls_read(uvbuf.base, uvbuf.len, outbuff.base, &outbuff.len,
+                                      outbuff.len);
             switch (rc) {
             case ltlib::TLS_OK:
                 on_read_(outbuff);
@@ -270,11 +266,13 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
                 outbuff.base = more_buffer_.data();
                 outbuff.len = static_cast<uint32_t>(more_buffer_.size());
                 break;
-            case ltlib::TLS_HAS_WRITE: {
-                Buffer writebuf { TLS_BUF_SZ };
+            case ltlib::TLS_HAS_WRITE:
+            {
+                Buffer writebuf{TLS_BUF_SZ};
                 int tls_rc = tls_write(nullptr, 0, writebuf.base, &writebuf.len, TLS_BUF_SZ);
                 (void)tls_rc; // FIXME: tls_rc
-                bool success = uvtransport_.send(&writebuf, 1, [writebuf]() { delete writebuf.base; });
+                bool success =
+                    uvtransport_.send(&writebuf, 1, [writebuf]() { delete writebuf.base; });
                 if (!success) {
                     return false;
                 }
@@ -287,7 +285,8 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
                 }
                 if (rc == ltlib::TLS_ERR) {
                     LOG(ERR) << "Unexpected TLS result:" << rc;
-                } else {
+                }
+                else {
                     char errbuf[1024];
                     mbedtls_strerror(error_, errbuf, 1024);
                     LOG(ERR) << "TLS error:" << errbuf;
@@ -299,8 +298,7 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf)
     return true;
 }
 
-void MbedtlsCTransport::on_uv_closed()
-{
+void MbedtlsCTransport::on_uv_closed() {
     int ret = tls_reset_engine();
     if (ret != 0) {
         LOG(ERR) << "Reset ssl session failed:" << ret;
@@ -308,8 +306,7 @@ void MbedtlsCTransport::on_uv_closed()
     on_closed_();
 }
 
-void MbedtlsCTransport::on_uv_reconnecting()
-{
+void MbedtlsCTransport::on_uv_reconnecting() {
     int ret = tls_reset_engine();
     if (ret != 0) {
         LOG(ERR) << "Reset ssl session failed:" << ret;
@@ -317,8 +314,7 @@ void MbedtlsCTransport::on_uv_reconnecting()
     on_reconnecting_();
 }
 
-bool MbedtlsCTransport::on_uv_connected()
-{
+bool MbedtlsCTransport::on_uv_connected() {
     // tls_reset_engine();
     int state = ssl_.MBEDTLS_PRIVATE(state);
     LOG(INFO) << "Start tls handshake " << state;
@@ -326,7 +322,7 @@ bool MbedtlsCTransport::on_uv_connected()
         LOGF(ERR, "Start hanshake in the middle of another handshak(%d)", state);
         return false;
     }
-    Buffer buff { TLS_BUF_SZ };
+    Buffer buff{TLS_BUF_SZ};
     continue_handshake(nullptr, 0, buff.base, &buff.len, TLS_BUF_SZ);
     int success = uvtransport_.send(&buff, 1, [buff]() { delete buff.base; });
     if (!success) {
@@ -336,8 +332,10 @@ bool MbedtlsCTransport::on_uv_connected()
     return true;
 }
 
-MbedtlsCTransport::HandshakeState MbedtlsCTransport::continue_handshake(char* in, uint32_t in_bytes, char* out, uint32_t* out_bytes, uint32_t maxout)
-{
+MbedtlsCTransport::HandshakeState MbedtlsCTransport::continue_handshake(char* in, uint32_t in_bytes,
+                                                                        char* out,
+                                                                        uint32_t* out_bytes,
+                                                                        uint32_t maxout) {
     if (in_bytes > 0) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(in), in_bytes);
     }
@@ -352,23 +350,23 @@ MbedtlsCTransport::HandshakeState MbedtlsCTransport::continue_handshake(char* in
 
     if (ssl_.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HANDSHAKE_OVER) {
         return HandshakeState::COMPLETE;
-    } else if (state == MBEDTLS_ERR_SSL_WANT_READ || state == MBEDTLS_ERR_SSL_WANT_WRITE) {
+    }
+    else if (state == MBEDTLS_ERR_SSL_WANT_READ || state == MBEDTLS_ERR_SSL_WANT_WRITE) {
         return HandshakeState::CONTINUE;
-    } else {
+    }
+    else {
         error_ = state;
         return HandshakeState::ERROR_;
     }
 }
 
-int MbedtlsCTransport::mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len)
-{
+int MbedtlsCTransport::mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len) {
     auto that = reinterpret_cast<MbedtlsCTransport*>(ctx);
     that->bio_out_->put(buf, len);
     return static_cast<int>(len);
 }
 
-int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len)
-{
+int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len) {
     auto that = reinterpret_cast<MbedtlsCTransport*>(ctx);
     if (that->bio_in_->available == 0) {
         return MBEDTLS_ERR_SSL_WANT_READ;
@@ -376,48 +374,51 @@ int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len)
     return that->bio_in_->read(buf, len);
 }
 
-bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count, const std::function<void()>& callback)
-{
+bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count,
+                             const std::function<void()>& callback) {
     (void)callback;
     int tls_rc = 0;
     uint32_t out_size;
     for (uint32_t i = 0; i < buff_count; i++) {
         tls_rc = tls_write(buff[i].base, buff[i].len, nullptr, &out_size, 0);
         if (tls_rc < 0) {
-            char errbuf[1024] = { 0 };
+            char errbuf[1024] = {0};
             mbedtls_strerror(error_, errbuf, 1024);
             LOG(ERR) << "tls_write failed:" << errbuf;
             return false;
         }
     }
     if (tls_rc > 0) {
-        Buffer outbuf { uint32_t(tls_rc) };
+        Buffer outbuf{uint32_t(tls_rc)};
         tls_rc = tls_write(nullptr, 0, outbuf.base, &outbuf.len, tls_rc);
         if (tls_rc < 0) {
-            char errbuf[1024] = { 0 };
+            char errbuf[1024] = {0};
             mbedtls_strerror(error_, errbuf, 1024);
             LOG(ERR) << "tls_write failed:" << errbuf;
             return false;
-        } else {
+        }
+        else {
             bool success = uvtransport_.send(&outbuf, 1, [outbuf]() { delete outbuf.base; });
             return success;
         }
-    } else if (tls_rc == 0) {
+    }
+    else if (tls_rc == 0) {
         return true;
     }
 
     return true;
 }
 
-void MbedtlsCTransport::reconnect()
-{
+void MbedtlsCTransport::reconnect() {
     uvtransport_.reconnect();
 }
 
-BIO* BIO::create()
-{
+#pragma warning(disable : 6011)
+#pragma warning(disable : 6001)
+BIO* BIO::create() {
+
     BIO* bio = (BIO*)calloc(1, sizeof(BIO));
-    bio->available = 0;
+
     bio->headoffset = 0;
     bio->qlen = 0;
 
@@ -425,8 +426,8 @@ BIO* BIO::create()
     return bio;
 }
 
-void BIO::destroy(BIO* b)
-{
+void BIO::destroy(BIO* b) {
+
     while (!STAILQ_EMPTY(&b->message_q)) {
         struct msg* m = STAILQ_FIRST(&b->message_q);
         STAILQ_REMOVE_HEAD(&b->message_q, next);
@@ -437,8 +438,7 @@ void BIO::destroy(BIO* b)
     free(b);
 }
 
-int BIO::put(const uint8_t* buf, size_t len)
-{
+int BIO::put(const uint8_t* buf, size_t len) {
     struct msg* m = (struct msg*)malloc(sizeof(struct msg));
     if (m == NULL) {
         return -1;
@@ -460,8 +460,7 @@ int BIO::put(const uint8_t* buf, size_t len)
     return static_cast<int>(len);
 }
 
-int BIO::read(uint8_t* buf, size_t len)
-{
+int BIO::read(uint8_t* buf, size_t len) {
     size_t total = 0;
 
     while (!STAILQ_EMPTY(&message_q) && total < len) {
@@ -485,5 +484,8 @@ int BIO::read(uint8_t* buf, size_t len)
 
     return (int)total;
 }
+
+#pragma warning(default : 6011)
+#pragma warning(default : 6001)
 
 } // namespace ltlib

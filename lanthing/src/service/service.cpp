@@ -35,6 +35,8 @@
 
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
+#include <ltproto/peer2peer/confirm_connection.pb.h>
+#include <ltproto/peer2peer/confirm_connection_ack.pb.h>
 #include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
@@ -124,11 +126,34 @@ bool Service::initSettings() {
     return settings_ != nullptr;
 }
 
+// TODO: 删除锁，确保worker_sessions_只在ioloop中使用
+void Service::createSession(const WorkerSession::Params& params) {
+    auto session = WorkerSession::create(params);
+    if (session != nullptr) {
+        std::lock_guard<std::mutex> lock{mutex_};
+        worker_sessions_[params.name] = session;
+    }
+    else {
+        auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        tcp_client_->send(ltproto::id(ack), ack);
+        // 删除占位的nullptr
+        std::lock_guard<std::mutex> lock{mutex_};
+        worker_sessions_.erase(params.name);
+    }
+}
+
 void Service::destroySession(const std::string& session_name) {
     // worker_sessions_.erase(session_name)会析构WorkerSession内部的PeerConnection
     // 而当前的destroy_session()很可能是PeerConnection信令线程回调上来的
     // 这里选择放到libuv的线程去做
     postTask([this, session_name]() { worker_sessions_.erase(session_name); });
+}
+
+void Service::letUserConfirm(int64_t device_id) {
+    auto msg = std::make_shared<ltproto::peer2peer::ConfirmConnection>();
+    msg->set_device_id(device_id);
+    // TODO: CLIENT
 }
 
 void Service::postTask(const std::function<void()>& task) {
@@ -146,11 +171,6 @@ void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task)
 }
 
 void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    dispatchServerMessage(type, msg);
-}
-
-void Service::dispatchServerMessage(uint32_t type,
-                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
     switch (type) {
     case ltype::kLoginDeviceAck:
@@ -183,8 +203,14 @@ void Service::onServerConnected() {
 
 void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     LOG(INFO) << "Received OpenConnection";
+    // 1. 校验参数
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+    if (msg->client_device_id() <= 0) {
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        tcp_client_->send(ltproto::id(ack), ack);
+        LOG(ERR) << "Invalid device id " << msg->client_device_id();
+    }
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (!access_token.has_value() || access_token.value().empty()) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
@@ -211,6 +237,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
             worker_sessions_[session_name] = nullptr;
         }
     }
+    // 2. 准备启动worker的参数
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
     worker_params.user_defined_relay_server = settings_->getString("relay").value_or("");
@@ -221,18 +248,23 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3);
-    auto session = WorkerSession::create(worker_params);
-    if (session != nullptr) {
-        std::lock_guard<std::mutex> lock{mutex_};
-        worker_sessions_[session_name] = session;
+    // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
+    std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
+    constexpr int64_t kSecondsPerWeek = int64_t(60) * 60 * 24 * 7;
+    const int64_t now = ltlib::utc_now_ms() / 1000; // 不清楚sqlite的时间戳是UTC+0，还是当前时区
+    auto update_at = settings_->getUpdateTime(cookie_name);
+    if (!update_at.has_value() || now > update_at.value() + kSecondsPerWeek) {
+        letUserConfirm(msg->client_device_id());
+        return;
     }
-    else {
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
-        tcp_client_->send(ltproto::id(ack), ack);
-        // 删除占位的nullptr
-        std::lock_guard<std::mutex> lock{mutex_};
-        worker_sessions_.erase(session_name);
+    auto cookie = settings_->getString(cookie_name);
+    if (!cookie.has_value() || cookie.value() != msg->cookie()) {
+        letUserConfirm(msg->client_device_id());
+        return;
     }
+    // 更新时间戳
+    settings_->setString(cookie_name, cookie.value());
+    createSession(worker_params);
 }
 
 void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -318,6 +350,69 @@ void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
     msg->set_reason(reason);
     msg->set_room_id(room_id);
     tcp_client_->send(ltproto::id(msg), msg);
+}
+
+void Service::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+    namespace ltype = ltproto::type;
+    switch (type) {
+    case ltype::kConfirmConnectionAck:
+        onConfirmConnectionAck(msg);
+        break;
+    default:
+        LOG(WARNING) << "Unknown message from app " << type;
+        break;
+    }
+}
+
+void Service::onAppDisconnected() {}
+
+void Service::onAppReconnecting() {}
+
+void Service::onAppConnected() {}
+
+void Service::sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)msg;
+}
+
+void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!cached_worker_params_.has_value()) {
+        LOG(ERR) << "Cached WorkerParams is empty";
+        auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        tcp_client_->send(ltproto::id(ack), ack);
+        return;
+    }
+    auto params = cached_worker_params_.value();
+    cached_worker_params_ = std::nullopt;
+    auto msg = std::static_pointer_cast<ltproto::peer2peer::ConfirmConnectionAck>(_msg);
+    switch (msg->result()) {
+    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Agree:
+        createSession(params);
+        break;
+    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Reject:
+    {
+        worker_sessions_.erase(params.name);
+        auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid); // TODO: reject code
+        tcp_client_->send(ltproto::id(ack), ack);
+        break;
+    }
+    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_AgreeNextTime:
+    {
+        auto req = std::static_pointer_cast<ltproto::server::OpenConnection>(params.msg);
+        std::string cookie_name = "from_" + std::to_string(req->client_device_id());
+        settings_->setString(cookie_name, req->cookie());
+        createSession(params);
+        break;
+    }
+    default:
+        LOG(ERR) << "Unknown ConfirmResult " << (int)msg->result() << ", treat as rejct";
+        worker_sessions_.erase(params.name);
+        auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid); // TODO: reject code
+        tcp_client_->send(ltproto::id(ack), ack);
+        break;
+    }
 }
 
 } // namespace svc

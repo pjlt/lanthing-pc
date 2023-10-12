@@ -81,6 +81,8 @@ target_compile_definitions(${PROJECT_NAME}
         BUILDING_LTLIB
 )
 
+set_code_analysis(${PROJECT_NAME})
+
 install(
 	TARGETS ${PROJECT_NAME}
 )

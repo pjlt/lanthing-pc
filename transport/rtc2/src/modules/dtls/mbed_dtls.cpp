@@ -319,6 +319,8 @@ int MbedDtls::verify_cert(void* data, mbedtls_x509_crt* crt, int depth, uint32_t
     return 0;
 }
 
+#pragma warning(disable : 6011)
+#pragma warning(disable : 6001)
 MbedDtls::BIO* MbedDtls::BIO::create() {
     BIO* bio = (BIO*)calloc(1, sizeof(BIO));
     bio->available = 0;

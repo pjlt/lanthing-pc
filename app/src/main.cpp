@@ -109,7 +109,7 @@ void initLogging() {
 } // namespace
 
 int main(int argc, char** argv) {
-    if (ltlib::makeSingletonProcess("lanthing_app")) {
+    if (!ltlib::makeSingletonProcess("lanthing_app")) {
         printf("Another instance is running.\n");
         return 0;
     }

@@ -193,7 +193,7 @@ bool Worker::init() {
         negotiated_display_setting_.height = 1080;
     }
     else {
-        LOGF(DEBUG, "Negotiate display setting(width:%d, height:%d, refresh_rate:%d)",
+        LOGF(DEBUG, "Negotiate display setting(width:%u, height:%u, refresh_rate:%u)",
              negotiated_display_setting_.width, negotiated_display_setting_.height,
              negotiated_display_setting_.refrash_rate);
     }

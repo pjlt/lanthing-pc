@@ -1,9 +1,40 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "client_manager.h"
 
 #include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 
+#include <ltlib/io/server.h>
 #include <ltlib/logging.h>
 #include <ltlib/system.h>
 
@@ -35,13 +66,55 @@ ClientManager::ClientManager(const Params& params)
     , send_message_{params.send_message}
     , on_launch_client_success_{params.on_launch_client_success} {}
 
-void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken) {
+std::unique_ptr<ClientManager> ClientManager::create(const Params& params) {
+    std::unique_ptr<ClientManager> mgr{new ClientManager{params}};
+    if (!mgr->init(params.ioloop)) {
+        return nullptr;
+    }
+    return mgr;
+}
+
+bool ClientManager::init(ltlib::IOLoop* ioloop) {
+    ltlib::Server::Params params{};
+    params.stype = ltlib::StreamType::Pipe;
+    params.ioloop = ioloop;
+    params.pipe_name = "\\\\?\\pipe\\lanthing_client_manager";
+    params.on_accepted = std::bind(&ClientManager::onPipeAccepted, this, std::placeholders::_1);
+    params.on_closed = std::bind(&ClientManager::onPipeDisconnected, this, std::placeholders::_1);
+    params.on_message = std::bind(&ClientManager::onPipeMessage, this, std::placeholders::_1,
+                                  std::placeholders::_2, std::placeholders::_3);
+    pipe_server_ = ltlib::Server::create(params);
+    if (pipe_server_ == nullptr) {
+        LOG(ERR) << "Init pipe server failed";
+        return false;
+    }
+    return true;
+}
+
+void ClientManager::onPipeAccepted(uint32_t fd) {
+    LOG(INFO) << "Local client accepted " << fd;
+}
+
+void ClientManager::onPipeDisconnected(uint32_t fd) {
+    LOG(INFO) << "Local client disconnected " << fd;
+}
+
+void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
+                                  std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)msg;
+    LOGF(DEBUG, "Received local client %u msg %u", fd, type);
+}
+
+void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken,
+                            const std::string& cookie) {
+    // TODO: 先创建进程，从进程中获取一定信息才向服务器发请求
     int64_t request_id = last_request_id_.fetch_add(1);
     auto req = std::make_shared<ltproto::server::RequestConnection>();
     req->set_request_id(request_id);
     req->set_conn_type(ltproto::server::ConnectionType::Control);
     req->set_device_id(peerDeviceID);
     req->set_access_token(accessToken);
+    req->set_cookie(cookie);
     // HardDecodability abilities = lt::check_hard_decodability();
     bool h264_decodable = true;
     bool h265_decodable = true;
@@ -83,7 +156,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
         }
     }
     sendMessage(ltproto::id(req), req);
-    LOGF(INFO, "RequestConnection(device_id:%d, request_id:%d) sent", peerDeviceID, request_id);
+    LOGF(INFO, "RequestConnection(device_id:%lld, request_id:%lld) sent", peerDeviceID, request_id);
     tryRemoveSessionAfter10s(request_id);
 }
 

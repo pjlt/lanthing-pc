@@ -273,7 +273,15 @@ void App::loginUser() {
 
 // 跑在UI线程
 void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
-    postTask(std::bind(&ClientManager::connect, client_manager_.get(), peerDeviceID, accessToken));
+    if (peerDeviceID <= 0) {
+        LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
+        return;
+    }
+    postTask([peerDeviceID, accessToken, this]() {
+        std::string cookie_name = "cookie_" + std::to_string(peerDeviceID);
+        auto cookie = settings_->getString(cookie_name);
+        client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""));
+    });
 }
 
 std::vector<std::string> App::getHistoryDeviceIDs() const {

@@ -1116,3 +1116,11 @@ SOFTWARE.
 stun-msg(https://github.com/balena/stun-msg.git)
 
 Released in public domain.
+
+
+--------------------------------------------------------------------------
+-------------------------23-sqlite----------------------------------------
+--------------------------------------------------------------------------
+sqlite(https://github.com/sqlite/sqlite.git)
+
+Released in public domain.

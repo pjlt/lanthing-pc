@@ -89,7 +89,7 @@ bool DxgiVideoCapturer::initD3D11() {
         DXGI_ADAPTER_DESC adapter_desc;
         hr = dxgi_factory_->EnumAdapters(static_cast<UINT>(index), adapter.GetAddressOf());
         if (hr == DXGI_ERROR_NOT_FOUND) {
-            LOGF(WARNING, "Failed to find no %u adapter", index);
+            LOGF(WARNING, "Failed to find no %d adapter", index);
             out_of_bound = true;
             break;
         }
@@ -117,7 +117,7 @@ bool DxgiVideoCapturer::initD3D11() {
         }
         luid_ =
             ((uint64_t)adapter_desc.AdapterLuid.HighPart << 32) + adapter_desc.AdapterLuid.LowPart;
-        LOGF(INFO, "DxgiVideoCapturer using adapter(index:%d, %x:%x, %x)", index,
+        LOGF(INFO, "DxgiVideoCapturer using adapter(index:%d, %x:%x, %lld)", index,
              adapter_desc.VendorId, adapter_desc.DeviceId, luid_);
         return true;
     }

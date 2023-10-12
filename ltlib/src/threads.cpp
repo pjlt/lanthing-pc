@@ -89,8 +89,10 @@ void set_current_thread_name(const char* name)
 
 void crash_me()
 {
+#pragma warning(disable : 6011)
     int* a = 0;
     *a = 123;
+#pragma warning(default : 6011)
 }
 
 } // namespace

@@ -1,3 +1,33 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #pragma once
 #include <cstdint>
 
@@ -7,6 +37,9 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <ltlib/io/ioloop.h>
+#include <ltlib/io/server.h>
+
 #include <client/client_session.h>
 
 namespace lt {
@@ -14,6 +47,7 @@ namespace lt {
 class ClientManager {
 public:
     struct Params {
+        ltlib::IOLoop* ioloop;
         std::function<void(const std::function<void()>&)> post_task;
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message;
@@ -21,11 +55,17 @@ public:
     };
 
 public:
-    ClientManager(const Params& params);
-    void connect(int64_t peerDeviceID, const std::string& accessToken);
+    static std::unique_ptr<ClientManager> create(const Params& params);
+    void connect(int64_t peerDeviceID, const std::string& accessToken, const std::string& cookie);
     void onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg);
 
 private:
+    ClientManager(const Params& params);
+    bool init(ltlib::IOLoop* ioloop);
+    void onPipeAccepted(uint32_t fd);
+    void onPipeDisconnected(uint32_t fd);
+    void onPipeMessage(uint32_t fd, uint32_t type,
+                       std::shared_ptr<google::protobuf::MessageLite> msg);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t, const std::function<void()>& task);
     void sendMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -41,6 +81,7 @@ private:
     std::atomic<int64_t> last_request_id_{0};
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;
     std::mutex session_mutex_;
+    std::unique_ptr<ltlib::Server> pipe_server_;
 };
 
 } // namespace lt

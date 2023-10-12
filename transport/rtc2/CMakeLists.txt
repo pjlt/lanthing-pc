@@ -113,6 +113,8 @@ target_compile_definitions(${PROJECT_NAME}
 		BUILDING_RTC2=1
 )
 
+set_code_analysis(${PROJECT_NAME})
+
 target_link_libraries(${PROJECT_NAME}
 	PRIVATE
 		transport_api

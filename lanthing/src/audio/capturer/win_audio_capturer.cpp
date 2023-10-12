@@ -233,8 +233,7 @@ void WinAudioCapturer::getDeviceName() {
     PROPVARIANT name{};
     hr = store->GetValue(PKEY_Device_FriendlyName, &name);
     if (FAILED(hr)) {
-        LOG(ERR) << "IPropertyStore::GetValue(PKEY_Device_FriendlyName) failed with "
-                     << toHex(hr);
+        LOG(ERR) << "IPropertyStore::GetValue(PKEY_Device_FriendlyName) failed with " << toHex(hr);
         return;
     }
     if (name.pszVal && *name.pszVal) {
@@ -252,8 +251,8 @@ void WinAudioCapturer::printAudioEngineInternalFormat() {
         return;
     }
     LOGF(INFO,
-         "Audio internal format wFormatTag:%#x, nChannels:%d, nSamplesPerSec:%d, "
-         "nAvgBytesPerSec:%d, nBlockAlign:%d, wBitsPerSample:%d, cbSize:%d",
+         "Audio internal format wFormatTag:%#x, nChannels:%u, nSamplesPerSec:%lu, "
+         "nAvgBytesPerSec:%lu, nBlockAlign:%u, wBitsPerSample:%u, cbSize:%u",
          wformat->wFormatTag, wformat->nChannels, wformat->nSamplesPerSec, wformat->nAvgBytesPerSec,
          wformat->nBlockAlign, wformat->wBitsPerSample, wformat->cbSize);
     CoTaskMemFree(wformat);
@@ -312,8 +311,8 @@ bool WinAudioCapturer::setAudioFormat() {
         setFramesPerSec(wfmte.Format.nSamplesPerSec);
         setChannels(wfmte.Format.nChannels);
         LOGF(INFO,
-             "Audio capture format: wFormatTag:%#x, nChannels:%d, nSamplesPerSec:%d, , "
-             "nAvgBytesPerSec:%d, nBlockAlign:%d, wBitsPerSample:%d, cbSize:%d",
+             "Audio capture format: wFormatTag:%#x, nChannels:%u, nSamplesPerSec:%lu, , "
+             "nAvgBytesPerSec:%lu, nBlockAlign:%u, wBitsPerSample:%u, cbSize:%u",
              wfmte.Format.wFormatTag, wfmte.Format.nChannels, wfmte.Format.nSamplesPerSec,
              wfmte.Format.nAvgBytesPerSec, wfmte.Format.nBlockAlign, wfmte.Format.wBitsPerSample,
              wfmte.Format.cbSize);
