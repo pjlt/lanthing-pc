@@ -813,7 +813,7 @@ void WorkerSession::syncTime() {
 }
 
 void WorkerSession::getTransportStat() {
-#if LT_USE_LTRTC
+#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     rtc::Server* svr = static_cast<rtc::Server*>(tp_server_.get());
     uint32_t bwe_bps = svr->bwe();
     uint32_t nack_count = svr->nack();
@@ -824,7 +824,7 @@ void WorkerSession::getTransportStat() {
     LOG(DEBUG) << "BWE " << bwe_bps << " NACK " << nack_count;
     sendMessageToRemoteClient(ltproto::id(msg), msg, true);
     postDelayTask(1'000, std::bind(&WorkerSession::getTransportStat, this));
-#endif // LT_USE_LTRTC
+#endif //  LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

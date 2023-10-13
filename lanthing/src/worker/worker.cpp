@@ -244,7 +244,7 @@ bool Worker::negotiateParameters() {
     auto negotiated_params = std::make_shared<ltproto::peer2peer::StreamingParams>();
 
     lt::AudioCapturer::Params audio_params{};
-#if LT_USE_LTRTC
+#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     audio_params.type = AudioCodecType::PCM;
 #else
     audio_params.type = AudioCodecType::OPUS;
