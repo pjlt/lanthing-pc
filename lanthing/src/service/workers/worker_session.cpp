@@ -43,6 +43,8 @@
 #include <ltproto/client2worker/video_frame.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/open_connection.pb.h>
+#include <ltproto/service2app/accepted_client.pb.h>
+#include <ltproto/service2app/disconnected_client.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
 #include <ltproto/signaling/join_room_ack.pb.h>
 #include <ltproto/signaling/signaling_message.pb.h>
@@ -90,24 +92,22 @@ namespace svc {
 // 6. 主控端连接信令成功，发起rtc连接.
 
 std::shared_ptr<WorkerSession> svc::WorkerSession::create(const Params& params) {
-    std::shared_ptr<WorkerSession> session{
-        new WorkerSession(params.name, params.user_defined_relay_server, params.on_create_completed,
-                          params.on_closed)};
-    if (!session->init(params.msg)) {
+    std::shared_ptr<WorkerSession> session{new WorkerSession(params)};
+    if (!session->init(params.msg, params.ioloop)) {
         return nullptr;
     }
     return session;
 }
 
-WorkerSession::WorkerSession(
-    const std::string& name, const std::string& relay_server,
-    std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
-        on_create_completed,
-    std::function<void(CloseReason, const std::string&, const std::string&)> on_closed)
-    : session_name_(name)
-    , user_defined_relay_server_(relay_server)
-    , on_create_session_completed_(on_create_completed)
-    , on_closed_(on_closed) {
+WorkerSession::WorkerSession(const Params& params)
+    : session_name_(params.name)
+    , post_task_(params.post_task)
+    , post_delay_task_(params.post_delay_task)
+    , on_accepted_client_(params.on_accepted_client)
+    , on_client_status_(params.on_client_status)
+    , user_defined_relay_server_(params.user_defined_relay_server)
+    , on_create_session_completed_(params.on_create_completed)
+    , on_closed_(params.on_closed) {
     constexpr int kRandLength = 4;
     // 是否需要global?
     pipe_name_ = "Lanthing_worker_";
@@ -116,17 +116,12 @@ WorkerSession::WorkerSession(
     }
 }
 
-WorkerSession::~WorkerSession() {
-    {
-        std::lock_guard lock{mutex_};
-        signaling_client_.reset();
-        pipe_server_.reset();
-        ioloop_.reset();
-    }
-}
+WorkerSession::~WorkerSession() {}
 
-bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
+                         ltlib::IOLoop* ioloop) {
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
+    client_device_id_ = msg->client_device_id();
     auth_token_ = msg->auth_token();
     service_id_ = msg->service_id();
     room_id_ = msg->room_id();
@@ -179,29 +174,16 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         return false;
     }
 
-    ioloop_ = ltlib::IOLoop::create();
-    if (ioloop_ == nullptr) {
-        LOG(WARNING) << "Init IOLoop failed";
-        return false;
-    }
-    if (!initSignlingClient()) {
+    if (!initSignlingClient(ioloop)) {
         LOG(WARNING) << "Init signaling client failed";
         return false;
     }
-    if (!initPipeServer()) {
+    if (!initPipeServer(ioloop)) {
         LOG(WARNING) << "Init worker pipe server failed";
         return false;
     }
     createWorkerProcess((uint32_t)client_width, (uint32_t)client_height,
                         (uint32_t)client_refresh_rate, client_codecs);
-    std::promise<void> promise;
-    auto future = promise.get_future();
-    thread_ = ltlib::BlockingThread::create(
-        "worker_session", [this, &promise](const std::function<void()>& i_am_alive) {
-            promise.set_value();
-            mainLoop(i_am_alive);
-        });
-    future.get();
     return true;
 }
 
@@ -318,12 +300,6 @@ std::unique_ptr<tp::Server> WorkerSession::createRtc2Server() {
     return rtc2::Server::create(params);
 }
 
-void WorkerSession::mainLoop(const std::function<void()>& i_am_alive) {
-    LOG(INFO) << "Worker session enter main loop";
-    ioloop_->run(i_am_alive);
-    LOG(INFO) << "Worker session exit main loop";
-}
-
 void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_height,
                                         uint32_t client_refresh_rate,
                                         std::vector<lt::VideoCodecType> client_codecs) {
@@ -363,7 +339,7 @@ void WorkerSession::onClosed(CloseReason reason) {
         sendToWorker(ltproto::id(msg), msg);
     }
     if (rtc_closed_ && worker_process_stoped_) {
-        on_closed_(reason, session_name_, room_id_);
+        on_closed_(client_device_id_, reason, session_name_, room_id_);
     }
 }
 
@@ -387,23 +363,17 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
-    if (ioloop_) {
-        ioloop_->post(task);
-    }
+    post_task_(task);
 }
 
 void WorkerSession::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
-    if (ioloop_) {
-        ioloop_->postDelay(delay_ms, task);
-    }
+    post_delay_task_(delay_ms, task);
 }
 
-bool WorkerSession::initSignlingClient() {
+bool WorkerSession::initSignlingClient(ltlib::IOLoop* ioloop) {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
-    params.ioloop = ioloop_.get();
+    params.ioloop = ioloop;
     params.host = signaling_addr_;
     params.port = signaling_port_;
     params.is_tls = false;
@@ -514,10 +484,10 @@ void WorkerSession::dispatchSignalingMessageCore(
     }
 }
 
-bool WorkerSession::initPipeServer() {
+bool WorkerSession::initPipeServer(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
     params.stype = ltlib::StreamType::Pipe;
-    params.ioloop = ioloop_.get();
+    params.ioloop = ioloop;
     params.pipe_name = "\\\\?\\pipe\\" + pipe_name_;
     params.on_accepted = std::bind(&WorkerSession::onPipeAccepted, this, std::placeholders::_1);
     params.on_closed = std::bind(&WorkerSession::onPipeDisconnected, this, std::placeholders::_1);
@@ -651,8 +621,21 @@ void WorkerSession::onTpAccepted() {
         LOG(INFO) << "Accepted client";
         updateLastRecvTime();
         syncTime();
-        postTask(std::bind(&WorkerSession::checkTimeout, this));
-        postTask(std::bind(&WorkerSession::getTransportStat, this));
+        checkTimeout();
+        getTransportStat();
+        auto msg = std::make_shared<ltproto::service2app::AcceptedClient>();
+        msg->set_device_id(client_device_id_);
+        msg->set_enable_gamepad(true);
+        msg->set_enable_keyboard(true);
+        msg->set_enable_mouse(true);
+        msg->set_gpu_decode(true);
+        msg->set_gpu_encode(true);
+        msg->set_p2p(true);
+        auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(
+            negotiated_streaming_params_);
+        msg->set_video_codec(
+            (ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));
+        on_accepted_client_(msg);
     });
 }
 

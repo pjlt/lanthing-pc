@@ -42,6 +42,7 @@
 #include <ltproto/server/open_connection_ack.pb.h>
 #include <ltproto/service2app/confirm_connection.pb.h>
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
+#include <ltproto/service2app/disconnected_client.pb.h>
 
 namespace lt {
 
@@ -267,6 +268,10 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     // 2. 准备启动worker的参数
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
+    worker_params.ioloop = ioloop_.get();
+    worker_params.post_task = std::bind(&Service::postTask, this, std::placeholders::_1);
+    worker_params.post_delay_task =
+        std::bind(&Service::postDelayTask, this, std::placeholders::_1, std::placeholders::_2);
     worker_params.user_defined_relay_server = settings_->getString("relay").value_or("");
     worker_params.msg = msg;
     worker_params.on_create_completed =
@@ -274,7 +279,11 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
                   std::placeholders::_2, std::placeholders::_3);
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3);
+                  std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    worker_params.on_accepted_client =
+        std::bind(&Service::onAcceptedClient, this, std::placeholders::_1);
+    worker_params.on_client_status =
+        std::bind(&Service::onClientStatus, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
@@ -301,7 +310,9 @@ void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> ms
               << ltproto::server::LoginDeviceAck::ErrCode_Name(ack->err_code());
 }
 
-void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {}
+void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)msg;
+}
 
 void Service::onCreateSessionCompletedThreadSafe(
     bool success, const std::string& session_name,
@@ -325,16 +336,18 @@ void Service::onCreateSessionCompleted(bool success, const std::string& session_
     tcp_client_->send(ltproto::id(ack), ack);
 }
 
-void Service::onSessionClosedThreadSafe(WorkerSession::CloseReason close_reason,
+void Service::onSessionClosedThreadSafe(int64_t device_id, WorkerSession::CloseReason close_reason,
                                         const std::string& session_name,
                                         const std::string& room_id) {
-    postTask(std::bind(&Service::onSessionClosed, this, close_reason, session_name, room_id));
+    postTask(
+        std::bind(&Service::onSessionClosed, this, device_id, close_reason, session_name, room_id));
 }
 
-void Service::onSessionClosed(WorkerSession::CloseReason close_reason,
+void Service::onSessionClosed(int64_t device_id, WorkerSession::CloseReason close_reason,
                               const std::string& session_name, const std::string& room_id) {
     reportSessionClosed(close_reason, room_id);
     destroySession(session_name);
+    tellAppSessionClosed(device_id);
 }
 
 void Service::sendMessageToServer(uint32_t type,
@@ -409,7 +422,9 @@ void Service::onAppConnected() {
 }
 
 void Service::sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    app_client_->send(type, msg);
+    if (app_connected_) {
+        app_client_->send(type, msg);
+    }
 }
 
 void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -451,6 +466,20 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         tcp_client_->send(ltproto::id(ack), ack);
         break;
     }
+}
+
+void Service::tellAppSessionClosed(int64_t device_id) {
+    auto msg = std::make_shared<ltproto::service2app::DisconnectedClient>();
+    msg->set_device_id(device_id);
+    sendMessageToApp(ltproto::id(msg), msg);
+}
+
+void Service::onAcceptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kAcceptedClient, msg);
+}
+
+void Service::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kClientStatus, msg);
 }
 
 } // namespace svc

@@ -79,14 +79,20 @@ private:
     void sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
+    void tellAppSessionClosed(int64_t device_id);
+
+    void onAcceptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+
     void onCreateSessionCompletedThreadSafe(bool success, const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCreateSessionCompleted(bool success, const std::string& session_name,
                                   std::shared_ptr<google::protobuf::MessageLite> msg);
-    void onSessionClosedThreadSafe(WorkerSession::CloseReason close_reason,
+    void onSessionClosedThreadSafe(int64_t device_id, WorkerSession::CloseReason close_reason,
                                    const std::string& session_name, const std::string& room_id);
-    void onSessionClosed(WorkerSession::CloseReason close_reason, const std::string& session_name,
-                         const std::string& room_id);
+    void onSessionClosed(int64_t device_id, WorkerSession::CloseReason close_reason,
+                         const std::string& session_name, const std::string& room_id);
 
 private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;
