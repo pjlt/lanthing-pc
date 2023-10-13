@@ -28,42 +28,58 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
-#include <cstdint>
+#include <functional>
 
-#include <string>
-#include <vector>
+#include <QtWidgets/QMainWindow>
 
-namespace lt {
+#include <views/gui.h>
 
-enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
+QT_BEGIN_NAMESPACE
+namespace Ui {
+class MainWindow;
+}
+QT_END_NAMESPACE
 
-class UiCallback {
+class Menu;
+class MainPage;
+class SettingPage;
+
+class MainWindow : public QMainWindow {
+    Q_OBJECT
+
 public:
-    enum class ErrCode : uint8_t {
-        OK = 0,
-        TIMEOUT,
-        FALIED,
-        CONNECTING,
-        SYSTEM_ERROR,
-    };
+    MainWindow(const lt::GUI::Params& params, QWidget* parent = nullptr);
+    ~MainWindow();
 
-public:
-    virtual ~UiCallback() = default;
+    void switchToMainPage();
 
-    virtual void onLoginRet(ErrCode code, const std::string& err = {}) = 0;
+    void switchToSettingPage();
+    void setLoginStatus(lt::GUI::ErrCode code);
 
-    virtual void onInviteRet(ErrCode code, const std::string& err = {}) = 0;
+    void setDeviceID(int64_t device_id);
 
-    virtual void onDisconnectedWithServer() = 0;
+    void setAccessToken(const std::string& access_token);
 
-    virtual void onDevicesChanged(const std::vector<std::string>& dev_ids) = 0;
+    void handleConfirmConnection(int64_t device_id);
 
-    virtual void onLocalDeviceID(int64_t device_id) = 0;
+protected:
+    void closeEvent(QCloseEvent* ev) override;
 
-    virtual void onLocalAccessToken(const std::string& access_token) = 0;
+private:
+    void doInvite(const std::string& dev_id, const std::string& token);
 
-    virtual void onConfirmConnection(int64_t device_id) = 0;
+private:
+    lt::GUI::Params params_;
+    Ui::MainWindow* ui;
+
+    Menu* menu_ui = nullptr;
+    MainPage* main_page_ui;
+    SettingPage* setting_page_ui;
+
+    std::function<void()> switch_to_main_page_;
+    std::function<void()> switch_to_setting_page_;
 };
-} // namespace lt
+#endif // MAINWINDOW_H

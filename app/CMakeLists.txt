@@ -18,7 +18,6 @@ find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
 set(APP_SRCS
     # root
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
 
@@ -30,9 +29,11 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service_manager.cpp
 
-    # views
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow.cpp
+    # gui
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/gui.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.h
@@ -44,7 +45,7 @@ set(APP_SRCS
 )
 
 set(APP_UI_VIEWS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.ui

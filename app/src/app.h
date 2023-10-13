@@ -43,36 +43,31 @@
 
 #include <client/client_manager.h>
 #include <service/service_manager.h>
-#include <views/mainwindow.h>
+#include <views/gui.h>
 
 namespace lt {
 
 class App {
 public:
-    struct Settings {
-        bool run_as_daemon;
-        bool auto_refresh_access_token;
-        std::string relay_server;
-    };
 
 public:
     static std::unique_ptr<App> create();
     ~App();
     int exec(int argc, char** argv);
-    void loginUser();
-    void connect(int64_t deviceID, const std::string& accessToken);
-    std::vector<std::string> getHistoryDeviceIDs() const;
-    Settings getSettings() const;
-    void enableRefreshAccessToken(bool enable);
-    void enableRunAsDaemon(bool enable);
-    void setRelayServer(const std::string& svr);
-    void onUserConfirmedConnection(int64_t device_id, ConfirmResult result);
 
 private:
     App();
     bool init();
     bool initSettings();
     void ioLoop(const std::function<void()>& i_am_alive);
+
+    void connect(int64_t deviceID, const std::string& accessToken);
+    std::vector<std::string> getHistoryDeviceIDs() const;
+    GUI::Settings getSettings() const;
+    void enableRefreshAccessToken(bool enable);
+    void enableRunAsDaemon(bool enable);
+    void setRelayServer(const std::string& svr);
+    void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
 
     void createAndStartService();
     void stopService();
@@ -108,6 +103,7 @@ private:
     bool initClientManager();
 
 private:
+    GUI gui_;
     std::mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
@@ -122,6 +118,6 @@ private:
     bool auto_refresh_access_token_;
     std::string relay_server_;
 
-    UiCallback* ui_;
+    // UiCallback* ui_;
 };
 } // namespace lt

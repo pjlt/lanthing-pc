@@ -95,17 +95,17 @@ void ServiceManager::onConfirmConnection(std::shared_ptr<google::protobuf::Messa
     on_confirm_connection_(msg->device_id());
 }
 
-void ServiceManager::onUserConfirmedConnection(int64_t device_id, ConfirmResult result) {
+void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
     auto ack = std::make_shared<ltproto::peer2peer::ConfirmConnectionAck>();
     ack->set_device_id(device_id);
     switch (result) {
-    case ConfirmResult::Accept:
+    case GUI::ConfirmResult::Accept:
         ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Agree);
         break;
-    case ConfirmResult::AcceptWithNextTime:
+    case GUI::ConfirmResult::AcceptWithNextTime:
         ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_AgreeNextTime);
         break;
-    case ConfirmResult::Reject:
+    case GUI::ConfirmResult::Reject:
         [[fallthrough]];
     default:
         ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Reject);
