@@ -364,7 +364,7 @@ CREATE TABLE IF NOT EXISTS kv_settings(
 	"str_val"       TEXT,
 	"blob_val"      BLOB
 );
-CREATE TRIGGER UpdateTimestamp
+CREATE TRIGGER IF NOT EXISTS UpdateTimestamp
     AFTER UPDATE
     ON kv_settings
 BEGIN
