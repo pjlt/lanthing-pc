@@ -41,6 +41,34 @@
 
 #include "mainwindow/mainwindow.h"
 
+static void ltQtOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
+    if (context.file == nullptr || context.function == nullptr) {
+        std::string category;
+        if (context.category) {
+            category = context.category;
+        }
+        LOG(INFO) << "Qt logging, category: " << category
+                  << ", message: " << msg.toStdString().c_str();
+        return;
+    }
+    switch (type) {
+    case QtDebugMsg:
+        LOG_2(DEBUG, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtInfoMsg:
+        LOG_2(INFO, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtWarningMsg:
+        LOG_2(WARNING, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtCriticalMsg:
+        LOG_2(ERR, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtFatalMsg:
+        LOG_2(FATAL, context.file, context.line, context.function) << msg.toStdString().c_str();
+    }
+}
+
 namespace lt {
 
 class GUIImpl {
@@ -64,9 +92,12 @@ private:
     std::unique_ptr<QApplication> qapp_;
     std::unique_ptr<MainWindow> main_window_;
     QTranslator translator_;
+    std::unique_ptr<QSystemTrayIcon> sys_tray_icon_;
+    std::unique_ptr<QMenu> menu_;
 };
 
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
+    qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
     setLanguage();
     QIcon icon(":/icons/icons/pc.png");
@@ -74,12 +105,11 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     QApplication::setQuitOnLastWindowClosed(false);
 
     main_window_ = std::make_unique<MainWindow>(params, nullptr);
-
-    QSystemTrayIcon sys_tray_icon;
-    QMenu* menu = new QMenu();
-    QAction* a0 = new QAction(QObject::tr("Main Page"));
-    QAction* a1 = new QAction(QObject::tr("Settings"));
-    QAction* a2 = new QAction(QObject::tr("Exit"));
+    menu_ = std::make_unique<QMenu>(nullptr);
+    sys_tray_icon_ = std::make_unique<QSystemTrayIcon>();
+    QAction* a0 = new QAction(QObject::tr("Main Page"), menu_.get());
+    QAction* a1 = new QAction(QObject::tr("Settings"), menu_.get());
+    QAction* a2 = new QAction(QObject::tr("Exit"), menu_.get());
     QObject::connect(a0, &QAction::triggered, [this]() {
         main_window_->switchToMainPage();
         main_window_->show();
@@ -89,7 +119,7 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
         main_window_->show();
     });
     QObject::connect(a2, &QAction::triggered, []() { QApplication::exit(0); });
-    QObject::connect(&sys_tray_icon, &QSystemTrayIcon::activated,
+    QObject::connect(sys_tray_icon_.get(), &QSystemTrayIcon::activated,
                      [this](QSystemTrayIcon::ActivationReason reason) {
                          switch (reason) {
                          case QSystemTrayIcon::Unknown:
@@ -108,13 +138,13 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
                              break;
                          }
                      });
-    menu->addAction(a0);
-    menu->addAction(a1);
-    menu->addAction(a2);
-    sys_tray_icon.setContextMenu(menu);
-    sys_tray_icon.setIcon(icon);
+    menu_->addAction(a0);
+    menu_->addAction(a1);
+    menu_->addAction(a2);
+    sys_tray_icon_->setContextMenu(menu_.get());
+    sys_tray_icon_->setIcon(icon);
 
-    sys_tray_icon.show();
+    sys_tray_icon_->show();
     main_window_->show();
 }
 

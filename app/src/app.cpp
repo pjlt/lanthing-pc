@@ -147,6 +147,8 @@ App::~App() {
     {
         std::lock_guard lock{ioloop_mutex_};
         tcp_client_.reset();
+        service_manager_.reset();
+        client_manager_.reset();
         ioloop_.reset();
     }
     if (!run_as_daemon_) {
@@ -220,6 +222,9 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     postTask([peerDeviceID, accessToken, this]() {
         std::string cookie_name = "cookie_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);
+        if (!cookie.has_value()) {
+            cookie = ltlib::randomStr(24);
+        }
         client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""));
     });
 }

@@ -107,17 +107,17 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="80"/>
+        <location filename="../src/views/gui.cpp" line="110"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="81"/>
+        <location filename="../src/views/gui.cpp" line="111"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="82"/>
+        <location filename="../src/views/gui.cpp" line="112"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
