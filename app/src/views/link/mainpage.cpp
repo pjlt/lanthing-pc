@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,6 +32,9 @@
 
 #include <QAction>
 #include <QValidator>
+#include <qmenu.h>
+
+#include <ltlib/logging.h>
 
 #include "app.h"
 #include "ui_mainpage.h"
@@ -96,6 +99,35 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
     QAction* action2 = new QAction();
     action2->setIcon(QIcon(":/icons/icons/lock.png"));
     ui->access_token->addAction(action2, QLineEdit::LeadingPosition);
+
+    // ui->indicator->hide();
+    ui->client_indicator->setToolTip("146245 2ms 5.2Mbps HEVC GPU:GPU P2P");
+    ui->client_indicator->setToolTipDuration(1000 * 100);
+    ui->client_indicator->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    connect(ui->client_indicator, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
+        QMenu* menu = new QMenu(this);
+
+        QIcon icon_gamepad(":/icons/icons/gamepad.png");
+        QIcon icon_mouse(":/icons/icons/mouse.png");
+        QIcon icon_keyboard(":/icons/icons/mouse.png");
+        QIcon icon_kick(":/icons/icons/mouse.png");
+
+        QAction* gamepad = new QAction(icon_gamepad, tr("gamepad"), menu);
+        QAction* keyboard = new QAction(icon_keyboard, tr("keyboard"), menu);
+        QAction* mouse = new QAction(icon_mouse, tr("mouse"), menu);
+        QAction* kick = new QAction(icon_kick, tr("kick"), menu);
+
+        connect(gamepad, &QAction::triggered, []() { LOG(INFO) << "Gamepad clicked"; });
+        connect(keyboard, &QAction::triggered, []() { LOG(INFO) << "Keyboard clicked"; });
+        connect(mouse, &QAction::triggered, []() { LOG(INFO) << "Mouse clicked"; });
+        connect(mouse, &QAction::triggered, []() { LOG(INFO) << "Kick clicked"; });
+
+        menu->addAction(gamepad);
+        menu->addAction(keyboard);
+        menu->addAction(mouse);
+
+        menu->exec(ui->client_indicator->mapToGlobal(pos));
+    });
 
     connect(ui->connect_btn, &QPushButton::pressed, [this]() { onConnectBtnPressed(); });
     ui->access_token->setValidator(new AccesstokenValidator(this));

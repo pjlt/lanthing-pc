@@ -4,5 +4,7 @@
         <file>icons/lock.png</file>
         <file>icons/pc.png</file>
         <file>icons/user.png</file>
+        <file>icons/gamepad.png</file>
+        <file>icons/mouse.png</file>
     </qresource>
 </RCC>

@@ -9,24 +9,39 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="111"/>
+        <location filename="../src/views/link/mainpage.ui" line="137"/>
         <source>DEVICE ID</source>
         <translation>设备码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="118"/>
+        <location filename="../src/views/link/mainpage.ui" line="125"/>
         <source>ACCESS TOKEN</source>
         <translation>验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="125"/>
+        <location filename="../src/views/link/mainpage.ui" line="149"/>
         <source>********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="150"/>
+        <location filename="../src/views/link/mainpage.ui" line="161"/>
         <source>*********</source>
         <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="113"/>
+        <source>gamepad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="114"/>
+        <source>keyboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="115"/>
+        <source>mouse</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
