@@ -178,12 +178,17 @@ bool WorkerProcess::launchWorkerProcess() {
         LOG(WARNING) << "CreateProcessAsUser fail: " << GetLastError();
         return ret;
     }
+    if (pi.hProcess == nullptr || pi.hThread == nullptr) {
+        LOG(WARNING) << "hProcess==nullptr or hThread==nullptr";
+        return false;
+    }
     process_handle_ = pi.hProcess;
     thread_handle_ = pi.hThread;
-    LOGF(INFO, "Launch worker process success {%p:%d}", process_handle_, pi.dwProcessId);
+    LOGF(INFO, "Launch worker process success {%p:%lu}", process_handle_, pi.dwProcessId);
     return ret;
 }
 
+#pragma warning(disable : 6387)
 void WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();

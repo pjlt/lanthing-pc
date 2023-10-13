@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
-    <height>600</height>
+    <width>220</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>250</width>
-    <height>600</height>
+    <width>220</width>
+    <height>500</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -33,8 +33,8 @@
     <rect>
      <x>0</x>
      <y>210</y>
-     <width>231</width>
-     <height>101</height>
+     <width>211</width>
+     <height>91</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -59,7 +59,7 @@
        <string notr="true"/>
       </property>
       <property name="text">
-       <string>MAIN PAGE</string>
+       <string>Main Page</string>
       </property>
       <property name="autoDefault">
        <bool>false</bool>
@@ -84,7 +84,7 @@
        <string notr="true"/>
       </property>
       <property name="text">
-       <string>SETTING</string>
+       <string>Settings</string>
       </property>
       <property name="flat">
        <bool>true</bool>
@@ -96,7 +96,7 @@
   <widget class="QLabel" name="avator">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>60</x>
      <y>20</y>
      <width>100</width>
      <height>100</height>
@@ -142,8 +142,8 @@
   <widget class="QPushButton" name="login_btn">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>140</y>
+     <x>70</x>
+     <y>150</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -158,10 +158,10 @@
   <widget class="Line" name="splitter_line">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>-10</y>
+     <x>200</x>
+     <y>0</y>
      <width>20</width>
-     <height>631</height>
+     <height>500</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -180,8 +180,8 @@
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>520</y>
+     <x>30</x>
+     <y>440</y>
      <width>151</width>
      <height>31</height>
     </rect>
@@ -190,7 +190,7 @@
     <item>
      <widget class="QLabel" name="info_label">
       <property name="text">
-       <string>connecting server</string>
+       <string>Connecting server ...</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

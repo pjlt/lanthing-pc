@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <ltlib/settings.h>
+#include <ltlib/times.h>
 
 static const char* DBName = "SettingsSqlite.db";
 
@@ -44,4 +45,27 @@ TEST_F(SettingsSqliteTest, SetValue) {
     EXPECT_EQ(settings_->getString("str_value_hello"), "hello");
     EXPECT_EQ(settings_->getString("str_value_1234"), "1234");
     EXPECT_EQ(settings_->getString("str_value_empty"), "");
+}
+
+TEST_F(SettingsSqliteTest, UpdateValue) {
+    settings_->setBoolean("bool_key", true);
+    settings_->setInteger("int_key", 1234);
+    settings_->setString("str_key", "some string");
+
+    settings_->setBoolean("bool_key", false);
+    settings_->setInteger("int_key", 5678);
+    settings_->setString("str_key", "another string");
+
+    EXPECT_EQ(settings_->getBoolean("bool_key"), false);
+    EXPECT_EQ(settings_->getInteger("int_key"), 5678);
+    EXPECT_EQ(settings_->getString("str_key"), "another string");
+}
+
+TEST_F(SettingsSqliteTest, UpdateTime) {
+    // UpdateTime是有Bug的，时间戳不更新，待修复
+    auto now = ltlib::utc_now_ms() / 1000;
+    settings_->setInteger("int_key", 1);
+    auto updated_at = settings_->getUpdateTime("int_key");
+    ASSERT_TRUE(updated_at.has_value());
+    EXPECT_TRUE(updated_at.value() >= now - 1 && updated_at.value() <= now + 1);
 }

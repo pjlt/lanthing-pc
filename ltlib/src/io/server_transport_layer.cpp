@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,39 +31,31 @@
 #include "server_transport_layer.h"
 #include <ltlib/logging.h>
 
-namespace
-{
+namespace {
 
-struct UvWrittenInfo
-{
+struct UvWrittenInfo {
     UvWrittenInfo(ltlib::LibuvSTransport::Conn* _conn, const std::function<void()>& cb)
         : conn(_conn)
-        , custom_callback(cb)
-    {
-    }
+        , custom_callback(cb) {}
     ltlib::LibuvSTransport::Conn* conn;
     std::function<void()> custom_callback;
 };
 
 } // namespace
 
-namespace ltlib
-{
+namespace ltlib {
 
 LibuvSTransport::LibuvSTransport(const Params& params)
-    : stype_ { params.stype }
-    , ioloop_ { params.ioloop }
-    , pipe_name_ { params.pipe_name }
-    , bind_ip_ { params.bind_ip }
-    , bind_port_ { params.bind_port }
-    , on_accepted_ { params.on_accepted }
-    , on_closed_ { params.on_closed }
-    , on_read_ { params.on_read }
-{
-}
+    : stype_{params.stype}
+    , ioloop_{params.ioloop}
+    , pipe_name_{params.pipe_name}
+    , bind_ip_{params.bind_ip}
+    , bind_port_{params.bind_port}
+    , on_accepted_{params.on_accepted}
+    , on_closed_{params.on_closed}
+    , on_read_{params.on_read} {}
 
-LibuvSTransport::~LibuvSTransport()
-{
+LibuvSTransport::~LibuvSTransport() {
     if (stype_ == StreamType::TCP) {
         if (server_tcp_ == nullptr) {
             return;
@@ -71,38 +63,44 @@ LibuvSTransport::~LibuvSTransport()
         auto tcp_handle = server_tcp_.release();
         if (ioloop_->isNotCurrentThread()) {
             ioloop_->post([tcp_handle]() {
-                uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+                uv_close((uv_handle_t*)tcp_handle,
+                         [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
             });
-        } else {
-            uv_close((uv_handle_t*)tcp_handle, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
         }
-
-    } else {
+        else {
+            uv_close((uv_handle_t*)tcp_handle,
+                     [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+        }
+    }
+    else {
         if (server_pipe_ == nullptr) {
             return;
         }
         auto pipe_conn = server_pipe_.release();
         if (ioloop_->isNotCurrentThread()) {
             ioloop_->post([pipe_conn]() {
-                uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+                uv_close((uv_handle_t*)pipe_conn,
+                         [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
             });
-        } else {
-            uv_close((uv_handle_t*)pipe_conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+        }
+        else {
+            uv_close((uv_handle_t*)pipe_conn,
+                     [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
         }
     }
 }
 
-bool LibuvSTransport::init()
-{
+bool LibuvSTransport::init() {
     if (stype_ == StreamType::TCP) {
         return init_tcp();
-    } else {
+    }
+    else {
         return init_pipe();
     }
 }
 
-bool LibuvSTransport::send(uint32_t fd, Buffer buff[], uint32_t buff_count, const std::function<void()>& callback)
-{
+bool LibuvSTransport::send(uint32_t fd, Buffer buff[], uint32_t buff_count,
+                           const std::function<void()>& callback) {
     auto iter = conns_.find(fd);
     if (iter == conns_.cend() || iter->second->closing) {
         LOG(WARNING) << "Can't write to closed connections";
@@ -110,7 +108,7 @@ bool LibuvSTransport::send(uint32_t fd, Buffer buff[], uint32_t buff_count, cons
     }
     auto conn = iter->second;
     auto info = new UvWrittenInfo(conn.get(), callback);
-    uv_write_t* write_req = new uv_write_t {};
+    uv_write_t* write_req = new uv_write_t{};
     write_req->data = info;
     uv_buf_t* uvbuf = reinterpret_cast<uv_buf_t*>(buff);
     int ret = uv_write(write_req, conn->handle, uvbuf, buff_count, &LibuvSTransport::on_written);
@@ -123,22 +121,20 @@ bool LibuvSTransport::send(uint32_t fd, Buffer buff[], uint32_t buff_count, cons
     return true;
 }
 
-void LibuvSTransport::on_written(uv_write_t* req, int status)
-{
+void LibuvSTransport::on_written(uv_write_t* req, int status) {
     auto info = reinterpret_cast<UvWrittenInfo*>(req->data);
     auto user_callback = info->custom_callback;
     Conn* conn = info->conn;
+    auto that = reinterpret_cast<LibuvSTransport*>(info->conn->svr);
     delete info;
     delete req;
     user_callback();
     if (status != 0) {
-        auto that = reinterpret_cast<LibuvSTransport*>(info->conn->svr);
         that->close(conn->fd);
     }
 }
 
-bool LibuvSTransport::init_tcp()
-{
+bool LibuvSTransport::init_tcp() {
     server_tcp_ = std::make_unique<uv_tcp_t>();
     int ret = uv_tcp_init(uvloop(), server_tcp_.get());
     if (ret != 0) {
@@ -168,7 +164,8 @@ bool LibuvSTransport::init_tcp()
     LOGF(DEBUG, "Listening on %s:%u", bind_ip_.c_str(), listen_port_);
     server_tcp_->data = this;
     constexpr int kBacklog = 4;
-    ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_tcp_.get()), kBacklog, &LibuvSTransport::on_new_client);
+    ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_tcp_.get()), kBacklog,
+                    &LibuvSTransport::on_new_client);
     if (ret != 0) {
         LOG(ERR) << "Listen on TCP '" << bind_ip_ << ":" << bind_port_ << "' failed: " << ret;
         server_tcp_.reset();
@@ -177,8 +174,7 @@ bool LibuvSTransport::init_tcp()
     return true;
 }
 
-bool LibuvSTransport::init_pipe()
-{
+bool LibuvSTransport::init_pipe() {
     server_pipe_ = std::make_unique<uv_pipe_t>();
     uv_pipe_init(uvloop(), server_pipe_.get(), 0); /*返回值永远是0*/
     int ret = uv_pipe_bind(server_pipe_.get(), pipe_name_.c_str());
@@ -189,7 +185,8 @@ bool LibuvSTransport::init_pipe()
     }
     server_pipe_->data = this;
     constexpr int kBacklog = 4;
-    ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_pipe_.get()), kBacklog, &LibuvSTransport::on_new_client);
+    ret = uv_listen(reinterpret_cast<uv_stream_t*>(server_pipe_.get()), kBacklog,
+                    &LibuvSTransport::on_new_client);
     if (ret != 0) {
         LOG(ERR) << "Listen on pipe '" << pipe_name_ << "' failed: " << ret;
         server_pipe_.reset();
@@ -198,8 +195,7 @@ bool LibuvSTransport::init_pipe()
     return true;
 }
 
-void LibuvSTransport::close(uint32_t fd)
-{
+void LibuvSTransport::close(uint32_t fd) {
     auto iter = conns_.find(fd);
     if (iter == conns_.cend() || iter->second->closing) {
         LOG(WARNING) << "Can't close a closed fd:" << fd;
@@ -211,45 +207,40 @@ void LibuvSTransport::close(uint32_t fd)
     uv_close(reinterpret_cast<uv_handle_t*>(conn->handle), &LibuvSTransport::on_conn_closed);
 }
 
-std::string LibuvSTransport::ip() const
-{
+std::string LibuvSTransport::ip() const {
     if (stype_ != StreamType::TCP) {
         return "";
     }
     return bind_ip_;
 }
 
-uint16_t LibuvSTransport::port() const
-{
+uint16_t LibuvSTransport::port() const {
     if (stype_ != StreamType::TCP) {
         return 0;
     }
     return listen_port_;
 }
 
-void LibuvSTransport::on_conn_closed(uv_handle_t* handle)
-{
+void LibuvSTransport::on_conn_closed(uv_handle_t* handle) {
     Conn* conn = reinterpret_cast<Conn*>(handle->data);
     auto that = reinterpret_cast<LibuvSTransport*>(conn->svr);
     that->conns_.erase(conn->fd);
 }
 
-uv_loop_t* LibuvSTransport::uvloop()
-{
+uv_loop_t* LibuvSTransport::uvloop() {
     return reinterpret_cast<uv_loop_t*>(ioloop_->context());
 }
 
-uv_stream_t* LibuvSTransport::server_handle()
-{
+uv_stream_t* LibuvSTransport::server_handle() {
     if (stype_ == StreamType::Pipe) {
         return reinterpret_cast<uv_stream_t*>(server_pipe_.get());
-    } else {
+    }
+    else {
         return reinterpret_cast<uv_stream_t*>(server_tcp_.get());
     }
 }
 
-void LibuvSTransport::on_new_client(uv_stream_t* server, int status)
-{
+void LibuvSTransport::on_new_client(uv_stream_t* server, int status) {
     auto that = reinterpret_cast<LibuvSTransport*>(server->data);
     if (status != 0) {
         LOG(ERR) << "New connection error: " << status;
@@ -278,61 +269,64 @@ void LibuvSTransport::on_new_client(uv_stream_t* server, int status)
     that->on_accepted_(conn->fd);
 }
 
-void LibuvSTransport::on_alloc_memory(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
-{
+void LibuvSTransport::on_alloc_memory(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
     (void)handle;
     buf->base = new char[suggested_size];
     buf->len = static_cast<decltype(buf->len)>(suggested_size);
 }
 
-void LibuvSTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* uvbuf)
-{
+void LibuvSTransport::on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* uvbuf) {
     auto conn = reinterpret_cast<LibuvSTransport::Conn*>(stream->data);
     auto that = conn->svr;
     if (nread == 0) {
         // EAGAIN
         return;
-    } else if (nread == UV_EOF) {
+    }
+    else if (nread == UV_EOF) {
         // 读完
         that->close(conn->fd);
-    } else if (nread < 0) {
+    }
+    else if (nread < 0) {
         // 失败，应该断链
         that->close(conn->fd);
-    } else {
+    }
+    else {
         // const Buffer* buff = reinterpret_cast<const Buffer*>(uvbuf);
-        Buffer buff { uvbuf->base, uint32_t(nread) };
+        Buffer buff{uvbuf->base, uint32_t(nread)};
         if (!that->on_read_(conn->fd, buff)) {
             that->close(conn->fd);
         }
+        delete uvbuf->base;
     }
 }
 
 LibuvSTransport::Conn::Conn(StreamType _stype)
-    : stype { _stype }
-{
+    : stype{_stype} {
     if (stype == StreamType::Pipe) {
         handle = reinterpret_cast<uv_stream_t*>(new uv_pipe_t);
-    } else {
+    }
+    else {
         handle = reinterpret_cast<uv_stream_t*>(new uv_tcp_t);
     }
 }
 
-LibuvSTransport::Conn::~Conn()
-{
+LibuvSTransport::Conn::~Conn() {
     if (stype == StreamType::Pipe) {
         delete reinterpret_cast<uv_pipe_t*>(handle);
-    } else {
+    }
+    else {
         delete reinterpret_cast<uv_tcp_t*>(handle);
     }
 }
 
-std::shared_ptr<LibuvSTransport::Conn> LibuvSTransport::Conn::create(StreamType _stype, uv_loop_t* uvloop)
-{
+std::shared_ptr<LibuvSTransport::Conn> LibuvSTransport::Conn::create(StreamType _stype,
+                                                                     uv_loop_t* uvloop) {
     auto conn = std::make_shared<Conn>(_stype);
     if (_stype == StreamType::Pipe) {
         uv_pipe_init(uvloop, reinterpret_cast<uv_pipe_t*>(conn->handle), 0);
         return conn;
-    } else {
+    }
+    else {
         int ret = uv_tcp_init(uvloop, reinterpret_cast<uv_tcp_t*>(conn->handle));
         if (ret != 0) {
             return nullptr;

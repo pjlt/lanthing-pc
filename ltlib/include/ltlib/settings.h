@@ -59,6 +59,7 @@ public:
     virtual auto getInteger(const std::string& key) -> std::optional<int64_t> = 0;
     virtual void setString(const std::string& key, const std::string& value) = 0;
     virtual auto getString(const std::string& key) -> std::optional<std::string> = 0;
+    virtual auto getUpdateTime(const std::string& key) -> std::optional<int64_t> = 0;
 
 protected:
     virtual bool init() = 0;

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
-    <height>600</height>
+    <width>520</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,14 +26,14 @@
     <item row="0" column="0">
      <widget class="QCheckBox" name="checkbox_daemon">
       <property name="text">
-       <string>常驻后台</string>
+       <string>Run as Service</string>
       </property>
      </widget>
     </item>
     <item row="1" column="0">
      <widget class="QCheckBox" name="checkbox_refresh_passwd">
       <property name="text">
-       <string>密码自动更新</string>
+       <string>Auto refresh access token</string>
       </property>
      </widget>
     </item>
@@ -43,9 +43,9 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>270</y>
+     <y>330</y>
      <width>391</width>
-     <height>181</height>
+     <height>121</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -54,7 +54,7 @@
       <item>
        <widget class="QLabel" name="label_relay">
         <property name="text">
-         <string>中继服务器</string>
+         <string>Relay Server</string>
         </property>
        </widget>
       </item>
@@ -64,32 +64,44 @@
       <item>
        <widget class="QPushButton" name="button_relay">
         <property name="text">
-         <string>确认</string>
+         <string>Confirm</string>
         </property>
        </widget>
       </item>
      </layout>
     </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="verticalLayoutWidget_2">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>200</y>
+     <width>301</width>
+     <height>91</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit_2"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_2">
-        <property name="text">
-         <string>PushButton</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <widget class="QLabel" name="label_fullscreen">
+      <property name="text">
+       <string>Fullscreen Mode</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="radio_fullscreen">
+      <property name="text">
+       <string>Fullscreen</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="radio_windowed_fullscreen">
+      <property name="text">
+       <string>Windowed Fullscreen</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

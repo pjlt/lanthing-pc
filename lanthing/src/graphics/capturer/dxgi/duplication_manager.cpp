@@ -5,6 +5,8 @@
 //
 // Copyright (c) Microsoft Corporation. All rights reserved
 
+#pragma warning(push, 0)
+
 #include "duplication_manager.h"
 #include <ltlib/logging.h>
 
@@ -106,11 +108,11 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     DxgiOutput1 = nullptr;
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
-            LOGF(ERR,
-                 "There is already the maximum number of applications using the Desktop "
-                 "Duplication API running, please close one of those applications and then "
-                 "try again.",
-                 "Error");
+            LOG(ERR,
+                "There is already the maximum number of applications using the Desktop "
+                "Duplication API running, please close one of those applications and then "
+                "try again.",
+                "Error");
         }
         LOGF(ERR, "failed to call DuplicateOutput, hr:0x%08x", hr);
         return false;

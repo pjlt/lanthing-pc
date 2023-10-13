@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>518</width>
-    <height>600</height>
+    <width>520</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>518</width>
-    <height>600</height>
+    <width>520</width>
+    <height>500</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -26,7 +26,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>300</y>
+     <y>270</y>
      <width>411</width>
      <height>141</height>
     </rect>
@@ -102,6 +102,9 @@
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout" rowstretch="1,1" columnstretch="1,1">
+    <property name="sizeConstraint">
+     <enum>QLayout::SetDefaultConstraint</enum>
+    </property>
     <item row="0" column="0">
      <widget class="QLabel" name="dev_lable">
       <property name="text">

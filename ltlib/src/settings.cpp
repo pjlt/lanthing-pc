@@ -205,7 +205,7 @@ void LockedFile::write_str(const std::string& str) {
 
 namespace ltlib {
 
-class SettingsToml : public Settings {
+class [[deprecated]] SettingsToml : public Settings {
 public:
     SettingsToml(const std::string& path);
     ~SettingsToml() override = default;
@@ -217,6 +217,7 @@ public:
     auto getInteger(const std::string& key) -> std::optional<int64_t> override;
     void setString(const std::string& key, const std::string& value) override;
     auto getString(const std::string& key) -> std::optional<std::string> override;
+    auto getUpdateTime(const std::string& key) -> std::optional<int64_t> override;
 
 private:
     template <typename VType> void set_value(const std::string& key, VType value) {
@@ -303,6 +304,11 @@ auto SettingsToml::getString(const std::string& key) -> std::optional<std::strin
     return value;
 }
 
+auto SettingsToml::getUpdateTime(const std::string& key) -> std::optional<int64_t> {
+    (void)key;
+    return std::nullopt;
+}
+
 //*********************↑↑↑↑↑↑SettingsToml↑↑↑↑↑↑*******************************
 // 1. 不应该把配置用文本直接暴露给普通用户
 // 2. 将跨进程锁的实现交给9千万行测试代码的sqlite，而不是手搓玩具
@@ -330,6 +336,7 @@ public:
     auto getInteger(const std::string& key) -> std::optional<int64_t> override;
     void setString(const std::string& key, const std::string& value) override;
     auto getString(const std::string& key) -> std::optional<std::string> override;
+    auto getUpdateTime(const std::string& key) -> std::optional<int64_t> override;
 
 private:
     sqlite3* db_ = nullptr;
@@ -349,8 +356,8 @@ bool SettingsSqlite::init() {
     const char* kCreateTableSQL = R"(
 CREATE TABLE IF NOT EXISTS kv_settings(
 	"id"	        INTEGER PRIMARY KEY,
-	"created_at"	DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), 
-	"updated_at"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'localtime')),
+	"created_at"	DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP)),
+	"updated_at"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
 	"name"          TEXT UNIQUE NOT NULL,
 	"bool_val"      INTEGER,
 	"int_val"       INTEGER,
@@ -537,6 +544,39 @@ auto SettingsSqlite::getString(const std::string& key) -> std::optional<std::str
     return result;
 }
 
+auto SettingsSqlite::getUpdateTime(const std::string& key) -> std::optional<int64_t> {
+    if (!validateStr(key)) {
+        return std::nullopt;
+    }
+    const char sql[] = "SELECT strftime('%%s', updated_at) FROM kv_settings WHERE name = '%s';";
+    std::array<char, 128> buff = {0};
+    if (key.size() + sizeof(sql) > buff.size()) {
+        LOG(ERR) << "getString failed, key too long";
+        return std::nullopt;
+    }
+    snprintf(buff.data(), buff.size(), sql, key.c_str());
+    char* errmsg = nullptr;
+    std::optional<int64_t> result;
+    int ret = sqlite3_exec(
+        db_, buff.data(),
+        [](void* op, int argc, char** argv, char**) -> int {
+            std::optional<int64_t>* result = reinterpret_cast<std::optional<int64_t>*>(op);
+            if (argc != 1 || argv[0] == nullptr) {
+                LOG(ERR) << "SELECT updated_at failed";
+                return 0;
+            }
+            int64_t val = std::atoll(argv[0]);
+            (*result) = val;
+            return 0;
+        },
+        &result, &errmsg);
+    if (ret != SQLITE_OK) {
+        LOGF(ERR, "getUpdateTime '%s' failed, sqlite3_exec: %s", key.c_str(), errmsg);
+        sqlite3_free(errmsg);
+    }
+    return result;
+}
+
 //****************************************************************************
 
 std::unique_ptr<Settings> Settings::create(Storage type) {
@@ -553,12 +593,11 @@ std::unique_ptr<Settings> Settings::create(Storage type) {
 std::unique_ptr<Settings> Settings::createWithPathForTest(Storage type, const std::string& path) {
     std::unique_ptr<Settings> settings;
     switch (type) {
-    case Settings::Storage::Toml:
-        settings = std::make_unique<SettingsToml>(path);
-        break;
     case Settings::Storage::Sqlite:
         settings = std::make_unique<SettingsSqlite>(path);
         break;
+    case Settings::Storage::Toml:
+        [[fallthrough]];
     default:
         break;
     }

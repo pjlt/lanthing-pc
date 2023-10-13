@@ -29,41 +29,41 @@
  */
 
 #pragma once
+#include <functional>
+#include <memory>
 
-#include <cstdint>
+#include <ltlib/io/ioloop.h>
+#include <ltlib/io/server.h>
 
-#include <string>
-#include <vector>
+#include <ui.h>
 
 namespace lt {
 
-enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
-
-class UiCallback {
+//
+class ServiceManager {
 public:
-    enum class ErrCode : uint8_t {
-        OK = 0,
-        TIMEOUT,
-        FALIED,
-        CONNECTING,
-        SYSTEM_ERROR,
+    struct Params {
+        ltlib::IOLoop* ioloop;
+        std::function<void(int64_t)> on_confirm_connection;
     };
 
 public:
-    virtual ~UiCallback() = default;
+    static std::unique_ptr<ServiceManager> create(const Params& params);
+    void onUserConfirmedConnection(int64_t device_id, ConfirmResult result);
 
-    virtual void onLoginRet(ErrCode code, const std::string& err = {}) = 0;
+private:
+    ServiceManager(const Params& params);
+    bool init(ltlib::IOLoop* ioloop);
+    void onPipeAccepted(uint32_t fd);
+    void onPipeDisconnected(uint32_t fd);
+    void onPipeMessage(uint32_t fd, uint32_t type,
+                       std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    virtual void onInviteRet(ErrCode code, const std::string& err = {}) = 0;
+    void onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    virtual void onDisconnectedWithServer() = 0;
-
-    virtual void onDevicesChanged(const std::vector<std::string>& dev_ids) = 0;
-
-    virtual void onLocalDeviceID(int64_t device_id) = 0;
-
-    virtual void onLocalAccessToken(const std::string& access_token) = 0;
-
-    virtual void onConfirmConnection(int64_t device_id) = 0;
+private:
+    std::unique_ptr<ltlib::Server> pipe_server_;
+    uint32_t fd_ = std::numeric_limits<uint32_t>::max();
+    std::function<void(int64_t)> on_confirm_connection_;
 };
 } // namespace lt

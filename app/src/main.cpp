@@ -37,9 +37,9 @@
 
 #include <g3log/logworker.hpp>
 #include <lt_minidump_generator.h>
-#include <ltlib/logging.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/singleton_process.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -70,7 +70,7 @@ void initLogging() {
     std::string bin_path = ltlib::getProgramFullpath<char>();
     std::string bin_dir = ltlib::getProgramPath<char>();
     std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
-    std::string kPrefix = "ui";
+    std::string kPrefix = "app";
     std::filesystem::path log_dir;
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
@@ -109,7 +109,12 @@ void initLogging() {
 } // namespace
 
 int main(int argc, char** argv) {
-    ::srand(time(nullptr)); // 为什么这个srand不生效?
+    if (!ltlib::makeSingletonProcess("lanthing_app")) {
+        printf("Another instance is running.\n");
+        return 0;
+    }
+    auto now = time(nullptr);
+    ::srand(now);
     initLogging();
     std::unique_ptr<lt::App> app = lt::App::create();
     if (app == nullptr) {

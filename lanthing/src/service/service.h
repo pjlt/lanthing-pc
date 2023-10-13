@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -49,9 +49,12 @@ public:
 
 private:
     bool initTcpClient();
+    bool initAppClient();
     void mainLoop(const std::function<void()>& i_am_alive);
     bool initSettings();
+    void createSession(const WorkerSession::Params& params);
     void destroySession(const std::string& session_name);
+    void letUserConfirm(int64_t device_id);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
@@ -60,16 +63,21 @@ private:
     void onServerDisconnected();
     void onServerReconnecting();
     void onServerConnected();
-    void dispatchServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void sendMessageToServer(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void loginDevice();
     void loginUser();
     void reportSessionClosed(WorkerSession::CloseReason close_reason, const std::string& room_id);
-
-    // 消息handler
     void onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    // app
+    void onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppDisconnected();
+    void onAppReconnecting();
+    void onAppConnected();
+    void sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onCreateSessionCompletedThreadSafe(bool success, const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -83,12 +91,14 @@ private:
 private:
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
+    std::unique_ptr<ltlib::Client> app_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::mutex mutex_;
     std::map<std::string, std::shared_ptr<WorkerSession>> worker_sessions_;
     std::unique_ptr<ltlib::Settings> settings_;
     int64_t device_id_ = 0;
-    // std::string access_token_;
+    bool app_connected_ = false;
+    std::optional<WorkerSession::Params> cached_worker_params_;
 };
 
 } // namespace svc

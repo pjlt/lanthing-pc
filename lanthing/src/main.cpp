@@ -37,8 +37,10 @@
 
 #include <g3log/logworker.hpp>
 #include <lt_minidump_generator.h>
+
 #include <ltlib/event.h>
 #include <ltlib/logging.h>
+#include <ltlib/singleton_process.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -172,25 +174,6 @@ std::map<std::string, std::string> parseOptions(int argc, char* argv[]) {
     return options;
 }
 
-bool isAnotherInstanceRunning() {
-    namespace fs = std::filesystem;
-    fs::path program_full_path{ltlib::getProgramFullpath<char>()};
-#ifdef LT_WINDOWS
-    std::string event_name =
-        std::string{"Global\\"} + program_full_path.filename().string() + ".tsa";
-#else
-    std::string event_name = "xxxx";
-#endif
-    ltlib::Event singleton{event_name};
-    if (!singleton.isOwner()) {
-        LOG(WARNING) << "Another instance is running";
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
 int runAsClient(std::map<std::string, std::string> options) {
     initLogAndMinidump(Role::Client);
     lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
@@ -205,11 +188,12 @@ int runAsClient(std::map<std::string, std::string> options) {
 }
 
 int runAsService(std::map<std::string, std::string> options) {
-    initLogAndMinidump(Role::Service);
-    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
-    if (isAnotherInstanceRunning()) {
+    if (!ltlib::makeSingletonProcess("lanthing")) {
+        printf("Another instance is running.\n");
         return -1;
     }
+    initLogAndMinidump(Role::Service);
+    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
     lt::svc::LanthingWinService svc;
     ltlib::ServiceApp app{&svc};

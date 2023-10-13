@@ -182,7 +182,7 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
 bool D3D11Pipeline::render(int64_t frame) {
     tryResetSwapChain();
     if (frame >= static_cast<int64_t>(shader_views_.size())) {
-        LOGF(ERR, "Can not find shader view for texutre %d", frame);
+        LOG(ERR) << "Can not find shader view for texutre " << frame;
         return false;
     }
     size_t index = static_cast<size_t>(frame);

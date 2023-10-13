@@ -31,8 +31,8 @@
 #pragma comment(lib, "SetupAPI.lib")
 
 #include <Windows.h>
-#include <ltlib/logging.h>
 #include <inputs/executor/gamepad.h>
+#include <ltlib/logging.h>
 
 namespace lt {
 
@@ -83,9 +83,10 @@ bool Gamepad::plugin(uint32_t index) {
         vigem_target_free(gamepad);
         return false;
     }
-
+#pragma warning(disable : 28023)
     ret = vigem_target_x360_register_notification(gamepad_driver_, gamepad,
                                                   &Gamepad::on_gamepad_response, this);
+#pragma warning(default : 28023)
     if (!VIGEM_SUCCESS(ret)) {
         vigem_target_x360_unregister_notification(gamepad);
         LOG(ERR) << "Register x360 failed";

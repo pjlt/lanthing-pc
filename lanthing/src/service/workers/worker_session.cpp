@@ -549,7 +549,7 @@ void WorkerSession::onPipeDisconnected(uint32_t fd) {
         return;
     }
     pipe_client_fd_ = std::numeric_limits<uint32_t>::max();
-    LOGF(INFO, "Worker(%d) disconnected from pipe server", fd);
+    LOGF(INFO, "Worker(%u) disconnected from pipe server", fd);
 }
 
 void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,

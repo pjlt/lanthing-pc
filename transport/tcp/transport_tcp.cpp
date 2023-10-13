@@ -421,9 +421,8 @@ void ServerTCP::onAccepted(uint32_t fd) {
         return;
     }
     if (client_fd_ != std::numeric_limits<uint32_t>::max()) {
-        LOG(ERR) << "New ClientTCP(" << fd
-                     << ") connected to the ServerTCP, but another ClientTCP(" << fd
-                     << ") already being serve";
+        LOG(ERR) << "New ClientTCP(" << fd << ") connected to the ServerTCP, but another ClientTCP("
+                 << fd << ") already being serve";
         tcp_server_->close(fd);
         return;
     }

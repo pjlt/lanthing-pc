@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,18 +30,17 @@
 
 #pragma once
 #include "client_transport_layer.h"
+#include "queue.h"
 #include <cstdint>
-#include <vector>
-#include <mbedtls/ssl.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
-#include "queue.h"
+#include <mbedtls/ssl.h>
+#include <vector>
 
-namespace ltlib
-{
+namespace ltlib {
 
-struct BIO
-{
+// TODO: REPLACE BIO
+struct BIO {
     static BIO* create();
     static void destroy(BIO* b);
     int put(const uint8_t* buf, size_t len);
@@ -54,16 +53,9 @@ struct BIO
     message_q;
 };
 
-class MbedtlsCTransport : public CTransport
-{
+class MbedtlsCTransport : public CTransport {
 private:
-    enum class HandshakeState
-    {
-        BEFORE,
-        CONTINUE,
-        COMPLETE,
-        ERROR_
-    };
+    enum class HandshakeState { BEFORE, CONTINUE, COMPLETE, ERROR_ };
 
 public:
     MbedtlsCTransport(const Params& params);
@@ -76,15 +68,18 @@ private:
     bool tls_init_context();
     bool tls_init_engine();
     int tls_reset_engine();
-    int tls_write(const char* data, uint32_t data_len, char* out, uint32_t* out_bytes, uint32_t maxout);
-    int tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out, uint32_t* out_bytes, uint32_t maxout);
+    int tls_write(const char* data, uint32_t data_len, char* out, uint32_t* out_bytes,
+                  uint32_t maxout);
+    int tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out, uint32_t* out_bytes,
+                 uint32_t maxout);
     Params make_uv_params(const Params& params);
     bool on_uv_read(const Buffer&);
     void on_uv_closed();
     void on_uv_reconnecting();
     bool on_uv_connected();
 
-    HandshakeState continue_handshake(char* in, uint32_t in_bytes, char* out, uint32_t* out_bytes, uint32_t maxout);
+    HandshakeState continue_handshake(char* in, uint32_t in_bytes, char* out, uint32_t* out_bytes,
+                                      uint32_t maxout);
     static int mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len);
     static int mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len);
 

@@ -28,42 +28,59 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifdef LT_WINDOWS
+#include <Windows.h>
+#elif defined LT_LINUX
+#include <errno.h>
+#include <sys/file.h>
+#endif
 
-#include <cstdint>
-
+#include <filesystem>
+#include <sstream>
 #include <string>
-#include <vector>
 
-namespace lt {
+#include <ltlib/event.h>
+#include <ltlib/singleton_process.h>
+#include <ltlib/strings.h>
+#include <ltlib/system.h>
 
-enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
+namespace ltlib {
 
-class UiCallback {
-public:
-    enum class ErrCode : uint8_t {
-        OK = 0,
-        TIMEOUT,
-        FALIED,
-        CONNECTING,
-        SYSTEM_ERROR,
-    };
+#ifdef LT_WINDOWS
 
-public:
-    virtual ~UiCallback() = default;
+bool makeSingletonProcess(const std::string& name) {
+    static std::optional<bool> no_other_process;
+    if (no_other_process.has_value()) {
+        return no_other_process.value();
+    }
+    std::string event_name = "Global\\singleton_process_" + name;
+    std::wstring wname = ltlib::utf8To16(event_name);
+    // no delete
+    auto singleton = new ltlib::Event{event_name};
+    no_other_process = singleton->isOwner();
+    return no_other_process.value();
+}
 
-    virtual void onLoginRet(ErrCode code, const std::string& err = {}) = 0;
+#elif defined LT_LINUX
+bool makeSingletonProcess(const std::string& name) {
+    static std::optional<bool> no_other_process;
+    if (no_other_process.has_value()) {
+        return no_other_process.value();
+    }
+    std::stringstream ss;
+    ss << "/var/run/" << name << ".pid";
+    int pid_file = open(ss.str().c_str(), O_CREAT | O_RDWR, 0666);
+    if (lockf(pidfile, F_TLOCK, 0) < 0) {
+        no_other_process = false;
+        return false;
+    }
+    char str[64] = {0};
+    snprintf(str, 64, "%d", getpid());
+    write(pid_file, str, strlen(str));
+}
 
-    virtual void onInviteRet(ErrCode code, const std::string& err = {}) = 0;
+#else
+#error unsupported platform
+#endif
 
-    virtual void onDisconnectedWithServer() = 0;
-
-    virtual void onDevicesChanged(const std::vector<std::string>& dev_ids) = 0;
-
-    virtual void onLocalDeviceID(int64_t device_id) = 0;
-
-    virtual void onLocalAccessToken(const std::string& access_token) = 0;
-
-    virtual void onConfirmConnection(int64_t device_id) = 0;
-};
-} // namespace lt
+} // namespace ltlib

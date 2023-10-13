@@ -10,6 +10,7 @@
 //
 //=====================================================================
 #pragma warning(disable : 4100)
+#pragma warning(disable : 6011)
 #include "ikcp.h"
 
 #include <stdarg.h>

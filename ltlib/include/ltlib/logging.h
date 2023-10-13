@@ -9,23 +9,22 @@
 #pragma once
 #include <ltlib/ltlib.h>
 
-#include <string>
+#include <inttypes.h>
+
 #include <memory>
+#include <string>
 #include <vector>
 
-#include <g3log/logmessage.hpp>
 #include <g3log/g3log.hpp>
+#include <g3log/logmessage.hpp>
 
-const LEVELS ERR {
-    WARNING.value + 100, "ERROR"
-};
+const LEVELS ERR{WARNING.value + 100, "ERROR"};
 
-namespace ltlib
-{
-class LT_API LogSink
-{
+namespace ltlib {
+class LT_API LogSink {
 public:
-    LogSink(const std::string& log_prefix, const std::string& log_directory, size_t write_to_log_every_x_message = 30);
+    LogSink(const std::string& log_prefix, const std::string& log_directory,
+            size_t write_to_log_every_x_message = 30);
     virtual ~LogSink();
 
     void fileWrite(g3::LogMessageMover message);
@@ -49,10 +48,7 @@ private:
     int _last_mday;
 
     void addLogFileHeader();
-    std::ofstream& filestream()
-    {
-        return *(_outptr.get());
-    }
+    std::ofstream& filestream() { return *(_outptr.get()); }
 
     LogSink& operator=(const LogSink&) = delete;
     LogSink(const LogSink& other) = delete;

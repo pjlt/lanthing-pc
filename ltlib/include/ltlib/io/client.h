@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,41 +29,41 @@
  */
 
 #pragma once
-#include <ltlib/ltlib.h>
-#include <ltlib/io/types.h>
-#include <memory>
-#include <string>
 #include <functional>
 #include <google/protobuf/message_lite.h>
+#include <ltlib/io/types.h>
+#include <ltlib/ltlib.h>
+#include <memory>
+#include <string>
 
-namespace ltlib
-{
+namespace ltlib {
 
 class ClientImpl;
 class IOLoop;
 
-class LT_API Client
-{
+class LT_API Client {
 public:
-    struct Params
-    {
+    struct Params {
         StreamType stype;
         IOLoop* ioloop;
         std::string pipe_name;
         std::string host;
-        uint16_t port;
-        bool is_tls;
+        uint16_t port = 0;
+        bool is_tls = false;
         std::string cert;
         std::function<void()> on_connected;
         std::function<void()> on_closed;
         std::function<void()> on_reconnecting;
-        std::function<void(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>&)> on_message;
+        std::function<void(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>&)>
+            on_message;
     };
 
 public:
     static std::unique_ptr<Client> create(const Params& params);
-    bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback = nullptr);
-    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback = nullptr);
+    bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+              const std::function<void()>& callback = nullptr);
+    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len,
+              const std::function<void()>& callback = nullptr);
     // 重连有两种
     // 1. 第一种是内部发生错误，自发重连
     // 2. 第二种是上层调用bool send()我们返回false，后续由上层主动调reconnect()
