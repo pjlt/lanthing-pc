@@ -130,8 +130,8 @@ public:
     ~AmdEncoderImpl();
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
-    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeOneFrame(void* input_frame,
-                                                                   bool request_iframe);
+    std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
+                                                                       bool request_iframe);
 
 private:
     bool loadAmdApi();
@@ -227,7 +227,7 @@ void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) 
     }
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame>
+std::shared_ptr<ltproto::client2worker::VideoFrame>
 AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     amf::AMFSurfacePtr surface = nullptr;
     AMF_RESULT result = context_->CreateSurfaceFromDX11Native(input_frame, &surface, nullptr);
@@ -268,7 +268,7 @@ AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
         return nullptr;
     }
     amf::AMFBufferPtr buffer{outdata};
-    auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    auto out_frame = std::make_shared<ltproto::client2worker::VideoFrame>();
     out_frame->set_is_keyframe(isKeyFrame(outdata));
     out_frame->set_frame(buffer->GetNative(), static_cast<uint32_t>(buffer->GetSize()));
     return out_frame;
@@ -461,7 +461,7 @@ void AmdEncoder::reconfigure(const VideoEncoder::ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame> AmdEncoder::encodeFrame(void* input_frame) {
+std::shared_ptr<ltproto::client2worker::VideoFrame> AmdEncoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 

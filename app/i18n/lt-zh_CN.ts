@@ -29,18 +29,23 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="113"/>
+        <location filename="../src/views/link/mainpage.cpp" line="115"/>
         <source>gamepad</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="114"/>
+        <location filename="../src/views/link/mainpage.cpp" line="116"/>
         <source>keyboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="115"/>
+        <location filename="../src/views/link/mainpage.cpp" line="117"/>
         <source>mouse</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="118"/>
+        <source>kick</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

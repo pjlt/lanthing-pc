@@ -36,7 +36,7 @@
 #include <optional>
 #include <vector>
 
-#include <ltproto/peer2peer/video_frame.pb.h>
+#include <ltproto/client2worker/video_frame.pb.h>
 
 #include <graphics/capturer/video_capturer.h>
 #include <transport/transport.h>
@@ -69,7 +69,8 @@ public:
     virtual ~VideoEncoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
     void requestKeyframe();
-    std::shared_ptr<ltproto::peer2peer::VideoFrame> encode(const VideoCapturer::Frame& input_frame);
+    std::shared_ptr<ltproto::client2worker::VideoFrame>
+    encode(const VideoCapturer::Frame& input_frame);
 
     // static std::vector<VideoCodecType> checkSupportedCodecs(uint32_t width, uint32_t height);
     // static std::vector<VideoCodecType> checkSupportedCodecsWithLuid(int64_t luid, uint32_t width,
@@ -78,7 +79,7 @@ public:
 protected:
     VideoEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
     bool needKeyframe();
-    virtual std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeFrame(void* input_frame) = 0;
+    virtual std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) = 0;
 
 private:
     void* d3d11_dev_ = nullptr;

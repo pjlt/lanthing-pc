@@ -38,10 +38,10 @@
 #include <ltlib/logging.h>
 
 #include <inputs/executor/gamepad.h>
+#include <ltproto/client2worker/controller_added_removed.pb.h>
+#include <ltproto/client2worker/controller_response.pb.h>
+#include <ltproto/client2worker/controller_status.pb.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/controller_added_removed.pb.h>
-#include <ltproto/peer2peer/controller_response.pb.h>
-#include <ltproto/peer2peer/controller_status.pb.h>
 
 #include "win_send_input.h"
 
@@ -110,7 +110,7 @@ bool InputExecutor::isAbsoluteMouse() const {
 
 void InputExecutor::onControllerAddedRemoved(
     const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerAddedRemoved>(msg);
+    auto controller = std::static_pointer_cast<ltproto::client2worker::ControllerAddedRemoved>(msg);
     if (controller->is_added()) {
         gamepad_->plugin(controller->index());
     }
@@ -120,7 +120,7 @@ void InputExecutor::onControllerAddedRemoved(
 }
 
 void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    auto controller = std::static_pointer_cast<ltproto::peer2peer::ControllerStatus>(msg);
+    auto controller = std::static_pointer_cast<ltproto::client2worker::ControllerStatus>(msg);
     if (controller->gamepad_index() >= XUSER_MAX_COUNT) {
         LOG(ERR) << "Gamepad index exceed limit: " << controller->gamepad_index();
         return;
@@ -137,7 +137,7 @@ void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::M
 }
 
 void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor) {
-    auto controller = std::make_shared<ltproto::peer2peer::ControllerResponse>();
+    auto controller = std::make_shared<ltproto::client2worker::ControllerResponse>();
     controller->set_gamepad_index(index);
     controller->set_large_motor(large_motor);
     controller->set_small_moror(small_motor);

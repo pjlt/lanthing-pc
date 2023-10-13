@@ -120,7 +120,7 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
         connect(gamepad, &QAction::triggered, []() { LOG(INFO) << "Gamepad clicked"; });
         connect(keyboard, &QAction::triggered, []() { LOG(INFO) << "Keyboard clicked"; });
         connect(mouse, &QAction::triggered, []() { LOG(INFO) << "Mouse clicked"; });
-        connect(mouse, &QAction::triggered, []() { LOG(INFO) << "Kick clicked"; });
+        connect(kick, &QAction::triggered, []() { LOG(INFO) << "Kick clicked"; });
 
         menu->addAction(gamepad);
         menu->addAction(keyboard);

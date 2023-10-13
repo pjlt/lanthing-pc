@@ -34,7 +34,7 @@
 
 #include <ltlib/logging.h>
 
-#include <ltproto/peer2peer/stop_working.pb.h>
+#include <ltproto/worker2service/stop_working.pb.h>
 
 #include <ltlib/strings.h>
 #include <ltlib/system.h>

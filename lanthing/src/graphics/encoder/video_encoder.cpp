@@ -333,7 +333,7 @@ void VideoEncoder::requestKeyframe() {
     request_keyframe_ = true;
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame>
+std::shared_ptr<ltproto::client2worker::VideoFrame>
 VideoEncoder::encode(const VideoCapturer::Frame& input_frame) {
     const int64_t start_encode = ltlib::steady_now_us();
     auto encoded_frame = this->encodeFrame(input_frame.data);

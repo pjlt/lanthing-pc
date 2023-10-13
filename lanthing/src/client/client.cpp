@@ -33,12 +33,12 @@
 #include <ltlib/logging.h>
 #include <ltproto/ltproto.h>
 
-#include <ltproto/peer2peer/keep_alive.pb.h>
-#include <ltproto/peer2peer/request_keyframe.pb.h>
-#include <ltproto/peer2peer/send_side_stat.pb.h>
-#include <ltproto/peer2peer/start_transmission.pb.h>
-#include <ltproto/peer2peer/start_transmission_ack.pb.h>
-#include <ltproto/peer2peer/time_sync.pb.h>
+#include <ltproto/client2service/time_sync.pb.h>
+#include <ltproto/client2worker/request_keyframe.pb.h>
+#include <ltproto/client2worker/send_side_stat.pb.h>
+#include <ltproto/client2worker/start_transmission.pb.h>
+#include <ltproto/client2worker/start_transmission_ack.pb.h>
+#include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
@@ -276,7 +276,7 @@ void Client::postDelayTask(int64_t delay_ms, const std::function<void()>& task) 
 }
 
 void Client::syncTime() {
-    auto msg = std::make_shared<ltproto::peer2peer::TimeSync>();
+    auto msg = std::make_shared<ltproto::client2service::TimeSync>();
     msg->set_t0(time_sync_.getT0());
     msg->set_t1(time_sync_.getT1());
     msg->set_t2(ltlib::steady_now_us());
@@ -504,7 +504,7 @@ void Client::onTpVideoFrame(const lt::VideoFrame& frame) {
     switch (action) {
     case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
     {
-        auto req = std::make_shared<ltproto::peer2peer::RequestKeyframe>();
+        auto req = std::make_shared<ltproto::client2worker::RequestKeyframe>();
         sendMessageToHost(ltproto::id(req), req, true);
         break;
     }
@@ -545,8 +545,8 @@ void Client::onTpConnected() {
     }
     hb_thread_->post(std::bind(&Client::sendKeepAlive, this));
     // 如果未来有“串流”以外的业务，在这个StartTransmission添加字段.
-    auto start = std::make_shared<ltproto::peer2peer::StartTransmission>();
-    start->set_client_os(ltproto::peer2peer::StartTransmission_ClientOS_Windows);
+    auto start = std::make_shared<ltproto::client2worker::StartTransmission>();
+    start->set_client_os(ltproto::client2worker::StartTransmission_ClientOS_Windows);
     start->set_token(auth_token_);
     sendMessageToHost(ltproto::id(start), start, true);
     postTask(std::bind(&Client::syncTime, this));
@@ -591,7 +591,7 @@ void Client::dispatchRemoteMessage(uint32_t type,
 }
 
 void Client::sendKeepAlive() {
-    auto keep_alive = std::make_shared<ltproto::peer2peer::KeepAlive>();
+    auto keep_alive = std::make_shared<ltproto::common::KeepAlive>();
     sendMessageToHost(ltproto::id(keep_alive), keep_alive, true);
 
     const auto k500ms = ltlib::TimeDelta{500'000};
@@ -614,19 +614,19 @@ bool Client::sendMessageToHost(uint32_t type,
 }
 
 void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::StartTransmissionAck>(_msg);
-    if (msg->err_code() == ltproto::peer2peer::StartTransmissionAck_ErrCode_Success) {
+    auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmissionAck>(_msg);
+    if (msg->err_code() == ltproto::client2worker::StartTransmissionAck_ErrCode_Success) {
         LOG(INFO) << "Received StartTransmissionAck with success";
     }
     else {
         LOG(INFO) << "StartTransmission failed with "
-                  << ltproto::peer2peer::StartTransmissionAck_ErrCode_Name(msg->err_code());
+                  << ltproto::client2worker::StartTransmissionAck_ErrCode_Name(msg->err_code());
         stopWait();
     }
 }
 
 void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::TimeSync>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::client2service::TimeSync>(_msg);
     auto result = time_sync_.calc(msg->t0(), msg->t1(), msg->t2(), ltlib::steady_now_us());
     if (result.has_value()) {
         rtt_ = result->rtt;
@@ -639,7 +639,7 @@ void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
 }
 
 void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::SendSideStat>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::client2worker::SendSideStat>(_msg);
     video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));
     video_pipeline_->setBWE(static_cast<uint32_t>(msg->bwe()));
 }

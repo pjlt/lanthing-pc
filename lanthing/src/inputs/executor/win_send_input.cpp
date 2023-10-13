@@ -38,8 +38,8 @@
 
 #include <ltlib/logging.h>
 
-#include <ltproto/peer2peer/keyboard_event.pb.h>
-#include <ltproto/peer2peer/mouse_event.pb.h>
+#include <ltproto/client2worker/keyboard_event.pb.h>
+#include <ltproto/client2worker/mouse_event.pb.h>
 
 namespace {
 
@@ -171,7 +171,7 @@ constexpr auto scancodeToWinKey(const lt::Scancode scancode) -> std::tuple<WORD,
 namespace lt {
 
 void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    auto keyboard = std::static_pointer_cast<ltproto::peer2peer::KeyboardEvent>(msg);
+    auto keyboard = std::static_pointer_cast<ltproto::client2worker::KeyboardEvent>(msg);
     Scancode sc = static_cast<Scancode>(keyboard->key());
     auto [key, use_scancode, extented, valid] = scancodeToWinKey(sc);
     if (!valid) {
@@ -197,42 +197,42 @@ bool Win32SendInput::initKeyMouse() {
 }
 
 void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
-    auto mouse = std::static_pointer_cast<ltproto::peer2peer::MouseEvent>(msg);
+    auto mouse = std::static_pointer_cast<ltproto::client2worker::MouseEvent>(msg);
     INPUT inputs[1] = {};
     inputs[0].type = INPUT_MOUSE;
     if (mouse->has_key_falg()) {
         switch (mouse->key_falg()) {
-        case ltproto::peer2peer::MouseEvent_KeyFlag_LeftDown:
+        case ltproto::client2worker::MouseEvent_KeyFlag_LeftDown:
             inputs[0].mi.dwFlags |= MOUSEEVENTF_LEFTDOWN;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_LeftUp:
+        case ltproto::client2worker::MouseEvent_KeyFlag_LeftUp:
             inputs[0].mi.dwFlags |= MOUSEEVENTF_LEFTUP;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_RightDown:
+        case ltproto::client2worker::MouseEvent_KeyFlag_RightDown:
             inputs[0].mi.dwFlags |= MOUSEEVENTF_RIGHTDOWN;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_RightUp:
+        case ltproto::client2worker::MouseEvent_KeyFlag_RightUp:
             inputs[0].mi.dwFlags |= MOUSEEVENTF_RIGHTUP;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_MidDown:
+        case ltproto::client2worker::MouseEvent_KeyFlag_MidDown:
             inputs[0].mi.dwFlags |= MOUSEEVENTF_MIDDLEDOWN;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_MidUp:
+        case ltproto::client2worker::MouseEvent_KeyFlag_MidUp:
             inputs[0].mi.dwFlags |= MOUSEEVENTF_MIDDLEUP;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_X1Down:
+        case ltproto::client2worker::MouseEvent_KeyFlag_X1Down:
             inputs[0].mi.mouseData = XBUTTON1;
             inputs[0].mi.dwFlags |= MOUSEEVENTF_XDOWN;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_X1Up:
+        case ltproto::client2worker::MouseEvent_KeyFlag_X1Up:
             inputs[0].mi.mouseData = XBUTTON1;
             inputs[0].mi.dwFlags |= MOUSEEVENTF_XUP;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_X2Down:
+        case ltproto::client2worker::MouseEvent_KeyFlag_X2Down:
             inputs[0].mi.mouseData = XBUTTON2;
             inputs[0].mi.dwFlags |= MOUSEEVENTF_XDOWN;
             break;
-        case ltproto::peer2peer::MouseEvent_KeyFlag_X2Up:
+        case ltproto::client2worker::MouseEvent_KeyFlag_X2Up:
             inputs[0].mi.mouseData = XBUTTON2;
             inputs[0].mi.dwFlags |= MOUSEEVENTF_XUP;
             break;

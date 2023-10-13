@@ -35,13 +35,13 @@
 
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/confirm_connection.pb.h>
-#include <ltproto/peer2peer/confirm_connection_ack.pb.h>
 #include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/server/open_connection_ack.pb.h>
+#include <ltproto/service2app/confirm_connection.pb.h>
+#include <ltproto/service2app/confirm_connection_ack.pb.h>
 
 namespace lt {
 
@@ -178,7 +178,7 @@ void Service::letUserConfirm(int64_t device_id) {
         cached_worker_params_ = std::nullopt;
         return;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::ConfirmConnection>();
+    auto msg = std::make_shared<ltproto::service2app::ConfirmConnection>();
     msg->set_device_id(device_id);
     sendMessageToApp(ltproto::id(msg), msg);
 }
@@ -316,8 +316,7 @@ void Service::onCreateSessionCompleted(bool success, const std::string& session_
     if (success) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Success);
         auto streaming_params = ack->mutable_streaming_params();
-        auto negotiated_params =
-            std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(params);
+        auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(params);
         streaming_params->CopyFrom(*negotiated_params);
     }
     else {
@@ -423,12 +422,12 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     }
     auto params = cached_worker_params_.value();
     cached_worker_params_ = std::nullopt;
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::ConfirmConnectionAck>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::service2app::ConfirmConnectionAck>(_msg);
     switch (msg->result()) {
-    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Agree:
+    case ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Agree:
         createSession(params);
         break;
-    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Reject:
+    case ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Reject:
     {
         worker_sessions_.erase(params.name);
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
@@ -436,7 +435,7 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         tcp_client_->send(ltproto::id(ack), ack);
         break;
     }
-    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_AgreeNextTime:
+    case ltproto::service2app::ConfirmConnectionAck_ConfirmResult_AgreeNextTime:
     {
         auto req = std::static_pointer_cast<ltproto::server::OpenConnection>(params.msg);
         std::string cookie_name = "from_" + std::to_string(req->client_device_id());
