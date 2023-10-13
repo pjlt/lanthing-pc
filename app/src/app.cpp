@@ -47,12 +47,6 @@
 #include <ltlib/win_service.h>
 #include <ltproto/ltproto.h>
 
-#include <QtWidgets/qmenu.h>
-#include <QtWidgets/qsystemtrayicon.h>
-#include <QtWidgets/qwidget.h>
-#include <qobject.h>
-#include <qtranslator.h>
-
 /************************************************************************************
                           +-----------------------+
                           |                       |
@@ -133,21 +127,6 @@ std::string generateAccessToken() {
     return str;
 }
 
-void setLanguage(QApplication& application, QTranslator& translator) {
-    QLocale locale;
-    switch (locale.language()) {
-    case QLocale::Chinese:
-        if (translator.load(":/i18n/lt-zh_CN")) {
-            LOG(INFO) << "Language Chinese";
-            application.installTranslator(&translator);
-        }
-        return;
-    default:
-        break;
-    }
-    LOG(INFO) << "Language English";
-}
-
 } // namespace
 
 namespace lt {
@@ -215,64 +194,21 @@ bool App::initSettings() {
 }
 
 int App::exec(int argc, char** argv) {
-    QApplication a(argc, argv);
-    QTranslator translator;
-    setLanguage(a, translator);
+    GUI::Params params{};
+    params.connect = std::bind(&App::connect, this, std::placeholders ::_1, std::placeholders::_2);
+    params.enable_auto_refresh_access_token =
+        std::bind(&App::enableRefreshAccessToken, this, std::placeholders::_1);
+    params.enable_run_as_service = std::bind(&App::enableRunAsDaemon, this, std::placeholders::_1);
+    params.get_history_device_ids = std::bind(&App::getHistoryDeviceIDs, this);
+    params.get_settings = std::bind(&App::getSettings, this);
+    params.on_user_confirmed_connection = std::bind(&App::onUserConfirmedConnection, this,
+                                                    std::placeholders::_1, std::placeholders::_2);
+    params.set_relay_server = std::bind(&App::setRelayServer, this, std::placeholders::_1);
 
-    QIcon icon(":/icons/icons/pc.png");
-    QApplication::setWindowIcon(icon);
-    QApplication::setQuitOnLastWindowClosed(false);
-
-    MainWindow w(this, nullptr);
-    ui_ = &w;
-
-    QSystemTrayIcon sys_tray_icon;
-    QMenu* menu = new QMenu();
-    QAction* a0 = new QAction(QObject::tr("Main Page"));
-    QAction* a1 = new QAction(QObject::tr("Settings"));
-    QAction* a2 = new QAction(QObject::tr("Exit"));
-    QObject::connect(a0, &QAction::triggered, [&w]() { w.show(); });
-    QObject::connect(a1, &QAction::triggered, [&w]() {
-        w.switchToSettingPage();
-        w.show();
-    });
-    QObject::connect(a2, &QAction::triggered, []() { QApplication::exit(0); });
-    QObject::connect(&sys_tray_icon, &QSystemTrayIcon::activated,
-                     [&w](QSystemTrayIcon::ActivationReason reason) {
-                         switch (reason) {
-                         case QSystemTrayIcon::Unknown:
-                             break;
-                         case QSystemTrayIcon::Context:
-                             break;
-                         case QSystemTrayIcon::DoubleClick:
-                             w.show();
-                             break;
-                         case QSystemTrayIcon::Trigger:
-                             w.show();
-                             break;
-                         case QSystemTrayIcon::MiddleClick:
-                             break;
-                         default:
-                             break;
-                         }
-                     });
-    menu->addAction(a0);
-    menu->addAction(a1);
-    menu->addAction(a2);
-    sys_tray_icon.setContextMenu(menu);
-    sys_tray_icon.setIcon(icon);
-
-    sys_tray_icon.show();
-    w.show();
-
+    gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
         "io_thread", [this](const std::function<void()>& i_am_alive) { ioLoop(i_am_alive); });
-
-    return a.exec();
-}
-
-void App::loginUser() {
-    LOG(INFO) << "loginUser not implemented";
+    return gui_.exec();
 }
 
 // 跑在UI线程
@@ -292,8 +228,8 @@ std::vector<std::string> App::getHistoryDeviceIDs() const {
     return history_ids_;
 }
 
-App::Settings App::getSettings() const {
-    Settings settings{};
+GUI::Settings App::getSettings() const {
+    GUI::Settings settings{};
     settings.auto_refresh_access_token = auto_refresh_access_token_;
     settings.run_as_daemon = run_as_daemon_;
     settings.relay_server = relay_server_;
@@ -315,7 +251,7 @@ void App::setRelayServer(const std::string& svr) {
     settings_->setString("relay", svr);
 }
 
-void App::onUserConfirmedConnection(int64_t device_id, ConfirmResult result) {
+void App::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
     service_manager_->onUserConfirmedConnection(device_id, result);
 }
 
@@ -415,7 +351,7 @@ void App::maybeRefreshAccessToken() {
     }
     access_token_ = generateAccessToken();
     settings_->setString("access_token", access_token_);
-    ui_->onLocalAccessToken(access_token_);
+    gui_.setAccessToken(access_token_);
 }
 
 void App::onLaunchClientSuccess(int64_t device_id) { // 只将“合法”的device id加入历史列表
@@ -477,17 +413,17 @@ void App::onServerConnected() {
     else {
         allocateDeviceID();
     }
-    ui_->onLoginRet(UiCallback::ErrCode::OK, "backend");
+    gui_.setLoginStatus(GUI::ErrCode::OK);
 }
 
 void App::onServerDisconnected() {
     LOG(ERR) << "Disconnected from server";
-    ui_->onLoginRet(UiCallback::ErrCode::FALIED, "backend");
+    gui_.setLoginStatus(GUI::ErrCode::FALIED);
 }
 
 void App::onServerReconnecting() {
     LOG(WARNING) << "Reconnecting to server...";
-    ui_->onLoginRet(UiCallback::ErrCode::CONNECTING, "backend");
+    gui_.setLoginStatus(GUI::ErrCode::CONNECTING);
 }
 
 void App::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -536,8 +472,8 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
         return;
     }
     // 登录成功才显示device id
-    ui_->onLocalDeviceID(device_id_);
-    ui_->onLocalAccessToken(access_token_);
+    gui_.setDeviceID(device_id_);
+    gui_.setAccessToken(access_token_);
     LOG(INFO) << "LoginDeviceAck: Success";
     createAndStartService();
 }
@@ -556,7 +492,7 @@ bool App::initServiceManager() {
 }
 
 void App::onConfirmConnection(int64_t device_id) {
-    ui_->onConfirmConnection(device_id);
+    gui_.handleConfirmConnection(device_id);
 }
 
 bool App::initClientManager() {

@@ -28,67 +28,63 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
+#include <cstdint>
 
 #include <functional>
+#include <memory>
+#include <string>
 
-#include <QtWidgets/QMainWindow>
-
-#include "ui.h"
-
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+#include <ltlib/settings.h>
 
 namespace lt {
-class App;
-};
 
-class Menu;
-class MainPage;
-class SettingPage;
+class GUIImpl;
+class GUI {
+public:
+    enum class ErrCode : uint8_t {
+        OK = 0,
+        TIMEOUT,
+        FALIED,
+        CONNECTING,
+        SYSTEM_ERROR,
+    };
 
-class MainWindow : public QMainWindow, public lt::UiCallback {
-    Q_OBJECT
+    enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
+
+    struct Settings {
+        bool run_as_daemon;
+        bool auto_refresh_access_token;
+        std::string relay_server;
+    };
+
+    struct Params {
+        std::function<void(int64_t, const std::string&)> connect;
+        std::function<std::vector<std::string>()> get_history_device_ids;
+        std::function<Settings()> get_settings;
+        std::function<void(bool)> enable_auto_refresh_access_token;
+        std::function<void(bool)> enable_run_as_service;
+        std::function<void(const std::string&)> set_relay_server;
+        std::function<void(int64_t, ConfirmResult)> on_user_confirmed_connection;
+    };
 
 public:
-    MainWindow(lt::App* app, QWidget* parent = nullptr);
-    ~MainWindow();
-    void switchToMainPage();
-    void switchToSettingPage();
+    GUI();
 
-protected:
-    void closeEvent(QCloseEvent* ev) override;
+    void init(const Params& params, int argc, char** argv);
 
-protected:
-    void onLoginRet(ErrCode code, const std::string& err = {}) override;
-    void onInviteRet(ErrCode code, const std::string& err = {}) override;
+    int exec();
 
-    void onDisconnectedWithServer() override { ; }
-    void onDevicesChanged(const std::vector<std::string>& dev_ids) override { (void)dev_ids; }
+    void setDeviceID(int64_t device_id);
 
-    void onLocalDeviceID(int64_t device_id) override;
+    void setAccessToken(const std::string& token);
 
-    void onLocalAccessToken(const std::string& access_token) override;
+    void setLoginStatus(ErrCode err_code);
 
-    void onConfirmConnection(int64_t device_id) override;
+    void handleConfirmConnection(int64_t device_id);
 
 private:
-    void doInvite(const std::string& dev_id, const std::string& token);
-
-private:
-    Ui::MainWindow* ui;
-
-    Menu* menu_ui = nullptr;
-    MainPage* main_page_ui;
-    SettingPage* setting_page_ui;
-
-    std::function<void()> switch_to_main_page_;
-    std::function<void()> switch_to_setting_page_;
-
-    lt::App* app;
+    std::shared_ptr<GUIImpl> impl_;
 };
-#endif // MAINWINDOW_H
+
+} // namespace lt

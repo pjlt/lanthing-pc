@@ -32,32 +32,32 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/views/mainwindow.ui" line="14"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
         <source>Lanthing</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow.cpp" line="175"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="169"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow.cpp" line="177"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="171"/>
         <source>Device %s is requesting connection</source>
         <translation type="unfinished">设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow.cpp" line="181"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="175"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow.cpp" line="183"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="177"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow.cpp" line="184"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="178"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
@@ -107,17 +107,17 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/app.cpp" line="231"/>
+        <location filename="../src/views/gui.cpp" line="50"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/app.cpp" line="232"/>
+        <location filename="../src/views/gui.cpp" line="51"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/app.cpp" line="233"/>
+        <location filename="../src/views/gui.cpp" line="52"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
