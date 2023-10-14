@@ -36,8 +36,8 @@
 #include <opus/opus.h>
 #include <opus/opus_types.h>
 
+#include <ltproto/client2worker/audio_data.pb.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/audio_data.pb.h>
 
 #include "win_audio_capturer.h"
 
@@ -160,7 +160,7 @@ void AudioCapturer::onCapturedData(const uint8_t* data, uint32_t frames) {
                 LOG(ERR) << "opus_encode failed with " << len;
                 return;
             }
-            auto msg = std::make_shared<ltproto::peer2peer::AudioData>();
+            auto msg = std::make_shared<ltproto::client2worker::AudioData>();
             msg->set_data(opus_buffer_.data(), len);
             on_audio_data_(msg);
             // static std::ofstream out{"./audio_src", std::ios::binary | std::ios::trunc};
@@ -170,7 +170,7 @@ void AudioCapturer::onCapturedData(const uint8_t* data, uint32_t frames) {
     }
     else {
         for (auto& fragment : fragments) {
-            auto msg = std::make_shared<ltproto::peer2peer::AudioData>();
+            auto msg = std::make_shared<ltproto::client2worker::AudioData>();
             msg->set_data(fragment, bytes_per_10ms);
             on_audio_data_(msg);
         }

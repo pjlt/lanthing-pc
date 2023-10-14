@@ -61,6 +61,8 @@ public:
 
     virtual void toggleFullscreen() = 0;
 
+    virtual void stop() = 0;
+
 protected:
     PcSdl() = default;
 };

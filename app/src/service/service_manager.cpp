@@ -31,8 +31,11 @@
 #include "service_manager.h"
 
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/confirm_connection.pb.h>
-#include <ltproto/peer2peer/confirm_connection_ack.pb.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
+#include <ltproto/service2app/confirm_connection.pb.h>
+#include <ltproto/service2app/confirm_connection_ack.pb.h>
+#include <ltproto/service2app/connection_status.pb.h>
+#include <ltproto/service2app/disconnected_connection.pb.h>
 
 #include <ltlib/logging.h>
 
@@ -47,7 +50,10 @@ std::unique_ptr<ServiceManager> ServiceManager::create(const Params& params) {
 }
 
 ServiceManager::ServiceManager(const Params& params)
-    : on_confirm_connection_{params.on_confirm_connection} {}
+    : on_confirm_connection_{params.on_confirm_connection}
+    , on_accepted_connection_{params.on_accepted_connection}
+    , on_disconnected_connection_{params.on_disconnected_connection}
+    , on_connection_status_{params.on_connection_status} {}
 
 bool ServiceManager::init(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
@@ -84,6 +90,15 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
     case ltproto::type::kConfirmConnection:
         onConfirmConnection(msg);
         break;
+    case ltproto::type::kAcceptedConnection:
+        onAcceptedConnection(msg);
+        break;
+    case ltproto::type::kDisconnectedConnection:
+        onDisconnectedConnection(msg);
+        break;
+    case ltproto::type::kConnectionStatus:
+        onConnectionStatus(msg);
+        break;
     default:
         LOG(WARNING) << "ServiceManager received unknown messge type " << type;
         break;
@@ -91,27 +106,44 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
 }
 
 void ServiceManager::onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::ConfirmConnection>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::service2app::ConfirmConnection>(_msg);
     on_confirm_connection_(msg->device_id());
 }
 
+void ServiceManager::onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_accepted_connection_(msg);
+}
+
+void ServiceManager::onDisconnectedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::DisconnectedConnection>(_msg);
+    on_disconnected_connection_(msg->device_id());
+}
+
+void ServiceManager::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_connection_status_(msg);
+}
+
 void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
-    auto ack = std::make_shared<ltproto::peer2peer::ConfirmConnectionAck>();
+    auto ack = std::make_shared<ltproto::service2app::ConfirmConnectionAck>();
     ack->set_device_id(device_id);
     switch (result) {
     case GUI::ConfirmResult::Accept:
-        ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Agree);
+        ack->set_result(ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Agree);
         break;
     case GUI::ConfirmResult::AcceptWithNextTime:
-        ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_AgreeNextTime);
+        ack->set_result(ltproto::service2app::ConfirmConnectionAck_ConfirmResult_AgreeNextTime);
         break;
     case GUI::ConfirmResult::Reject:
         [[fallthrough]];
     default:
-        ack->set_result(ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Reject);
+        ack->set_result(ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Reject);
         break;
     }
     pipe_server_->send(fd_, ltproto::id(ack), ack);
+}
+
+void ServiceManager::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    pipe_server_->send(fd_, ltproto::type::kOperateConnection, msg);
 }
 
 } // namespace lt

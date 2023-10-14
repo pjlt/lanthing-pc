@@ -20,6 +20,12 @@
 
 const LEVELS ERR{WARNING.value + 100, "ERROR"};
 
+#define LOG_2(level, file, line, func)                                                             \
+    if (!g3::logLevel(level)) {                                                                    \
+    }                                                                                              \
+    else                                                                                           \
+        LogCapture(file, line, func, level).stream()
+
 namespace ltlib {
 class LT_API LogSink {
 public:

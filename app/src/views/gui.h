@@ -35,6 +35,8 @@
 #include <memory>
 #include <string>
 
+#include <google/protobuf/message_lite.h>
+
 #include <ltlib/settings.h>
 
 namespace lt {
@@ -66,6 +68,7 @@ public:
         std::function<void(bool)> enable_run_as_service;
         std::function<void(const std::string&)> set_relay_server;
         std::function<void(int64_t, ConfirmResult)> on_user_confirmed_connection;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_operate_connection;
     };
 
 public:
@@ -81,7 +84,13 @@ public:
 
     void setLoginStatus(ErrCode err_code);
 
-    void handleConfirmConnection(int64_t device_id);
+    void onConfirmConnection(int64_t device_id);
+
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onDisconnectedConnection(int64_t device_id);
 
 private:
     std::shared_ptr<GUIImpl> impl_;

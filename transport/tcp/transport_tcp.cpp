@@ -36,9 +36,9 @@
 
 #include <ltlib/logging.h>
 
+#include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/video_frame.pb.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/audio_data.pb.h>
-#include <ltproto/peer2peer/video_frame.pb.h>
 
 namespace {
 
@@ -182,7 +182,7 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
     switch (type) {
     case ltype::kVideoFrame:
     {
-        auto frame = std::static_pointer_cast<ltproto::peer2peer::VideoFrame>(msg);
+        auto frame = std::static_pointer_cast<ltproto::client2worker::VideoFrame>(msg);
         if (frame == nullptr) {
             LOG(WARNING) << "Cast MessageLite to VideoFrame failed";
             break;
@@ -205,7 +205,7 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
     }
     case ltype::kAudioData:
     {
-        auto audio_data = std::static_pointer_cast<ltproto::peer2peer::AudioData>(msg);
+        auto audio_data = std::static_pointer_cast<ltproto::client2worker::AudioData>(msg);
         if (audio_data == nullptr) {
             LOG(WARNING) << "Cast MessageListe to AudioData failed";
             break;
@@ -337,7 +337,7 @@ bool ServerTCP::sendAudio(const AudioData& audio_data) {
     if (client_fd_ == std::numeric_limits<uint32_t>::max()) {
         return false;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::AudioData>();
+    auto msg = std::make_shared<ltproto::client2worker::AudioData>();
     msg->set_data(audio_data.data, audio_data.size);
     return tcp_server_->send(client_fd_, ltproto::type::kAudioData, msg);
 }
@@ -350,7 +350,7 @@ bool ServerTCP::sendVideo(const VideoFrame& frame) {
     if (client_fd_ == std::numeric_limits<uint32_t>::max()) {
         return false;
     }
-    auto video_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    auto video_frame = std::make_shared<ltproto::client2worker::VideoFrame>();
     video_frame->set_frame(frame.data, frame.size);
     video_frame->set_is_keyframe(frame.is_keyframe);
     video_frame->set_picture_id(frame.ltframe_id);

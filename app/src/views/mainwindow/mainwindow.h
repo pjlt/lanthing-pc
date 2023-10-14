@@ -63,13 +63,21 @@ public:
 
     void setAccessToken(const std::string& access_token);
 
-    void handleConfirmConnection(int64_t device_id);
+    void onConfirmConnection(int64_t device_id);
+
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onDisconnectedConnection(int64_t device_id);
 
 protected:
     void closeEvent(QCloseEvent* ev) override;
 
 private:
-    void doInvite(const std::string& dev_id, const std::string& token);
+    void doConnect(const std::string& dev_id, const std::string& token);
+
+    void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     lt::GUI::Params params_;

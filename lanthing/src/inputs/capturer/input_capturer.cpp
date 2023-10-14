@@ -34,11 +34,11 @@
 #include <array>
 
 #include <ltlib/logging.h>
+#include <ltproto/client2worker/controller_added_removed.pb.h>
+#include <ltproto/client2worker/controller_status.pb.h>
+#include <ltproto/client2worker/keyboard_event.pb.h>
+#include <ltproto/client2worker/mouse_event.pb.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/controller_added_removed.pb.h>
-#include <ltproto/peer2peer/controller_status.pb.h>
-#include <ltproto/peer2peer/keyboard_event.pb.h>
-#include <ltproto/peer2peer/mouse_event.pb.h>
 
 #include <inputs/executor/scancode.h>
 
@@ -183,7 +183,7 @@ void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
     // TODO: 增加一个reset状态的逻辑，入口在sdl还是input另说。
     key_states_[ev.scan_code] = ev.is_pressed ? 1 : 0;
     processHotKeys();
-    auto msg = std::make_shared<ltproto::peer2peer::KeyboardEvent>();
+    auto msg = std::make_shared<ltproto::client2worker::KeyboardEvent>();
     msg->set_key(ev.scan_code);
     msg->set_down(ev.is_pressed);
     sendMessageToHost(ltproto::id(msg), msg, true);
@@ -191,33 +191,33 @@ void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
 }
 
 void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
-    ltproto::peer2peer::MouseEvent::KeyFlag key_flag;
+    ltproto::client2worker::MouseEvent::KeyFlag key_flag;
     switch (ev.button) {
     case MouseButtonEvent::Button::Left:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_LeftDown
-                                 : ltproto::peer2peer::MouseEvent_KeyFlag_LeftUp;
+        key_flag = ev.is_pressed ? ltproto::client2worker::MouseEvent_KeyFlag_LeftDown
+                                 : ltproto::client2worker::MouseEvent_KeyFlag_LeftUp;
         break;
     case MouseButtonEvent::Button::Mid:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_MidDown
-                                 : ltproto::peer2peer::MouseEvent_KeyFlag_MidUp;
+        key_flag = ev.is_pressed ? ltproto::client2worker::MouseEvent_KeyFlag_MidDown
+                                 : ltproto::client2worker::MouseEvent_KeyFlag_MidUp;
         break;
     case MouseButtonEvent::Button::Right:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_RightDown
-                                 : ltproto::peer2peer::MouseEvent_KeyFlag_RightUp;
+        key_flag = ev.is_pressed ? ltproto::client2worker::MouseEvent_KeyFlag_RightDown
+                                 : ltproto::client2worker::MouseEvent_KeyFlag_RightUp;
         break;
     case MouseButtonEvent::Button::X1:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_X1Down
-                                 : ltproto::peer2peer::MouseEvent_KeyFlag_X1Up;
+        key_flag = ev.is_pressed ? ltproto::client2worker::MouseEvent_KeyFlag_X1Down
+                                 : ltproto::client2worker::MouseEvent_KeyFlag_X1Up;
         break;
     case MouseButtonEvent::Button::X2:
-        key_flag = ev.is_pressed ? ltproto::peer2peer::MouseEvent_KeyFlag_X2Down
-                                 : ltproto::peer2peer::MouseEvent_KeyFlag_X2Up;
+        key_flag = ev.is_pressed ? ltproto::client2worker::MouseEvent_KeyFlag_X2Down
+                                 : ltproto::client2worker::MouseEvent_KeyFlag_X2Up;
         break;
     default:
         LOG(FATAL) << "Unknown Mouse Button: " << static_cast<int32_t>(ev.button);
         return;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
+    auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_key_falg(key_flag);
     msg->set_x(ev.x * 1.0f / ev.window_width);
     msg->set_y(ev.y * 1.0f / ev.window_height);
@@ -225,7 +225,7 @@ void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
 }
 
 void InputCapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
-    auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
+    auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_delta_z(ev.amount);
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
@@ -233,7 +233,7 @@ void InputCapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
 void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
 
     // TODO: 相对模式可能要累积一段再发出去
-    auto msg = std::make_shared<ltproto::peer2peer::MouseEvent>();
+    auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_x(ev.x * 1.0f / ev.window_width);
     msg->set_y(ev.y * 1.0f / ev.window_height);
     msg->set_delta_x(ev.delta_x);
@@ -245,7 +245,7 @@ void InputCapturerImpl::handleControllerAddedRemoved(const ControllerAddedRemove
     if (ev.index >= cstates_.size()) {
         return;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::ControllerAddedRemoved>();
+    auto msg = std::make_shared<ltproto::client2worker::ControllerAddedRemoved>();
     msg->set_index(ev.index);
     msg->set_is_added(ev.is_added);
     if (ev.is_added) {
@@ -409,7 +409,7 @@ void InputCapturerImpl::sendControllerState(uint32_t index) {
     if (!state.has_value()) {
         return;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::ControllerStatus>();
+    auto msg = std::make_shared<ltproto::client2worker::ControllerStatus>();
     msg->set_button_flags(state->buttons);
     msg->set_gamepad_index(index);
     msg->set_left_stick_x(state->left_thumb_x);

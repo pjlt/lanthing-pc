@@ -34,13 +34,13 @@
 #include <cstdint>
 #include <future>
 
-#include <ltlib/logging.h>
 #include <google/protobuf/message_lite.h>
+#include <ltlib/logging.h>
 
 #include <ltlib/threads.h>
+#include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/reconfigure_video_encoder.pb.h>
-#include <ltproto/peer2peer/request_keyframe.pb.h>
+#include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
 
 #include <graphics/capturer/video_capturer.h>
 #include <graphics/encoder/video_encoder.h>
@@ -197,7 +197,7 @@ void VCEPipeline::consumeTasks() {
 void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     std::lock_guard lock{mutex_};
     tasks_.push_back([_msg, this]() {
-        auto msg = std::static_pointer_cast<ltproto::peer2peer::ReconfigureVideoEncoder>(_msg);
+        auto msg = std::static_pointer_cast<ltproto::worker2service::ReconfigureVideoEncoder>(_msg);
         VideoEncoder::ReconfigureParams params{};
         bool changed = false;
         if (msg->has_bitrate_bps()) {

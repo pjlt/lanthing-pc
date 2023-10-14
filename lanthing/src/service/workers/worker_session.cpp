@@ -34,23 +34,26 @@
 
 #include <ltlib/logging.h>
 
-#include <ltproto/peer2peer/audio_data.pb.h>
-#include <ltproto/peer2peer/keep_alive.pb.h>
-#include <ltproto/peer2peer/reconfigure_video_encoder.pb.h>
-#include <ltproto/peer2peer/request_keyframe.pb.h>
-#include <ltproto/peer2peer/send_side_stat.pb.h>
-#include <ltproto/peer2peer/start_transmission.pb.h>
-#include <ltproto/peer2peer/start_transmission_ack.pb.h>
-#include <ltproto/peer2peer/start_working.pb.h>
-#include <ltproto/peer2peer/start_working_ack.pb.h>
-#include <ltproto/peer2peer/stop_working.pb.h>
-#include <ltproto/peer2peer/time_sync.pb.h>
-#include <ltproto/peer2peer/video_frame.pb.h>
+#include <ltproto/client2service/time_sync.pb.h>
+#include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/request_keyframe.pb.h>
+#include <ltproto/client2worker/send_side_stat.pb.h>
+#include <ltproto/client2worker/start_transmission.pb.h>
+#include <ltproto/client2worker/start_transmission_ack.pb.h>
+#include <ltproto/client2worker/video_frame.pb.h>
+#include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/open_connection.pb.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
+#include <ltproto/service2app/connection_status.pb.h>
+#include <ltproto/service2app/disconnected_connection.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
 #include <ltproto/signaling/join_room_ack.pb.h>
 #include <ltproto/signaling/signaling_message.pb.h>
 #include <ltproto/signaling/signaling_message_ack.pb.h>
+#include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
+#include <ltproto/worker2service/start_working.pb.h>
+#include <ltproto/worker2service/start_working_ack.pb.h>
+#include <ltproto/worker2service/stop_working.pb.h>
 
 #include <ltlib/system.h>
 #include <ltlib/times.h>
@@ -64,11 +67,11 @@
 
 namespace {
 
-lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType type) {
+lt::VideoCodecType to_ltrtc(ltproto::common::VideoCodecType type) {
     switch (type) {
-    case ltproto::peer2peer::VideoCodecType::AVC:
+    case ltproto::common::VideoCodecType::AVC:
         return lt::VideoCodecType::H264;
-    case ltproto::peer2peer::VideoCodecType::HEVC:
+    case ltproto::common::VideoCodecType::HEVC:
         return lt::VideoCodecType::H265;
     default:
         return lt::VideoCodecType::Unknown;
@@ -90,43 +93,63 @@ namespace svc {
 // 6. 主控端连接信令成功，发起rtc连接.
 
 std::shared_ptr<WorkerSession> svc::WorkerSession::create(const Params& params) {
-    std::shared_ptr<WorkerSession> session{
-        new WorkerSession(params.name, params.user_defined_relay_server, params.on_create_completed,
-                          params.on_closed)};
-    if (!session->init(params.msg)) {
+    std::shared_ptr<WorkerSession> session{new WorkerSession(params)};
+    if (!session->init(params.msg, params.ioloop)) {
         return nullptr;
     }
     return session;
 }
 
-WorkerSession::WorkerSession(
-    const std::string& name, const std::string& relay_server,
-    std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
-        on_create_completed,
-    std::function<void(CloseReason, const std::string&, const std::string&)> on_closed)
-    : session_name_(name)
-    , user_defined_relay_server_(relay_server)
-    , on_create_session_completed_(on_create_completed)
-    , on_closed_(on_closed) {
+WorkerSession::WorkerSession(const Params& params)
+    : session_name_(params.name)
+    , post_task_(params.post_task)
+    , post_delay_task_(params.post_delay_task)
+    , on_accepted_connection_(params.on_accepted_connection)
+    , on_connection_status_(params.on_connection_status)
+    , user_defined_relay_server_(params.user_defined_relay_server)
+    , on_create_session_completed_(params.on_create_completed)
+    , on_closed_(params.on_closed) {
     constexpr int kRandLength = 4;
-    // 是否需要global?
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
         pipe_name_.push_back(rand() % 26 + 'A');
     }
 }
 
-WorkerSession::~WorkerSession() {
-    {
-        std::lock_guard lock{mutex_};
-        signaling_client_.reset();
-        pipe_server_.reset();
-        ioloop_.reset();
-    }
+WorkerSession::~WorkerSession() {}
+
+void WorkerSession::enableGamepad() {
+    enable_gamepad_ = true;
 }
 
-bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+void WorkerSession::disableGamepad() {
+    enable_gamepad_ = false;
+}
+
+void WorkerSession::enableMouse() {
+    enable_mouse_ = true;
+}
+
+void WorkerSession::disableMouse() {
+    enable_mouse_ = false;
+}
+
+void WorkerSession::enableKeyboard() {
+    enable_keyboard_ = true;
+}
+
+void WorkerSession::disableKeyboard() {
+    enable_keyboard_ = false;
+}
+
+void WorkerSession::close() {
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::UserKick));
+}
+
+bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
+                         ltlib::IOLoop* ioloop) {
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
+    client_device_id_ = msg->client_device_id();
     auth_token_ = msg->auth_token();
     service_id_ = msg->service_id();
     room_id_ = msg->room_id();
@@ -163,11 +186,11 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     }
     std::vector<lt::VideoCodecType> client_codecs;
     for (auto codec : msg->streaming_params().video_codecs()) {
-        switch (ltproto::peer2peer::VideoCodecType(codec)) {
-        case ltproto::peer2peer::VideoCodecType::AVC:
+        switch (ltproto::common::VideoCodecType(codec)) {
+        case ltproto::common::VideoCodecType::AVC:
             client_codecs.push_back(lt::VideoCodecType::H264);
             break;
-        case ltproto::peer2peer::VideoCodecType::HEVC:
+        case ltproto::common::VideoCodecType::HEVC:
             client_codecs.push_back(lt::VideoCodecType::H265);
             break;
         default:
@@ -179,29 +202,16 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         return false;
     }
 
-    ioloop_ = ltlib::IOLoop::create();
-    if (ioloop_ == nullptr) {
-        LOG(WARNING) << "Init IOLoop failed";
-        return false;
-    }
-    if (!initSignlingClient()) {
+    if (!initSignlingClient(ioloop)) {
         LOG(WARNING) << "Init signaling client failed";
         return false;
     }
-    if (!initPipeServer()) {
+    if (!initPipeServer(ioloop)) {
         LOG(WARNING) << "Init worker pipe server failed";
         return false;
     }
     createWorkerProcess((uint32_t)client_width, (uint32_t)client_height,
                         (uint32_t)client_refresh_rate, client_codecs);
-    std::promise<void> promise;
-    auto future = promise.get_future();
-    thread_ = ltlib::BlockingThread::create(
-        "worker_session", [this, &promise](const std::function<void()>& i_am_alive) {
-            promise.set_value();
-            mainLoop(i_am_alive);
-        });
-    future.get();
     return true;
 }
 
@@ -232,10 +242,10 @@ bool WorkerSession::initTransport() {
 std::unique_ptr<tp::Server> WorkerSession::createTcpServer() {
     namespace ph = std::placeholders;
     auto negotiated_params =
-        std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
+        std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
     lt::tp::ServerTCP::Params params{};
     params.video_codec_type = ::to_ltrtc(
-        static_cast<ltproto::peer2peer::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
+        static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
     params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
@@ -248,7 +258,7 @@ std::unique_ptr<tp::Server> WorkerSession::createTcpServer() {
 std::unique_ptr<tp::Server> WorkerSession::createRtcServer() {
     namespace ph = std::placeholders;
     auto negotiated_params =
-        std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_streaming_params_);
+        std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
 
     rtc::Server::Params params{};
     params.use_nbp2p = true;
@@ -279,7 +289,7 @@ std::unique_ptr<tp::Server> WorkerSession::createRtcServer() {
     params.audio_sample_rate = negotiated_params->audio_sample_rate();
     // negotiated_params->video_codecs()的类型居然不是枚举数组
     params.video_codec_type = ::to_ltrtc(
-        static_cast<ltproto::peer2peer::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
+        static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
     params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
@@ -318,12 +328,6 @@ std::unique_ptr<tp::Server> WorkerSession::createRtc2Server() {
     return rtc2::Server::create(params);
 }
 
-void WorkerSession::mainLoop(const std::function<void()>& i_am_alive) {
-    LOG(INFO) << "Worker session enter main loop";
-    ioloop_->run(i_am_alive);
-    LOG(INFO) << "Worker session exit main loop";
-}
-
 void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_height,
                                         uint32_t client_refresh_rate,
                                         std::vector<lt::VideoCodecType> client_codecs) {
@@ -345,11 +349,15 @@ void WorkerSession::onClosed(CloseReason reason) {
     case CloseReason::ClientClose:
         rtc_closed_ = true;
         break;
-    case CloseReason::HostClose:
+    case CloseReason::WorkerStoped:
         worker_process_stoped_ = true;
         break;
-    case CloseReason::TimeoutClose:
+    case CloseReason::Timeout:
         rtc_closed_ = true;
+        sendSigClose();
+        break;
+    case CloseReason::UserKick:
+        sendSigClose();
         break;
     default:
         break;
@@ -359,16 +367,16 @@ void WorkerSession::onClosed(CloseReason reason) {
         rtc_closed_ = true;
     }
     if (!worker_process_stoped_) {
-        auto msg = std::make_shared<ltproto::peer2peer::StopWorking>();
+        auto msg = std::make_shared<ltproto::worker2service::StopWorking>();
         sendToWorker(ltproto::id(msg), msg);
     }
     if (rtc_closed_ && worker_process_stoped_) {
-        on_closed_(reason, session_name_, room_id_);
+        on_closed_(client_device_id_, reason, session_name_, room_id_);
     }
 }
 
 void WorkerSession::maybeOnCreateSessionCompleted() {
-    auto empty_params = std::make_shared<ltproto::peer2peer::StreamingParams>();
+    auto empty_params = std::make_shared<ltproto::common::StreamingParams>();
     if (!join_signaling_room_success_.has_value()) {
         return;
     }
@@ -387,23 +395,29 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
-    if (ioloop_) {
-        ioloop_->post(task);
-    }
+    auto weak_this = weak_from_this();
+    post_task_([this, weak_this, task]() {
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            task();
+        }
+    });
 }
 
 void WorkerSession::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
-    if (ioloop_) {
-        ioloop_->postDelay(delay_ms, task);
-    }
+    auto weak_this = weak_from_this();
+    post_delay_task_(delay_ms, [this, weak_this, task]() {
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            task();
+        }
+    });
 }
 
-bool WorkerSession::initSignlingClient() {
+bool WorkerSession::initSignlingClient(ltlib::IOLoop* ioloop) {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
-    params.ioloop = ioloop_.get();
+    params.ioloop = ioloop;
     params.host = signaling_addr_;
     params.port = signaling_port_;
     params.is_tls = false;
@@ -514,10 +528,17 @@ void WorkerSession::dispatchSignalingMessageCore(
     }
 }
 
-bool WorkerSession::initPipeServer() {
+void WorkerSession::sendSigClose() {
+    auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
+    auto coremsg = msg->mutable_core_message();
+    coremsg->set_key(kSigCoreClose);
+    signaling_client_->send(ltproto::id(msg), msg);
+}
+
+bool WorkerSession::initPipeServer(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
     params.stype = ltlib::StreamType::Pipe;
-    params.ioloop = ioloop_.get();
+    params.ioloop = ioloop;
     params.pipe_name = "\\\\?\\pipe\\" + pipe_name_;
     params.on_accepted = std::bind(&WorkerSession::onPipeAccepted, this, std::placeholders::_1);
     params.on_closed = std::bind(&WorkerSession::onPipeDisconnected, this, std::placeholders::_1);
@@ -581,24 +602,26 @@ void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,
 
 void WorkerSession::startWorking() {
     // NOTE: 这是运行在transport的线程
-    auto msg = std::make_shared<ltproto::peer2peer::StartWorking>();
+    auto msg = std::make_shared<ltproto::worker2service::StartWorking>();
     sendToWorkerFromOtherThread(ltproto::id(msg), msg);
 }
 
 void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::StartWorkingAck>(_msg);
-    auto ack = std::make_shared<ltproto::peer2peer::StartTransmissionAck>();
-    if (msg->err_code() == ltproto::peer2peer::StartWorkingAck_ErrCode_Success) {
-        ack->set_err_code(ltproto::peer2peer::StartTransmissionAck_ErrCode_Success);
+    auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorkingAck>(_msg);
+    auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
+    if (msg->err_code() == ltproto::worker2service::StartWorkingAck_ErrCode_Success) {
+        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_Success);
         for (uint32_t type : msg->msg_type()) {
             worker_registered_msg_.insert(type);
         }
     }
     else {
         // TODO: 失败了，关闭整个WorkerSession
-        ack->set_err_code(ltproto::peer2peer::StartTransmissionAck_ErrCode_HostFailed);
+        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_HostFailed);
     }
     sendMessageToRemoteClient(ltproto::id(ack), ack, true);
+    tellAppAccpetedConnection();
+    postDelayTask(1000, std::bind(&WorkerSession::sendConnectionStatus, this, false, false, false));
 }
 
 void WorkerSession::sendToWorker(uint32_t type,
@@ -614,7 +637,7 @@ void WorkerSession::sendToWorkerFromOtherThread(
 void WorkerSession::onWorkerStoped() {
     // FIXME: worker退出不代表关闭，也可能是session改变
     // NOTE: 这是运行在WorkerProcess线程
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::HostClose));
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::WorkerStoped));
 }
 
 void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -625,7 +648,7 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
 
 void WorkerSession::sendWorkerKeepAlive() {
     // 运行在ioloop
-    auto msg = std::make_shared<ltproto::peer2peer::KeepAlive>();
+    auto msg = std::make_shared<ltproto::common::KeepAlive>();
     sendToWorker(ltproto::id(msg), msg);
     postDelayTask(500, std::bind(&WorkerSession::sendWorkerKeepAlive, this));
 }
@@ -659,11 +682,11 @@ void WorkerSession::onTpAccepted() {
 void WorkerSession::onTpConnChanged() {}
 
 void WorkerSession::onTpFailed() {
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::TimeoutClose));
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::Timeout));
 }
 
 void WorkerSession::onTpDisconnected() {
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::TimeoutClose));
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::Timeout));
 }
 
 void WorkerSession::onTpSignalingMessage(const std::string& key, const std::string& value) {
@@ -683,7 +706,7 @@ void WorkerSession::onTpSignalingMessage(const std::string& key, const std::stri
 }
 
 void WorkerSession::onTpRequestKeyframe() {
-    auto msg = std::make_shared<ltproto::peer2peer::RequestKeyframe>();
+    auto msg = std::make_shared<ltproto::client2worker::RequestKeyframe>();
     sendToWorkerFromOtherThread(ltproto::id(msg), msg);
 }
 
@@ -695,14 +718,14 @@ void WorkerSession::onTpLossRateUpdate(float rate) {
 }
 
 void WorkerSession::onTpEesimatedVideoBitreateUpdate(uint32_t bps) {
-    auto msg = std::make_shared<ltproto::peer2peer::ReconfigureVideoEncoder>();
+    auto msg = std::make_shared<ltproto::worker2service::ReconfigureVideoEncoder>();
     msg->set_bitrate_bps(bps);
     sendToWorkerFromOtherThread(ltproto::id(msg), msg);
 }
 
 void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     // NOTE: 这是在IOLoop线程
-    auto encoded_frame = std::static_pointer_cast<ltproto::peer2peer::VideoFrame>(_msg);
+    auto encoded_frame = std::static_pointer_cast<ltproto::client2worker::VideoFrame>(_msg);
     LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame->capture_timestamp_us(),
          encoded_frame->start_encode_timestamp_us(), encoded_frame->end_encode_timestamp_us());
     lt::VideoFrame video_frame{};
@@ -722,7 +745,7 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
 }
 
 void WorkerSession::onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto captured_audio = std::static_pointer_cast<ltproto::peer2peer::AudioData>(_msg);
+    auto captured_audio = std::static_pointer_cast<ltproto::client2worker::AudioData>(_msg);
     lt::AudioData audio_data{};
     audio_data.data = reinterpret_cast<const uint8_t*>(captured_audio->data().c_str());
     audio_data.size = static_cast<uint32_t>(captured_audio->data().size());
@@ -730,7 +753,7 @@ void WorkerSession::onCapturedAudio(std::shared_ptr<google::protobuf::MessageLit
 }
 
 void WorkerSession::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::TimeSync>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::client2service::TimeSync>(_msg);
     auto result = time_sync_.calc(msg->t0(), msg->t1(), msg->t2(), ltlib::steady_now_us());
     if (result.has_value()) {
         rtt_ = result->rtt;
@@ -746,33 +769,51 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     switch (type) {
     case ltype::kKeepAlive:
         onKeepAlive(msg);
-        break;
+        return;
     case ltype::kStartTransmission:
         onStartTransmission(msg);
-        break;
+        return;
     case ltype::kTimeSync:
         onTimeSync(msg);
-        break;
-    default:
-        if (worker_registered_msg_.find(type) != worker_registered_msg_.cend()) {
-            sendToWorkerFromOtherThread(type, msg);
+        return;
+    case ltype::kMouseEvent:
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true));
+        if (!enable_mouse_) {
+            return;
         }
         break;
+    case ltype::kKeyboardEvent:
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, true, false));
+        if (!enable_keyboard_) {
+            return;
+        }
+        break;
+    case ltype::kControllerStatus:
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false));
+        if (!enable_gamepad_) {
+            return;
+        }
+        break;
+    default:
+        break;
+    }
+    if (worker_registered_msg_.find(type) != worker_registered_msg_.cend()) {
+        sendToWorkerFromOtherThread(type, msg);
     }
 }
 
 void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto ack = std::make_shared<ltproto::peer2peer::StartTransmissionAck>();
+    auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
     if (client_connected_) {
-        ack->set_err_code(ltproto::peer2peer::StartTransmissionAck_ErrCode_Success);
+        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_Success);
         sendMessageToRemoteClient(ltproto::id(ack), ack, true);
         return;
     }
     client_connected_ = true;
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::StartTransmission>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmission>(_msg);
     if (msg->token() != auth_token_) {
         LOG(ERR) << "Received SetupConnection with invalid token: " << msg->token();
-        ack->set_err_code(ltproto::peer2peer::StartTransmissionAck_ErrCode_AuthFailed);
+        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_AuthFailed);
         sendMessageToRemoteClient(ltproto::id(ack), ack, true);
         return;
     }
@@ -795,7 +836,7 @@ void WorkerSession::checkTimeout() {
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
         tp_server_->close();
-        onClosed(CloseReason::TimeoutClose);
+        onClosed(CloseReason::Timeout);
     }
     else {
         postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkTimeout, this));
@@ -803,7 +844,7 @@ void WorkerSession::checkTimeout() {
 }
 
 void WorkerSession::syncTime() {
-    auto msg = std::make_shared<ltproto::peer2peer::TimeSync>();
+    auto msg = std::make_shared<ltproto::client2service::TimeSync>();
     msg->set_t0(time_sync_.getT0());
     msg->set_t1(time_sync_.getT1());
     msg->set_t2(ltlib::steady_now_us());
@@ -813,18 +854,50 @@ void WorkerSession::syncTime() {
 }
 
 void WorkerSession::getTransportStat() {
-#if LT_USE_LTRTC
+#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     rtc::Server* svr = static_cast<rtc::Server*>(tp_server_.get());
-    uint32_t bwe_bps = svr->bwe();
+    bwe_bps_ = svr->bwe();
     uint32_t nack_count = svr->nack();
-    auto msg = std::make_shared<ltproto::peer2peer::SendSideStat>();
-    msg->set_bwe(bwe_bps);
+    auto msg = std::make_shared<ltproto::client2worker::SendSideStat>();
+    msg->set_bwe(bwe_bps_);
     msg->set_nack(nack_count);
     msg->set_loss_rate(loss_rate_);
-    LOG(DEBUG) << "BWE " << bwe_bps << " NACK " << nack_count;
+    LOG(DEBUG) << "BWE " << bwe_bps_ << " NACK " << nack_count;
     sendMessageToRemoteClient(ltproto::id(msg), msg, true);
     postDelayTask(1'000, std::bind(&WorkerSession::getTransportStat, this));
-#endif // LT_USE_LTRTC
+#endif //  LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
+}
+
+void WorkerSession::tellAppAccpetedConnection() {
+    auto msg = std::make_shared<ltproto::service2app::AcceptedConnection>();
+    msg->set_device_id(client_device_id_);
+    msg->set_enable_gamepad(enable_gamepad_);
+    msg->set_enable_keyboard(enable_keyboard_);
+    msg->set_enable_mouse(enable_mouse_);
+    msg->set_gpu_decode(true);
+    msg->set_gpu_encode(true);
+    msg->set_p2p(true);
+    auto negotiated_params =
+        std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
+    msg->set_video_codec((ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));
+    on_accepted_connection_(msg);
+}
+
+void WorkerSession::sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hit) {
+    auto status = std::make_shared<ltproto::service2app::ConnectionStatus>();
+    // FIXME: 这个值是错的，我们要显示实际值，而这里是估计值
+    status->set_bandwidth_bps(static_cast<int32_t>(bwe_bps_));
+    status->set_delay_ms(static_cast<int32_t>(rtt_ / 2 / 1000));
+    status->set_device_id(client_device_id_);
+    status->set_enable_gamepad(enable_gamepad_);
+    status->set_enable_keyboard(enable_keyboard_);
+    status->set_enable_mouse(enable_mouse_);
+    status->set_hit_gamepad(gp_hit);
+    status->set_hit_keyboard(kb_hit);
+    status->set_hit_mouse(mouse_hit);
+    // FIXME: 填写正确P2P值
+    status->set_p2p(true);
+    on_connection_status_(status);
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

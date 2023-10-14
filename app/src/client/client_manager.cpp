@@ -40,16 +40,16 @@
 
 namespace {
 
-constexpr ltproto::peer2peer::VideoCodecType kCodecPriority[] = {
-    ltproto::peer2peer::VideoCodecType::HEVC,
-    ltproto::peer2peer::VideoCodecType::AVC,
+constexpr ltproto::common::VideoCodecType kCodecPriority[] = {
+    ltproto::common::VideoCodecType::HEVC,
+    ltproto::common::VideoCodecType::AVC,
 };
 
-lt::VideoCodecType toLtrtc(ltproto::peer2peer::VideoCodecType codec) {
+lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
-    case ltproto::peer2peer::AVC:
+    case ltproto::common::AVC:
         return lt::VideoCodecType::H264;
-    case ltproto::peer2peer::HEVC:
+    case ltproto::common::HEVC:
         return lt::VideoCodecType::H265;
     default:
         return lt::VideoCodecType::Unknown;
@@ -126,15 +126,15 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     params->set_video_width(display_output_desc.width);
     params->set_video_height(display_output_desc.height);
     for (auto codec : kCodecPriority) {
-        using Backend = ltproto::peer2peer::StreamingParams::VideoEncodeBackend;
-        using CodecType = ltproto::peer2peer::VideoCodecType;
+        using Backend = ltproto::common::StreamingParams::VideoEncodeBackend;
+        using CodecType = ltproto::common::VideoCodecType;
         switch (codec) {
-        case ltproto::peer2peer::AVC:
+        case ltproto::common::AVC:
             if (h264_decodable) {
                 params->add_video_codecs(CodecType::AVC);
             }
             break;
-        case ltproto::peer2peer::HEVC:
+        case ltproto::common::HEVC:
             if (h265_decodable) {
                 params->add_video_codecs(CodecType::HEVC);
             }
@@ -178,7 +178,7 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
     params.signaling_addr = ack->signaling_addr();
     params.signaling_port = ack->signaling_port();
     params.on_exited = std::bind(&ClientManager::onClientExited, this, ack->request_id());
-    params.video_codec_type = toLtrtc(static_cast<ltproto::peer2peer::VideoCodecType>(
+    params.video_codec_type = toLtrtc(static_cast<ltproto::common::VideoCodecType>(
         ack->streaming_params().video_codecs().Get(0)));
     params.width = ack->streaming_params().video_width();
     params.height = ack->streaming_params().video_height();

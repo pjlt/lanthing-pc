@@ -356,14 +356,21 @@ bool SettingsSqlite::init() {
     const char* kCreateTableSQL = R"(
 CREATE TABLE IF NOT EXISTS kv_settings(
 	"id"	        INTEGER PRIMARY KEY,
-	"created_at"	DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP)),
-	"updated_at"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
+	"created_at"	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"updated_at"	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"name"          TEXT UNIQUE NOT NULL,
 	"bool_val"      INTEGER,
 	"int_val"       INTEGER,
 	"str_val"       TEXT,
 	"blob_val"      BLOB
-);)";
+);
+CREATE TRIGGER IF NOT EXISTS UpdateTimestamp
+    AFTER UPDATE
+    ON kv_settings
+BEGIN
+    UPDATE kv_settings SET updated_at = CURRENT_TIMESTAMP WHERE id=OLD.id;
+END;
+)";
     int ret = sqlite3_open(filepath_.c_str(), &db_);
     if (ret != SQLITE_OK) {
         LOG(ERR) << "sqlite3_open failed with " << ret;

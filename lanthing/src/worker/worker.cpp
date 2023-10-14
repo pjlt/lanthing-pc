@@ -35,18 +35,18 @@
 #include <ltlib/times.h>
 #include <ltproto/ltproto.h>
 
-#include <ltproto/peer2peer/audio_data.pb.h>
-#include <ltproto/peer2peer/start_working.pb.h>
-#include <ltproto/peer2peer/start_working_ack.pb.h>
-#include <ltproto/peer2peer/streaming_params.pb.h>
+#include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/common/streaming_params.pb.h>
+#include <ltproto/worker2service/start_working.pb.h>
+#include <ltproto/worker2service/start_working_ack.pb.h>
 
 namespace {
 
-lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type) {
+lt::VideoCodecType to_ltrtc(ltproto::common::VideoCodecType codec_type) {
     switch (codec_type) {
-    case ltproto::peer2peer::AVC:
+    case ltproto::common::AVC:
         return lt::VideoCodecType::H264;
-    case ltproto::peer2peer::HEVC:
+    case ltproto::common::HEVC:
         return lt::VideoCodecType::H265;
     default:
         return lt::VideoCodecType::Unknown;
@@ -67,14 +67,14 @@ lt::VideoCodecType to_ltrtc(ltproto::peer2peer::VideoCodecType codec_type) {
 //     }
 // }
 
-ltproto::peer2peer::VideoCodecType to_protobuf(lt::VideoCodecType codec_type) {
+ltproto::common::VideoCodecType to_protobuf(lt::VideoCodecType codec_type) {
     switch (codec_type) {
     case lt::VideoCodecType::H264:
-        return ltproto::peer2peer::VideoCodecType::AVC;
+        return ltproto::common::VideoCodecType::AVC;
     case lt::VideoCodecType::H265:
-        return ltproto::peer2peer::VideoCodecType::HEVC;
+        return ltproto::common::VideoCodecType::HEVC;
     default:
-        return ltproto::peer2peer::VideoCodecType::UnknownVCT;
+        return ltproto::common::VideoCodecType::UnknownVCT;
     }
 }
 
@@ -241,10 +241,10 @@ bool Worker::initPipeClient() {
 }
 
 bool Worker::negotiateParameters() {
-    auto negotiated_params = std::make_shared<ltproto::peer2peer::StreamingParams>();
+    auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
     lt::AudioCapturer::Params audio_params{};
-#if LT_USE_LTRTC
+#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     audio_params.type = AudioCodecType::PCM;
 #else
     audio_params.type = AudioCodecType::OPUS;
@@ -387,13 +387,13 @@ void Worker::onPipeConnected() {
     }
     connected_to_service_ = true;
     // 连上第一时间，向service发送协商好的串流参数
-    auto params = std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(negotiated_params_);
+    auto params = std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_params_);
     sendPipeMessage(ltproto::id(params), params);
 }
 
 void Worker::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::StartWorking>(_msg);
-    auto ack = std::make_shared<ltproto::peer2peer::StartWorkingAck>();
+    auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorking>(_msg);
+    auto ack = std::make_shared<ltproto::worker2service::StartWorkingAck>();
     do {
         video_->start();
         audio_->start();
@@ -409,16 +409,16 @@ void Worker::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>
                                               std::placeholders::_1, std::placeholders::_2);
         input_ = InputExecutor::create(input_params);
         if (input_ == nullptr) {
-            ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_InputFailed);
+            ack->set_err_code(ltproto::worker2service::StartWorkingAck_ErrCode_InputFailed);
             break;
         }
-        ack->set_err_code(ltproto::peer2peer::StartWorkingAck_ErrCode_Success);
+        ack->set_err_code(ltproto::worker2service::StartWorkingAck_ErrCode_Success);
     } while (false);
     for (const auto& handler : msg_handlers_) {
         ack->add_msg_type(handler.first);
     }
 
-    if (ack->err_code() != ltproto::peer2peer::StartWorkingAck_ErrCode_Success) {
+    if (ack->err_code() != ltproto::worker2service::StartWorkingAck_ErrCode_Success) {
         if (video_) {
             video_->stop();
         }

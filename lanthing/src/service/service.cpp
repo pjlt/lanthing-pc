@@ -35,13 +35,15 @@
 
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
-#include <ltproto/peer2peer/confirm_connection.pb.h>
-#include <ltproto/peer2peer/confirm_connection_ack.pb.h>
 #include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/server/open_connection_ack.pb.h>
+#include <ltproto/service2app/confirm_connection.pb.h>
+#include <ltproto/service2app/confirm_connection_ack.pb.h>
+#include <ltproto/service2app/disconnected_connection.pb.h>
+#include <ltproto/service2app/operate_connection.pb.h>
 
 namespace lt {
 
@@ -144,11 +146,9 @@ bool Service::initSettings() {
     return settings_ != nullptr;
 }
 
-// TODO: 删除锁，确保worker_sessions_只在ioloop中使用
 void Service::createSession(const WorkerSession::Params& params) {
     auto session = WorkerSession::create(params);
     if (session != nullptr) {
-        std::lock_guard<std::mutex> lock{mutex_};
         worker_sessions_[params.name] = session;
     }
     else {
@@ -156,7 +156,6 @@ void Service::createSession(const WorkerSession::Params& params) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
         tcp_client_->send(ltproto::id(ack), ack);
         // 删除占位的nullptr
-        std::lock_guard<std::mutex> lock{mutex_};
         worker_sessions_.erase(params.name);
     }
 }
@@ -178,7 +177,7 @@ void Service::letUserConfirm(int64_t device_id) {
         cached_worker_params_ = std::nullopt;
         return;
     }
-    auto msg = std::make_shared<ltproto::peer2peer::ConfirmConnection>();
+    auto msg = std::make_shared<ltproto::service2app::ConfirmConnection>();
     msg->set_device_id(device_id);
     sendMessageToApp(ltproto::id(msg), msg);
 }
@@ -253,20 +252,21 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     constexpr size_t kSessionNameLen = 8;
     const std::string session_name = ltlib::randomStr(kSessionNameLen);
-    {
-        std::lock_guard<std::mutex> lock{mutex_};
-        if (!worker_sessions_.empty()) {
-            LOG(ERR) << "Only support one client";
-            return;
-        }
-        else {
-            // 用一个nullptr占位，即使释放锁，其他线程也不会modify这个worker_sessions_
-            worker_sessions_[session_name] = nullptr;
-        }
+    if (!worker_sessions_.empty()) {
+        LOG(ERR) << "Only support one client";
+        return;
+    }
+    else {
+        // 用一个nullptr占位
+        worker_sessions_[session_name] = nullptr;
     }
     // 2. 准备启动worker的参数
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
+    worker_params.ioloop = ioloop_.get();
+    worker_params.post_task = std::bind(&Service::postTask, this, std::placeholders::_1);
+    worker_params.post_delay_task =
+        std::bind(&Service::postDelayTask, this, std::placeholders::_1, std::placeholders::_2);
     worker_params.user_defined_relay_server = settings_->getString("relay").value_or("");
     worker_params.msg = msg;
     worker_params.on_create_completed =
@@ -274,7 +274,11 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
                   std::placeholders::_2, std::placeholders::_3);
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3);
+                  std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    worker_params.on_accepted_connection =
+        std::bind(&Service::onAcceptedConnection, this, std::placeholders::_1);
+    worker_params.on_connection_status =
+        std::bind(&Service::onConnectionStatus, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
@@ -301,7 +305,9 @@ void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> ms
               << ltproto::server::LoginDeviceAck::ErrCode_Name(ack->err_code());
 }
 
-void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {}
+void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)msg;
+}
 
 void Service::onCreateSessionCompletedThreadSafe(
     bool success, const std::string& session_name,
@@ -316,8 +322,7 @@ void Service::onCreateSessionCompleted(bool success, const std::string& session_
     if (success) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Success);
         auto streaming_params = ack->mutable_streaming_params();
-        auto negotiated_params =
-            std::static_pointer_cast<ltproto::peer2peer::StreamingParams>(params);
+        auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(params);
         streaming_params->CopyFrom(*negotiated_params);
     }
     else {
@@ -326,16 +331,18 @@ void Service::onCreateSessionCompleted(bool success, const std::string& session_
     tcp_client_->send(ltproto::id(ack), ack);
 }
 
-void Service::onSessionClosedThreadSafe(WorkerSession::CloseReason close_reason,
+void Service::onSessionClosedThreadSafe(int64_t device_id, WorkerSession::CloseReason close_reason,
                                         const std::string& session_name,
                                         const std::string& room_id) {
-    postTask(std::bind(&Service::onSessionClosed, this, close_reason, session_name, room_id));
+    postTask(
+        std::bind(&Service::onSessionClosed, this, device_id, close_reason, session_name, room_id));
 }
 
-void Service::onSessionClosed(WorkerSession::CloseReason close_reason,
+void Service::onSessionClosed(int64_t device_id, WorkerSession::CloseReason close_reason,
                               const std::string& session_name, const std::string& room_id) {
     reportSessionClosed(close_reason, room_id);
     destroySession(session_name);
+    tellAppSessionClosed(device_id);
 }
 
 void Service::sendMessageToServer(uint32_t type,
@@ -358,6 +365,7 @@ void Service::loginDevice() {
 
 void Service::loginUser() {}
 
+// TODO: 重新设计这个报告
 void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
                                   const std::string& room_id) {
     auto msg = std::make_shared<ltproto::server::CloseConnection>();
@@ -366,10 +374,13 @@ void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
     case WorkerSession::CloseReason::ClientClose:
         reason = ltproto::server::CloseConnection_Reason_ClientClose;
         break;
-    case WorkerSession::CloseReason::HostClose:
+    case WorkerSession::CloseReason::WorkerStoped:
         reason = ltproto::server::CloseConnection_Reason_HostClose;
         break;
-    case WorkerSession::CloseReason::TimeoutClose:
+    case WorkerSession::CloseReason::Timeout:
+        reason = ltproto::server::CloseConnection_Reason_ClientClose;
+        break;
+    case WorkerSession::CloseReason::UserKick:
         reason = ltproto::server::CloseConnection_Reason_ClientClose;
         break;
     default:
@@ -385,6 +396,9 @@ void Service::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::Mess
     switch (type) {
     case ltype::kConfirmConnectionAck:
         onConfirmConnectionAck(msg);
+        break;
+    case ltype::kOperateConnection:
+        onOperateConnection(msg);
         break;
     default:
         LOG(WARNING) << "Unknown message from app " << type;
@@ -410,7 +424,9 @@ void Service::onAppConnected() {
 }
 
 void Service::sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    app_client_->send(type, msg);
+    if (app_connected_) {
+        app_client_->send(type, msg);
+    }
 }
 
 void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -423,12 +439,12 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     }
     auto params = cached_worker_params_.value();
     cached_worker_params_ = std::nullopt;
-    auto msg = std::static_pointer_cast<ltproto::peer2peer::ConfirmConnectionAck>(_msg);
+    auto msg = std::static_pointer_cast<ltproto::service2app::ConfirmConnectionAck>(_msg);
     switch (msg->result()) {
-    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Agree:
+    case ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Agree:
         createSession(params);
         break;
-    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_Reject:
+    case ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Reject:
     {
         worker_sessions_.erase(params.name);
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
@@ -436,7 +452,7 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         tcp_client_->send(ltproto::id(ack), ack);
         break;
     }
-    case ltproto::peer2peer::ConfirmConnectionAck_ConfirmResult_AgreeNextTime:
+    case ltproto::service2app::ConfirmConnectionAck_ConfirmResult_AgreeNextTime:
     {
         auto req = std::static_pointer_cast<ltproto::server::OpenConnection>(params.msg);
         std::string cookie_name = "from_" + std::to_string(req->client_device_id());
@@ -452,6 +468,62 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         tcp_client_->send(ltproto::id(ack), ack);
         break;
     }
+}
+
+void Service::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (worker_sessions_.empty()) {
+        LOG(WARNING) << "No available connection, can't operate";
+        return;
+    }
+    if (worker_sessions_.size() != 1) {
+        LOG(ERR) << "We have more than one accepted connection, something must be wrong";
+        return;
+    }
+    auto session = worker_sessions_.begin();
+    auto msg = std::static_pointer_cast<ltproto::service2app::OperateConnection>(_msg);
+    for (auto _op : msg->operations()) {
+        auto op = static_cast<ltproto::service2app::OperateConnection_Operation>(_op);
+        switch (op) {
+        case ltproto::service2app::OperateConnection_Operation_EnableGamepad:
+            session->second->enableGamepad();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableGamepad:
+            session->second->disableGamepad();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_EnableKeyboard:
+            session->second->enableKeyboard();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableKeyboard:
+            session->second->disableKeyboard();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_EnableMouse:
+            session->second->enableMouse();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableMouse:
+            session->second->disableMouse();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_Kick:
+            session->second->close();
+            break;
+        default:
+            LOG(WARNING) << "Unknown operation " << _op;
+            break;
+        }
+    }
+}
+
+void Service::tellAppSessionClosed(int64_t device_id) {
+    auto msg = std::make_shared<ltproto::service2app::DisconnectedConnection>();
+    msg->set_device_id(device_id);
+    sendMessageToApp(ltproto::id(msg), msg);
+}
+
+void Service::onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kAcceptedConnection, msg);
+}
+
+void Service::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kConnectionStatus, msg);
 }
 
 } // namespace svc

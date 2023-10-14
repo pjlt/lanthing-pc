@@ -30,6 +30,9 @@
 
 #include "gui.h"
 
+// TOO many windows headers inside
+#include <wintoastlib.h>
+
 #include <QtWidgets/qmenu.h>
 #include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qwidget.h>
@@ -38,8 +41,51 @@
 #include <qtranslator.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/strings.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
 
 #include "mainwindow/mainwindow.h"
+
+namespace {
+
+class ToastHandler : public WinToastLib::IWinToastHandler {
+public:
+    ~ToastHandler() override {}
+    void toastActivated() const override {}
+    void toastActivated(int) const override {}
+    void toastDismissed(WinToastDismissalReason) const override {}
+    void toastFailed() const override {}
+};
+
+void ltQtOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
+    if (context.file == nullptr || context.function == nullptr) {
+        std::string category;
+        if (context.category) {
+            category = context.category;
+        }
+        LOG(INFO) << "Qt logging, category: " << category
+                  << ", message: " << msg.toStdString().c_str();
+        return;
+    }
+    switch (type) {
+    case QtDebugMsg:
+        LOG_2(DEBUG, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtInfoMsg:
+        LOG_2(INFO, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtWarningMsg:
+        LOG_2(WARNING, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtCriticalMsg:
+        LOG_2(ERR, context.file, context.line, context.function) << msg.toStdString().c_str();
+        break;
+    case QtFatalMsg:
+        LOG_2(FATAL, context.file, context.line, context.function) << msg.toStdString().c_str();
+    }
+}
+
+} // namespace
 
 namespace lt {
 
@@ -55,7 +101,13 @@ public:
 
     void setLoginStatus(GUI::ErrCode err_code);
 
-    void handleConfirmConnection(int64_t device_id);
+    void onConfirmConnection(int64_t device_id);
+
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onDisconnectedConnection(int64_t device_id);
 
 private:
     void setLanguage();
@@ -64,9 +116,20 @@ private:
     std::unique_ptr<QApplication> qapp_;
     std::unique_ptr<MainWindow> main_window_;
     QTranslator translator_;
+    std::unique_ptr<QSystemTrayIcon> sys_tray_icon_;
+    std::unique_ptr<QMenu> menu_;
 };
 
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
+    // wintoast
+    WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
+    WinToastLib::WinToast::instance()->setAppUserModelId(
+        WinToastLib::WinToast::configureAUMI(L"Numbaa", L"Lanthing", L"", L""));
+    if (!WinToastLib::WinToast::instance()->initialize()) {
+        LOG(ERR) << "Initialize WinToastLib failed";
+    }
+    //  qt
+    qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
     setLanguage();
     QIcon icon(":/icons/icons/pc.png");
@@ -74,12 +137,11 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     QApplication::setQuitOnLastWindowClosed(false);
 
     main_window_ = std::make_unique<MainWindow>(params, nullptr);
-
-    QSystemTrayIcon sys_tray_icon;
-    QMenu* menu = new QMenu();
-    QAction* a0 = new QAction(QObject::tr("Main Page"));
-    QAction* a1 = new QAction(QObject::tr("Settings"));
-    QAction* a2 = new QAction(QObject::tr("Exit"));
+    menu_ = std::make_unique<QMenu>(nullptr);
+    sys_tray_icon_ = std::make_unique<QSystemTrayIcon>();
+    QAction* a0 = new QAction(QObject::tr("Main Page"), menu_.get());
+    QAction* a1 = new QAction(QObject::tr("Settings"), menu_.get());
+    QAction* a2 = new QAction(QObject::tr("Exit"), menu_.get());
     QObject::connect(a0, &QAction::triggered, [this]() {
         main_window_->switchToMainPage();
         main_window_->show();
@@ -89,7 +151,7 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
         main_window_->show();
     });
     QObject::connect(a2, &QAction::triggered, []() { QApplication::exit(0); });
-    QObject::connect(&sys_tray_icon, &QSystemTrayIcon::activated,
+    QObject::connect(sys_tray_icon_.get(), &QSystemTrayIcon::activated,
                      [this](QSystemTrayIcon::ActivationReason reason) {
                          switch (reason) {
                          case QSystemTrayIcon::Unknown:
@@ -108,13 +170,13 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
                              break;
                          }
                      });
-    menu->addAction(a0);
-    menu->addAction(a1);
-    menu->addAction(a2);
-    sys_tray_icon.setContextMenu(menu);
-    sys_tray_icon.setIcon(icon);
+    menu_->addAction(a0);
+    menu_->addAction(a1);
+    menu_->addAction(a2);
+    sys_tray_icon_->setContextMenu(menu_.get());
+    sys_tray_icon_->setIcon(icon);
 
-    sys_tray_icon.show();
+    sys_tray_icon_->show();
     main_window_->show();
 }
 
@@ -134,8 +196,34 @@ void GUIImpl::setLoginStatus(GUI::ErrCode err_code) {
     main_window_->setLoginStatus(err_code);
 }
 
-void GUIImpl::handleConfirmConnection(int64_t device_id) {
-    main_window_->handleConfirmConnection(device_id);
+void GUIImpl::onConfirmConnection(int64_t device_id) {
+    main_window_->onConfirmConnection(device_id);
+}
+
+void GUIImpl::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onConnectionStatus(msg);
+}
+
+void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedConnection>(_msg);
+    std::string device_id = std::to_string(msg->device_id());
+    QString format = QObject::tr("%s connected to this machine");
+    std::vector<char> buffer(128);
+    snprintf(buffer.data(), buffer.size(), format.toStdString().c_str(), device_id.c_str());
+    buffer.back() = '\0';
+    std::wstring message = ltlib::utf8To16(buffer.data());
+
+    WinToastLib::WinToastTemplate templ =
+        WinToastLib::WinToastTemplate(WinToastLib::WinToastTemplate::Text01);
+    templ.setTextField(message, WinToastLib::WinToastTemplate::FirstLine);
+    templ.setExpiration(1000 * 5);
+    WinToastLib::WinToast::instance()->showToast(templ, new ToastHandler);
+
+    main_window_->onAccptedConnection(_msg);
+}
+
+void GUIImpl::onDisconnectedConnection(int64_t device_id) {
+    main_window_->onDisconnectedConnection(device_id);
 }
 
 void GUIImpl::setLanguage() {
@@ -143,14 +231,18 @@ void GUIImpl::setLanguage() {
     switch (locale.language()) {
     case QLocale::Chinese:
         if (translator_.load(":/i18n/lt-zh_CN")) {
-            LOG(INFO) << "Language Chinese";
+            LOG(INFO) << "Language: Chinese";
             qapp_->installTranslator(&translator_);
+            return;
         }
-        return;
+        else {
+            LOG(WARNING) << "Locale setting is Chinese, but can't load translation file.";
+        }
+        break;
     default:
         break;
     }
-    LOG(INFO) << "Language English";
+    LOG(INFO) << "Language: English";
 }
 
 GUI::GUI()
@@ -176,8 +268,20 @@ void GUI::setLoginStatus(ErrCode err_code) {
     impl_->setLoginStatus(err_code);
 }
 
-void GUI::handleConfirmConnection(int64_t device_id) {
-    impl_->handleConfirmConnection(device_id);
+void GUI::onConfirmConnection(int64_t device_id) {
+    impl_->onConfirmConnection(device_id);
+}
+
+void GUI::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onConnectionStatus(msg);
+}
+
+void GUI::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onAccptedConnection(msg);
+}
+
+void GUI::onDisconnectedConnection(int64_t device_id) {
+    impl_->onDisconnectedConnection(device_id);
 }
 
 } // namespace lt

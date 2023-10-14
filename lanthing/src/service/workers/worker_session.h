@@ -49,36 +49,45 @@ namespace svc {
 
 class WorkerProcess;
 
-class WorkerSession {
+class WorkerSession : public std::enable_shared_from_this<WorkerSession> {
 public:
     enum class CloseReason {
         ClientClose,
-        HostClose,
-        TimeoutClose,
+        WorkerStoped,
+        Timeout,
+        UserKick,
     };
 
     struct Params {
         std::string name;
+        ltlib::IOLoop* ioloop;
         std::string user_defined_relay_server;
         std::shared_ptr<google::protobuf::MessageLite> msg;
         std::function<void(bool, const std::string&,
                            std::shared_ptr<google::protobuf::MessageLite>)>
             on_create_completed;
-        std::function<void(CloseReason, const std::string&, const std::string&)> on_closed;
+        std::function<void(int64_t, CloseReason, const std::string&, const std::string&)> on_closed;
+        std::function<void(const std::function<void()>&)> post_task;
+        std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
     };
 
 public:
     static std::shared_ptr<WorkerSession> create(const Params& params);
     ~WorkerSession();
 
+    void enableGamepad();
+    void disableGamepad();
+    void enableMouse();
+    void disableMouse();
+    void enableKeyboard();
+    void disableKeyboard();
+    void close();
+
 private:
-    WorkerSession(
-        const std::string& name, const std::string& relay_server,
-        std::function<void(bool, const std::string&,
-                           std::shared_ptr<google::protobuf::MessageLite>)>
-            on_create_completed,
-        std::function<void(CloseReason, const std::string&, const std::string&)> on_closed);
-    bool init(std::shared_ptr<google::protobuf::MessageLite> msg);
+    WorkerSession(const Params& params);
+    bool init(std::shared_ptr<google::protobuf::MessageLite> msg, ltlib::IOLoop* ioloop);
     bool initTransport();
     std::unique_ptr<tp::Server> createTcpServer();
     std::unique_ptr<tp::Server> createRtcServer();
@@ -86,14 +95,13 @@ private:
     void createWorkerProcess(uint32_t client_width, uint32_t client_height,
                              uint32_t client_refresh_rate,
                              std::vector<lt::VideoCodecType> client_codecs);
-    void mainLoop(const std::function<void()>& i_am_alive);
     void onClosed(CloseReason reason);
     void maybeOnCreateSessionCompleted();
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
     // 信令
-    bool initSignlingClient();
+    bool initSignlingClient(ltlib::IOLoop* ioloop);
     void onSignalingMessageFromNet(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSignalingDisconnected();
@@ -104,9 +112,10 @@ private:
     void onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendSigClose();
 
     // worker process
-    bool initPipeServer();
+    bool initPipeServer(ltlib::IOLoop* ioloop);
     void onPipeAccepted(uint32_t fd);
     void onPipeDisconnected(uint32_t fd);
     void onPipeMessage(uint32_t fd, uint32_t type,
@@ -147,12 +156,16 @@ private:
     void checkTimeout();
     void syncTime();
     void getTransportStat();
+    void tellAppAccpetedConnection();
+    void sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hit);
 
 private:
     std::string session_name_;
+    std::function<void(const std::function<void()>&)> post_task_;
+    std::function<void(int64_t, const std::function<void()>&)> post_delay_task_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
     std::string user_defined_relay_server_;
-    std::mutex mutex_;
-    std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::unique_ptr<lt::tp::Server> tp_server_;
@@ -161,6 +174,7 @@ private:
     std::string pipe_name_;
     std::set<uint32_t> worker_registered_msg_;
     std::shared_ptr<WorkerProcess> worker_process_;
+    int64_t client_device_id_ = 0;
     std::string service_id_;
     std::string room_id_;
     std::string auth_token_;
@@ -173,7 +187,7 @@ private:
     std::atomic<bool> client_connected_{false};
     std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
         on_create_session_completed_;
-    std::function<void(CloseReason, const std::string&, const std::string&)> on_closed_;
+    std::function<void(int64_t, CloseReason, const std::string&, const std::string&)> on_closed_;
     std::atomic<int64_t> last_recv_time_us_ = 0;
     bool rtc_closed_ = true;
     bool worker_process_stoped_ = true;
@@ -181,8 +195,13 @@ private:
     std::shared_ptr<google::protobuf::MessageLite> negotiated_streaming_params_;
     ltlib::TimeSync time_sync_;
     int64_t rtt_ = 0;
+    uint32_t bwe_bps_ = 0;
     int64_t time_diff_ = 0;
     float loss_rate_ = .0f;
+
+    std::atomic<bool> enable_gamepad_ = true;
+    std::atomic<bool> enable_keyboard_ = false;
+    std::atomic<bool> enable_mouse_ = false;
 };
 
 } // namespace svc

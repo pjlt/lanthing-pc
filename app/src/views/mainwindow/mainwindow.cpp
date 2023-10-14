@@ -92,7 +92,8 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
             [pages_layout](const int index) { pages_layout->setCurrentIndex(index); });
     connect(
         main_page_ui, &MainPage::onConnectBtnPressed1,
-        [this](const std::string& dev_id, const std::string& token) { doInvite(dev_id, token); });
+        [this](const std::string& dev_id, const std::string& token) { doConnect(dev_id, token); });
+    connect(main_page_ui, &MainPage::onOperateConnection, this, &MainWindow::onOperateConnection);
     connect(setting_page_ui, &SettingPage::refreshAccessTokenStateChanged,
             [this](bool checked) { params_.enable_auto_refresh_access_token(checked); });
     connect(setting_page_ui, &SettingPage::runAsDaemonStateChanged,
@@ -163,7 +164,7 @@ void MainWindow::setAccessToken(const std::string& access_token) {
         [this, access_token]() { main_page_ui->onUpdateLocalAccessToken(access_token); });
 }
 
-void MainWindow::handleConfirmConnection(int64_t device_id) {
+void MainWindow::onConfirmConnection(int64_t device_id) {
     DispatchToMainThread([this, device_id]() {
         QMessageBox msgbox{this};
         msgbox.setWindowTitle(tr("New Connection"));
@@ -199,7 +200,20 @@ void MainWindow::handleConfirmConnection(int64_t device_id) {
     });
 }
 
-void MainWindow::doInvite(const std::string& dev_id, const std::string& token) {
+void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    DispatchToMainThread([this, msg]() { main_page_ui->onConnectionStatus(msg); });
+}
+
+void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    DispatchToMainThread([this, msg]() { main_page_ui->onAccptedConnection(msg); });
+}
+
+void MainWindow::onDisconnectedConnection(int64_t device_id) {
+    DispatchToMainThread(
+        [this, device_id]() { main_page_ui->onDisconnectedConnection(device_id); });
+}
+
+void MainWindow::doConnect(const std::string& dev_id, const std::string& token) {
     int64_t deviceID = std::atoll(dev_id.c_str());
     if (deviceID != 0) {
         params_.connect(deviceID, token);
@@ -207,4 +221,8 @@ void MainWindow::doInvite(const std::string& dev_id, const std::string& token) {
     else {
         LOG(FATAL) << "Parse deviceID(" << dev_id << ") to int64_t failed!";
     }
+}
+
+void MainWindow::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    params_.on_operate_connection(msg);
 }

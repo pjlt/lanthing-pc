@@ -1,8 +1,24 @@
 <RCC>
-    <qresource prefix="/icons">
-        <file>icons/link.png</file>
-        <file>icons/lock.png</file>
-        <file>icons/pc.png</file>
-        <file>icons/user.png</file>
-    </qresource>
+	<qresource prefix="/icons">
+		<file>icons/link.png</file>
+		<file>icons/lock.png</file>
+		<file>icons/pc.png</file>
+		<file>icons/user.png</file>
+		<file>icons/gamepad.png</file>
+		<file>icons/mouse.png</file>
+		<file>icons/keyboard.png</file>
+		<file>icons/gamepad_gray.png</file>
+		<file>icons/gamepad_green.png</file>
+		<file>icons/gamepad_red.png</file>
+		<file>icons/gamepad_white.png</file>
+		<file>icons/keyboard_gray.png</file>
+		<file>icons/keyboard_green.png</file>
+		<file>icons/keyboard_red.png</file>
+		<file>icons/keyboard_white.png</file>
+		<file>icons/mouse_gray.png</file>
+		<file>icons/mouse_green.png</file>
+		<file>icons/mouse_red.png</file>
+		<file>icons/mouse_white.png</file>
+		<file>icons/close.png</file>
+	</qresource>
 </RCC>

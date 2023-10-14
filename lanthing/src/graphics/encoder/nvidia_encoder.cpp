@@ -146,8 +146,8 @@ public:
     ~NvD3d11EncoderImpl();
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
-    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeOneFrame(void* input_frame,
-                                                                   bool request_iframe);
+    std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
+                                                                       bool request_iframe);
 
 private:
     bool loadNvApi();
@@ -279,7 +279,7 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& para
     }
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame>
+std::shared_ptr<ltproto::client2worker::VideoFrame>
 NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     auto mapped_resource = initInputFrame(input_frame);
     if (!mapped_resource.has_value()) {
@@ -317,7 +317,7 @@ NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
         LOG(ERR) << "nvEncLockBitstream failed with " << status;
         return nullptr;
     }
-    auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    auto out_frame = std::make_shared<ltproto::client2worker::VideoFrame>();
     out_frame->set_frame(lbs.bitstreamBufferPtr, lbs.bitstreamSizeInBytes);
     status = nvfuncs_.nvEncUnlockBitstream(nvencoder_, lbs.outputBitstream);
     if (status != NV_ENC_SUCCESS) {
@@ -528,7 +528,7 @@ void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {
+std::shared_ptr<ltproto::client2worker::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 

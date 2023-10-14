@@ -81,6 +81,7 @@ target_link_libraries(${PROJECT_NAME}
         g3log
         protobuf::libprotobuf-lite
         breakpad
+        wintoastlib
         ltlib
         transport
         ltproto

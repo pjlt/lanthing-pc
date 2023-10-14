@@ -9,24 +9,44 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="111"/>
+        <location filename="../src/views/link/mainpage.ui" line="137"/>
         <source>DEVICE ID</source>
         <translation>设备码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="118"/>
+        <location filename="../src/views/link/mainpage.ui" line="125"/>
         <source>ACCESS TOKEN</source>
         <translation>验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="125"/>
+        <location filename="../src/views/link/mainpage.ui" line="149"/>
         <source>********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="150"/>
+        <location filename="../src/views/link/mainpage.ui" line="161"/>
         <source>*********</source>
         <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="129"/>
+        <source>gamepad</source>
+        <translation>手柄</translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="130"/>
+        <source>keyboard</source>
+        <translation>键盘</translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="131"/>
+        <source>mouse</source>
+        <translation>鼠标</translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="132"/>
+        <source>kick</source>
+        <translation>断开</translation>
     </message>
 </context>
 <context>
@@ -37,27 +57,27 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="169"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="170"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="171"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="172"/>
         <source>Device %s is requesting connection</source>
-        <translation type="unfinished">设备 %s 正在请求连接</translation>
+        <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="175"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="176"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="177"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="178"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="178"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="179"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
@@ -107,19 +127,24 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="50"/>
+        <location filename="../src/views/gui.cpp" line="142"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="51"/>
+        <location filename="../src/views/gui.cpp" line="143"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="52"/>
+        <location filename="../src/views/gui.cpp" line="144"/>
         <source>Exit</source>
         <translation>退出</translation>
+    </message>
+    <message>
+        <location filename="../src/views/gui.cpp" line="210"/>
+        <source>%s connected to this machine</source>
+        <translation>%s 正在连接</translation>
     </message>
 </context>
 <context>

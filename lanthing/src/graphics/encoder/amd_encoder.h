@@ -45,7 +45,7 @@ public:
     ~AmdEncoder() override {}
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
-    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeFrame(void* input_frame) override;
+    std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:
     std::shared_ptr<AmdEncoderImpl> impl_;

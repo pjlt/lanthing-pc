@@ -147,6 +147,8 @@ App::~App() {
     {
         std::lock_guard lock{ioloop_mutex_};
         tcp_client_.reset();
+        service_manager_.reset();
+        client_manager_.reset();
         ioloop_.reset();
     }
     if (!run_as_daemon_) {
@@ -203,6 +205,8 @@ int App::exec(int argc, char** argv) {
     params.get_settings = std::bind(&App::getSettings, this);
     params.on_user_confirmed_connection = std::bind(&App::onUserConfirmedConnection, this,
                                                     std::placeholders::_1, std::placeholders::_2);
+    params.on_operate_connection =
+        std::bind(&App::onOperateConnection, this, std::placeholders::_1);
     params.set_relay_server = std::bind(&App::setRelayServer, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
@@ -220,6 +224,9 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     postTask([peerDeviceID, accessToken, this]() {
         std::string cookie_name = "cookie_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);
+        if (!cookie.has_value()) {
+            cookie = ltlib::randomStr(24);
+        }
         client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""));
     });
 }
@@ -252,7 +259,13 @@ void App::setRelayServer(const std::string& svr) {
 }
 
 void App::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
-    service_manager_->onUserConfirmedConnection(device_id, result);
+    postTask([this, device_id, result]() {
+        service_manager_->onUserConfirmedConnection(device_id, result);
+    });
+}
+
+void App::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { service_manager_->onOperateConnection(msg); });
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -487,12 +500,29 @@ bool App::initServiceManager() {
     params.ioloop = ioloop_.get();
     params.on_confirm_connection =
         std::bind(&App::onConfirmConnection, this, std::placeholders::_1);
+    params.on_accepted_connection =
+        std::bind(&App::onAccpetedConnection, this, std::placeholders::_1);
+    params.on_connection_status = std::bind(&App::onConnectionStatus, this, std::placeholders::_1);
+    params.on_disconnected_connection =
+        std::bind(&App::onDisconnectedConnection, this, std::placeholders::_1);
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }
 
 void App::onConfirmConnection(int64_t device_id) {
-    gui_.handleConfirmConnection(device_id);
+    gui_.onConfirmConnection(device_id);
+}
+
+void App::onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    gui_.onAccptedConnection(msg);
+}
+
+void App::onDisconnectedConnection(int64_t device_id) {
+    gui_.onDisconnectedConnection(device_id);
+}
+
+void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    gui_.onConnectionStatus(msg);
 }
 
 bool App::initClientManager() {

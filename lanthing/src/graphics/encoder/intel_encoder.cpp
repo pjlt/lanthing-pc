@@ -240,8 +240,8 @@ public:
     ~IntelEncoderImpl();
     bool init(const VideoEncodeParamsHelper& params);
     void reconfigure(const VideoEncoder::ReconfigureParams& params);
-    std::shared_ptr<ltproto::peer2peer::VideoFrame> encodeOneFrame(void* input_frame,
-                                                                   bool request_iframe);
+    std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
+                                                                       bool request_iframe);
 
 private:
     bool createMfxSession();
@@ -384,7 +384,7 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
     }
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame>
+std::shared_ptr<ltproto::client2worker::VideoFrame>
 IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     mfxSyncPoint sync_point{};
     const uint32_t k1024 = 1024;
@@ -460,7 +460,7 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
         }
     }
     bool is_keyframe = (bs.FrameType & MFX_FRAMETYPE_I) || (bs.FrameType & MFX_FRAMETYPE_IDR);
-    auto out_frame = std::make_shared<ltproto::peer2peer::VideoFrame>();
+    auto out_frame = std::make_shared<ltproto::client2worker::VideoFrame>();
     out_frame->set_frame(bitstream_.data(), bs.DataLength);
     out_frame->set_is_keyframe(is_keyframe);
     return out_frame;
@@ -491,8 +491,8 @@ bool IntelEncoderImpl::setConfigFilter() {
         MFXSetConfigFilterProperty(cfg_hw, (const mfxU8*)"mfxImplDescription.Impl", val_hw);
     if (status != MFX_ERR_NONE) {
         LOG(ERR) << "MFXSetConfigFilterProperty(mfxImplDescription.Impl=MFX_IMPL_TYPE_HARDWARE)"
-                        " failed with "
-                     << status;
+                    " failed with "
+                 << status;
         return false;
     }
     mfxConfig cfg_d3d11 = MFXCreateConfig(mfxloader_);
@@ -503,9 +503,9 @@ bool IntelEncoderImpl::setConfigFilter() {
         cfg_d3d11, (const mfxU8*)"mfxImplDescription.AccelerationMode", val_d3d11);
     if (status != MFX_ERR_NONE) {
         LOG(ERR) << "MFXSetConfigFilterProperty(mfxImplDescription.AccelerationMode=MFX_ACCEL_"
-                        "MODE_VIA_D3D11)"
-                        " failed with "
-                     << status;
+                    "MODE_VIA_D3D11)"
+                    " failed with "
+                 << status;
         return false;
     }
     return true;
@@ -712,7 +712,7 @@ void IntelEncoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
-std::shared_ptr<ltproto::peer2peer::VideoFrame> IntelEncoder::encodeFrame(void* input_frame) {
+std::shared_ptr<ltproto::client2worker::VideoFrame> IntelEncoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 

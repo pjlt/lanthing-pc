@@ -68,6 +68,7 @@ private:
     void enableRunAsDaemon(bool enable);
     void setRelayServer(const std::string& svr);
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
+    void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void createAndStartService();
     void stopService();
@@ -98,6 +99,9 @@ private:
     // service
     bool initServiceManager();
     void onConfirmConnection(int64_t device_id);
+    void onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onDisconnectedConnection(int64_t device_id);
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     //
     bool initClientManager();
