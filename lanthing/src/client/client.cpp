@@ -327,7 +327,7 @@ void Client::onSignalingConnected() {
 
 void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::JoinRoomAck>(_msg);
-    if (msg->err_code() != ltproto::signaling::JoinRoomAck_ErrCode_Success) {
+    if (msg->err_code() != ltproto::ErrorCode::Success) {
         LOG(INFO) << "Join room " << signaling_params_.room_id << " with id "
                   << signaling_params_.client_id << " failed";
         return;
@@ -368,10 +368,10 @@ void Client::onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> _
 void Client::onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessageAck>(_msg);
     switch (msg->err_code()) {
-    case ltproto::signaling::SignalingMessageAck_ErrCode_Success:
+    case ltproto::ErrorCode::Success:
         // do nothing
         break;
-    case ltproto::signaling::SignalingMessageAck_ErrCode_NotOnline:
+    case ltproto::ErrorCode::SignalingPeerNotOnline:
         LOG(INFO) << "Send signaling message failed, remote device not online";
         break;
     default:
@@ -627,12 +627,11 @@ bool Client::sendMessageToHost(uint32_t type,
 
 void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmissionAck>(_msg);
-    if (msg->err_code() == ltproto::client2worker::StartTransmissionAck_ErrCode_Success) {
+    if (msg->err_code() == ltproto::ErrorCode::Success) {
         LOG(INFO) << "Received StartTransmissionAck with success";
     }
     else {
-        LOG(INFO) << "StartTransmission failed with "
-                  << ltproto::client2worker::StartTransmissionAck_ErrCode_Name(msg->err_code());
+        LOG(INFO) << "StartTransmission failed with " << ltproto::ErrorCode_Name(msg->err_code());
         stopWait();
     }
 }

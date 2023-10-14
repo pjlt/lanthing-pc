@@ -162,7 +162,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
 
 void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::RequestConnectionAck>(_msg);
-    if (ack->err_code() != ltproto::server::RequestConnectionAck_ErrCode_Success) {
+    if (ack->err_code() != ltproto::ErrorCode::Success) {
         LOGF(WARNING, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
              ack->device_id(), ack->request_id());
         std::lock_guard<std::mutex> lock{session_mutex_};

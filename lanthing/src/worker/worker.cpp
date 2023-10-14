@@ -409,16 +409,16 @@ void Worker::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>
                                               std::placeholders::_1, std::placeholders::_2);
         input_ = InputExecutor::create(input_params);
         if (input_ == nullptr) {
-            ack->set_err_code(ltproto::worker2service::StartWorkingAck_ErrCode_InputFailed);
+            ack->set_err_code(ltproto::ErrorCode::WorkerInitInputFailed);
             break;
         }
-        ack->set_err_code(ltproto::worker2service::StartWorkingAck_ErrCode_Success);
+        ack->set_err_code(ltproto::ErrorCode::Success);
     } while (false);
     for (const auto& handler : msg_handlers_) {
         ack->add_msg_type(handler.first);
     }
 
-    if (ack->err_code() != ltproto::worker2service::StartWorkingAck_ErrCode_Success) {
+    if (ack->err_code() != ltproto::ErrorCode::Success) {
         if (video_) {
             video_->stop();
         }

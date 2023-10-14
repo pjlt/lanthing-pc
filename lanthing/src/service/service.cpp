@@ -153,7 +153,7 @@ void Service::createSession(const WorkerSession::Params& params) {
     }
     else {
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::Unknown);
         tcp_client_->send(ltproto::id(ack), ack);
         // 删除占位的nullptr
         worker_sessions_.erase(params.name);
@@ -171,7 +171,7 @@ void Service::letUserConfirm(int64_t device_id) {
     if (!app_connected_) {
         LOG(WARNING) << "App not online, can't confirm connection";
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::AppNotOnline);
         tcp_client_->send(ltproto::id(ack), ack);
         worker_sessions_.erase(cached_worker_params_->name);
         cached_worker_params_ = std::nullopt;
@@ -233,19 +233,19 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     if (msg->client_device_id() <= 0) {
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::InvalidParameter);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Invalid device id " << msg->client_device_id();
     }
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (!access_token.has_value() || access_token.value().empty()) {
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Get access_token from local settings failed";
         return;
     }
     if (msg->access_token() != access_token.value()) {
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Received connection with invalid access_token: " << msg->access_token();
         return;
@@ -301,8 +301,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
 
 void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     auto ack = std::static_pointer_cast<ltproto::server::LoginDeviceAck>(msg);
-    LOG(INFO) << "LoginDeviceAck: "
-              << ltproto::server::LoginDeviceAck::ErrCode_Name(ack->err_code());
+    LOG(INFO) << "LoginDeviceAck: " << ltproto::ErrorCode_Name(ack->err_code());
 }
 
 void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -320,13 +319,13 @@ void Service::onCreateSessionCompleted(bool success, const std::string& session_
     (void)session_name;
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     if (success) {
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Success);
+        ack->set_err_code(ltproto::ErrorCode::Success);
         auto streaming_params = ack->mutable_streaming_params();
         auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(params);
         streaming_params->CopyFrom(*negotiated_params);
     }
     else {
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::Unknown);
     }
     tcp_client_->send(ltproto::id(ack), ack);
 }
@@ -433,7 +432,7 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     if (!cached_worker_params_.has_value()) {
         LOG(ERR) << "Cached WorkerParams is empty";
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
+        ack->set_err_code(ltproto::ErrorCode::Unknown);
         tcp_client_->send(ltproto::id(ack), ack);
         return;
     }
@@ -448,7 +447,7 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
     {
         worker_sessions_.erase(params.name);
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid); // TODO: reject code
+        ack->set_err_code(ltproto::ErrorCode::UserReject); // TODO: reject code
         tcp_client_->send(ltproto::id(ack), ack);
         break;
     }
@@ -464,7 +463,7 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         LOG(ERR) << "Unknown ConfirmResult " << (int)msg->result() << ", treat as rejct";
         worker_sessions_.erase(params.name);
         auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-        ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid); // TODO: reject code
+        ack->set_err_code(ltproto::ErrorCode::Unknown);
         tcp_client_->send(ltproto::id(ack), ack);
         break;
     }
