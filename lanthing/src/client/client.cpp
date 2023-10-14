@@ -355,16 +355,11 @@ void Client::onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> _
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
     switch (msg->level()) {
     case ltproto::signaling::SignalingMessage::Core:
-        // 暂时没有需要在这层处理的信令消息
+        dispatchSignalingMessageCore(msg);
         break;
     case ltproto::signaling::SignalingMessage::Rtc:
-    {
-        auto& rtc_msg = msg->rtc_message();
-        LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
-                  << ", value:" << msg->rtc_message().value().c_str();
-        tp_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
+        dispatchSignalingMessageRtc(msg);
         break;
-    }
     default:
         break;
     }
@@ -382,6 +377,23 @@ void Client::onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite
     default:
         LOG(INFO) << "Send signaling message failed";
         break;
+    }
+}
+
+void Client::dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
+    auto& rtc_msg = msg->rtc_message();
+    LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
+              << ", value:" << msg->rtc_message().value().c_str();
+    tp_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
+}
+
+void Client::dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
+    auto& coremsg = msg->core_message();
+    LOG(DEBUG) << "Dispatch signaling core message: " << coremsg.key();
+    if (coremsg.key() == kSigCoreClose) {
+        sdl_->stop();
     }
 }
 

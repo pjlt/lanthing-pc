@@ -53,8 +53,8 @@ class WorkerSession : public std::enable_shared_from_this<WorkerSession> {
 public:
     enum class CloseReason {
         ClientClose,
-        HostClose,
-        TimeoutClose,
+        WorkerStoped,
+        Timeout,
         UserKick,
     };
 
@@ -112,6 +112,7 @@ private:
     void onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendSigClose();
 
     // worker process
     bool initPipeServer(ltlib::IOLoop* ioloop);

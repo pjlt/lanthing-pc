@@ -365,6 +365,7 @@ void Service::loginDevice() {
 
 void Service::loginUser() {}
 
+// TODO: 重新设计这个报告
 void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
                                   const std::string& room_id) {
     auto msg = std::make_shared<ltproto::server::CloseConnection>();
@@ -373,10 +374,13 @@ void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
     case WorkerSession::CloseReason::ClientClose:
         reason = ltproto::server::CloseConnection_Reason_ClientClose;
         break;
-    case WorkerSession::CloseReason::HostClose:
+    case WorkerSession::CloseReason::WorkerStoped:
         reason = ltproto::server::CloseConnection_Reason_HostClose;
         break;
-    case WorkerSession::CloseReason::TimeoutClose:
+    case WorkerSession::CloseReason::Timeout:
+        reason = ltproto::server::CloseConnection_Reason_ClientClose;
+        break;
+    case WorkerSession::CloseReason::UserKick:
         reason = ltproto::server::CloseConnection_Reason_ClientClose;
         break;
     default:

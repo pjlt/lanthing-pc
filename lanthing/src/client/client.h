@@ -110,6 +110,8 @@ private:
     void onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSignalingMessage(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // transport
     bool initTransport();

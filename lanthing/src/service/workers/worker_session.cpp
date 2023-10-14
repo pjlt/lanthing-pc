@@ -349,13 +349,15 @@ void WorkerSession::onClosed(CloseReason reason) {
     case CloseReason::ClientClose:
         rtc_closed_ = true;
         break;
-    case CloseReason::HostClose:
+    case CloseReason::WorkerStoped:
         worker_process_stoped_ = true;
         break;
-    case CloseReason::TimeoutClose:
+    case CloseReason::Timeout:
         rtc_closed_ = true;
+        sendSigClose();
         break;
     case CloseReason::UserKick:
+        sendSigClose();
         break;
     default:
         break;
@@ -526,6 +528,13 @@ void WorkerSession::dispatchSignalingMessageCore(
     }
 }
 
+void WorkerSession::sendSigClose() {
+    auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
+    auto coremsg = msg->mutable_core_message();
+    coremsg->set_key(kSigCoreClose);
+    signaling_client_->send(ltproto::id(msg), msg);
+}
+
 bool WorkerSession::initPipeServer(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
     params.stype = ltlib::StreamType::Pipe;
@@ -628,7 +637,7 @@ void WorkerSession::sendToWorkerFromOtherThread(
 void WorkerSession::onWorkerStoped() {
     // FIXME: worker退出不代表关闭，也可能是session改变
     // NOTE: 这是运行在WorkerProcess线程
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::HostClose));
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::WorkerStoped));
 }
 
 void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -673,11 +682,11 @@ void WorkerSession::onTpAccepted() {
 void WorkerSession::onTpConnChanged() {}
 
 void WorkerSession::onTpFailed() {
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::TimeoutClose));
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::Timeout));
 }
 
 void WorkerSession::onTpDisconnected() {
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::TimeoutClose));
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::Timeout));
 }
 
 void WorkerSession::onTpSignalingMessage(const std::string& key, const std::string& value) {
@@ -827,7 +836,7 @@ void WorkerSession::checkTimeout() {
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
         tp_server_->close();
-        onClosed(CloseReason::TimeoutClose);
+        onClosed(CloseReason::Timeout);
     }
     else {
         postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkTimeout, this));

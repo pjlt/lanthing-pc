@@ -131,6 +131,16 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
         QAction* mouse = new QAction(mouse_, tr("mouse"), menu);
         QAction* kick = new QAction(kick_, tr("kick"), menu);
 
+        if (enable_gamepad_) {
+            gamepad->setText(gamepad->text() + " √");
+        }
+        if (enable_keyboard_) {
+            keyboard->setText(keyboard->text() + " √");
+        }
+        if (enable_mouse_) {
+            mouse->setText(mouse->text() + " √");
+        }
+
         connect(gamepad, &QAction::triggered, [this]() {
             enable_gamepad_ = !enable_gamepad_;
             auto msg = std::make_shared<ltproto::service2app::OperateConnection>();

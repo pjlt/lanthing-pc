@@ -42,6 +42,7 @@ namespace {
 
 constexpr int32_t kUserEventResetDRPipeline = 1;
 constexpr int32_t kUserEventToggleFullscreen = 2;
+constexpr int32_t kUserEventStop = 3;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -65,6 +66,8 @@ public:
     void setInputHandler(const OnInputEvent& on_event) override;
 
     void toggleFullscreen() override;
+
+    void stop() override;
 
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
@@ -140,6 +143,13 @@ void PcSdlImpl::toggleFullscreen() {
     SDL_Event ev{};
     ev.type = SDL_USEREVENT;
     ev.user.code = kUserEventToggleFullscreen;
+    SDL_PushEvent(&ev);
+}
+
+void PcSdlImpl::stop() {
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventStop;
     SDL_PushEvent(&ev);
 }
 
@@ -283,6 +293,9 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
         return resetDrPipeline();
     case kUserEventToggleFullscreen:
         return handleToggleFullscreen();
+    case kUserEventStop:
+        LOG(INFO) << "SDL loop received user stop";
+        return DispatchResult::kStop;
     default:
         SDL_assert(false);
         return DispatchResult::kStop;
