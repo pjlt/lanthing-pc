@@ -91,10 +91,13 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
         onConfirmConnection(msg);
         break;
     case ltproto::type::kAcceptedClient:
+        onAcceptedClient(msg);
         break;
     case ltproto::type::kDisconnectedClient:
+        onDisconnectedClient(msg);
         break;
     case ltproto::type::kClientStatus:
+        onClientStatus(msg);
         break;
     default:
         LOG(WARNING) << "ServiceManager received unknown messge type " << type;

@@ -362,11 +362,23 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
-    post_task_(task);
+    auto weak_this = weak_from_this();
+    post_task_([this, weak_this, task]() {
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            task();
+        }
+    });
 }
 
 void WorkerSession::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    post_delay_task_(delay_ms, task);
+    auto weak_this = weak_from_this();
+    post_delay_task_(delay_ms, [this, weak_this, task]() {
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            task();
+        }
+    });
 }
 
 bool WorkerSession::initSignlingClient(ltlib::IOLoop* ioloop) {
@@ -620,8 +632,8 @@ void WorkerSession::onTpAccepted() {
         LOG(INFO) << "Accepted client";
         updateLastRecvTime();
         syncTime();
-        checkTimeout();
-        getTransportStat();
+        postTask(std::bind(&WorkerSession::checkTimeout, this));
+        postTask(std::bind(&WorkerSession::getTransportStat, this));
         tellAppAccpetedClient();
     });
 }

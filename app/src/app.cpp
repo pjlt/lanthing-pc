@@ -492,9 +492,10 @@ bool App::initServiceManager() {
     params.ioloop = ioloop_.get();
     params.on_confirm_connection =
         std::bind(&App::onConfirmConnection, this, std::placeholders::_1);
-    params.on_accepted_client;
-    params.on_client_status;
-    params.on_disconnected_client;
+    params.on_accepted_client = std::bind(&App::onAccpetedClient, this, std::placeholders::_1);
+    params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
+    params.on_disconnected_client =
+        std::bind(&App::onDisconnectedClient, this, std::placeholders::_1);
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }

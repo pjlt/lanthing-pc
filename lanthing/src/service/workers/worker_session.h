@@ -49,7 +49,7 @@ namespace svc {
 
 class WorkerProcess;
 
-class WorkerSession {
+class WorkerSession : public std::enable_shared_from_this<WorkerSession> {
 public:
     enum class CloseReason {
         ClientClose,
