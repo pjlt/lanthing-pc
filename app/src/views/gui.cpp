@@ -30,6 +30,9 @@
 
 #include "gui.h"
 
+// TOO many windows headers inside
+#include <wintoastlib.h>
+
 #include <QtWidgets/qmenu.h>
 #include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qwidget.h>
@@ -38,10 +41,23 @@
 #include <qtranslator.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/strings.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
 
 #include "mainwindow/mainwindow.h"
 
-static void ltQtOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
+namespace {
+
+class ToastHandler : public WinToastLib::IWinToastHandler {
+public:
+    ~ToastHandler() override {}
+    void toastActivated() const override {}
+    void toastActivated(int) const override {}
+    void toastDismissed(WinToastDismissalReason) const override {}
+    void toastFailed() const override {}
+};
+
+void ltQtOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
     if (context.file == nullptr || context.function == nullptr) {
         std::string category;
         if (context.category) {
@@ -68,6 +84,8 @@ static void ltQtOutput(QtMsgType type, const QMessageLogContext& context, const 
         LOG_2(FATAL, context.file, context.line, context.function) << msg.toStdString().c_str();
     }
 }
+
+} // namespace
 
 namespace lt {
 
@@ -103,6 +121,14 @@ private:
 };
 
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
+    // wintoast
+    WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
+    WinToastLib::WinToast::instance()->setAppUserModelId(
+        WinToastLib::WinToast::configureAUMI(L"Numbaa", L"Lanthing", L"", L""));
+    if (!WinToastLib::WinToast::instance()->initialize()) {
+        LOG(ERR) << "Initialize WinToastLib failed";
+    }
+    //  qt
     qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
     setLanguage();
@@ -178,8 +204,22 @@ void GUIImpl::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> 
     main_window_->onConnectionStatus(msg);
 }
 
-void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    main_window_->onAccptedConnection(msg);
+void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedConnection>(_msg);
+    std::string device_id = std::to_string(msg->device_id());
+    QString format = QObject::tr("%s connected to this machine");
+    std::vector<char> buffer(128);
+    snprintf(buffer.data(), buffer.size(), format.toStdString().c_str(), device_id.c_str());
+    buffer.back() = '\0';
+    std::wstring message = ltlib::utf8To16(buffer.data());
+
+    WinToastLib::WinToastTemplate templ =
+        WinToastLib::WinToastTemplate(WinToastLib::WinToastTemplate::Text01);
+    templ.setTextField(message, WinToastLib::WinToastTemplate::FirstLine);
+    templ.setExpiration(1000 * 5);
+    WinToastLib::WinToast::instance()->showToast(templ, new ToastHandler);
+
+    main_window_->onAccptedConnection(_msg);
 }
 
 void GUIImpl::onDisconnectedConnection(int64_t device_id) {

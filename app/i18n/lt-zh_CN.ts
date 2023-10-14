@@ -127,19 +127,24 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="116"/>
+        <location filename="../src/views/gui.cpp" line="142"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="117"/>
+        <location filename="../src/views/gui.cpp" line="143"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="118"/>
+        <location filename="../src/views/gui.cpp" line="144"/>
         <source>Exit</source>
         <translation>退出</translation>
+    </message>
+    <message>
+        <location filename="../src/views/gui.cpp" line="210"/>
+        <source>%s connected to this machine</source>
+        <translation>%s 正在连接</translation>
     </message>
 </context>
 <context>
