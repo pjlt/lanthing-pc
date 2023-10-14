@@ -146,6 +146,7 @@ private:
     void checkTimeout();
     void syncTime();
     void getTransportStat();
+    void tellAppAccpetedClient();
 
 private:
     std::string session_name_;

@@ -29,22 +29,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="115"/>
+        <location filename="../src/views/link/mainpage.cpp" line="133"/>
         <source>gamepad</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="116"/>
+        <location filename="../src/views/link/mainpage.cpp" line="134"/>
         <source>keyboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="117"/>
+        <location filename="../src/views/link/mainpage.cpp" line="135"/>
         <source>mouse</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="118"/>
+        <location filename="../src/views/link/mainpage.cpp" line="136"/>
         <source>kick</source>
         <translation type="unfinished"></translation>
     </message>
@@ -127,17 +127,17 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="110"/>
+        <location filename="../src/views/gui.cpp" line="116"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="111"/>
+        <location filename="../src/views/gui.cpp" line="117"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="112"/>
+        <location filename="../src/views/gui.cpp" line="118"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>

@@ -109,7 +109,6 @@ WorkerSession::WorkerSession(const Params& params)
     , on_create_session_completed_(params.on_create_completed)
     , on_closed_(params.on_closed) {
     constexpr int kRandLength = 4;
-    // 是否需要global?
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
         pipe_name_.push_back(rand() % 26 + 'A');
@@ -623,19 +622,7 @@ void WorkerSession::onTpAccepted() {
         syncTime();
         checkTimeout();
         getTransportStat();
-        auto msg = std::make_shared<ltproto::service2app::AcceptedClient>();
-        msg->set_device_id(client_device_id_);
-        msg->set_enable_gamepad(true);
-        msg->set_enable_keyboard(true);
-        msg->set_enable_mouse(true);
-        msg->set_gpu_decode(true);
-        msg->set_gpu_encode(true);
-        msg->set_p2p(true);
-        auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(
-            negotiated_streaming_params_);
-        msg->set_video_codec(
-            (ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));
-        on_accepted_client_(msg);
+        tellAppAccpetedClient();
     });
 }
 
@@ -808,6 +795,21 @@ void WorkerSession::getTransportStat() {
     sendMessageToRemoteClient(ltproto::id(msg), msg, true);
     postDelayTask(1'000, std::bind(&WorkerSession::getTransportStat, this));
 #endif //  LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
+}
+
+void WorkerSession::tellAppAccpetedClient() {
+    auto msg = std::make_shared<ltproto::service2app::AcceptedClient>();
+    msg->set_device_id(client_device_id_);
+    msg->set_enable_gamepad(true);
+    msg->set_enable_keyboard(true);
+    msg->set_enable_mouse(true);
+    msg->set_gpu_decode(true);
+    msg->set_gpu_encode(true);
+    msg->set_p2p(true);
+    auto negotiated_params =
+        std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
+    msg->set_video_codec((ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));
+    on_accepted_client_(msg);
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

@@ -45,6 +45,9 @@ public:
     struct Params {
         ltlib::IOLoop* ioloop;
         std::function<void(int64_t)> on_confirm_connection;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_client;
+        std::function<void(int64_t)> on_disconnected_client;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_client_status;
     };
 
 public:
@@ -60,10 +63,16 @@ private:
                        std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAcceptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onDisconnectedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::unique_ptr<ltlib::Server> pipe_server_;
     uint32_t fd_ = std::numeric_limits<uint32_t>::max();
     std::function<void(int64_t)> on_confirm_connection_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_client_;
+    std::function<void(int64_t)> on_disconnected_client_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_client_status_;
 };
 } // namespace lt

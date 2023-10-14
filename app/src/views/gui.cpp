@@ -83,7 +83,13 @@ public:
 
     void setLoginStatus(GUI::ErrCode err_code);
 
-    void handleConfirmConnection(int64_t device_id);
+    void onConfirmConnection(int64_t device_id);
+
+    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onDisconnectedClient(int64_t device_id);
 
 private:
     void setLanguage();
@@ -164,8 +170,20 @@ void GUIImpl::setLoginStatus(GUI::ErrCode err_code) {
     main_window_->setLoginStatus(err_code);
 }
 
-void GUIImpl::handleConfirmConnection(int64_t device_id) {
-    main_window_->handleConfirmConnection(device_id);
+void GUIImpl::onConfirmConnection(int64_t device_id) {
+    main_window_->onConfirmConnection(device_id);
+}
+
+void GUIImpl::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onClientStatus(msg);
+}
+
+void GUIImpl::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onAccptedClient(msg);
+}
+
+void GUIImpl::onDisconnectedClient(int64_t device_id) {
+    main_window_->onDisconnectedClient(device_id);
 }
 
 void GUIImpl::setLanguage() {
@@ -173,14 +191,18 @@ void GUIImpl::setLanguage() {
     switch (locale.language()) {
     case QLocale::Chinese:
         if (translator_.load(":/i18n/lt-zh_CN")) {
-            LOG(INFO) << "Language Chinese";
+            LOG(INFO) << "Language: Chinese";
             qapp_->installTranslator(&translator_);
+            return;
         }
-        return;
+        else {
+            LOG(WARNING) << "Locale setting is Chinese, but can't load translation file.";
+        }
+        break;
     default:
         break;
     }
-    LOG(INFO) << "Language English";
+    LOG(INFO) << "Language: English";
 }
 
 GUI::GUI()
@@ -206,8 +228,20 @@ void GUI::setLoginStatus(ErrCode err_code) {
     impl_->setLoginStatus(err_code);
 }
 
-void GUI::handleConfirmConnection(int64_t device_id) {
-    impl_->handleConfirmConnection(device_id);
+void GUI::onConfirmConnection(int64_t device_id) {
+    impl_->onConfirmConnection(device_id);
+}
+
+void GUI::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onClientStatus(msg);
+}
+
+void GUI::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onAccptedClient(msg);
+}
+
+void GUI::onDisconnectedClient(int64_t device_id) {
+    impl_->onDisconnectedClient(device_id);
 }
 
 } // namespace lt

@@ -492,12 +492,27 @@ bool App::initServiceManager() {
     params.ioloop = ioloop_.get();
     params.on_confirm_connection =
         std::bind(&App::onConfirmConnection, this, std::placeholders::_1);
+    params.on_accepted_client;
+    params.on_client_status;
+    params.on_disconnected_client;
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }
 
 void App::onConfirmConnection(int64_t device_id) {
-    gui_.handleConfirmConnection(device_id);
+    gui_.onConfirmConnection(device_id);
+}
+
+void App::onAccpetedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    gui_.onAccptedClient(msg);
+}
+
+void App::onDisconnectedClient(int64_t device_id) {
+    gui_.onDisconnectedClient(device_id);
+}
+
+void App::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    gui_.onClientStatus(msg);
 }
 
 bool App::initClientManager() {

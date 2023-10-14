@@ -98,6 +98,9 @@ private:
     // service
     bool initServiceManager();
     void onConfirmConnection(int64_t device_id);
+    void onAccpetedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onDisconnectedClient(int64_t device_id);
+    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     //
     bool initClientManager();

@@ -30,11 +30,17 @@
 
 #include "mainpage.h"
 
+#include <sstream>
+#include <string>
+
 #include <QAction>
 #include <QValidator>
 #include <qmenu.h>
+#include <qtimer.h>
 
 #include <ltlib/logging.h>
+#include <ltproto/service2app/accepted_client.pb.h>
+#include <ltproto/service2app/client_status.pb.h>
 
 #include "app.h"
 #include "ui_mainpage.h"
@@ -75,6 +81,17 @@ void AccesstokenValidator::fixup(QString& input) const {
     input = input.toUpper();
 }
 
+std::string to_string(lt::VideoCodecType codec) {
+    switch (codec) {
+    case lt::VideoCodecType::H264:
+        return "AVC";
+    case lt::VideoCodecType::H265:
+        return "HEVC";
+    default:
+        return "Unknown";
+    }
+}
+
 } // namespace
 
 MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* parent)
@@ -83,6 +100,8 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
     , history_device_ids_(history_device_ids) {
 
     ui->setupUi(parent);
+
+    loadPixmap();
 
     QIcon pc_icon{":/icons/icons/pc.png"};
     if (history_device_ids_.empty()) {
@@ -100,8 +119,7 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
     action2->setIcon(QIcon(":/icons/icons/lock.png"));
     ui->access_token->addAction(action2, QLineEdit::LeadingPosition);
 
-    // ui->indicator->hide();
-    ui->client_indicator->setToolTip("146245 2ms 5.2Mbps HEVC GPU:GPU P2P");
+    ui->indicator->hide();
     ui->client_indicator->setToolTipDuration(1000 * 100);
     ui->client_indicator->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
     connect(ui->client_indicator, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
@@ -109,8 +127,8 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
 
         QIcon icon_gamepad(":/icons/icons/gamepad.png");
         QIcon icon_mouse(":/icons/icons/mouse.png");
-        QIcon icon_keyboard(":/icons/icons/mouse.png");
-        QIcon icon_kick(":/icons/icons/mouse.png");
+        QIcon icon_keyboard(":/icons/icons/keyboard.png");
+        QIcon icon_kick(":/icons/icons/close.png");
 
         QAction* gamepad = new QAction(icon_gamepad, tr("gamepad"), menu);
         QAction* keyboard = new QAction(icon_keyboard, tr("keyboard"), menu);
@@ -145,9 +163,143 @@ void MainPage::onUpdateLocalAccessToken(const std::string& access_token) {
     ui->my_access_token->setText(QString::fromStdString(access_token));
 }
 
+void MainPage::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::ClientStatus>(_msg);
+    if (!peer_client_device_id_.has_value()) {
+        LOG(WARNING)
+            << "Received ClientStatus, but we are not serving any client, received device_id:"
+            << msg->device_id();
+        return;
+    }
+    if (peer_client_device_id_.value() != msg->device_id()) {
+        LOG(WARNING) << "Received ClientStatus with " << msg->device_id() << ", but we are serving "
+                     << peer_client_device_id_.value();
+        return;
+    }
+    double Mbps = static_cast<double>(msg->bandwidth_bps()) / 1024. / 1024.;
+    int32_t delay_ms = msg->delay_ms();
+    p2p_ = msg->p2p();
+    mouse_hit_time_ = msg->hit_mouse() ? ltlib::steady_now_ms() : mouse_hit_time_;
+    keyboard_hit_time_ = msg->hit_keyboard() ? ltlib::steady_now_ms() : keyboard_hit_time_;
+    gamepad_hit_time_ = msg->hit_gamepad() ? ltlib::steady_now_ms() : gamepad_hit_time_;
+    std::ostringstream oss;
+    oss << msg->device_id() << " " << delay_ms << "ms " << std::fixed << std::setprecision(1)
+        << Mbps << "Mbps " << to_string(video_codec_) << " " << (p2p_ ? "P2P " : "Relay ")
+        << (gpu_encode_ ? "GPU:" : "CPU:") << (gpu_decode_ ? "GPU " : "CPU ");
+    ui->client_indicator->setToolTip(QString::fromStdString(oss.str()));
+}
+
+void MainPage::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedClient>(_msg);
+    if (peer_client_device_id_.has_value()) {
+        if (peer_client_device_id_.value() == msg->device_id()) {
+            LOG(WARNING) << "Received same AccpetedClient " << msg->device_id();
+            return;
+        }
+        else {
+            // 暂时只支持一个客户端
+            LOGF(ERR,
+                 "Received AcceptedClient(%" PRId64 "), but we are serving another client(%" PRId64
+                 ")",
+                 msg->device_id(), peer_client_device_id_.value());
+            return;
+        }
+    }
+    enable_gamepad_ = msg->enable_gamepad();
+    enable_keyboard_ = msg->enable_keyboard();
+    enable_mouse_ = msg->enable_mouse();
+    gpu_encode_ = msg->gpu_encode();
+    gpu_decode_ = msg->gpu_decode();
+    p2p_ = msg->p2p();
+    video_codec_ = video_codec_ = lt::VideoCodecType::Unknown;
+    peer_client_device_id_ = msg->device_id();
+    std::ostringstream oss;
+    oss << msg->device_id() << " ?ms ?Mbps " << to_string(video_codec_) << " "
+        << (p2p_ ? "P2P " : "Relay ") << (gpu_encode_ ? "GPU:" : "CPU:")
+        << (gpu_decode_ ? "GPU " : "CPU ");
+    ui->client_indicator->setToolTip(QString::fromStdString(oss.str()));
+    ui->indicator->show();
+    QTimer::singleShot(50, this, &MainPage::onUpdateIndicator);
+}
+
+void MainPage::onDisconnectedClient(int64_t device_id) {
+    if (!peer_client_device_id_.has_value()) {
+        LOG(ERR) << "Received DisconnectedClient, but no connected client";
+        return;
+    }
+    if (peer_client_device_id_.value() != device_id) {
+        LOGF(ERR,
+             "Received DisconnectedClient, but device_id(%" PRId64
+             ") != peer_client_device_id_(%" PRId64 ")",
+             device_id, peer_client_device_id_.value());
+        return;
+    }
+    ui->indicator->hide();
+    peer_client_device_id_ = std::nullopt;
+    gpu_encode_ = false;
+    gpu_decode_ = false;
+    p2p_ = false;
+    bandwidth_bps_ = false;
+    video_codec_ = lt::VideoCodecType::Unknown;
+    enable_gamepad_ = false;
+    enable_keyboard_ = false;
+    enable_mouse_ = false;
+}
+
 void MainPage::onConnectBtnPressed() {
     auto dev_id = ui->device_id->currentText();
     auto token = ui->access_token->text();
 
     emit onConnectBtnPressed1(dev_id.toStdString(), token.toStdString());
+}
+
+void MainPage::onUpdateIndicator() {
+    if (!peer_client_device_id_.has_value()) {
+        return;
+    }
+    setPixmapForIndicator(enable_gamepad_, gamepad_hit_time_, ui->gamepad_indicator, gp_white_,
+                          gp_gray_, gp_red_, gp_green_);
+    setPixmapForIndicator(enable_mouse_, mouse_hit_time_, ui->mouse_indicator, mouse_white_,
+                          mouse_gray_, mouse_red_, mouse_green_);
+    setPixmapForIndicator(enable_keyboard_, keyboard_hit_time_, ui->keyboard_indicator, kb_white_,
+                          kb_gray_, kb_red_, kb_green_);
+    QTimer::singleShot(50, this, &MainPage::onUpdateIndicator);
+}
+
+void MainPage::loadPixmap() {
+    mouse_white_.load(":/icons/icons/mouse_white.png");
+    mouse_gray_.load(":/icons/icons/mouse_gray.png");
+    mouse_red_.load(":/icons/icons/mouse_red.png");
+    mouse_green_.load(":/icons/icons/mouse_green.png");
+    kb_white_.load(":/icons/icons/keyboard_white.png");
+    kb_gray_.load(":/icons/icons/keyboard_gray.png");
+    kb_red_.load(":/icons/icons/keyboard_red.png");
+    kb_green_.load(":/icons/icons/keyboard_green.png");
+    gp_white_.load(":/icons/icons/gamepad_white.png");
+    gp_gray_.load(":/icons/icons/gamepad_fray.png");
+    gp_red_.load(":/icons/icons/gamepad_red.png");
+    gp_green_.load(":/icons/icons/gamepad_green.png");
+}
+
+void MainPage::setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
+                                     const QPixmap& white, const QPixmap& gray, const QPixmap& red,
+                                     const QPixmap& green) {
+    constexpr int64_t kDurationMS = 100;
+    const int64_t now = ltlib::steady_now_ms();
+    if (enable) {
+        if (now > last_time + kDurationMS) {
+            label->setPixmap(white);
+        }
+        else {
+            label->setPixmap(green);
+        }
+    }
+    else {
+        if (now > last_time + kDurationMS) {
+            label->setPixmap(gray);
+        }
+        else {
+            label->setPixmap(red);
+        }
+    }
 }
