@@ -60,11 +60,11 @@ public:
 
     void onUpdateLocalAccessToken(const std::string& access_token);
 
-    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onDisconnectedClient(int64_t device_id);
+    void onDisconnectedConnection(int64_t device_id);
 
 Q_SIGNALS:
     void onConnectBtnPressed1(const std::string& dev_id, const std::string& token);
@@ -83,14 +83,18 @@ private:
 private:
     Ui::MainPage* ui;
     std::vector<std::string> history_device_ids_;
+    QPixmap kick_;
+    QPixmap mouse_;
     QPixmap mouse_white_;
     QPixmap mouse_gray_;
     QPixmap mouse_red_;
     QPixmap mouse_green_;
+    QPixmap kb_;
     QPixmap kb_white_;
     QPixmap kb_gray_;
     QPixmap kb_red_;
     QPixmap kb_green_;
+    QPixmap gp_;
     QPixmap gp_white_;
     QPixmap gp_gray_;
     QPixmap gp_red_;

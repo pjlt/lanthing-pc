@@ -31,11 +31,11 @@
 #include "service_manager.h"
 
 #include <ltproto/ltproto.h>
-#include <ltproto/service2app/accepted_client.pb.h>
-#include <ltproto/service2app/client_status.pb.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/confirm_connection.pb.h>
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
-#include <ltproto/service2app/disconnected_client.pb.h>
+#include <ltproto/service2app/connection_status.pb.h>
+#include <ltproto/service2app/disconnected_connection.pb.h>
 
 #include <ltlib/logging.h>
 
@@ -51,9 +51,9 @@ std::unique_ptr<ServiceManager> ServiceManager::create(const Params& params) {
 
 ServiceManager::ServiceManager(const Params& params)
     : on_confirm_connection_{params.on_confirm_connection}
-    , on_accepted_client_{params.on_accepted_client}
-    , on_disconnected_client_{params.on_disconnected_client}
-    , on_client_status_{params.on_client_status} {}
+    , on_accepted_connection_{params.on_accepted_connection}
+    , on_disconnected_connection_{params.on_disconnected_connection}
+    , on_connection_status_{params.on_connection_status} {}
 
 bool ServiceManager::init(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
@@ -90,14 +90,14 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
     case ltproto::type::kConfirmConnection:
         onConfirmConnection(msg);
         break;
-    case ltproto::type::kAcceptedClient:
-        onAcceptedClient(msg);
+    case ltproto::type::kAcceptedConnection:
+        onAcceptedConnection(msg);
         break;
-    case ltproto::type::kDisconnectedClient:
-        onDisconnectedClient(msg);
+    case ltproto::type::kDisconnectedConnection:
+        onDisconnectedConnection(msg);
         break;
-    case ltproto::type::kClientStatus:
-        onClientStatus(msg);
+    case ltproto::type::kConnectionStatus:
+        onConnectionStatus(msg);
         break;
     default:
         LOG(WARNING) << "ServiceManager received unknown messge type " << type;
@@ -110,17 +110,17 @@ void ServiceManager::onConfirmConnection(std::shared_ptr<google::protobuf::Messa
     on_confirm_connection_(msg->device_id());
 }
 
-void ServiceManager::onAcceptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    on_accepted_client_(msg);
+void ServiceManager::onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_accepted_connection_(msg);
 }
 
-void ServiceManager::onDisconnectedClient(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::service2app::DisconnectedClient>(_msg);
-    on_disconnected_client_(msg->device_id());
+void ServiceManager::onDisconnectedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::DisconnectedConnection>(_msg);
+    on_disconnected_connection_(msg->device_id());
 }
 
-void ServiceManager::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    on_client_status_(msg);
+void ServiceManager::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_connection_status_(msg);
 }
 
 void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {

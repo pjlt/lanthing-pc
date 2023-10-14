@@ -39,8 +39,8 @@
 #include <qtimer.h>
 
 #include <ltlib/logging.h>
-#include <ltproto/service2app/accepted_client.pb.h>
-#include <ltproto/service2app/client_status.pb.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
+#include <ltproto/service2app/connection_status.pb.h>
 
 #include "app.h"
 #include "ui_mainpage.h"
@@ -125,15 +125,10 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
     connect(ui->client_indicator, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
         QMenu* menu = new QMenu(this);
 
-        QIcon icon_gamepad(":/icons/icons/gamepad.png");
-        QIcon icon_mouse(":/icons/icons/mouse.png");
-        QIcon icon_keyboard(":/icons/icons/keyboard.png");
-        QIcon icon_kick(":/icons/icons/close.png");
-
-        QAction* gamepad = new QAction(icon_gamepad, tr("gamepad"), menu);
-        QAction* keyboard = new QAction(icon_keyboard, tr("keyboard"), menu);
-        QAction* mouse = new QAction(icon_mouse, tr("mouse"), menu);
-        QAction* kick = new QAction(icon_kick, tr("kick"), menu);
+        QAction* gamepad = new QAction(gp_, tr("gamepad"), menu);
+        QAction* keyboard = new QAction(kb_, tr("keyboard"), menu);
+        QAction* mouse = new QAction(mouse_, tr("mouse"), menu);
+        QAction* kick = new QAction(kick_, tr("kick"), menu);
 
         connect(gamepad, &QAction::triggered, []() { LOG(INFO) << "Gamepad clicked"; });
         connect(keyboard, &QAction::triggered, []() { LOG(INFO) << "Keyboard clicked"; });
@@ -143,6 +138,7 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
         menu->addAction(gamepad);
         menu->addAction(keyboard);
         menu->addAction(mouse);
+        menu->addAction(kick);
 
         menu->exec(ui->client_indicator->mapToGlobal(pos));
     });
@@ -163,11 +159,11 @@ void MainPage::onUpdateLocalAccessToken(const std::string& access_token) {
     ui->my_access_token->setText(QString::fromStdString(access_token));
 }
 
-void MainPage::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::service2app::ClientStatus>(_msg);
+void MainPage::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::ConnectionStatus>(_msg);
     if (!peer_client_device_id_.has_value()) {
         LOG(WARNING)
-            << "Received ClientStatus, but we are not serving any client, received device_id:"
+            << "Received ConnectionStatus, but we are not serving any client, received device_id:"
             << msg->device_id();
         return;
     }
@@ -189,18 +185,18 @@ void MainPage::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> _ms
     ui->client_indicator->setToolTip(QString::fromStdString(oss.str()));
 }
 
-void MainPage::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedClient>(_msg);
+void MainPage::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedConnection>(_msg);
     if (peer_client_device_id_.has_value()) {
         if (peer_client_device_id_.value() == msg->device_id()) {
-            LOG(WARNING) << "Received same AccpetedClient " << msg->device_id();
+            LOG(WARNING) << "Received same AccpetedConnection " << msg->device_id();
             return;
         }
         else {
             // 暂时只支持一个客户端
             LOGF(ERR,
-                 "Received AcceptedClient(%" PRId64 "), but we are serving another client(%" PRId64
-                 ")",
+                 "Received AcceptedConnection(%" PRId64
+                 "), but we are serving another client(%" PRId64 ")",
                  msg->device_id(), peer_client_device_id_.value());
             return;
         }
@@ -222,7 +218,7 @@ void MainPage::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> _m
     QTimer::singleShot(50, this, &MainPage::onUpdateIndicator);
 }
 
-void MainPage::onDisconnectedClient(int64_t device_id) {
+void MainPage::onDisconnectedConnection(int64_t device_id) {
     if (!peer_client_device_id_.has_value()) {
         LOG(ERR) << "Received DisconnectedClient, but no connected client";
         return;
@@ -267,16 +263,21 @@ void MainPage::onUpdateIndicator() {
 }
 
 void MainPage::loadPixmap() {
+    mouse_.load(":/icons/icons/mouse.png");
     mouse_white_.load(":/icons/icons/mouse_white.png");
     mouse_gray_.load(":/icons/icons/mouse_gray.png");
     mouse_red_.load(":/icons/icons/mouse_red.png");
     mouse_green_.load(":/icons/icons/mouse_green.png");
+
+    kb_.load(":/icons/icons/keyboard.png");
     kb_white_.load(":/icons/icons/keyboard_white.png");
     kb_gray_.load(":/icons/icons/keyboard_gray.png");
     kb_red_.load(":/icons/icons/keyboard_red.png");
     kb_green_.load(":/icons/icons/keyboard_green.png");
+
+    gp_.load(":/icons/icons/gamepad.png");
     gp_white_.load(":/icons/icons/gamepad_white.png");
-    gp_gray_.load(":/icons/icons/gamepad_fray.png");
+    gp_gray_.load(":/icons/icons/gamepad_gray.png");
     gp_red_.load(":/icons/icons/gamepad_red.png");
     gp_green_.load(":/icons/icons/gamepad_green.png");
 }

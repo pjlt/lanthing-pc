@@ -492,10 +492,11 @@ bool App::initServiceManager() {
     params.ioloop = ioloop_.get();
     params.on_confirm_connection =
         std::bind(&App::onConfirmConnection, this, std::placeholders::_1);
-    params.on_accepted_client = std::bind(&App::onAccpetedClient, this, std::placeholders::_1);
-    params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
-    params.on_disconnected_client =
-        std::bind(&App::onDisconnectedClient, this, std::placeholders::_1);
+    params.on_accepted_connection =
+        std::bind(&App::onAccpetedConnection, this, std::placeholders::_1);
+    params.on_connection_status = std::bind(&App::onConnectionStatus, this, std::placeholders::_1);
+    params.on_disconnected_connection =
+        std::bind(&App::onDisconnectedConnection, this, std::placeholders::_1);
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }
@@ -504,16 +505,16 @@ void App::onConfirmConnection(int64_t device_id) {
     gui_.onConfirmConnection(device_id);
 }
 
-void App::onAccpetedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    gui_.onAccptedClient(msg);
+void App::onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    gui_.onAccptedConnection(msg);
 }
 
-void App::onDisconnectedClient(int64_t device_id) {
-    gui_.onDisconnectedClient(device_id);
+void App::onDisconnectedConnection(int64_t device_id) {
+    gui_.onDisconnectedConnection(device_id);
 }
 
-void App::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    gui_.onClientStatus(msg);
+void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    gui_.onConnectionStatus(msg);
 }
 
 bool App::initClientManager() {

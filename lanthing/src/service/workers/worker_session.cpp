@@ -43,8 +43,8 @@
 #include <ltproto/client2worker/video_frame.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/open_connection.pb.h>
-#include <ltproto/service2app/accepted_client.pb.h>
-#include <ltproto/service2app/disconnected_client.pb.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
+#include <ltproto/service2app/disconnected_connection.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
 #include <ltproto/signaling/join_room_ack.pb.h>
 #include <ltproto/signaling/signaling_message.pb.h>
@@ -810,7 +810,7 @@ void WorkerSession::getTransportStat() {
 }
 
 void WorkerSession::tellAppAccpetedClient() {
-    auto msg = std::make_shared<ltproto::service2app::AcceptedClient>();
+    auto msg = std::make_shared<ltproto::service2app::AcceptedConnection>();
     msg->set_device_id(client_device_id_);
     msg->set_enable_gamepad(true);
     msg->set_enable_keyboard(true);

@@ -65,11 +65,11 @@ public:
 
     void onConfirmConnection(int64_t device_id);
 
-    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onDisconnectedClient(int64_t device_id);
+    void onDisconnectedConnection(int64_t device_id);
 
 protected:
     void closeEvent(QCloseEvent* ev) override;

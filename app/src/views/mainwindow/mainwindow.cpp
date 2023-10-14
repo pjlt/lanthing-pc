@@ -199,16 +199,17 @@ void MainWindow::onConfirmConnection(int64_t device_id) {
     });
 }
 
-void MainWindow::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    DispatchToMainThread([this, msg]() { main_page_ui->onClientStatus(msg); });
+void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    DispatchToMainThread([this, msg]() { main_page_ui->onConnectionStatus(msg); });
 }
 
-void MainWindow::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    DispatchToMainThread([this, msg]() { main_page_ui->onAccptedClient(msg); });
+void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    DispatchToMainThread([this, msg]() { main_page_ui->onAccptedConnection(msg); });
 }
 
-void MainWindow::onDisconnectedClient(int64_t device_id) {
-    DispatchToMainThread([this, device_id]() { main_page_ui->onDisconnectedClient(device_id); });
+void MainWindow::onDisconnectedConnection(int64_t device_id) {
+    DispatchToMainThread(
+        [this, device_id]() { main_page_ui->onDisconnectedConnection(device_id); });
 }
 
 void MainWindow::doConnect(const std::string& dev_id, const std::string& token) {

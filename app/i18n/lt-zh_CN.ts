@@ -29,24 +29,24 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="133"/>
+        <location filename="../src/views/link/mainpage.cpp" line="128"/>
         <source>gamepad</source>
-        <translation type="unfinished"></translation>
+        <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="134"/>
+        <location filename="../src/views/link/mainpage.cpp" line="129"/>
         <source>keyboard</source>
-        <translation type="unfinished"></translation>
+        <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="135"/>
+        <location filename="../src/views/link/mainpage.cpp" line="130"/>
         <source>mouse</source>
-        <translation type="unfinished"></translation>
+        <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="136"/>
+        <location filename="../src/views/link/mainpage.cpp" line="131"/>
         <source>kick</source>
-        <translation type="unfinished"></translation>
+        <translation>断开</translation>
     </message>
 </context>
 <context>
@@ -64,7 +64,7 @@
     <message>
         <location filename="../src/views/mainwindow/mainwindow.cpp" line="171"/>
         <source>Device %s is requesting connection</source>
-        <translation type="unfinished">设备 %s 正在请求连接</translation>
+        <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.cpp" line="175"/>

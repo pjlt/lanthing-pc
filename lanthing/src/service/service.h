@@ -81,9 +81,9 @@ private:
 
     void tellAppSessionClosed(int64_t device_id);
 
-    void onAcceptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onCreateSessionCompletedThreadSafe(bool success, const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);

@@ -42,7 +42,7 @@
 #include <ltproto/server/open_connection_ack.pb.h>
 #include <ltproto/service2app/confirm_connection.pb.h>
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
-#include <ltproto/service2app/disconnected_client.pb.h>
+#include <ltproto/service2app/disconnected_connection.pb.h>
 
 namespace lt {
 
@@ -281,9 +281,9 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     worker_params.on_accepted_client =
-        std::bind(&Service::onAcceptedClient, this, std::placeholders::_1);
+        std::bind(&Service::onAcceptedConnection, this, std::placeholders::_1);
     worker_params.on_client_status =
-        std::bind(&Service::onClientStatus, this, std::placeholders::_1);
+        std::bind(&Service::onConnectionStatus, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
@@ -469,17 +469,17 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
 }
 
 void Service::tellAppSessionClosed(int64_t device_id) {
-    auto msg = std::make_shared<ltproto::service2app::DisconnectedClient>();
+    auto msg = std::make_shared<ltproto::service2app::DisconnectedConnection>();
     msg->set_device_id(device_id);
     sendMessageToApp(ltproto::id(msg), msg);
 }
 
-void Service::onAcceptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    sendMessageToApp(ltproto::type::kAcceptedClient, msg);
+void Service::onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kAcceptedConnection, msg);
 }
 
-void Service::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    sendMessageToApp(ltproto::type::kClientStatus, msg);
+void Service::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kConnectionStatus, msg);
 }
 
 } // namespace svc

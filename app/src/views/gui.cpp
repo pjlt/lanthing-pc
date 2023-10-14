@@ -85,11 +85,11 @@ public:
 
     void onConfirmConnection(int64_t device_id);
 
-    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onDisconnectedClient(int64_t device_id);
+    void onDisconnectedConnection(int64_t device_id);
 
 private:
     void setLanguage();
@@ -174,16 +174,16 @@ void GUIImpl::onConfirmConnection(int64_t device_id) {
     main_window_->onConfirmConnection(device_id);
 }
 
-void GUIImpl::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    main_window_->onClientStatus(msg);
+void GUIImpl::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onConnectionStatus(msg);
 }
 
-void GUIImpl::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    main_window_->onAccptedClient(msg);
+void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onAccptedConnection(msg);
 }
 
-void GUIImpl::onDisconnectedClient(int64_t device_id) {
-    main_window_->onDisconnectedClient(device_id);
+void GUIImpl::onDisconnectedConnection(int64_t device_id) {
+    main_window_->onDisconnectedConnection(device_id);
 }
 
 void GUIImpl::setLanguage() {
@@ -232,16 +232,16 @@ void GUI::onConfirmConnection(int64_t device_id) {
     impl_->onConfirmConnection(device_id);
 }
 
-void GUI::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    impl_->onClientStatus(msg);
+void GUI::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onConnectionStatus(msg);
 }
 
-void GUI::onAccptedClient(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    impl_->onAccptedClient(msg);
+void GUI::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onAccptedConnection(msg);
 }
 
-void GUI::onDisconnectedClient(int64_t device_id) {
-    impl_->onDisconnectedClient(device_id);
+void GUI::onDisconnectedConnection(int64_t device_id) {
+    impl_->onDisconnectedConnection(device_id);
 }
 
 } // namespace lt
