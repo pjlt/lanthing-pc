@@ -77,6 +77,8 @@ protected:
 private:
     void doConnect(const std::string& dev_id, const std::string& token);
 
+    void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+
 private:
     lt::GUI::Params params_;
     Ui::MainWindow* ui;

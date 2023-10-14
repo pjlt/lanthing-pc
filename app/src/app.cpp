@@ -205,6 +205,8 @@ int App::exec(int argc, char** argv) {
     params.get_settings = std::bind(&App::getSettings, this);
     params.on_user_confirmed_connection = std::bind(&App::onUserConfirmedConnection, this,
                                                     std::placeholders::_1, std::placeholders::_2);
+    params.on_operate_connection =
+        std::bind(&App::onOperateConnection, this, std::placeholders::_1);
     params.set_relay_server = std::bind(&App::setRelayServer, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
@@ -257,7 +259,13 @@ void App::setRelayServer(const std::string& svr) {
 }
 
 void App::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
-    service_manager_->onUserConfirmedConnection(device_id, result);
+    postTask([this, device_id, result]() {
+        service_manager_->onUserConfirmedConnection(device_id, result);
+    });
+}
+
+void App::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { service_manager_->onOperateConnection(msg); });
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

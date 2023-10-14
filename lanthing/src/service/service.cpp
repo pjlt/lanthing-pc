@@ -43,6 +43,7 @@
 #include <ltproto/service2app/confirm_connection.pb.h>
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
 #include <ltproto/service2app/disconnected_connection.pb.h>
+#include <ltproto/service2app/operate_connection.pb.h>
 
 namespace lt {
 
@@ -145,11 +146,9 @@ bool Service::initSettings() {
     return settings_ != nullptr;
 }
 
-// TODO: 删除锁，确保worker_sessions_只在ioloop中使用
 void Service::createSession(const WorkerSession::Params& params) {
     auto session = WorkerSession::create(params);
     if (session != nullptr) {
-        std::lock_guard<std::mutex> lock{mutex_};
         worker_sessions_[params.name] = session;
     }
     else {
@@ -157,7 +156,6 @@ void Service::createSession(const WorkerSession::Params& params) {
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid);
         tcp_client_->send(ltproto::id(ack), ack);
         // 删除占位的nullptr
-        std::lock_guard<std::mutex> lock{mutex_};
         worker_sessions_.erase(params.name);
     }
 }
@@ -254,16 +252,13 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     constexpr size_t kSessionNameLen = 8;
     const std::string session_name = ltlib::randomStr(kSessionNameLen);
-    {
-        std::lock_guard<std::mutex> lock{mutex_};
-        if (!worker_sessions_.empty()) {
-            LOG(ERR) << "Only support one client";
-            return;
-        }
-        else {
-            // 用一个nullptr占位，即使释放锁，其他线程也不会modify这个worker_sessions_
-            worker_sessions_[session_name] = nullptr;
-        }
+    if (!worker_sessions_.empty()) {
+        LOG(ERR) << "Only support one client";
+        return;
+    }
+    else {
+        // 用一个nullptr占位
+        worker_sessions_[session_name] = nullptr;
     }
     // 2. 准备启动worker的参数
     WorkerSession::Params worker_params{};
@@ -280,9 +275,9 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-    worker_params.on_accepted_client =
+    worker_params.on_accepted_connection =
         std::bind(&Service::onAcceptedConnection, this, std::placeholders::_1);
-    worker_params.on_client_status =
+    worker_params.on_connection_status =
         std::bind(&Service::onConnectionStatus, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
@@ -398,6 +393,9 @@ void Service::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::Mess
     case ltype::kConfirmConnectionAck:
         onConfirmConnectionAck(msg);
         break;
+    case ltype::kOperateConnection:
+        onOperateConnection(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message from app " << type;
         break;
@@ -465,6 +463,48 @@ void Service::onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLi
         ack->set_err_code(ltproto::server::OpenConnectionAck_ErrCode_Invalid); // TODO: reject code
         tcp_client_->send(ltproto::id(ack), ack);
         break;
+    }
+}
+
+void Service::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (worker_sessions_.empty()) {
+        LOG(WARNING) << "No available connection, can't operate";
+        return;
+    }
+    if (worker_sessions_.size() != 1) {
+        LOG(ERR) << "We have more than one accepted connection, something must be wrong";
+        return;
+    }
+    auto session = worker_sessions_.begin();
+    auto msg = std::static_pointer_cast<ltproto::service2app::OperateConnection>(_msg);
+    for (auto _op : msg->operations()) {
+        auto op = static_cast<ltproto::service2app::OperateConnection_Operation>(_op);
+        switch (op) {
+        case ltproto::service2app::OperateConnection_Operation_EnableGamepad:
+            session->second->enableGamepad();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableGamepad:
+            session->second->disableGamepad();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_EnableKeyboard:
+            session->second->enableKeyboard();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableKeyboard:
+            session->second->disableKeyboard();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_EnableMouse:
+            session->second->enableMouse();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableMouse:
+            session->second->disableMouse();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_Kick:
+            session->second->close();
+            break;
+        default:
+            LOG(WARNING) << "Unknown operation " << _op;
+            break;
+        }
     }
 }
 

@@ -93,6 +93,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     connect(
         main_page_ui, &MainPage::onConnectBtnPressed1,
         [this](const std::string& dev_id, const std::string& token) { doConnect(dev_id, token); });
+    connect(main_page_ui, &MainPage::onOperateConnection, this, &MainWindow::onOperateConnection);
     connect(setting_page_ui, &SettingPage::refreshAccessTokenStateChanged,
             [this](bool checked) { params_.enable_auto_refresh_access_token(checked); });
     connect(setting_page_ui, &SettingPage::runAsDaemonStateChanged,
@@ -220,4 +221,8 @@ void MainWindow::doConnect(const std::string& dev_id, const std::string& token) 
     else {
         LOG(FATAL) << "Parse deviceID(" << dev_id << ") to int64_t failed!";
     }
+}
+
+void MainWindow::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    params_.on_operate_connection(msg);
 }

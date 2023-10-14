@@ -44,6 +44,7 @@
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
+#include <ltproto/service2app/connection_status.pb.h>
 #include <ltproto/service2app/disconnected_connection.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
 #include <ltproto/signaling/join_room_ack.pb.h>
@@ -103,8 +104,8 @@ WorkerSession::WorkerSession(const Params& params)
     : session_name_(params.name)
     , post_task_(params.post_task)
     , post_delay_task_(params.post_delay_task)
-    , on_accepted_client_(params.on_accepted_client)
-    , on_client_status_(params.on_client_status)
+    , on_accepted_connection_(params.on_accepted_connection)
+    , on_connection_status_(params.on_connection_status)
     , user_defined_relay_server_(params.user_defined_relay_server)
     , on_create_session_completed_(params.on_create_completed)
     , on_closed_(params.on_closed) {
@@ -116,6 +117,34 @@ WorkerSession::WorkerSession(const Params& params)
 }
 
 WorkerSession::~WorkerSession() {}
+
+void WorkerSession::enableGamepad() {
+    enable_gamepad_ = true;
+}
+
+void WorkerSession::disableGamepad() {
+    enable_gamepad_ = false;
+}
+
+void WorkerSession::enableMouse() {
+    enable_mouse_ = true;
+}
+
+void WorkerSession::disableMouse() {
+    enable_mouse_ = false;
+}
+
+void WorkerSession::enableKeyboard() {
+    enable_keyboard_ = true;
+}
+
+void WorkerSession::disableKeyboard() {
+    enable_keyboard_ = false;
+}
+
+void WorkerSession::close() {
+    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::UserKick));
+}
 
 bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
                          ltlib::IOLoop* ioloop) {
@@ -325,6 +354,8 @@ void WorkerSession::onClosed(CloseReason reason) {
         break;
     case CloseReason::TimeoutClose:
         rtc_closed_ = true;
+        break;
+    case CloseReason::UserKick:
         break;
     default:
         break;
@@ -580,6 +611,8 @@ void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageL
         ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_HostFailed);
     }
     sendMessageToRemoteClient(ltproto::id(ack), ack, true);
+    tellAppAccpetedConnection();
+    postDelayTask(1000, std::bind(&WorkerSession::sendConnectionStatus, this, false, false, false));
 }
 
 void WorkerSession::sendToWorker(uint32_t type,
@@ -634,7 +667,6 @@ void WorkerSession::onTpAccepted() {
         syncTime();
         postTask(std::bind(&WorkerSession::checkTimeout, this));
         postTask(std::bind(&WorkerSession::getTransportStat, this));
-        tellAppAccpetedClient();
     });
 }
 
@@ -728,18 +760,36 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     switch (type) {
     case ltype::kKeepAlive:
         onKeepAlive(msg);
-        break;
+        return;
     case ltype::kStartTransmission:
         onStartTransmission(msg);
-        break;
+        return;
     case ltype::kTimeSync:
         onTimeSync(msg);
-        break;
-    default:
-        if (worker_registered_msg_.find(type) != worker_registered_msg_.cend()) {
-            sendToWorkerFromOtherThread(type, msg);
+        return;
+    case ltype::kMouseEvent:
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true));
+        if (!enable_mouse_) {
+            return;
         }
         break;
+    case ltype::kKeyboardEvent:
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, true, false));
+        if (!enable_keyboard_) {
+            return;
+        }
+        break;
+    case ltype::kControllerStatus:
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false));
+        if (!enable_gamepad_) {
+            return;
+        }
+        break;
+    default:
+        break;
+    }
+    if (worker_registered_msg_.find(type) != worker_registered_msg_.cend()) {
+        sendToWorkerFromOtherThread(type, msg);
     }
 }
 
@@ -797,31 +847,48 @@ void WorkerSession::syncTime() {
 void WorkerSession::getTransportStat() {
 #if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     rtc::Server* svr = static_cast<rtc::Server*>(tp_server_.get());
-    uint32_t bwe_bps = svr->bwe();
+    bwe_bps_ = svr->bwe();
     uint32_t nack_count = svr->nack();
     auto msg = std::make_shared<ltproto::client2worker::SendSideStat>();
-    msg->set_bwe(bwe_bps);
+    msg->set_bwe(bwe_bps_);
     msg->set_nack(nack_count);
     msg->set_loss_rate(loss_rate_);
-    LOG(DEBUG) << "BWE " << bwe_bps << " NACK " << nack_count;
+    LOG(DEBUG) << "BWE " << bwe_bps_ << " NACK " << nack_count;
     sendMessageToRemoteClient(ltproto::id(msg), msg, true);
     postDelayTask(1'000, std::bind(&WorkerSession::getTransportStat, this));
 #endif //  LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
 }
 
-void WorkerSession::tellAppAccpetedClient() {
+void WorkerSession::tellAppAccpetedConnection() {
     auto msg = std::make_shared<ltproto::service2app::AcceptedConnection>();
     msg->set_device_id(client_device_id_);
-    msg->set_enable_gamepad(true);
-    msg->set_enable_keyboard(true);
-    msg->set_enable_mouse(true);
+    msg->set_enable_gamepad(enable_gamepad_);
+    msg->set_enable_keyboard(enable_keyboard_);
+    msg->set_enable_mouse(enable_mouse_);
     msg->set_gpu_decode(true);
     msg->set_gpu_encode(true);
     msg->set_p2p(true);
     auto negotiated_params =
         std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
     msg->set_video_codec((ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));
-    on_accepted_client_(msg);
+    on_accepted_connection_(msg);
+}
+
+void WorkerSession::sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hit) {
+    auto status = std::make_shared<ltproto::service2app::ConnectionStatus>();
+    // FIXME: 这个值是错的，我们要显示实际值，而这里是估计值
+    status->set_bandwidth_bps(static_cast<int32_t>(bwe_bps_));
+    status->set_delay_ms(static_cast<int32_t>(rtt_ / 2 / 1000));
+    status->set_device_id(client_device_id_);
+    status->set_enable_gamepad(enable_gamepad_);
+    status->set_enable_keyboard(enable_keyboard_);
+    status->set_enable_mouse(enable_mouse_);
+    status->set_hit_gamepad(gp_hit);
+    status->set_hit_keyboard(kb_hit);
+    status->set_hit_mouse(mouse_hit);
+    // FIXME: 填写正确P2P值
+    status->set_p2p(true);
+    on_connection_status_(status);
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

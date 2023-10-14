@@ -41,6 +41,7 @@
 #include <ltlib/logging.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
+#include <ltproto/service2app/operate_connection.pb.h>
 
 #include "app.h"
 #include "ui_mainpage.h"
@@ -130,10 +131,36 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
         QAction* mouse = new QAction(mouse_, tr("mouse"), menu);
         QAction* kick = new QAction(kick_, tr("kick"), menu);
 
-        connect(gamepad, &QAction::triggered, []() { LOG(INFO) << "Gamepad clicked"; });
-        connect(keyboard, &QAction::triggered, []() { LOG(INFO) << "Keyboard clicked"; });
-        connect(mouse, &QAction::triggered, []() { LOG(INFO) << "Mouse clicked"; });
-        connect(kick, &QAction::triggered, []() { LOG(INFO) << "Kick clicked"; });
+        connect(gamepad, &QAction::triggered, [this]() {
+            enable_gamepad_ = !enable_gamepad_;
+            auto msg = std::make_shared<ltproto::service2app::OperateConnection>();
+            msg->add_operations(
+                enable_gamepad_ ? ltproto::service2app::OperateConnection_Operation_EnableGamepad
+                                : ltproto::service2app::OperateConnection_Operation_DisableGamepad);
+            emit onOperateConnection(msg);
+        });
+        connect(keyboard, &QAction::triggered, [this]() {
+            enable_keyboard_ = !enable_keyboard_;
+            auto msg = std::make_shared<ltproto::service2app::OperateConnection>();
+            msg->add_operations(
+                enable_keyboard_
+                    ? ltproto::service2app::OperateConnection_Operation_EnableKeyboard
+                    : ltproto::service2app::OperateConnection_Operation_DisableKeyboard);
+            emit onOperateConnection(msg);
+        });
+        connect(mouse, &QAction::triggered, [this]() {
+            enable_mouse_ = !enable_mouse_;
+            auto msg = std::make_shared<ltproto::service2app::OperateConnection>();
+            msg->add_operations(
+                enable_mouse_ ? ltproto::service2app::OperateConnection_Operation_EnableMouse
+                              : ltproto::service2app::OperateConnection_Operation_DisableMouse);
+            emit onOperateConnection(msg);
+        });
+        connect(kick, &QAction::triggered, [this]() {
+            auto msg = std::make_shared<ltproto::service2app::OperateConnection>();
+            msg->add_operations(ltproto::service2app::OperateConnection_Operation_Kick);
+            emit onOperateConnection(msg);
+        });
 
         menu->addAction(gamepad);
         menu->addAction(keyboard);
@@ -263,6 +290,8 @@ void MainPage::onUpdateIndicator() {
 }
 
 void MainPage::loadPixmap() {
+    kick_.load(":/icons/icons/close.png");
+
     mouse_.load(":/icons/icons/mouse.png");
     mouse_white_.load(":/icons/icons/mouse_white.png");
     mouse_gray_.load(":/icons/icons/mouse_gray.png");

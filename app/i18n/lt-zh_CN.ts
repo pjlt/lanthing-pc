@@ -29,22 +29,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="128"/>
+        <location filename="../src/views/link/mainpage.cpp" line="129"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="129"/>
+        <location filename="../src/views/link/mainpage.cpp" line="130"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="130"/>
+        <location filename="../src/views/link/mainpage.cpp" line="131"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="131"/>
+        <location filename="../src/views/link/mainpage.cpp" line="132"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
@@ -57,27 +57,27 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="169"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="170"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="171"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="172"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="175"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="176"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="177"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="178"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="178"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="179"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>

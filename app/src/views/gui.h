@@ -68,6 +68,7 @@ public:
         std::function<void(bool)> enable_run_as_service;
         std::function<void(const std::string&)> set_relay_server;
         std::function<void(int64_t, ConfirmResult)> on_user_confirmed_connection;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_operate_connection;
     };
 
 public:

@@ -142,4 +142,8 @@ void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmRe
     pipe_server_->send(fd_, ltproto::id(ack), ack);
 }
 
+void ServiceManager::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    pipe_server_->send(fd_, ltproto::type::kOperateConnection, msg);
+}
+
 } // namespace lt

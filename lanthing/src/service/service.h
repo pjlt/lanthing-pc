@@ -78,6 +78,7 @@ private:
     void onAppConnected();
     void sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void tellAppSessionClosed(int64_t device_id);
 

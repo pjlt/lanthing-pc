@@ -55,6 +55,7 @@ public:
         ClientClose,
         HostClose,
         TimeoutClose,
+        UserKick,
     };
 
     struct Params {
@@ -68,13 +69,21 @@ public:
         std::function<void(int64_t, CloseReason, const std::string&, const std::string&)> on_closed;
         std::function<void(const std::function<void()>&)> post_task;
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
-        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_client;
-        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_client_status;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
     };
 
 public:
     static std::shared_ptr<WorkerSession> create(const Params& params);
     ~WorkerSession();
+
+    void enableGamepad();
+    void disableGamepad();
+    void enableMouse();
+    void disableMouse();
+    void enableKeyboard();
+    void disableKeyboard();
+    void close();
 
 private:
     WorkerSession(const Params& params);
@@ -146,14 +155,15 @@ private:
     void checkTimeout();
     void syncTime();
     void getTransportStat();
-    void tellAppAccpetedClient();
+    void tellAppAccpetedConnection();
+    void sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hit);
 
 private:
     std::string session_name_;
     std::function<void(const std::function<void()>&)> post_task_;
     std::function<void(int64_t, const std::function<void()>&)> post_delay_task_;
-    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_client_;
-    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_client_status_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
     std::string user_defined_relay_server_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
@@ -184,8 +194,13 @@ private:
     std::shared_ptr<google::protobuf::MessageLite> negotiated_streaming_params_;
     ltlib::TimeSync time_sync_;
     int64_t rtt_ = 0;
+    uint32_t bwe_bps_ = 0;
     int64_t time_diff_ = 0;
     float loss_rate_ = .0f;
+
+    std::atomic<bool> enable_gamepad_ = true;
+    std::atomic<bool> enable_keyboard_ = false;
+    std::atomic<bool> enable_mouse_ = false;
 };
 
 } // namespace svc

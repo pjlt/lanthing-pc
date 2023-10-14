@@ -69,6 +69,8 @@ public:
 Q_SIGNALS:
     void onConnectBtnPressed1(const std::string& dev_id, const std::string& token);
 
+    void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+
 private:
     void onConnectBtnPressed();
 
