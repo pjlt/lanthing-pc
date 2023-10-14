@@ -469,7 +469,7 @@ void WorkerSession::onSignalingConnected() {
 
 void WorkerSession::onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::JoinRoomAck>(_msg);
-    if (msg->err_code() != ltproto::signaling::JoinRoomAck_ErrCode_Success) {
+    if (msg->err_code() != ltproto::ErrorCode::Success) {
         LOG(ERR) << "Join signaling room failed, room:" << room_id_;
         join_signaling_room_success_ = false;
     }
@@ -497,10 +497,10 @@ void WorkerSession::onSignalingMessage(std::shared_ptr<google::protobuf::Message
 void WorkerSession::onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessageAck>(_msg);
     switch (msg->err_code()) {
-    case ltproto::signaling::SignalingMessageAck_ErrCode_Success:
+    case ltproto::ErrorCode::Success:
         // do nothing
         break;
-    case ltproto::signaling::SignalingMessageAck_ErrCode_NotOnline:
+    case ltproto::ErrorCode::SignalingPeerNotOnline:
         LOG(ERR) << "Send signaling message failed, remote device not online";
         break;
     default:
@@ -609,15 +609,15 @@ void WorkerSession::startWorking() {
 void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorkingAck>(_msg);
     auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
-    if (msg->err_code() == ltproto::worker2service::StartWorkingAck_ErrCode_Success) {
-        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_Success);
+    if (msg->err_code() == ltproto::ErrorCode::Success) {
+        ack->set_err_code(ltproto::ErrorCode::Success);
         for (uint32_t type : msg->msg_type()) {
             worker_registered_msg_.insert(type);
         }
     }
     else {
         // TODO: 失败了，关闭整个WorkerSession
-        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_HostFailed);
+        ack->set_err_code(msg->err_code());
     }
     sendMessageToRemoteClient(ltproto::id(ack), ack, true);
     tellAppAccpetedConnection();
@@ -805,7 +805,7 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
 void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
     if (client_connected_) {
-        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_Success);
+        ack->set_err_code(ltproto::ErrorCode::Success);
         sendMessageToRemoteClient(ltproto::id(ack), ack, true);
         return;
     }
@@ -813,7 +813,7 @@ void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::Messag
     auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmission>(_msg);
     if (msg->token() != auth_token_) {
         LOG(ERR) << "Received SetupConnection with invalid token: " << msg->token();
-        ack->set_err_code(ltproto::client2worker::StartTransmissionAck_ErrCode_AuthFailed);
+        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
         sendMessageToRemoteClient(ltproto::id(ack), ack, true);
         return;
     }

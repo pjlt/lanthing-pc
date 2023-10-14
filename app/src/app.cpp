@@ -480,7 +480,7 @@ void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLit
 
 void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::LoginDeviceAck>(_msg);
-    if (ack->err_code() != ltproto::server::LoginDeviceAck_ErrCode_Success) {
+    if (ack->err_code() != ltproto::ErrorCode::Success) {
         LOG(ERR) << "Login with device id(" << device_id_ << ") failed";
         return;
     }

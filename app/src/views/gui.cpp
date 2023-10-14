@@ -121,13 +121,6 @@ private:
 };
 
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
-    // wintoast
-    WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
-    WinToastLib::WinToast::instance()->setAppUserModelId(
-        WinToastLib::WinToast::configureAUMI(L"Numbaa", L"Lanthing", L"", L""));
-    if (!WinToastLib::WinToast::instance()->initialize()) {
-        LOG(ERR) << "Initialize WinToastLib failed";
-    }
     //  qt
     qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
@@ -178,6 +171,14 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
 
     sys_tray_icon_->show();
     main_window_->show();
+
+    // wintoast
+    WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
+    WinToastLib::WinToast::instance()->setAppUserModelId(
+        WinToastLib::WinToast::configureAUMI(L"Numbaa", L"Lanthing", L"", L""));
+    if (!WinToastLib::WinToast::instance()->initialize()) {
+        LOG(ERR) << "Initialize WinToastLib failed";
+    }
 }
 
 int GUIImpl::exec() {
