@@ -50,6 +50,16 @@ enum class VideoCodecType { Unknown, H264, H265 };
 
 enum class AudioCodecType { Unknown, PCM, OPUS };
 
+enum class LinkType {
+    Unknown = 0,
+    UDP = 1,
+    LanUDP,
+    WanUDP,
+    IPv6UDP,
+    RelayUDP,
+    TCP = 11,
+};
+
 struct TP_API VideoFrame {
     bool is_keyframe;
     uint64_t ltframe_id;
@@ -73,7 +83,7 @@ namespace tp { // transport
 using OnData = std::function<void(const uint8_t*, uint32_t, bool)>;
 using OnVideo = std::function<void(const VideoFrame&)>;
 using OnAudio = std::function<void(const AudioData&)>;
-using OnConnected = std::function<void(/*connection info*/)>;
+using OnConnected = std::function<void(LinkType)>;
 using OnConnChanged = std::function<void(/*1. old_conn_info, 2. new_conn_info*/)>;
 using OnDisconnected = std::function<void()>;
 using OnFailed = std::function<void()>;

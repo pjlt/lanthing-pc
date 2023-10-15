@@ -131,7 +131,7 @@ private:
 
     // rtc server
     void onTpData(const uint8_t* data, uint32_t size, bool reliable);
-    void onTpAccepted();
+    void onTpAccepted(lt::LinkType link_type);
     void onTpConnChanged();
     void onTpFailed();
     void onTpDisconnected();
@@ -198,6 +198,7 @@ private:
     uint32_t bwe_bps_ = 0;
     int64_t time_diff_ = 0;
     float loss_rate_ = .0f;
+    bool is_p2p_ = false;
 
     std::atomic<bool> enable_gamepad_ = true;
     std::atomic<bool> enable_keyboard_ = false;
