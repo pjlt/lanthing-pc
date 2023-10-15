@@ -97,7 +97,7 @@ std::string to_string(lt::VideoCodecType codec) {
 
 } // namespace
 
-// TODO: 整个构造函数，语义化
+// TODO: 整理这个构造函数，语义化
 MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* parent)
     : QWidget(parent)
     , ui(new Ui::MainPage)
