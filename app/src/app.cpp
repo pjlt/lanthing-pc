@@ -211,6 +211,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         auto cookie = settings_->getString(cookie_name);
         if (!cookie.has_value()) {
             cookie = ltlib::randomStr(24);
+            settings_->setString(cookie_name, cookie.value());
         }
         client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""));
     });
@@ -356,6 +357,12 @@ void App::onLaunchClientSuccess(int64_t device_id) { // 只将“合法”的dev
     insertNewestHistoryID(std::to_string(device_id));
     saveHistoryIDs();
     maybeRefreshAccessToken();
+}
+
+void App::onConnectFailed(int64_t device_id, int32_t error_code) {
+    std::ostringstream ss;
+    ss << "Connect(" << device_id << ") error: " << error_code;
+    gui_.errorMessageBox(ss.str());
 }
 
 void App::postTask(const std::function<void()>& task) {
@@ -520,6 +527,8 @@ bool App::initClientManager() {
     params.post_task = std::bind(&App::postTask, this, std::placeholders::_1);
     params.send_message =
         std::bind(&App::sendMessage, this, std::placeholders::_1, std::placeholders ::_2);
+    params.on_connect_failed =
+        std::bind(&App::onConnectFailed, this, std::placeholders::_1, std::placeholders ::_2);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != NULL;
 }

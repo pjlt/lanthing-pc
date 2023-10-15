@@ -132,22 +132,22 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="135"/>
+        <location filename="../src/views/gui.cpp" line="140"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="136"/>
+        <location filename="../src/views/gui.cpp" line="141"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="137"/>
+        <location filename="../src/views/gui.cpp" line="142"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="213"/>
+        <location filename="../src/views/gui.cpp" line="217"/>
         <source>%s connected to this machine</source>
         <translation>%s 正在连接</translation>
     </message>

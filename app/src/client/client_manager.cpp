@@ -64,7 +64,8 @@ ClientManager::ClientManager(const Params& params)
     : post_task_{params.post_task}
     , post_delay_task_{params.post_delay_task}
     , send_message_{params.send_message}
-    , on_launch_client_success_{params.on_launch_client_success} {}
+    , on_launch_client_success_{params.on_launch_client_success}
+    , on_connect_failed_{params.on_connect_failed} {}
 
 std::unique_ptr<ClientManager> ClientManager::create(const Params& params) {
     std::unique_ptr<ClientManager> mgr{new ClientManager{params}};
@@ -165,8 +166,11 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
     if (ack->err_code() != ltproto::ErrorCode::Success) {
         LOGF(WARNING, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
              ack->device_id(), ack->request_id());
-        std::lock_guard<std::mutex> lock{session_mutex_};
-        sessions_.erase(ack->request_id());
+        {
+            std::lock_guard<std::mutex> lock{session_mutex_};
+            sessions_.erase(ack->request_id());
+        }
+        on_connect_failed_(ack->device_id(), ack->err_code());
         return;
     }
     ClientSession::Params params{};

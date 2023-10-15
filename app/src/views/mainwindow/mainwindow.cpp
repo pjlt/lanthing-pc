@@ -166,7 +166,7 @@ void MainWindow::setAccessToken(const std::string& access_token) {
 
 void MainWindow::onConfirmConnection(int64_t device_id) {
     DispatchToMainThread([this, device_id]() {
-        QMessageBox msgbox{this};
+        QMessageBox msgbox;
         msgbox.setWindowTitle(tr("New Connection"));
         std::string id_str = std::to_string(device_id);
         QString message = tr("Device %s is requesting connection");
@@ -211,6 +211,15 @@ void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLi
 void MainWindow::onDisconnectedConnection(int64_t device_id) {
     DispatchToMainThread(
         [this, device_id]() { main_page_ui->onDisconnectedConnection(device_id); });
+}
+
+void MainWindow::errorMessageBox(const std::string& message) {
+    DispatchToMainThread([this, message]() {
+        QMessageBox msgbox;
+        msgbox.setText(QString::fromStdString(message));
+        msgbox.setIcon(QMessageBox::Icon::Critical);
+        msgbox.exec();
+    });
 }
 
 void MainWindow::doConnect(const std::string& dev_id, const std::string& token) {

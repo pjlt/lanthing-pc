@@ -92,6 +92,8 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
+    void errorMessageBox(const std::string& message);
+
 private:
     std::shared_ptr<GUIImpl> impl_;
 };

@@ -109,6 +109,8 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
+    void errorMessageBox(const std::string& message);
+
 private:
     void setLanguage();
 
@@ -125,13 +127,16 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
     setLanguage();
-    QIcon icon(":/icons/icons/pc.png");
+    QIcon icon(":/icons/icons/pc2.png");
     QApplication::setWindowIcon(icon);
+    QApplication::setApplicationName("Lanthing");
     QApplication::setQuitOnLastWindowClosed(false);
 
     main_window_ = std::make_unique<MainWindow>(params, nullptr);
     menu_ = std::make_unique<QMenu>(nullptr);
     sys_tray_icon_ = std::make_unique<QSystemTrayIcon>();
+    sys_tray_icon_->setToolTip("Lanthing");
+    sys_tray_icon_->setVisible(true);
     QAction* a0 = new QAction(QObject::tr("Main Page"), menu_.get());
     QAction* a1 = new QAction(QObject::tr("Settings"), menu_.get());
     QAction* a2 = new QAction(QObject::tr("Exit"), menu_.get());
@@ -174,8 +179,7 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
 
     // wintoast
     WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
-    WinToastLib::WinToast::instance()->setAppUserModelId(
-        WinToastLib::WinToast::configureAUMI(L"Numbaa", L"Lanthing", L"", L""));
+    WinToastLib::WinToast::instance()->setAppUserModelId(L"Lanthing");
     WinToastLib::WinToast::instance()->setShortcutPolicy(
         WinToastLib::WinToast::ShortcutPolicy::SHORTCUT_POLICY_IGNORE);
     if (!WinToastLib::WinToast::instance()->initialize()) {
@@ -227,6 +231,10 @@ void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite>
 
 void GUIImpl::onDisconnectedConnection(int64_t device_id) {
     main_window_->onDisconnectedConnection(device_id);
+}
+
+void GUIImpl::errorMessageBox(const std::string& message) {
+    main_window_->errorMessageBox(message);
 }
 
 void GUIImpl::setLanguage() {
@@ -285,6 +293,10 @@ void GUI::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg
 
 void GUI::onDisconnectedConnection(int64_t device_id) {
     impl_->onDisconnectedConnection(device_id);
+}
+
+void GUI::errorMessageBox(const std::string& message) {
+    impl_->errorMessageBox(message);
 }
 
 } // namespace lt

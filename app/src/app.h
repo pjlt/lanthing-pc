@@ -79,6 +79,7 @@ private:
     void insertNewestHistoryID(const std::string& device_id);
     void maybeRefreshAccessToken();
     void onLaunchClientSuccess(int64_t device_id);
+    void onConnectFailed(int64_t device_id, int32_t error_code);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
