@@ -40,6 +40,8 @@
 
 #include <transport/transport.h>
 
+#include <views/components/clickable_label.h>
+
 namespace Ui {
 class MainPage;
 }
@@ -76,6 +78,12 @@ private:
 
     void onUpdateIndicator();
 
+    void onCopyClicked();
+
+    void onShowTokenClicked();
+
+    void onTimeoutHideToken();
+
     void loadPixmap();
 
     static void setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
@@ -85,6 +93,9 @@ private:
 private:
     Ui::MainPage* ui;
     std::vector<std::string> history_device_ids_;
+    QPixmap copy_;
+    QPixmap eye_close_;
+    QPixmap eye_open_;
     QPixmap kick_;
     QPixmap mouse_;
     QPixmap mouse_white_;
@@ -111,8 +122,15 @@ private:
     bool gpu_decode_ = false;
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
+
     lt::VideoCodecType video_codec_ = lt::VideoCodecType::Unknown;
     std::optional<int64_t> peer_client_device_id_;
+
+    std::string access_token_text_;
+    ClickableLabel* copy_label_;
+    ClickableLabel* show_token_label_;
+    int64_t token_last_show_time_ms_ = 0;
+    bool token_showing_ = false;
 };
 
 #endif // MAINPAGE_H

@@ -110,23 +110,6 @@ namespace {
 const std::string service_name = "Lanthing";
 const std::string display_name = "Lanthing Service";
 
-std::string generateAccessToken() {
-    constexpr size_t kNumLen = 3;
-    constexpr size_t kAlphaLen = 3;
-    static const char numbers[] = "0123456789";
-    static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    std::string str(kNumLen + kAlphaLen, '*');
-
-    for (size_t i = 0; i < kAlphaLen; i++) {
-        str[i] = alphabet[rand() % (sizeof(alphabet) - 1)];
-    }
-    for (size_t i = kAlphaLen; i < kAlphaLen + kNumLen; i++) {
-        str[i] = numbers[rand() % (sizeof(numbers) - 1)];
-    }
-    LOG(DEBUG) << "Generated access token: " << str.c_str();
-    return str;
-}
-
 } // namespace
 
 namespace lt {
@@ -140,7 +123,9 @@ std::unique_ptr<App> lt::App::create() {
 }
 
 App::App() {
-    //
+    std::random_device rd;
+    rand_engine_ = std::mt19937(rd());
+    rand_distrib_ = std::uniform_int_distribution<size_t>();
 }
 
 App::~App() {
@@ -537,6 +522,27 @@ bool App::initClientManager() {
         std::bind(&App::sendMessage, this, std::placeholders::_1, std::placeholders ::_2);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != NULL;
+}
+
+size_t App::rand() {
+    return rand_distrib_(rand_engine_);
+}
+
+std::string App::generateAccessToken() {
+    constexpr size_t kNumLen = 3;
+    constexpr size_t kAlphaLen = 3;
+    static const char numbers[] = "0123456789";
+    static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    std::string str(kNumLen + kAlphaLen, '*');
+
+    for (size_t i = 0; i < kAlphaLen; i++) {
+        str[i] = alphabet[rand() % (sizeof(alphabet) - 1)];
+    }
+    for (size_t i = kAlphaLen; i < kAlphaLen + kNumLen; i++) {
+        str[i] = numbers[rand() % (sizeof(numbers) - 1)];
+    }
+    LOG(DEBUG) << "Generated access token: " << str.c_str();
+    return str;
 }
 
 } // namespace lt

@@ -33,6 +33,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <random>
+
 #include <QApplication>
 #include <google/protobuf/message_lite.h>
 
@@ -106,6 +108,9 @@ private:
     //
     bool initClientManager();
 
+    size_t rand();
+    std::string generateAccessToken();
+
 private:
     GUI gui_;
     std::mutex ioloop_mutex_;
@@ -118,9 +123,11 @@ private:
     int64_t device_id_ = 0;
     std::string access_token_;
     std::vector<std::string> history_ids_;
-    bool run_as_daemon_;
-    bool auto_refresh_access_token_;
+    bool run_as_daemon_ = false;
+    bool auto_refresh_access_token_ = false;
     std::string relay_server_;
+    std::mt19937 rand_engine_;
+    std::uniform_int_distribution<size_t> rand_distrib_;
 
     // UiCallback* ui_;
 };

@@ -9,42 +9,47 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="137"/>
-        <source>DEVICE ID</source>
-        <translation>设备码</translation>
-    </message>
-    <message>
-        <location filename="../src/views/link/mainpage.ui" line="125"/>
-        <source>ACCESS TOKEN</source>
-        <translation>验证码</translation>
-    </message>
-    <message>
-        <location filename="../src/views/link/mainpage.ui" line="149"/>
+        <location filename="../src/views/link/mainpage.ui" line="288"/>
         <source>********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="161"/>
+        <location filename="../src/views/link/mainpage.ui" line="300"/>
         <source>*********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="129"/>
+        <location filename="../src/views/link/mainpage.ui" line="321"/>
+        <source>Copied√</source>
+        <translation>已复制√</translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.ui" line="276"/>
+        <source>DEVICE ID</source>
+        <translation>设备码</translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.ui" line="264"/>
+        <source>ACCESS TOKEN</source>
+        <translation>验证码</translation>
+    </message>
+    <message>
+        <location filename="../src/views/link/mainpage.cpp" line="147"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="130"/>
+        <location filename="../src/views/link/mainpage.cpp" line="148"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="131"/>
+        <location filename="../src/views/link/mainpage.cpp" line="149"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="132"/>
+        <location filename="../src/views/link/mainpage.cpp" line="150"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
@@ -142,7 +147,7 @@
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="211"/>
+        <location filename="../src/views/gui.cpp" line="213"/>
         <source>%s connected to this machine</source>
         <translation>%s 正在连接</translation>
     </message>

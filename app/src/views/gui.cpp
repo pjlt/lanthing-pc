@@ -176,6 +176,8 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
     WinToastLib::WinToast::instance()->setAppUserModelId(
         WinToastLib::WinToast::configureAUMI(L"Numbaa", L"Lanthing", L"", L""));
+    WinToastLib::WinToast::instance()->setShortcutPolicy(
+        WinToastLib::WinToast::ShortcutPolicy::SHORTCUT_POLICY_IGNORE);
     if (!WinToastLib::WinToast::instance()->initialize()) {
         LOG(ERR) << "Initialize WinToastLib failed";
     }
