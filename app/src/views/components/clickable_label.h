@@ -28,47 +28,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <random>
+#pragma once
+#include <qlabel.h>
 
-#include <ltlib/strings.h>
-#include <type_traits>
-#include <utf8.h>
+class ClickableLabel : public QLabel {
+    Q_OBJECT
 
-namespace ltlib {
+public:
+    explicit ClickableLabel(QWidget* parent)
+        : QLabel{parent} {}
 
-std::wstring utf8To16(const std::string& str) {
-    if (str.empty()) {
-        return {};
-    }
-    std::wstring result;
-    utf8::utf8to16(str.begin(), str.end(), std::back_inserter(result));
-    return result;
-}
+    ~ClickableLabel() override = default;
 
-std::string utf16To8(const std::wstring& str) {
-    if (str.empty()) {
-        return {};
-    }
-    std::string result;
-    utf8::utf16to8(str.begin(), str.end(), std::back_inserter(result));
-    return result;
-}
+signals:
+    void clicked();
 
-std::string randomStr(size_t len) {
-    static const char alphanum[] = "0123456789"
-                                   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                   "abcdefghijklmnopqrstuvwxyz";
-    static std::random_device rd;
-    static std::mt19937 engine(rd());
-    static std::uniform_int_distribution<size_t> distrib;
-    std::string tmp_s;
-    tmp_s.reserve(len);
-
-    for (int i = 0; i < len; ++i) {
-        tmp_s += alphanum[distrib(engine) % (sizeof(alphanum) - 1)];
-    }
-
-    return tmp_s;
-}
-
-} // namespace ltlib
+protected:
+    void mousePressEvent(QMouseEvent*) { emit clicked(); }
+};

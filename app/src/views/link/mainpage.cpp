@@ -35,6 +35,8 @@
 
 #include <QAction>
 #include <QValidator>
+#include <qclipboard.h>
+#include <qicon.h>
 #include <qmenu.h>
 #include <qtimer.h>
 
@@ -66,11 +68,11 @@ QValidator::State AccesstokenValidator::validate(QString& input, int& pos) const
     }
     size_t size = static_cast<size_t>(input.size());
     for (size_t i = 0; i < size; i++) {
-        if ((input[i] >= 'A' && input[i] <= 'Z') || (input[i] >= '0' && input[i] <= '9')) {
+        if ((input[i] >= 'a' && input[i] <= 'z') || (input[i] >= '0' && input[i] <= '9')) {
             continue;
         }
-        if (input[i] >= 'a' && input[i] <= 'z') {
-            input[i] = input[i].toUpper();
+        if (input[i] >= 'A' && input[i] <= 'Z') {
+            input[i] = input[i].toLower();
             continue;
         }
         return State::Invalid;
@@ -95,6 +97,7 @@ std::string to_string(lt::VideoCodecType codec) {
 
 } // namespace
 
+// TODO: 整理这个构造函数，语义化
 MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* parent)
     : QWidget(parent)
     , ui(new Ui::MainPage)
@@ -103,6 +106,21 @@ MainPage::MainPage(const std::vector<std::string>& history_device_ids, QWidget* 
     ui->setupUi(parent);
 
     loadPixmap();
+
+    ui->label_copy_success->hide();
+    copy_label_ = new ClickableLabel(this);
+    copy_label_->setPixmap(copy_);
+    copy_label_->setScaledContents(true);
+    copy_label_->setFixedSize(QSize(24, 24));
+    ui->vlayout_copy_hide->addWidget(copy_label_);
+    connect(copy_label_, &ClickableLabel::clicked, this, &MainPage::onCopyClicked);
+
+    show_token_label_ = new ClickableLabel(this);
+    show_token_label_->setPixmap(eye_close_);
+    show_token_label_->setScaledContents(true);
+    show_token_label_->setFixedSize(QSize(24, 24));
+    ui->vlayout_copy_hide->addWidget(show_token_label_);
+    connect(show_token_label_, &ClickableLabel::clicked, this, &MainPage::onShowTokenClicked);
 
     QIcon pc_icon{":/icons/icons/pc.png"};
     if (history_device_ids_.empty()) {
@@ -189,11 +207,22 @@ MainPage::~MainPage() {
 }
 
 void MainPage::onUpdateLocalDeviceID(int64_t device_id) {
-    ui->my_device_id->setText(QString::fromStdString(std::to_string(device_id)));
+    std::string id = std::to_string(device_id);
+    std::string id2;
+    for (size_t i = 0; i < id.size(); i++) {
+        id2.push_back(id[i]);
+        if (i % 3 == 2 && i != id.size() - 1) {
+            id2.push_back(' ');
+        }
+    }
+    ui->my_device_id->setText(QString::fromStdString(id2));
 }
 
 void MainPage::onUpdateLocalAccessToken(const std::string& access_token) {
-    ui->my_access_token->setText(QString::fromStdString(access_token));
+    access_token_text_ = access_token;
+    if (token_showing_) {
+        ui->my_access_token->setText(QString::fromStdString(access_token));
+    }
 }
 
 void MainPage::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -299,7 +328,52 @@ void MainPage::onUpdateIndicator() {
     QTimer::singleShot(50, this, &MainPage::onUpdateIndicator);
 }
 
+void MainPage::onCopyClicked() {
+    auto clipboard = QApplication::clipboard();
+    QString device_id = ui->my_device_id->text();
+    device_id = device_id.simplified();
+    device_id.replace(" ", "");
+    clipboard->setText(device_id);
+    ui->label_copy_success->show();
+    QTimer::singleShot(2'000, [this]() { ui->label_copy_success->hide(); });
+}
+
+void MainPage::onShowTokenClicked() {
+    if (token_showing_) {
+        token_showing_ = false;
+        show_token_label_->setPixmap(eye_close_);
+        ui->my_access_token->setText("••••••");
+    }
+    else {
+        token_showing_ = true;
+        token_last_show_time_ms_ = ltlib::steady_now_ms();
+        show_token_label_->setPixmap(eye_open_);
+        ui->my_access_token->setText(QString::fromStdString(access_token_text_));
+        QTimer::singleShot(5'100, std::bind(&MainPage::onTimeoutHideToken, this));
+    }
+}
+
+void MainPage::onTimeoutHideToken() {
+    if (!token_showing_) {
+        return;
+    }
+    int64_t now_ms = ltlib::steady_now_ms();
+    if (token_last_show_time_ms_ + 5'000 <= now_ms) {
+        token_showing_ = false;
+        show_token_label_->setPixmap(eye_close_);
+        ui->my_access_token->setText("••••••");
+    }
+    else {
+        QTimer::singleShot(token_last_show_time_ms_ + 5'100 - now_ms,
+                           std::bind(&MainPage::onTimeoutHideToken, this));
+    }
+}
+
 void MainPage::loadPixmap() {
+    copy_.load(":/icons/icons/copy.png");
+    eye_close_.load(":/icons/icons/eye_close.png");
+    eye_open_.load(":/icons/icons/eye_open.png");
+
     kick_.load(":/icons/icons/close.png");
 
     mouse_.load(":/icons/icons/mouse.png");

@@ -11,3 +11,9 @@ user.png by Bingge Liu https://www.freepik.com/icon/user_3024605
 lock.png by HideMaru https://www.freepik.com/icon/lock_5754532
 
 close.png by Pixel perfect https://www.freepik.com/icon/close_1828665
+
+copy.png by Freepik https://www.freepik.com/icon/copy_1620767
+
+eye_close.png by lakonicon https://www.freepik.com/icon/vision_4129777
+
+eye_open.png by lakonicon https://www.freepik.com/icon/vision_4129776

@@ -42,6 +42,7 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/clickable_label.h
 )
 
 set(APP_UI_VIEWS
