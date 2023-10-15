@@ -383,8 +383,8 @@ void Client::onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite
 void Client::dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
     auto& rtc_msg = msg->rtc_message();
-    LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
-              << ", value:" << msg->rtc_message().value().c_str();
+    LOG(DEBUG) << "Received signaling key:" << msg->rtc_message().key().c_str()
+               << ", value:" << msg->rtc_message().value().c_str();
     tp_client_->onSignalingMessage(rtc_msg.key().c_str(), rtc_msg.value().c_str());
 }
 
@@ -429,7 +429,7 @@ std::unique_ptr<tp::Client> Client::createTcpClient() {
     params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
     params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
     params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
-    params.on_connected = std::bind(&Client::onTpConnected, this);
+    params.on_connected = std::bind(&Client::onTpConnected, this, ph::_1);
     params.on_failed = std::bind(&Client::onTpFailed, this);
     params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
     params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
@@ -462,7 +462,7 @@ std::unique_ptr<tp::Client> Client::createRtcClient() {
     params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
     params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
     params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
-    params.on_connected = std::bind(&Client::onTpConnected, this);
+    params.on_connected = std::bind(&Client::onTpConnected, this, ph::_1);
     params.on_conn_changed = std::bind(&Client::onTpConnChanged, this);
     params.on_failed = std::bind(&Client::onTpFailed, this);
     params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
@@ -479,7 +479,7 @@ std::unique_ptr<tp::Client> Client::createRtc2Client() {
     params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
     params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
     params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
-    params.on_connected = std::bind(&Client::onTpConnected, this);
+    params.on_connected = std::bind(&Client::onTpConnected, this, ph::_1);
     params.on_conn_changed = std::bind(&Client::onTpConnChanged, this);
     params.on_failed = std::bind(&Client::onTpFailed, this);
     params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
@@ -534,7 +534,8 @@ void Client::onTpAudioData(const lt::AudioData& audio_data) {
     }
 }
 
-void Client::onTpConnected() {
+void Client::onTpConnected(lt::LinkType link_type) {
+    (void)link_type;
     video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
     if (video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";

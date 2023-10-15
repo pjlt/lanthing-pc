@@ -248,7 +248,7 @@ std::unique_ptr<tp::Server> WorkerSession::createTcpServer() {
         static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
-    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
+    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this, std::placeholders::_1);
     params.on_data = std::bind(&WorkerSession::onTpData, this, ph::_1, ph::_2, ph::_3);
     params.on_signaling_message =
         std::bind(&WorkerSession::onTpSignalingMessage, this, ph::_1, ph::_2);
@@ -292,7 +292,7 @@ std::unique_ptr<tp::Server> WorkerSession::createRtcServer() {
         static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
-    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
+    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this, std::placeholders::_1);
     params.on_conn_changed = std::bind(&WorkerSession::onTpConnChanged, this);
     params.on_data = std::bind(&WorkerSession::onTpData, this, ph::_1, ph::_2, ph::_3);
     params.on_signaling_message =
@@ -307,7 +307,7 @@ std::unique_ptr<tp::Server> WorkerSession::createRtcServer() {
 std::unique_ptr<tp::Server> WorkerSession::createRtc2Server() {
     namespace ph = std::placeholders;
     rtc2::Server::Params params{};
-    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this);
+    params.on_accepted = std::bind(&WorkerSession::onTpAccepted, this, std::placeholders::_1);
     params.on_failed = std::bind(&WorkerSession::onTpFailed, this);
     params.on_disconnected = std::bind(&WorkerSession::onTpDisconnected, this);
     params.on_conn_changed = std::bind(&WorkerSession::onTpConnChanged, this);
@@ -512,8 +512,8 @@ void WorkerSession::onSignalingMessageAck(std::shared_ptr<google::protobuf::Mess
 void WorkerSession::dispatchSignalingMessageRtc(
     std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
-    LOG(INFO) << "Received signaling key:" << msg->rtc_message().key().c_str()
-              << ", value:" << msg->rtc_message().value().c_str();
+    LOG(DEBUG) << "Received signaling key:" << msg->rtc_message().key().c_str()
+               << ", value:" << msg->rtc_message().value().c_str();
     tp_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
                                    msg->rtc_message().value().c_str());
 }
@@ -669,9 +669,10 @@ void WorkerSession::onTpData(const uint8_t* data, uint32_t size, bool reliable) 
     dispatchDcMessage(*type, msg);
 }
 
-void WorkerSession::onTpAccepted() {
-    postTask([this]() {
+void WorkerSession::onTpAccepted(lt::LinkType link_type) {
+    postTask([this, link_type]() {
         LOG(INFO) << "Accepted client";
+        is_p2p_ = link_type != lt::LinkType::RelayUDP;
         updateLastRecvTime();
         syncTime();
         postTask(std::bind(&WorkerSession::checkTimeout, this));
@@ -854,6 +855,9 @@ void WorkerSession::syncTime() {
 }
 
 void WorkerSession::getTransportStat() {
+    if (rtc_closed_) {
+        return;
+    }
 #if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     rtc::Server* svr = static_cast<rtc::Server*>(tp_server_.get());
     bwe_bps_ = svr->bwe();
@@ -895,8 +899,7 @@ void WorkerSession::sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hi
     status->set_hit_gamepad(gp_hit);
     status->set_hit_keyboard(kb_hit);
     status->set_hit_mouse(mouse_hit);
-    // FIXME: 填写正确P2P值
-    status->set_p2p(true);
+    status->set_p2p(is_p2p_);
     on_connection_status_(status);
 }
 

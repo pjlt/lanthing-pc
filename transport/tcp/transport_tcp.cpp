@@ -158,7 +158,7 @@ void ClientTCP::onConnected() {
         task_thread_->post(std::bind(&ClientTCP::onConnected, this));
         return;
     }
-    params_.on_connected();
+    params_.on_connected(LinkType::TCP);
 }
 
 void ClientTCP::onDisconnected() {
@@ -428,7 +428,7 @@ void ServerTCP::onAccepted(uint32_t fd) {
     }
     client_fd_ = fd;
     LOG(INFO) << "ServerTCP accpeted ClientTCP(" << fd << ")";
-    params_.on_accepted();
+    params_.on_accepted(LinkType::TCP);
 }
 
 void ServerTCP::onDisconnected(uint32_t fd) {

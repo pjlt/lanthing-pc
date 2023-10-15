@@ -121,7 +121,7 @@ private:
     void onTpData(const uint8_t* data, uint32_t size, bool is_reliable);
     void onTpVideoFrame(const lt::VideoFrame& frame);
     void onTpAudioData(const lt::AudioData& audio_data);
-    void onTpConnected(/*connection info*/);
+    void onTpConnected(lt::LinkType link_type);
     void onTpConnChanged(/*old_conn_info, new_conn_info*/);
     void onTpFailed();
     void onTpDisconnected();
