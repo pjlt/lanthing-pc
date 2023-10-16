@@ -49,6 +49,7 @@ public:
     struct Params {
         std::function<void()> on_reset;
         std::function<void()> on_exit;
+        bool windowed_fullscreen = true;
     };
 
 public:

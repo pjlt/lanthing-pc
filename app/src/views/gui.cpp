@@ -111,6 +111,8 @@ public:
 
     void errorMessageBox(const std::string& message);
 
+    void infoMessageBox(const std::string& message);
+
 private:
     void setLanguage();
 
@@ -136,7 +138,6 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     menu_ = std::make_unique<QMenu>(nullptr);
     sys_tray_icon_ = std::make_unique<QSystemTrayIcon>();
     sys_tray_icon_->setToolTip("Lanthing");
-    sys_tray_icon_->setVisible(true);
     QAction* a0 = new QAction(QObject::tr("Main Page"), menu_.get());
     QAction* a1 = new QAction(QObject::tr("Settings"), menu_.get());
     QAction* a2 = new QAction(QObject::tr("Exit"), menu_.get());
@@ -237,6 +238,10 @@ void GUIImpl::errorMessageBox(const std::string& message) {
     main_window_->errorMessageBox(message);
 }
 
+void GUIImpl::infoMessageBox(const std::string& message) {
+    main_window_->infoMessageBox(message);
+}
+
 void GUIImpl::setLanguage() {
     QLocale locale;
     switch (locale.language()) {
@@ -297,6 +302,10 @@ void GUI::onDisconnectedConnection(int64_t device_id) {
 
 void GUI::errorMessageBox(const std::string& message) {
     impl_->errorMessageBox(message);
+}
+
+void GUI::infoMessageBox(const std::string& message) {
+    impl_->infoMessageBox(message);
 }
 
 } // namespace lt

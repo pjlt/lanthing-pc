@@ -193,6 +193,15 @@ Client::~Client() {
 }
 
 bool Client::init() {
+    if (!initSettings()) {
+        LOG(ERR) << "Init settings failed";
+        return false;
+    }
+    auto wf = settings_->getBoolean("windowed_fullscreen");
+    if (!wf.has_value() || wf.value()) {
+        // 没有设置 或者 设置为真，即默认窗口化全屏
+        windowed_fullscreen_ = true;
+    }
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         LOG(ERR) << "Init IOLoop failed";
@@ -219,6 +228,11 @@ bool Client::init() {
         "main_thread", [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
     should_exit_ = false;
     return true;
+}
+
+bool Client::initSettings() {
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
+    return settings_ != nullptr;
 }
 
 void Client::wait() {
@@ -336,6 +350,7 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
     PcSdl::Params params{};
     params.on_reset = std::bind(&Client::onPlatformRenderTargetReset, this);
     params.on_exit = std::bind(&Client::onPlatformExit, this);
+    params.windowed_fullscreen = windowed_fullscreen_;
     sdl_ = PcSdl::create(params);
     if (sdl_ == nullptr) {
         LOG(INFO) << "Initialize sdl failed";

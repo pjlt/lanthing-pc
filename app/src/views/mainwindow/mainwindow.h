@@ -73,6 +73,8 @@ public:
 
     void errorMessageBox(const std::string& message);
 
+    void infoMessageBox(const std::string& message);
+
 protected:
     void closeEvent(QCloseEvent* ev) override;
 
