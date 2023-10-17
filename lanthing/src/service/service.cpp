@@ -202,18 +202,16 @@ void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task)
 
 void Service::checkRunAsService() {
 #if LT_RUN_AS_SERVICE
-    LOG(INFO) << "checkRunAsService";
     if (app_connected_) {
         app_not_connected_count_ = 0;
     }
     else {
-        LOG(INFO) << "checkRunAsService ++";
         app_not_connected_count_ += 1;
         if (app_not_connected_count_ >= 2) {
             std::optional<bool> run_as_daemon = settings_->getBoolean("daemon");
             // 值未填、或明确设置为否，则退出进程
             if (!run_as_daemon.has_value() || *run_as_daemon == false) {
-                LOG(INFO) << "checkRunAsService EXIT";
+                LOG(INFO) << "checkRunAsService exit";
                 const std::string service_name = "Lanthing";
                 ltlib::ServiceCtrl::stopService(service_name);
             }
