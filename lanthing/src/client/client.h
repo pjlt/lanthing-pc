@@ -38,6 +38,7 @@
 
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
+#include <ltlib/settings.h>
 #include <ltlib/threads.h>
 #include <ltlib/time_sync.h>
 #include <transport/transport.h>
@@ -93,6 +94,8 @@ public:
 private:
     Client(const Params& params);
     bool init();
+    bool initSettings();
+    bool initSignalingClient();
     void mainLoop(const std::function<void()>& i_am_alive);
     void onPlatformRenderTargetReset();
     void onPlatformExit();
@@ -138,6 +141,7 @@ private:
     void onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
+    std::unique_ptr<ltlib::Settings> settings_;
     std::string auth_token_;
     std::string p2p_username_;
     std::string p2p_password_;
@@ -163,6 +167,7 @@ private:
     ltlib::TimeSync time_sync_;
     int64_t rtt_ = 0;
     int64_t time_diff_ = 0;
+    bool windowed_fullscreen_ = true;
 };
 
 } // namespace cli

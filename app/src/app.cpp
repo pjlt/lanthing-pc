@@ -149,6 +149,7 @@ bool App::init() {
     run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
     auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
     relay_server_ = settings_->getString("relay").value_or("");
+    windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -193,6 +194,8 @@ int App::exec(int argc, char** argv) {
     params.on_operate_connection =
         std::bind(&App::onOperateConnection, this, std::placeholders::_1);
     params.set_relay_server = std::bind(&App::setRelayServer, this, std::placeholders::_1);
+    params.set_fullscreen_mode =
+        std::bind(&App::onFullscreenModeChanged, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -206,11 +209,19 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
     }
+#pragma warning(disable : 4127)
+    if (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
+        LOG(INFO) << "Self connect is not allowed";
+        gui_.infoMessageBox("Self connect is not allowed");
+        return;
+    }
+#pragma warning(default : 4127)
     postTask([peerDeviceID, accessToken, this]() {
-        std::string cookie_name = "cookie_" + std::to_string(peerDeviceID);
+        std::string cookie_name = "to_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);
         if (!cookie.has_value()) {
             cookie = ltlib::randomStr(24);
+            settings_->setString(cookie_name, cookie.value());
         }
         client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""));
     });
@@ -225,6 +236,7 @@ GUI::Settings App::getSettings() const {
     settings.auto_refresh_access_token = auto_refresh_access_token_;
     settings.run_as_daemon = run_as_daemon_;
     settings.relay_server = relay_server_;
+    settings.windowed_fullscreen = windowed_fullscreen_;
     return settings;
 }
 
@@ -253,6 +265,10 @@ void App::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg
     postTask([this, msg]() { service_manager_->onOperateConnection(msg); });
 }
 
+void App::onFullscreenModeChanged(bool is_windowed) {
+    postTask([this, is_windowed]() { settings_->setBoolean("windowed_fullscreen", is_windowed); });
+}
+
 void App::ioLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "App enter io loop";
     ioloop_->run(i_am_alive);
@@ -261,7 +277,7 @@ void App::ioLoop(const std::function<void()>& i_am_alive) {
 
 void App::createAndStartService() {
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
-    std::string path = ltlib::get_program_path<char>();
+    std::string path = ltlib::getProgramPath<char>();
     std::filesystem::path bin_path(path);
     bin_path /= "lanthing.exe";
     if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
@@ -358,6 +374,12 @@ void App::onLaunchClientSuccess(int64_t device_id) { // 只将“合法”的dev
     maybeRefreshAccessToken();
 }
 
+void App::onConnectFailed(int64_t device_id, int32_t error_code) {
+    std::ostringstream ss;
+    ss << "Connect(" << device_id << ") error: " << error_code;
+    gui_.errorMessageBox(ss.str());
+}
+
 void App::postTask(const std::function<void()>& task) {
     std::lock_guard lock{ioloop_mutex_};
     if (ioloop_) {
@@ -374,7 +396,7 @@ void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
 
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-#include <lanthing.cert>
+#include <ISRG-Root.cert>
 bool App::initTcpClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
@@ -520,6 +542,8 @@ bool App::initClientManager() {
     params.post_task = std::bind(&App::postTask, this, std::placeholders::_1);
     params.send_message =
         std::bind(&App::sendMessage, this, std::placeholders::_1, std::placeholders ::_2);
+    params.on_connect_failed =
+        std::bind(&App::onConnectFailed, this, std::placeholders::_1, std::placeholders ::_2);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != NULL;
 }

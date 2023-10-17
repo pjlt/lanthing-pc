@@ -71,6 +71,10 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
+    void errorMessageBox(const std::string& message);
+
+    void infoMessageBox(const std::string& message);
+
 protected:
     void closeEvent(QCloseEvent* ev) override;
 

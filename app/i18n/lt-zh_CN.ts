@@ -62,27 +62,27 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="170"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="173"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="172"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="175"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="176"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="179"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="178"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="181"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="179"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="182"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
@@ -132,22 +132,22 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="135"/>
+        <location filename="../src/views/gui.cpp" line="141"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="136"/>
+        <location filename="../src/views/gui.cpp" line="142"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="137"/>
+        <location filename="../src/views/gui.cpp" line="143"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="213"/>
+        <location filename="../src/views/gui.cpp" line="218"/>
         <source>%s connected to this machine</source>
         <translation>%s 正在连接</translation>
     </message>

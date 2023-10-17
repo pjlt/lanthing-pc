@@ -71,6 +71,7 @@ private:
     void setRelayServer(const std::string& svr);
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onFullscreenModeChanged(bool is_windowed);
 
     void createAndStartService();
     void stopService();
@@ -79,6 +80,7 @@ private:
     void insertNewestHistoryID(const std::string& device_id);
     void maybeRefreshAccessToken();
     void onLaunchClientSuccess(int64_t device_id);
+    void onConnectFailed(int64_t device_id, int32_t error_code);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
@@ -125,6 +127,7 @@ private:
     std::vector<std::string> history_ids_;
     bool run_as_daemon_ = false;
     bool auto_refresh_access_token_ = false;
+    std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;
     std::uniform_int_distribution<size_t> rand_distrib_;

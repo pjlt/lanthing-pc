@@ -23,5 +23,6 @@
         <file>icons/eye_close.png</file>
         <file>icons/eye_open.png</file>
         <file>icons/copy.png</file>
+        <file>icons/pc2.png</file>
     </qresource>
 </RCC>

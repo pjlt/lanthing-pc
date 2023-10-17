@@ -86,6 +86,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     settings.refresh_access_token = loadded_settigns.auto_refresh_access_token;
     settings.run_as_daemon = loadded_settigns.run_as_daemon;
     settings.relay_server = loadded_settigns.relay_server;
+    settings.windowed_fullscreen = loadded_settigns.windowed_fullscreen;
     setting_page_ui = new SettingPage(settings, setting_page);
 
     connect(menu_ui, &Menu::pageSelect,
@@ -98,6 +99,8 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
             [this](bool checked) { params_.enable_auto_refresh_access_token(checked); });
     connect(setting_page_ui, &SettingPage::runAsDaemonStateChanged,
             [this](bool checked) { params_.enable_run_as_service(checked); });
+    connect(setting_page_ui, &SettingPage::fullscreenModeChanged,
+            [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
     connect(setting_page_ui, &SettingPage::relayServerChanged,
             [this](const std::string& svr) { params_.set_relay_server(svr); });
 
@@ -166,7 +169,7 @@ void MainWindow::setAccessToken(const std::string& access_token) {
 
 void MainWindow::onConfirmConnection(int64_t device_id) {
     DispatchToMainThread([this, device_id]() {
-        QMessageBox msgbox{this};
+        QMessageBox msgbox;
         msgbox.setWindowTitle(tr("New Connection"));
         std::string id_str = std::to_string(device_id);
         QString message = tr("Device %s is requesting connection");
@@ -211,6 +214,24 @@ void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLi
 void MainWindow::onDisconnectedConnection(int64_t device_id) {
     DispatchToMainThread(
         [this, device_id]() { main_page_ui->onDisconnectedConnection(device_id); });
+}
+
+void MainWindow::errorMessageBox(const std::string& message) {
+    DispatchToMainThread([this, message]() {
+        QMessageBox msgbox;
+        msgbox.setText(QString::fromStdString(message));
+        msgbox.setIcon(QMessageBox::Icon::Critical);
+        msgbox.exec();
+    });
+}
+
+void MainWindow::infoMessageBox(const std::string& message) {
+    DispatchToMainThread([this, message]() {
+        QMessageBox msgbox;
+        msgbox.setText(QString::fromStdString(message));
+        msgbox.setIcon(QMessageBox::Icon::Information);
+        msgbox.exec();
+    });
 }
 
 void MainWindow::doConnect(const std::string& dev_id, const std::string& token) {

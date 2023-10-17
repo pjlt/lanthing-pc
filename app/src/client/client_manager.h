@@ -52,6 +52,7 @@ public:
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message;
         std::function<void(int64_t)> on_launch_client_success;
+        std::function<void(int64_t /*device_id*/, int32_t /*error_code*/)> on_connect_failed;
     };
 
 public:
@@ -78,6 +79,7 @@ private:
     std::function<void(int64_t, const std::function<void()>&)> post_delay_task_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message_;
     std::function<void(int64_t)> on_launch_client_success_;
+    std::function<void(int64_t, int32_t)> on_connect_failed_;
     std::atomic<int64_t> last_request_id_{0};
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;
     std::mutex session_mutex_;

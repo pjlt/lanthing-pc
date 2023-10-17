@@ -31,9 +31,13 @@
 #include "client_secure_layer.h"
 #include "client_transport_layer.h"
 
+#include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
 #include <ltlib/logging.h>
+
+// 忘了在哪个开源项目抄了一部分，sorry。这种写法不是很好理解，有bug也不好修（刚修了一个，在tls_read之后没有重置input
+// buffer，在遇到大消息bug就表现出来了） 一直想重写，但是能run，就没动手??
 
 namespace {
 
@@ -98,6 +102,7 @@ bool MbedtlsCTransport::init() {
 bool MbedtlsCTransport::tls_init_context() {
     mbedtls_ssl_config_init(&ssl_cfg_);
     mbedtls_ssl_conf_dbg(&ssl_cfg_, tls_debug_log, nullptr);
+    mbedtls_debug_set_threshold(0);
     mbedtls_ssl_config_defaults(&ssl_cfg_, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
                                 MBEDTLS_SSL_PRESET_DEFAULT);
     mbedtls_ssl_conf_renegotiation(&ssl_cfg_, MBEDTLS_SSL_RENEGOTIATION_ENABLED);
@@ -246,11 +251,14 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf) {
     }
     else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
         Buffer outbuff = uvbuf;
+        Buffer inbuff = uvbuf;
         enum TLS_RESULT rc = TLS_MORE_AVAILABLE;
         while (rc == TLS_MORE_AVAILABLE || rc == TLS_READ_AGAIN) {
             // uint32_t out_bytes = 0;
-            rc = (TLS_RESULT)tls_read(uvbuf.base, uvbuf.len, outbuff.base, &outbuff.len,
+            rc = (TLS_RESULT)tls_read(inbuff.base, inbuff.len, outbuff.base, &outbuff.len,
                                       outbuff.len);
+            inbuff.base = nullptr;
+            inbuff.len = 0;
             switch (rc) {
             case ltlib::TLS_OK:
                 on_read_(outbuff);
@@ -317,7 +325,7 @@ void MbedtlsCTransport::on_uv_reconnecting() {
 bool MbedtlsCTransport::on_uv_connected() {
     // tls_reset_engine();
     int state = ssl_.MBEDTLS_PRIVATE(state);
-    LOG(INFO) << "Start tls handshake " << state;
+    LOG(DEBUG) << "Start tls handshake " << state;
     if (is_handshake_continue(state)) {
         LOGF(ERR, "Start hanshake in the middle of another handshak(%d)", state);
         return false;

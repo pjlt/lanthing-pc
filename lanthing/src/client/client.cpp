@@ -120,6 +120,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
 
+    LOG(INFO) << "Signaling " << params.signaling_addr.c_str() << ":" << signaling_port;
+
     if (options.find("-reflexs") != options.end()) {
         std::string reflexs_str = options["-reflexs"];
         std::stringstream ss{reflexs_str};
@@ -193,25 +195,22 @@ Client::~Client() {
 }
 
 bool Client::init() {
+    if (!initSettings()) {
+        LOG(ERR) << "Init settings failed";
+        return false;
+    }
+    auto wf = settings_->getBoolean("windowed_fullscreen");
+    if (!wf.has_value() || wf.value()) {
+        // 没有设置 或者 设置为真，即默认窗口化全屏
+        windowed_fullscreen_ = true;
+    }
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         LOG(ERR) << "Init IOLoop failed";
         return false;
     }
-    ltlib::Client::Params params{};
-    params.stype = ltlib::StreamType::TCP;
-    params.ioloop = ioloop_.get();
-    params.host = signaling_params_.addr;
-    params.port = signaling_params_.port;
-    params.is_tls = false;
-    params.on_connected = std::bind(&Client::onSignalingConnected, this);
-    params.on_closed = std::bind(&Client::onSignalingDisconnected, this);
-    params.on_reconnecting = std::bind(&Client::onSignalingReconnecting, this);
-    params.on_message = std::bind(&Client::onSignalingNetMessage, this, std::placeholders::_1,
-                                  std::placeholders::_2);
-    signaling_client_ = ltlib::Client::create(params);
-    if (signaling_client_ == nullptr) {
-        LOG(INFO) << "Create signaling client failed";
+    if (!initSignalingClient()) {
+        LOG(ERR) << "Create signaling client failed";
         return false;
     }
     hb_thread_ = ltlib::TaskThread::create("heart_beat");
@@ -220,6 +219,33 @@ bool Client::init() {
     should_exit_ = false;
     return true;
 }
+
+bool Client::initSettings() {
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
+    return settings_ != nullptr;
+}
+
+#define MACRO_TO_STRING_HELPER(str) #str
+#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+#include <ISRG-Root.cert>
+bool Client::initSignalingClient() {
+    ltlib::Client::Params params{};
+    params.stype = ltlib::StreamType::TCP;
+    params.ioloop = ioloop_.get();
+    params.host = signaling_params_.addr;
+    params.port = signaling_params_.port;
+    params.is_tls = LT_SERVER_USE_SSL;
+    params.cert = kLanthingCert;
+    params.on_connected = std::bind(&Client::onSignalingConnected, this);
+    params.on_closed = std::bind(&Client::onSignalingDisconnected, this);
+    params.on_reconnecting = std::bind(&Client::onSignalingReconnecting, this);
+    params.on_message = std::bind(&Client::onSignalingNetMessage, this, std::placeholders::_1,
+                                  std::placeholders::_2);
+    signaling_client_ = ltlib::Client::create(params);
+    return signaling_client_ != nullptr;
+}
+#undef MACRO_TO_STRING
+#undef MACRO_TO_STRING_HELPER
 
 void Client::wait() {
     std::unique_lock<std::mutex> lock{exit_mutex_};
@@ -336,6 +362,7 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
     PcSdl::Params params{};
     params.on_reset = std::bind(&Client::onPlatformRenderTargetReset, this);
     params.on_exit = std::bind(&Client::onPlatformExit, this);
+    params.windowed_fullscreen = windowed_fullscreen_;
     sdl_ = PcSdl::create(params);
     if (sdl_ == nullptr) {
         LOG(INFO) << "Initialize sdl failed";

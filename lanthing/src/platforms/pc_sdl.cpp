@@ -97,7 +97,7 @@ private: // 事件处理
 
 private:
     SDL_Window* window_ = nullptr;
-    bool fullscreen_ = false;
+    bool windowed_fullscreen_;
     std::function<void()> on_reset_;
     std::function<void()> on_exit_;
     std::mutex mutex_;
@@ -120,7 +120,8 @@ std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
 
 PcSdlImpl::PcSdlImpl(const Params& params)
     : on_reset_(params.on_reset)
-    , on_exit_(params.on_exit) {}
+    , on_exit_(params.on_exit)
+    , windowed_fullscreen_{params.windowed_fullscreen} {}
 
 bool PcSdlImpl::init() {
     std::promise<bool> promise;
@@ -392,7 +393,9 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlTouchEvent(const SDL_Event& ev) {
 PcSdlImpl::DispatchResult PcSdlImpl::handleToggleFullscreen() {
     auto flag = SDL_GetWindowFlags(window_);
     auto is_fullscreen = (flag & SDL_WINDOW_FULLSCREEN) || (flag & SDL_WINDOW_FULLSCREEN_DESKTOP);
-    SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+    SDL_WindowFlags fullscreen_mode =
+        windowed_fullscreen_ ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
+    SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : fullscreen_mode);
     return DispatchResult::kContinue;
 }
 
