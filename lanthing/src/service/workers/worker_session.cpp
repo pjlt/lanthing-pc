@@ -423,7 +423,6 @@ bool WorkerSession::initSignlingClient(ltlib::IOLoop* ioloop) {
     params.ioloop = ioloop;
     params.host = signaling_addr_;
     params.port = signaling_port_;
-    LOG(INFO) << params.host.c_str() << ":" << params.port;
     params.is_tls = LT_SERVER_USE_SSL;
     params.cert = kLanthingCert;
     params.on_connected = std::bind(&WorkerSession::onSignalingConnected, this);

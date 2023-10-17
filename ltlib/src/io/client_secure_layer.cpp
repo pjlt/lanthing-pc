@@ -36,6 +36,9 @@
 
 #include <ltlib/logging.h>
 
+// 忘了在哪个开源项目抄了一部分，sorry。这种写法不是很好理解，有bug也不好修（刚修了一个，在tls_read之后没有重置input
+// buffer，在遇到大消息bug就表现出来了） 一直想重写，但是能run，就没动手??
+
 namespace {
 
 void tls_debug_log(void* ctx, int level, const char* file, int line, const char* str) {
@@ -248,11 +251,14 @@ bool MbedtlsCTransport::on_uv_read(const Buffer& uvbuf) {
     }
     else if (state == MBEDTLS_SSL_HANDSHAKE_OVER) {
         Buffer outbuff = uvbuf;
+        Buffer inbuff = uvbuf;
         enum TLS_RESULT rc = TLS_MORE_AVAILABLE;
         while (rc == TLS_MORE_AVAILABLE || rc == TLS_READ_AGAIN) {
             // uint32_t out_bytes = 0;
-            rc = (TLS_RESULT)tls_read(uvbuf.base, uvbuf.len, outbuff.base, &outbuff.len,
+            rc = (TLS_RESULT)tls_read(inbuff.base, inbuff.len, outbuff.base, &outbuff.len,
                                       outbuff.len);
+            inbuff.base = nullptr;
+            inbuff.len = 0;
             switch (rc) {
             case ltlib::TLS_OK:
                 on_read_(outbuff);

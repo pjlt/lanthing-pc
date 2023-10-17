@@ -234,7 +234,6 @@ bool Client::initSignalingClient() {
     params.ioloop = ioloop_.get();
     params.host = signaling_params_.addr;
     params.port = signaling_params_.port;
-    LOG(INFO) << params.host.c_str() << ":" << params.port;
     params.is_tls = LT_SERVER_USE_SSL;
     params.cert = kLanthingCert;
     params.on_connected = std::bind(&Client::onSignalingConnected, this);
