@@ -131,6 +131,7 @@ bool ClientSession::start() {
         CloseHandle(pi.hThread);
         process_id_ = pi.dwProcessId;
         handle_ = pi.hProcess;
+        LOG(INFO) << "Client handle " << handle_;
         std::promise<void> promise;
         auto future = promise.get_future();
         thread_ = ltlib::BlockingThread::create(
@@ -160,6 +161,7 @@ void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
         auto ret = WaitForMultipleObjects(sizeof(handles) / sizeof(HANDLE), handles, FALSE, k500ms);
         switch (ret - WAIT_OBJECT_0) {
         case 0:
+            LOG(INFO) << "Client " << params_.client_id << " stoped";
             stoped_ = true;
             params_.on_exited();
             return;
