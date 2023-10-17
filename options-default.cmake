@@ -2,7 +2,7 @@ include_guard(GLOBAL)
 
 set(LT_QT_CMAKE_PATH "C:/Qt/6.5.1/msvc2019_64/lib/cmake")
 
-set(LT_SERVER_ADDR 101.43.32.170)
+set(LT_SERVER_ADDR lanthing.net)
 set(LT_SERVER_SVC_PORT 43898)
 set(LT_SERVER_APP_PORT 44898)
 set(LT_SERVER_USE_SSL OFF)

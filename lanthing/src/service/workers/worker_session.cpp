@@ -414,13 +414,18 @@ void WorkerSession::postDelayTask(int64_t delay_ms, const std::function<void()>&
     });
 }
 
+#define MACRO_TO_STRING_HELPER(str) #str
+#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+#include <ISRG-Root.cert>
 bool WorkerSession::initSignlingClient(ltlib::IOLoop* ioloop) {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
     params.ioloop = ioloop;
     params.host = signaling_addr_;
     params.port = signaling_port_;
-    params.is_tls = false;
+    LOG(INFO) << params.host.c_str() << ":" << params.port;
+    params.is_tls = LT_SERVER_USE_SSL;
+    params.cert = kLanthingCert;
     params.on_connected = std::bind(&WorkerSession::onSignalingConnected, this);
     params.on_closed = std::bind(&WorkerSession::onSignalingDisconnected, this);
     params.on_reconnecting = std::bind(&WorkerSession::onSignalingReconnecting, this);
@@ -432,6 +437,8 @@ bool WorkerSession::initSignlingClient(ltlib::IOLoop* ioloop) {
     }
     return true;
 }
+#undef MACRO_TO_STRING
+#undef MACRO_TO_STRING_HELPER
 
 void WorkerSession::onSignalingMessageFromNet(uint32_t type,
                                               std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -461,6 +468,7 @@ void WorkerSession::onSignalingReconnecting() {
 }
 
 void WorkerSession::onSignalingConnected() {
+    LOG(INFO) << "Connected to signaling server";
     auto msg = std::make_shared<ltproto::signaling::JoinRoom>();
     msg->set_session_id(service_id_);
     msg->set_room_id(room_id_);

@@ -209,7 +209,8 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
     }
-    if (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
+    // constexpr for suppressing warning
+    if constexpr (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
         LOG(INFO) << "Self connect is not allowed";
         gui_.infoMessageBox("Self connect is not allowed");
         return;
@@ -394,7 +395,7 @@ void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
 
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-#include <lanthing.cert>
+#include <ISRG-Root.cert>
 bool App::initTcpClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;

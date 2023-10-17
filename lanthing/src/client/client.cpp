@@ -120,6 +120,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
 
+    LOG(INFO) << "Signaling " << params.signaling_addr.c_str() << ":" << signaling_port;
+
     if (options.find("-reflexs") != options.end()) {
         std::string reflexs_str = options["-reflexs"];
         std::stringstream ss{reflexs_str};
@@ -207,20 +209,8 @@ bool Client::init() {
         LOG(ERR) << "Init IOLoop failed";
         return false;
     }
-    ltlib::Client::Params params{};
-    params.stype = ltlib::StreamType::TCP;
-    params.ioloop = ioloop_.get();
-    params.host = signaling_params_.addr;
-    params.port = signaling_params_.port;
-    params.is_tls = false;
-    params.on_connected = std::bind(&Client::onSignalingConnected, this);
-    params.on_closed = std::bind(&Client::onSignalingDisconnected, this);
-    params.on_reconnecting = std::bind(&Client::onSignalingReconnecting, this);
-    params.on_message = std::bind(&Client::onSignalingNetMessage, this, std::placeholders::_1,
-                                  std::placeholders::_2);
-    signaling_client_ = ltlib::Client::create(params);
-    if (signaling_client_ == nullptr) {
-        LOG(INFO) << "Create signaling client failed";
+    if (!initSignalingClient()) {
+        LOG(ERR) << "Create signaling client failed";
         return false;
     }
     hb_thread_ = ltlib::TaskThread::create("heart_beat");
@@ -234,6 +224,29 @@ bool Client::initSettings() {
     settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
     return settings_ != nullptr;
 }
+
+#define MACRO_TO_STRING_HELPER(str) #str
+#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+#include <ISRG-Root.cert>
+bool Client::initSignalingClient() {
+    ltlib::Client::Params params{};
+    params.stype = ltlib::StreamType::TCP;
+    params.ioloop = ioloop_.get();
+    params.host = signaling_params_.addr;
+    params.port = signaling_params_.port;
+    LOG(INFO) << params.host.c_str() << ":" << params.port;
+    params.is_tls = LT_SERVER_USE_SSL;
+    params.cert = kLanthingCert;
+    params.on_connected = std::bind(&Client::onSignalingConnected, this);
+    params.on_closed = std::bind(&Client::onSignalingDisconnected, this);
+    params.on_reconnecting = std::bind(&Client::onSignalingReconnecting, this);
+    params.on_message = std::bind(&Client::onSignalingNetMessage, this, std::placeholders::_1,
+                                  std::placeholders::_2);
+    signaling_client_ = ltlib::Client::create(params);
+    return signaling_client_ != nullptr;
+}
+#undef MACRO_TO_STRING
+#undef MACRO_TO_STRING_HELPER
 
 void Client::wait() {
     std::unique_lock<std::mutex> lock{exit_mutex_};

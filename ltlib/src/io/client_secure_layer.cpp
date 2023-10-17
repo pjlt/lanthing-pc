@@ -31,6 +31,7 @@
 #include "client_secure_layer.h"
 #include "client_transport_layer.h"
 
+#include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
 #include <ltlib/logging.h>
@@ -98,6 +99,7 @@ bool MbedtlsCTransport::init() {
 bool MbedtlsCTransport::tls_init_context() {
     mbedtls_ssl_config_init(&ssl_cfg_);
     mbedtls_ssl_conf_dbg(&ssl_cfg_, tls_debug_log, nullptr);
+    mbedtls_debug_set_threshold(0);
     mbedtls_ssl_config_defaults(&ssl_cfg_, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
                                 MBEDTLS_SSL_PRESET_DEFAULT);
     mbedtls_ssl_conf_renegotiation(&ssl_cfg_, MBEDTLS_SSL_RENEGOTIATION_ENABLED);
@@ -317,7 +319,7 @@ void MbedtlsCTransport::on_uv_reconnecting() {
 bool MbedtlsCTransport::on_uv_connected() {
     // tls_reset_engine();
     int state = ssl_.MBEDTLS_PRIVATE(state);
-    LOG(INFO) << "Start tls handshake " << state;
+    LOG(DEBUG) << "Start tls handshake " << state;
     if (is_handshake_continue(state)) {
         LOGF(ERR, "Start hanshake in the middle of another handshak(%d)", state);
         return false;

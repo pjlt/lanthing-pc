@@ -95,6 +95,7 @@ private:
     Client(const Params& params);
     bool init();
     bool initSettings();
+    bool initSignalingClient();
     void mainLoop(const std::function<void()>& i_am_alive);
     void onPlatformRenderTargetReset();
     void onPlatformExit();
