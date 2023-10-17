@@ -32,6 +32,7 @@
 #include <cassert>
 
 #include <ltlib/logging.h>
+#include <ltlib/win_service.h>
 
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
@@ -88,6 +89,9 @@ bool Service::init() {
             mainLoop(i_am_alive);
         });
     future.get();
+    // FIXME: 在IOLoop正式run起来前，无法投递任务，这是临时解决方案
+    std::this_thread::sleep_for(std::chrono::milliseconds{20});
+    postDelayTask(1000, std::bind(&Service::checkRunAsService, this));
     return true;
 }
 
@@ -194,6 +198,29 @@ void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task)
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
+}
+
+void Service::checkRunAsService() {
+#if LT_RUN_AS_SERVICE
+    LOG(INFO) << "checkRunAsService";
+    if (app_connected_) {
+        app_not_connected_count_ = 0;
+    }
+    else {
+        LOG(INFO) << "checkRunAsService ++";
+        app_not_connected_count_ += 1;
+        if (app_not_connected_count_ >= 2) {
+            std::optional<bool> run_as_daemon = settings_->getBoolean("daemon");
+            // 值未填、或明确设置为否，则退出进程
+            if (!run_as_daemon.has_value() || *run_as_daemon == false) {
+                LOG(INFO) << "checkRunAsService EXIT";
+                const std::string service_name = "Lanthing";
+                ltlib::ServiceCtrl::stopService(service_name);
+            }
+        }
+    }
+    postDelayTask(1000, std::bind(&Service::checkRunAsService, this));
+#endif
 }
 
 void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {

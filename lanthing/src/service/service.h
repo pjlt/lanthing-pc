@@ -57,6 +57,7 @@ private:
     void letUserConfirm(int64_t device_id);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
+    void checkRunAsService();
 
     // 服务器
     void onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -105,6 +106,7 @@ private:
     std::unique_ptr<ltlib::Settings> settings_;
     int64_t device_id_ = 0;
     bool app_connected_ = false;
+    uint32_t app_not_connected_count_ = 0;
     std::optional<WorkerSession::Params> cached_worker_params_;
 };
 
