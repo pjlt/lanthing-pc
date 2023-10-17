@@ -209,12 +209,13 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
     }
-    // constexpr for suppressing warning
-    if constexpr (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
+#pragma warning(disable : 4127)
+    if (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
         LOG(INFO) << "Self connect is not allowed";
         gui_.infoMessageBox("Self connect is not allowed");
         return;
     }
+#pragma warning(default : 4127)
     postTask([peerDeviceID, accessToken, this]() {
         std::string cookie_name = "to_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);
