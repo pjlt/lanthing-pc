@@ -277,6 +277,8 @@ void Client::onPlatformExit() {
         coremsg->set_key(kSigCoreClose);
         signaling_client_->send(ltproto::id(msg), msg, [this]() { stopWait(); });
     });
+    // 保险起见
+    postDelayTask(50, [this]() { stopWait(); });
 }
 
 void Client::stopWait() {

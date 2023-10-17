@@ -384,7 +384,6 @@ int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len) {
 
 bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count,
                              const std::function<void()>& callback) {
-    (void)callback;
     int tls_rc = 0;
     uint32_t out_size;
     for (uint32_t i = 0; i < buff_count; i++) {
@@ -406,7 +405,12 @@ bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count,
             return false;
         }
         else {
-            bool success = uvtransport_.send(&outbuf, 1, [outbuf]() { delete outbuf.base; });
+            bool success = uvtransport_.send(&outbuf, 1, [outbuf, callback]() {
+                delete outbuf.base;
+                if (callback) {
+                    callback();
+                }
+            });
             return success;
         }
     }
