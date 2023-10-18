@@ -44,18 +44,19 @@ std::unique_ptr<Client> Client::create(const Params& params) {
     // audio
     Connection::AudioReceiveParams audio_recv_param{};
     audio_recv_param.ssrc = params.audio_recv_ssrc;
-    audio_recv_param.on_audio_data = [on_audio = params.on_audio](const uint8_t* data,
-                                                                  uint32_t size) {
+    audio_recv_param.on_audio_data = [user_data = params.user_data, on_audio = params.on_audio](
+                                         const uint8_t* data, uint32_t size) {
         lt::AudioData audio_data{};
         audio_data.data = data;
         audio_data.size = size;
-        on_audio(audio_data);
+        on_audio(user_data, audio_data);
     };
     conn_params.receive_audio = {audio_recv_param};
     // video
     Connection::VideoReceiveParams video_recv_param{};
     video_recv_param.ssrc = params.video_recv_ssrc;
-    video_recv_param.on_decodable_frame = [on_frame = params.on_video](VideoFrame frame) {
+    video_recv_param.on_decodable_frame = [user_data = params.user_data,
+                                           on_frame = params.on_video](VideoFrame frame) {
         lt::VideoFrame video_frame{};
         video_frame.is_keyframe = frame.is_keyframe;
         video_frame.ltframe_id = frame.frame_id;
@@ -64,21 +65,25 @@ std::unique_ptr<Client> Client::create(const Params& params) {
         video_frame.start_encode_timestamp_us =
             frame.encode_timestamp_us; // 这个timestamp取编码前还是编码后比较合理？
         video_frame.end_encode_timestamp_us = frame.encode_duration_us + frame.encode_timestamp_us;
-        on_frame(video_frame);
+        on_frame(user_data, video_frame);
     };
     conn_params.receive_video = {video_recv_param};
     // data channel
     Connection::DataParams data_param{};
     data_param.ssrc = reliable_ssrc_;
-    data_param.on_data = params.on_data;
+    data_param.on_data = [user_data = params.user_data, on_data = params.on_data](
+                             const uint8_t* data, uint32_t size, bool reliable) {
+        on_data(user_data, data, size, reliable);
+    };
     conn_params.data = data_param;
     // others
     conn_params.is_server = false;
     conn_params.key_and_cert = params.key_and_cert;
     conn_params.remote_digest = params.remote_digest;
     conn_params.on_signaling_message =
-        [cb = params.on_signaling_message](const std::string& key, const std::string& value) {
-            cb(key.c_str(), value.c_str());
+        [user_data = params.user_data, cb = params.on_signaling_message](const std::string& key,
+                                                                         const std::string& value) {
+            cb(user_data, key.c_str(), value.c_str());
         };
     //
     auto conn = Connection::create(conn_params);
@@ -127,21 +132,29 @@ std::unique_ptr<Server> Server::create(const Params& params) {
     // video
     Connection::VideoSendParams video_send_param{};
     video_send_param.ssrc = params.video_send_ssrc;
-    video_send_param.on_bwe_update = params.on_video_bitrate_update;
-    video_send_param.on_request_keyframe = params.on_keyframe_request;
+    video_send_param.on_bwe_update = [user_data = params.user_data,
+                                      cb = params.on_video_bitrate_update](uint32_t bps) {
+        cb(user_data, bps);
+    };
+    video_send_param.on_request_keyframe = [user_data = params.user_data,
+                                            cb = params.on_keyframe_request]() { cb(user_data); };
     conn_params.send_video = {video_send_param};
     // data channel
     Connection::DataParams data_param{};
     data_param.ssrc = reliable_ssrc_;
-    data_param.on_data = params.on_data;
+    data_param.on_data = [user_data = params.user_data,
+                          cb = params.on_data](const uint8_t* data, uint32_t size, bool reliable) {
+        cb(user_data, data, size, reliable);
+    };
     conn_params.data = data_param;
     // others
     conn_params.is_server = true;
     conn_params.key_and_cert = params.key_and_cert;
     conn_params.remote_digest = params.remote_digest;
     conn_params.on_signaling_message =
-        [cb = params.on_signaling_message](const std::string& key, const std::string& value) {
-            cb(key.c_str(), value.c_str());
+        [user_data = params.user_data, cb = params.on_signaling_message](const std::string& key,
+                                                                         const std::string& value) {
+            cb(user_data, key.c_str(), value.c_str());
         };
     //
     auto conn = Connection::create(conn_params);

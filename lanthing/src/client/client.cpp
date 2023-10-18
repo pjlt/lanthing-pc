@@ -192,6 +192,29 @@ Client::~Client() {
         signaling_client_.reset();
         ioloop_.reset();
     }
+    if (tp_client_ != nullptr) {
+        switch (LT_TRANSPORT_TYPE) {
+        case LT_TRANSPORT_TCP:
+        {
+            auto tcp_cli = static_cast<lt::tp::ClientTCP*>(tp_client_);
+            delete tcp_cli;
+            break;
+        }
+        case LT_TRANSPORT_RTC:
+        { // rtc.dll build on another machine!
+            rtc::Client::destroy(tp_client_);
+            break;
+        }
+        case LT_TRANSPORT_RTC2:
+        {
+            auto rtc2_cli = static_cast<rtc2::Client*>(tp_client_);
+            delete rtc2_cli;
+            break;
+        }
+        default:
+            break;
+        }
+    }
 }
 
 bool Client::init() {
@@ -452,23 +475,27 @@ bool Client::initTransport() {
     return true;
 }
 
-std::unique_ptr<tp::Client> Client::createTcpClient() {
+tp::Client* Client::createTcpClient() {
     namespace ph = std::placeholders;
     lt::tp::ClientTCP::Params params{};
-    params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
-    params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
-    params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
-    params.on_connected = std::bind(&Client::onTpConnected, this, ph::_1);
-    params.on_failed = std::bind(&Client::onTpFailed, this);
-    params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
-    params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.user_data = this;
+    params.on_data = &Client::onTpData;
+    params.on_video = &Client::onTpVideoFrame;
+    params.on_audio = &Client::onTpAudioData;
+    params.on_connected = &Client::onTpConnected;
+    params.on_failed = &Client::onTpFailed;
+    params.on_disconnected = &Client::onTpDisconnected;
+    params.on_signaling_message = &Client::onTpSignalingMessage;
     params.video_codec_type = video_params_.codec_type;
-    return lt::tp::ClientTCP::create(params);
+    // FIXME: 修改TCP接口
+    auto client = lt::tp::ClientTCP::create(params);
+    return client.release();
 }
 
-std::unique_ptr<tp::Client> Client::createRtcClient() {
+tp::Client* Client::createRtcClient() {
     namespace ph = std::placeholders;
     rtc::Client::Params params{};
+    params.user_data = this;
     params.use_nbp2p = true;
     std::vector<const char*> reflex_servers;
     for (auto& svr : reflex_servers_) {
@@ -488,40 +515,44 @@ std::unique_ptr<tp::Client> Client::createRtcClient() {
         params.nbp2p_params.relay_servers = nullptr;
         params.nbp2p_params.relay_servers_count = 0;
     }
-    params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
-    params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
-    params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
-    params.on_connected = std::bind(&Client::onTpConnected, this, ph::_1);
-    params.on_conn_changed = std::bind(&Client::onTpConnChanged, this);
-    params.on_failed = std::bind(&Client::onTpFailed, this);
-    params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
-    params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.on_data = &Client::onTpData;
+    params.on_video = &Client::onTpVideoFrame;
+    params.on_audio = &Client::onTpAudioData;
+    params.on_connected = &Client::onTpConnected;
+    params.on_conn_changed = &Client::onTpConnChanged;
+    params.on_failed = &Client::onTpFailed;
+    params.on_disconnected = &Client::onTpDisconnected;
+    params.on_signaling_message = &Client::onTpSignalingMessage;
     params.video_codec_type = video_params_.codec_type;
     params.audio_channels = audio_params_.channels;
     params.audio_sample_rate = audio_params_.frames_per_second;
     return rtc::Client::create(std::move(params));
 }
 
-std::unique_ptr<tp::Client> Client::createRtc2Client() {
+tp::Client* Client::createRtc2Client() {
     namespace ph = std::placeholders;
     rtc2::Client::Params params{};
-    params.on_data = std::bind(&Client::onTpData, this, ph::_1, ph::_2, ph::_3);
-    params.on_video = std::bind(&Client::onTpVideoFrame, this, ph::_1);
-    params.on_audio = std::bind(&Client::onTpAudioData, this, ph::_1);
-    params.on_connected = std::bind(&Client::onTpConnected, this, ph::_1);
-    params.on_conn_changed = std::bind(&Client::onTpConnChanged, this);
-    params.on_failed = std::bind(&Client::onTpFailed, this);
-    params.on_disconnected = std::bind(&Client::onTpDisconnected, this);
-    params.on_signaling_message = std::bind(&Client::onTpSignalingMessage, this, ph::_1, ph::_2);
+    params.user_data = this;
+    params.on_data = &Client::onTpData;
+    params.on_video = &Client::onTpVideoFrame;
+    params.on_audio = &Client::onTpAudioData;
+    params.on_connected = &Client::onTpConnected;
+    params.on_conn_changed = &Client::onTpConnChanged;
+    params.on_failed = &Client::onTpFailed;
+    params.on_disconnected = &Client::onTpDisconnected;
+    params.on_signaling_message = &Client::onTpSignalingMessage;
     params.audio_recv_ssrc = 687154681;
     params.video_recv_ssrc = 541651314;
     // TODO: key and cert合理的创建时机
     params.key_and_cert = rtc2::KeyAndCert::create();
     params.remote_digest;
-    return rtc2::Client::create(params);
+    // FIXME: 修改rtc2接口
+    auto client = rtc2::Client::create(params);
+    return client.release();
 }
 
-void Client::onTpData(const uint8_t* data, uint32_t size, bool is_reliable) {
+void Client::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool is_reliable) {
+    auto that = reinterpret_cast<Client*>(user_data);
     (void)is_reliable;
     auto type = reinterpret_cast<const uint32_t*>(data);
     auto msg = ltproto::create_by_type(*type);
@@ -533,20 +564,21 @@ void Client::onTpData(const uint8_t* data, uint32_t size, bool is_reliable) {
         LOG(INFO) << "Parse message failed, type: " << *type;
         return;
     }
-    dispatchRemoteMessage(*type, msg);
+    that->dispatchRemoteMessage(*type, msg);
 }
 
-void Client::onTpVideoFrame(const lt::VideoFrame& frame) {
-    std::lock_guard lock{dr_mutex_};
-    if (video_pipeline_ == nullptr) {
+void Client::onTpVideoFrame(void* user_data, const lt::VideoFrame& frame) {
+    auto that = reinterpret_cast<Client*>(user_data);
+    std::lock_guard lock{that->dr_mutex_};
+    if (that->video_pipeline_ == nullptr) {
         return;
     }
-    VideoDecodeRenderPipeline::Action action = video_pipeline_->submit(frame);
+    VideoDecodeRenderPipeline::Action action = that->video_pipeline_->submit(frame);
     switch (action) {
     case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
     {
         auto req = std::make_shared<ltproto::client2worker::RequestKeyframe>();
-        sendMessageToHost(ltproto::id(req), req, true);
+        that->sendMessageToHost(ltproto::id(req), req, true);
         break;
     }
     case VideoDecodeRenderPipeline::Action::NONE:
@@ -556,62 +588,68 @@ void Client::onTpVideoFrame(const lt::VideoFrame& frame) {
     }
 }
 
-void Client::onTpAudioData(const lt::AudioData& audio_data) {
+void Client::onTpAudioData(void* user_data, const lt::AudioData& audio_data) {
+    auto that = reinterpret_cast<Client*>(user_data);
     // FIXME: transport在audio_player_实例化前，不应回调audio数据
-    if (audio_player_) {
-        audio_player_->submit(audio_data.data, audio_data.size);
+    if (that->audio_player_) {
+        that->audio_player_->submit(audio_data.data, audio_data.size);
     }
 }
 
-void Client::onTpConnected(lt::LinkType link_type) {
+void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
+    auto that = reinterpret_cast<Client*>(user_data);
     (void)link_type;
-    video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
-    if (video_pipeline_ == nullptr) {
+    that->video_pipeline_ = VideoDecodeRenderPipeline::create(that->video_params_);
+    if (that->video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
         return;
     }
-    input_params_.send_message = std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
-                                           std::placeholders::_2, std::placeholders::_3);
-    input_params_.host_height = video_params_.height;
-    input_params_.host_width = video_params_.width;
-    input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, this);
-    input_capturer_ = InputCapturer::create(input_params_);
-    if (input_capturer_ == nullptr) {
+    that->input_params_.send_message =
+        std::bind(&Client::sendMessageToHost, that, std::placeholders::_1, std::placeholders::_2,
+                  std::placeholders::_3);
+    that->input_params_.host_height = that->video_params_.height;
+    that->input_params_.host_width = that->video_params_.width;
+    that->input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, that);
+    that->input_capturer_ = InputCapturer::create(that->input_params_);
+    if (that->input_capturer_ == nullptr) {
         LOG(ERR) << "Create InputCapturer failed";
         return;
     }
-    audio_player_ = AudioPlayer::create(audio_params_);
-    if (audio_player_ == nullptr) {
+    that->audio_player_ = AudioPlayer::create(that->audio_params_);
+    if (that->audio_player_ == nullptr) {
         LOG(INFO) << "Create AudioPlayer failed";
         return;
     }
-    hb_thread_->post(std::bind(&Client::sendKeepAlive, this));
+    that->hb_thread_->post(std::bind(&Client::sendKeepAlive, that));
     // 如果未来有“串流”以外的业务，在这个StartTransmission添加字段.
     auto start = std::make_shared<ltproto::client2worker::StartTransmission>();
     start->set_client_os(ltproto::client2worker::StartTransmission_ClientOS_Windows);
-    start->set_token(auth_token_);
-    sendMessageToHost(ltproto::id(start), start, true);
-    postTask(std::bind(&Client::syncTime, this));
+    start->set_token(that->auth_token_);
+    that->sendMessageToHost(ltproto::id(start), start, true);
+    that->postTask(std::bind(&Client::syncTime, that));
 }
 
-void Client::onTpConnChanged() {}
+void Client::onTpConnChanged(void*) {}
 
-void Client::onTpFailed() {
-    stopWait();
+void Client::onTpFailed(void* user_data) {
+    auto that = reinterpret_cast<Client*>(user_data);
+    that->stopWait();
 }
 
-void Client::onTpDisconnected() {
-    stopWait();
+void Client::onTpDisconnected(void* user_data) {
+    auto that = reinterpret_cast<Client*>(user_data);
+    that->stopWait();
 }
 
-void Client::onTpSignalingMessage(const std::string& key, const std::string& value) {
+void Client::onTpSignalingMessage(void* user_data, const char* key, const char* value) {
+    auto that = reinterpret_cast<Client*>(user_data);
     // 将key和value封装在proto里.
     auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
     msg->set_level(ltproto::signaling::SignalingMessage::Rtc);
     auto rtc_msg = msg->mutable_rtc_message();
     rtc_msg->set_key(key);
     rtc_msg->set_value(value);
-    postTask([this, msg]() { signaling_client_->send(ltproto::id(msg), msg); });
+    that->postTask([that, msg]() { that->signaling_client_->send(ltproto::id(msg), msg); });
 }
 
 void Client::dispatchRemoteMessage(uint32_t type,

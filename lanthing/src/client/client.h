@@ -118,17 +118,17 @@ private:
 
     // transport
     bool initTransport();
-    std::unique_ptr<tp::Client> createTcpClient();
-    std::unique_ptr<tp::Client> createRtcClient();
-    std::unique_ptr<tp::Client> createRtc2Client();
-    void onTpData(const uint8_t* data, uint32_t size, bool is_reliable);
-    void onTpVideoFrame(const lt::VideoFrame& frame);
-    void onTpAudioData(const lt::AudioData& audio_data);
-    void onTpConnected(lt::LinkType link_type);
-    void onTpConnChanged(/*old_conn_info, new_conn_info*/);
-    void onTpFailed();
-    void onTpDisconnected();
-    void onTpSignalingMessage(const std::string& key, const std::string& value);
+    tp::Client* createTcpClient();
+    tp::Client* createRtcClient();
+    tp::Client* createRtc2Client();
+    static void onTpData(void* user_data, const uint8_t* data, uint32_t size, bool is_reliable);
+    static void onTpVideoFrame(void* user_data, const lt::VideoFrame& frame);
+    static void onTpAudioData(void* user_data, const lt::AudioData& audio_data);
+    static void onTpConnected(void* user_data, lt::LinkType link_type);
+    static void onTpConnChanged(void* user_data /*old_conn_info, new_conn_info*/);
+    static void onTpFailed(void* user_data);
+    static void onTpDisconnected(void* user_data);
+    static void onTpSignalingMessage(void* user_data, const char* key, const char* value);
 
     // 数据通道.
     void dispatchRemoteMessage(uint32_t type,
@@ -157,7 +157,7 @@ private:
     std::mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
-    std::unique_ptr<lt::tp::Client> tp_client_;
+    lt::tp::Client* tp_client_ = nullptr;
     std::unique_ptr<PcSdl> sdl_;
     std::unique_ptr<ltlib::BlockingThread> main_thread_;
     std::unique_ptr<ltlib::TaskThread> hb_thread_;

@@ -87,7 +87,7 @@ bool ClientTCP::connect() {
         task_thread_->post(std::bind(&ClientTCP::connect, this));
         return true;
     }
-    params_.on_signaling_message(kKeyConnect, "");
+    params_.on_signaling_message(params_.user_data, kKeyConnect, "");
     return true;
 }
 
@@ -158,7 +158,7 @@ void ClientTCP::onConnected() {
         task_thread_->post(std::bind(&ClientTCP::onConnected, this));
         return;
     }
-    params_.on_connected(LinkType::TCP);
+    params_.on_connected(params_.user_data, LinkType::TCP);
 }
 
 void ClientTCP::onDisconnected() {
@@ -166,7 +166,7 @@ void ClientTCP::onDisconnected() {
         task_thread_->post(std::bind(&ClientTCP::onDisconnected, this));
         return;
     }
-    params_.on_disconnected();
+    params_.on_disconnected(params_.user_data);
 }
 
 void ClientTCP::onReconnecting() {
@@ -197,10 +197,7 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
         video_frame.capture_timestamp_us = frame->capture_timestamp_us();
         video_frame.start_encode_timestamp_us = frame->start_encode_timestamp_us();
         video_frame.end_encode_timestamp_us = frame->end_encode_timestamp_us();
-        if (frame->has_temporal_id()) {
-            video_frame.temporal_id = frame->temporal_id();
-        }
-        params_.on_video(video_frame);
+        params_.on_video(params_.user_data, video_frame);
         break;
     }
     case ltype::kAudioData:
@@ -213,7 +210,7 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
         lt::AudioData ad{};
         ad.data = audio_data->data().c_str();
         ad.size = static_cast<uint32_t>(audio_data->data().size());
-        params_.on_audio(ad);
+        params_.on_audio(params_.user_data, ad);
         break;
     }
     default:
@@ -230,7 +227,7 @@ void ClientTCP::onMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
             LOG(ERR) << "ClientTCP serialize data failed, size " << size;
             break;
         }
-        params_.on_data(data.data(), static_cast<uint32_t>(data.size()), true);
+        params_.on_data(params_.user_data, data.data(), static_cast<uint32_t>(data.size()), true);
         break;
     }
     }
@@ -359,9 +356,6 @@ bool ServerTCP::sendVideo(const VideoFrame& frame) {
     video_frame->set_capture_timestamp_us(frame.capture_timestamp_us);
     video_frame->set_start_encode_timestamp_us(frame.start_encode_timestamp_us);
     video_frame->set_end_encode_timestamp_us(frame.end_encode_timestamp_us);
-    if (frame.temporal_id.has_value()) {
-        video_frame->set_temporal_id(frame.temporal_id.value());
-    }
     return tcp_server_->send(client_fd_, ltproto::type::kVideoFrame, video_frame);
 }
 
@@ -428,7 +422,7 @@ void ServerTCP::onAccepted(uint32_t fd) {
     }
     client_fd_ = fd;
     LOG(INFO) << "ServerTCP accpeted ClientTCP(" << fd << ")";
-    params_.on_accepted(LinkType::TCP);
+    params_.on_accepted(params_.user_data, LinkType::TCP);
 }
 
 void ServerTCP::onDisconnected(uint32_t fd) {
@@ -443,7 +437,7 @@ void ServerTCP::onDisconnected(uint32_t fd) {
     }
     client_fd_ = std::numeric_limits<uint32_t>::max();
     LOGF(INFO, "ClientTCP(%d) disconnected from pipe server", fd);
-    params_.on_disconnected();
+    params_.on_disconnected(params_.user_data);
 }
 
 void ServerTCP::onMessage(uint32_t fd, uint32_t type,
@@ -468,7 +462,7 @@ void ServerTCP::onMessage(uint32_t fd, uint32_t type,
         LOG(ERR) << "ServerTCP serialize data failed, size " << size;
         return;
     }
-    params_.on_data(data.data(), static_cast<uint32_t>(data.size()), true);
+    params_.on_data(params_.user_data, data.data(), static_cast<uint32_t>(data.size()), true);
 }
 
 void ServerTCP::netLoop(const std::function<void()>& i_am_alive) {
@@ -496,7 +490,7 @@ void ServerTCP::handleSigConnect() {
     //     return;
     // }
     if (!gatherIP()) {
-        params_.on_failed();
+        params_.on_failed(params_.user_data);
     }
 }
 
@@ -532,7 +526,7 @@ bool ServerTCP::gatherIP() {
             inet_ntop(v4_addr->sin_family, &v4_addr->sin_addr, addr_buff, 64);
             uint16_t port = tcp_server_->port();
             std::string value = std::string(addr_buff) + ":" + std::to_string(port);
-            params_.on_signaling_message(kKeyAddress, value.c_str());
+            params_.on_signaling_message(params_.user_data, kKeyAddress, value.c_str());
             return true;
         }
         adapters = adapters->Next;
