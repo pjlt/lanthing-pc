@@ -36,7 +36,7 @@ function check_build_type() {
 }
 
 function rtc_fetch() {
-    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.2.0/rtc.zip"
+    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.3.0/rtc.zip"
     New-Item -ItemType Directory -ErrorAction SilentlyContinue transport/rtc
     echo "Fetch $RtcUri"
     Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.zip
