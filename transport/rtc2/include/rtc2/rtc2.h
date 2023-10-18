@@ -42,14 +42,17 @@
 
 #include <rtc2/codec_types.h>
 
-// rtc2很多代码是从旧项目凑出来的，代码风格会和lanthing不统一，等能run了再整理
+// rtc2很多代码是从旧项目(brtc/bco)凑出来的，代码风格会和lanthing不统一，等能run了再整理
 // 这两个Client和Server是adapter，作为lanthing和rtc2的桥梁
+
+// TODO: 头文件不包含STL，只用C接口
 
 namespace rtc2 {
 
 class RTC2_API Client : public lt::tp::Client {
 public:
     struct Params {
+        void* user_data;
         uint32_t audio_sample_rate;
         uint32_t audio_channels;
         uint32_t audio_recv_ssrc;
@@ -90,6 +93,7 @@ private:
 class RTC2_API Server : public lt::tp::Server {
 public:
     struct Params {
+        void* user_data;
         uint32_t audio_sample_rate;
         uint32_t audio_channels;
         uint32_t video_send_ssrc;

@@ -89,9 +89,9 @@ private:
     WorkerSession(const Params& params);
     bool init(std::shared_ptr<google::protobuf::MessageLite> msg, ltlib::IOLoop* ioloop);
     bool initTransport();
-    std::unique_ptr<tp::Server> createTcpServer();
-    std::unique_ptr<tp::Server> createRtcServer();
-    std::unique_ptr<tp::Server> createRtc2Server();
+    tp::Server* createTcpServer();
+    tp::Server* createRtcServer();
+    tp::Server* createRtc2Server();
     void createWorkerProcess(uint32_t client_width, uint32_t client_height,
                              uint32_t client_refresh_rate,
                              std::vector<lt::VideoCodecType> client_codecs);
@@ -130,15 +130,15 @@ private:
     void sendWorkerKeepAlive();
 
     // rtc server
-    void onTpData(const uint8_t* data, uint32_t size, bool reliable);
-    void onTpAccepted(lt::LinkType link_type);
-    void onTpConnChanged();
-    void onTpFailed();
-    void onTpDisconnected();
-    void onTpSignalingMessage(const std::string& key, const std::string& value);
-    void onTpRequestKeyframe();
-    void onTpLossRateUpdate(float rate);
-    void onTpEesimatedVideoBitreateUpdate(uint32_t bps);
+    static void onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable);
+    static void onTpAccepted(void* user_data, lt::LinkType link_type);
+    static void onTpConnChanged(void* user_data);
+    static void onTpFailed(void* user_data);
+    static void onTpDisconnected(void* user_data);
+    static void onTpSignalingMessage(void* user_data, const char* key, const char* value);
+    static void onTpRequestKeyframe(void* user_data);
+    static void onTpLossRateUpdate(void* user_data, float rate);
+    static void onTpEesimatedVideoBitreateUpdate(void* user_data, uint32_t bps);
 
     // 数据通道
     void dispatchDcMessage(uint32_t type,
@@ -168,7 +168,7 @@ private:
     std::string user_defined_relay_server_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    std::unique_ptr<lt::tp::Server> tp_server_;
+    lt::tp::Server* tp_server_ = nullptr;
     std::unique_ptr<ltlib::Server> pipe_server_;
     uint32_t pipe_client_fd_ = std::numeric_limits<uint32_t>::max();
     std::string pipe_name_;

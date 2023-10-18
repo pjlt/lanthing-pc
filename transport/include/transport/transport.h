@@ -30,9 +30,6 @@
 
 #pragma once
 #include <cstdint>
-#include <functional>
-#include <optional>
-#include <string>
 
 #if defined(LT_WINDOWS)
 #if defined(BUILDING_LT_EXE)
@@ -70,7 +67,6 @@ struct TP_API VideoFrame {
     int64_t capture_timestamp_us;
     int64_t start_encode_timestamp_us;
     int64_t end_encode_timestamp_us;
-    std::optional<uint32_t> temporal_id;
 };
 
 struct TP_API AudioData {
@@ -80,17 +76,17 @@ struct TP_API AudioData {
 
 namespace tp { // transport
 
-using OnData = std::function<void(const uint8_t*, uint32_t, bool)>;
-using OnVideo = std::function<void(const VideoFrame&)>;
-using OnAudio = std::function<void(const AudioData&)>;
-using OnConnected = std::function<void(LinkType)>;
-using OnConnChanged = std::function<void(/*1. old_conn_info, 2. new_conn_info*/)>;
-using OnDisconnected = std::function<void()>;
-using OnFailed = std::function<void()>;
-using OnSignalingMessage = std::function<void(const char*, const char*)>;
-using OnKeyframeRequest = std::function<void()>;
-using OnVEncoderBitrateUpdate = std::function<void(uint32_t bps)>;
-using OnLossRateUpdate = std::function<void(float)>;
+typedef void (*OnData)(void*, const uint8_t*, uint32_t, bool);
+typedef void (*OnVideo)(void*, const VideoFrame&);
+typedef void (*OnAudio)(void*, const AudioData&);
+typedef void (*OnConnected)(void*, LinkType);
+typedef void (*OnConnChanged)(void* /*1. old_conn_info, 2. new_conn_info*/);
+typedef void (*OnDisconnected)(void*);
+typedef void (*OnFailed)(void*);
+typedef void (*OnSignalingMessage)(void*, const char*, const char*);
+typedef void (*OnKeyframeRequest)(void*);
+typedef void (*OnVEncoderBitrateUpdate)(void*, uint32_t bps);
+typedef void (*OnLossRateUpdate)(void*, float);
 
 class TP_API Client {
 public:

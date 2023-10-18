@@ -55,6 +55,7 @@ namespace tp { // transport
 class ClientTCP : public Client {
 public:
     struct Params {
+        void* user_data;
         VideoCodecType video_codec_type;
         OnData on_data;
         OnVideo on_video;
@@ -112,6 +113,7 @@ private:
 class ServerTCP : public Server {
 public:
     struct Params {
+        void* user_data;
         VideoCodecType video_codec_type;
         OnData on_data;
         OnConnected on_accepted;

@@ -1,4 +1,4 @@
-name: win-build
+name: win-package
 on: workflow_dispatch
 jobs:
   build:
