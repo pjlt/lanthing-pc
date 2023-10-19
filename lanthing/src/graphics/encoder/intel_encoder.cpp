@@ -411,6 +411,8 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     encode_surface.Data.MemId = encode_texture_.Get();
     encode_surface.Info = encode_param_.mfx.FrameInfo;
     mfxStatus status = MFX_ERR_NONE;
+    /*
+    * FIXME: 有bug，会导致sync时返回错误，先注释，后面再改
     while (true) {
         status = MFXVideoVPP_RunFrameVPPAsync(mfxsession_, &vpp_surface, &encode_surface, nullptr,
                                               &sync_point);
@@ -426,9 +428,10 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
             return nullptr;
         }
     }
+    */
     while (true) {
-        status =
-            MFXVideoENCODE_EncodeFrameAsync(mfxsession_, pctrl, &encode_surface, &bs, &sync_point);
+        status = MFXVideoENCODE_EncodeFrameAsync(mfxsession_, pctrl,
+                                                 &vpp_surface /*encode_surface*/, &bs, &sync_point);
         if (status == MFX_WRN_DEVICE_BUSY) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
             continue;
@@ -471,6 +474,7 @@ bool IntelEncoderImpl::createMfxSession() {
     if (!setConfigFilter()) {
         return false;
     }
+    // printAllImpls();
     if (!findImplIndex()) {
         return false;
     }
@@ -551,13 +555,13 @@ void IntelEncoderImpl::printAllImpls() {
             desc = nullptr;
         }
         status = MFXEnumImplementations(mfxloader_, index, MFX_IMPLCAPS_IMPLDESCSTRUCTURE,
-                                        (mfxHDL*)desc);
+                                        (mfxHDL*)&desc);
         if (status != MFX_ERR_NONE || desc == nullptr) {
             continue;
         }
         LOGF(INFO,
              "MFXImpl index:%d, impl:%d, accemode:%d, apiver:%u, api.major:%u, api.minor:%u, "
-             "name:%s, license:%s, keywords:%s, vendor:%u, vendorimpl:%u",
+             "name:%s, license:%s, keywords:%s, vendor:%#x, vendorimpl:%u",
              index, desc->Impl, desc->AccelerationMode, desc->ApiVersion.Version,
              desc->ApiVersion.Major, desc->ApiVersion.Minor, desc->ImplName, desc->License,
              desc->Keywords, desc->VendorID, desc->VendorImplID);
