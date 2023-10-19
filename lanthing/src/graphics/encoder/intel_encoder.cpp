@@ -247,6 +247,7 @@ private:
     bool createMfxSession();
     bool setConfigFilter();
     bool findImplIndex();
+    void printAllImpls();
     bool initEncoder(const VplParamsHelper& params_helper);
     bool initVpp(const VplParamsHelper& params_helper);
     ComPtr<ID3D11Texture2D> allocEncodeTexture();
@@ -539,6 +540,31 @@ bool IntelEncoderImpl::findImplIndex() {
         ext_devid = nullptr;
     }
     return impl_index_ >= 0;
+}
+
+void IntelEncoderImpl::printAllImpls() {
+    mfxStatus status = MFX_ERR_NONE;
+    mfxImplDescription* desc = nullptr;
+    for (int index = 0; status == MFX_ERR_NONE; index++) {
+        if (desc != nullptr) {
+            MFXDispReleaseImplDescription(mfxloader_, desc);
+            desc = nullptr;
+        }
+        status = MFXEnumImplementations(mfxloader_, index, MFX_IMPLCAPS_IMPLDESCSTRUCTURE,
+                                        (mfxHDL*)desc);
+        if (status != MFX_ERR_NONE || desc == nullptr) {
+            continue;
+        }
+        LOGF(INFO,
+             "MFXImpl index:%d, impl:%d, accemode:%d, apiver:%u, api.major:%u, api.minor:%u, "
+             "name:%s, license:%s, keywords:%s, vendor:%u, vendorimpl:%u",
+             index, desc->Impl, desc->AccelerationMode, desc->ApiVersion.Version,
+             desc->ApiVersion.Major, desc->ApiVersion.Minor, desc->ImplName, desc->License,
+             desc->Keywords, desc->VendorID, desc->VendorImplID);
+    }
+    if (desc != nullptr) {
+        MFXDispReleaseImplDescription(mfxloader_, desc);
+    }
 }
 
 bool IntelEncoderImpl::initEncoder(const VplParamsHelper& params_helper) {
