@@ -34,6 +34,8 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/gui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow2/mainwindow2.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow2/mainwindow2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.h
@@ -43,10 +45,13 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/clickable_label.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/access_token_validator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/access_token_validator.cpp
 )
 
 set(APP_UI_VIEWS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow2/mainwindow2.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.ui
@@ -56,7 +61,8 @@ add_executable(${PROJECT_NAME}
     ${APP_SRCS} 
     ${APP_UI_VIEWS} 
     # VS安装QT扩展工具可以直接编辑
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
+)
 
 qt_add_translations(${PROJECT_NAME}
     TS_FILES

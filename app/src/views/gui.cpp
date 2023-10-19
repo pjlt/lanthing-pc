@@ -37,6 +37,7 @@
 #include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qwidget.h>
 #include <qapplication.h>
+#include <qfile.h>
 #include <qobject.h>
 #include <qtranslator.h>
 
@@ -45,6 +46,7 @@
 #include <ltproto/service2app/accepted_connection.pb.h>
 
 #include "mainwindow/mainwindow.h"
+#include "mainwindow2/mainwindow2.h"
 
 namespace {
 
@@ -93,6 +95,8 @@ class GUIImpl {
 public:
     void init(const GUI::Params& params, int argc, char** argv);
 
+    void init2(const GUI::Params& params, int argc, char** argv);
+
     int exec();
 
     void setDeviceID(int64_t device_id);
@@ -119,6 +123,7 @@ private:
 private:
     std::unique_ptr<QApplication> qapp_;
     std::unique_ptr<MainWindow> main_window_;
+    std::unique_ptr<MainWindow2> main_window2_;
     QTranslator translator_;
     std::unique_ptr<QSystemTrayIcon> sys_tray_icon_;
     std::unique_ptr<QMenu> menu_;
@@ -188,28 +193,91 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     }
 }
 
+void GUIImpl::init2(const GUI::Params& params, int argc, char** argv) {
+    qInstallMessageHandler(ltQtOutput);
+    qapp_ = std::make_unique<QApplication>(argc, argv);
+    setLanguage();
+    QIcon icon(":/icons/icons/pc2.png");
+    QApplication::setWindowIcon(icon);
+    QApplication::setApplicationName("Lanthing");
+    QApplication::setQuitOnLastWindowClosed(false);
+
+    main_window2_ = std::make_unique<MainWindow2>(params, nullptr);
+    menu_ = std::make_unique<QMenu>(nullptr);
+    sys_tray_icon_ = std::make_unique<QSystemTrayIcon>();
+    sys_tray_icon_->setToolTip("Lanthing");
+    QAction* a0 = new QAction(QObject::tr("Main Page"), menu_.get());
+    QAction* a1 = new QAction(QObject::tr("Settings"), menu_.get());
+    QAction* a2 = new QAction(QObject::tr("Exit"), menu_.get());
+    QObject::connect(a0, &QAction::triggered, [this]() {
+        main_window2_->switchToMainPage();
+        main_window2_->show();
+    });
+    QObject::connect(a1, &QAction::triggered, [this]() {
+        main_window2_->switchToSettingPage();
+        main_window2_->show();
+    });
+    QObject::connect(a2, &QAction::triggered, []() { QApplication::exit(0); });
+    QObject::connect(sys_tray_icon_.get(), &QSystemTrayIcon::activated,
+                     [this](QSystemTrayIcon::ActivationReason reason) {
+                         switch (reason) {
+                         case QSystemTrayIcon::Unknown:
+                             break;
+                         case QSystemTrayIcon::Context:
+                             break;
+                         case QSystemTrayIcon::DoubleClick:
+                             main_window2_->show();
+                             break;
+                         case QSystemTrayIcon::Trigger:
+                             main_window2_->show();
+                             break;
+                         case QSystemTrayIcon::MiddleClick:
+                             break;
+                         default:
+                             break;
+                         }
+                     });
+    menu_->addAction(a0);
+    menu_->addAction(a1);
+    menu_->addAction(a2);
+    sys_tray_icon_->setContextMenu(menu_.get());
+    sys_tray_icon_->setIcon(icon);
+
+    sys_tray_icon_->show();
+    main_window2_->show();
+
+    // wintoast
+    WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
+    WinToastLib::WinToast::instance()->setAppUserModelId(L"Lanthing");
+    WinToastLib::WinToast::instance()->setShortcutPolicy(
+        WinToastLib::WinToast::ShortcutPolicy::SHORTCUT_POLICY_IGNORE);
+    if (!WinToastLib::WinToast::instance()->initialize()) {
+        LOG(ERR) << "Initialize WinToastLib failed";
+    }
+}
+
 int GUIImpl::exec() {
     return qapp_->exec();
 }
 
 void GUIImpl::setDeviceID(int64_t device_id) {
-    main_window_->setDeviceID(device_id);
+    main_window2_->setDeviceID(device_id);
 }
 
 void GUIImpl::setAccessToken(const std::string& token) {
-    main_window_->setAccessToken(token);
+    main_window2_->setAccessToken(token);
 }
 
 void GUIImpl::setLoginStatus(GUI::ErrCode err_code) {
-    main_window_->setLoginStatus(err_code);
+    main_window2_->setLoginStatus(err_code);
 }
 
 void GUIImpl::onConfirmConnection(int64_t device_id) {
-    main_window_->onConfirmConnection(device_id);
+    main_window2_->onConfirmConnection(device_id);
 }
 
 void GUIImpl::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    main_window_->onConnectionStatus(msg);
+    main_window2_->onConnectionStatus(msg);
 }
 
 void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -227,19 +295,19 @@ void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite>
     templ.setExpiration(1000 * 5);
     WinToastLib::WinToast::instance()->showToast(templ, new ToastHandler);
 
-    main_window_->onAccptedConnection(_msg);
+    main_window2_->onAccptedConnection(_msg);
 }
 
 void GUIImpl::onDisconnectedConnection(int64_t device_id) {
-    main_window_->onDisconnectedConnection(device_id);
+    main_window2_->onDisconnectedConnection(device_id);
 }
 
 void GUIImpl::errorMessageBox(const std::string& message) {
-    main_window_->errorMessageBox(message);
+    main_window2_->errorMessageBox(message);
 }
 
 void GUIImpl::infoMessageBox(const std::string& message) {
-    main_window_->infoMessageBox(message);
+    main_window2_->infoMessageBox(message);
 }
 
 void GUIImpl::setLanguage() {
@@ -265,7 +333,7 @@ GUI::GUI()
     : impl_{std::make_shared<GUIImpl>()} {}
 
 void GUI::init(const Params& params, int argc, char** argv) {
-    impl_->init(params, argc, argv);
+    impl_->init2(params, argc, argv);
 }
 
 int GUI::exec() {
