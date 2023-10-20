@@ -34,14 +34,6 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/gui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow2/mainwindow2.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow2/mainwindow2.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/clickable_label.h
@@ -51,10 +43,6 @@ set(APP_SRCS
 
 set(APP_UI_VIEWS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.ui
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow2/mainwindow2.ui
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/link/mainpage.ui
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/menu/menu.ui
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/setting/settingpage.ui
 )
 
 add_executable(${PROJECT_NAME} 

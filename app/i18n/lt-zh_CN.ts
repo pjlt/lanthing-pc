@@ -4,129 +4,290 @@
 <context>
     <name>MainPage</name>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="20"/>
-        <source>Form</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/views/link/mainpage.ui" line="288"/>
-        <source>********</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/views/link/mainpage.ui" line="300"/>
-        <source>*********</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/views/link/mainpage.ui" line="321"/>
         <source>Copied√</source>
-        <translation>已复制√</translation>
+        <translation type="vanished">已复制√</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="276"/>
         <source>DEVICE ID</source>
-        <translation>设备码</translation>
+        <translation type="vanished">设备码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.ui" line="264"/>
         <source>ACCESS TOKEN</source>
-        <translation>验证码</translation>
+        <translation type="vanished">验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="147"/>
         <source>gamepad</source>
-        <translation>手柄</translation>
+        <translation type="vanished">手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="148"/>
         <source>keyboard</source>
-        <translation>键盘</translation>
+        <translation type="vanished">键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="149"/>
         <source>mouse</source>
-        <translation>鼠标</translation>
+        <translation type="vanished">鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/link/mainpage.cpp" line="150"/>
         <source>kick</source>
-        <translation>断开</translation>
+        <translation type="vanished">断开</translation>
     </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
-        <source>Lanthing</source>
-        <translation></translation>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="184"/>
+        <source>Connected with server</source>
+        <translation>已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="173"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="196"/>
+        <source>Disconnected with server</source>
+        <translation>连接已断开</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="230"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="175"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="232"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="179"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="236"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="181"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="238"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="182"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="239"/>
         <source>Reject</source>
         <translation>拒绝</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="431"/>
+        <source>gamepad</source>
+        <translation>手柄</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="432"/>
+        <source>keyboard</source>
+        <translation>键盘</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="433"/>
+        <source>mouse</source>
+        <translation>鼠标</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="434"/>
+        <source>kick</source>
+        <translation>断开</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="127"/>
+        <source>Lanthing</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="415"/>
+        <source>Main Page</source>
+        <translation>主页</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="428"/>
+        <source>Settings</source>
+        <translation>设置</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="452"/>
+        <source>Connecting...</source>
+        <translation>正在连接...</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="579"/>
+        <source>Device ID</source>
+        <translation>设备码</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="596"/>
+        <source>*********</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="635"/>
+        <source>Copied√</source>
+        <translation>已复制√</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="665"/>
+        <source>Access Token</source>
+        <translation>验证码</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="682"/>
+        <source>********</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1259"/>
+        <source>v0.1.0</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1288"/>
+        <source>Run as Service</source>
+        <translation>以服务运行</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1295"/>
+        <source>Auto refresh access token</source>
+        <translation>自动更新验证码</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1326"/>
+        <source>Fullscreen Mode</source>
+        <translation>全屏模式</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1333"/>
+        <source>Fullscreen</source>
+        <translation>全屏独占</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1340"/>
+        <source>Windowed Fullscreen</source>
+        <translation>窗口化全屏</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1359"/>
+        <source>Relay Server</source>
+        <translation>中继服务器</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1410"/>
+        <source>Confirm</source>
+        <translation>确认</translation>
+    </message>
+</context>
+<context>
+    <name>MainWindow2</name>
+    <message>
+        <source>Settings</source>
+        <translation type="obsolete">设置</translation>
+    </message>
+    <message>
+        <source>Copied√</source>
+        <translation type="obsolete">已复制√</translation>
+    </message>
+    <message>
+        <source>Run as Service</source>
+        <translation type="obsolete">以服务运行</translation>
+    </message>
+    <message>
+        <source>Auto refresh access token</source>
+        <translation type="obsolete">自动更新验证码</translation>
+    </message>
+    <message>
+        <source>Fullscreen Mode</source>
+        <translation type="obsolete">全屏模式</translation>
+    </message>
+    <message>
+        <source>Fullscreen</source>
+        <translation type="obsolete">全屏独占</translation>
+    </message>
+    <message>
+        <source>Windowed Fullscreen</source>
+        <translation type="obsolete">窗口化全屏</translation>
+    </message>
+    <message>
+        <source>Relay Server</source>
+        <translation type="obsolete">中继服务器</translation>
+    </message>
+    <message>
+        <source>Confirm</source>
+        <translation type="obsolete">确认</translation>
+    </message>
+    <message>
+        <source>Connected with server</source>
+        <translation type="obsolete">已连接服务器</translation>
+    </message>
+    <message>
+        <source>Disconnected with server</source>
+        <translation type="obsolete">连接已断开</translation>
+    </message>
+    <message>
+        <source>New Connection</source>
+        <translation type="obsolete">连接请求</translation>
+    </message>
+    <message>
+        <source>Device %s is requesting connection</source>
+        <translation type="obsolete">设备 %s 正在请求连接</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation type="obsolete">同意</translation>
+    </message>
+    <message>
+        <source>Accept, as well as next time</source>
+        <translation type="obsolete">同意，下次不再提醒</translation>
+    </message>
+    <message>
+        <source>Reject</source>
+        <translation type="obsolete">拒绝</translation>
+    </message>
+    <message>
+        <source>gamepad</source>
+        <translation type="obsolete">手柄</translation>
+    </message>
+    <message>
+        <source>keyboard</source>
+        <translation type="obsolete">键盘</translation>
+    </message>
+    <message>
+        <source>mouse</source>
+        <translation type="obsolete">鼠标</translation>
+    </message>
+    <message>
+        <source>kick</source>
+        <translation type="obsolete">断开</translation>
     </message>
 </context>
 <context>
     <name>Menu</name>
     <message>
-        <location filename="../src/views/menu/menu.ui" line="26"/>
-        <source>Form</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Remote Control</source>
         <translation type="obsolete">远程连接</translation>
     </message>
     <message>
-        <location filename="../src/views/menu/menu.ui" line="62"/>
         <source>Main Page</source>
-        <translation>远程连接</translation>
+        <translation type="vanished">远程连接</translation>
     </message>
     <message>
-        <location filename="../src/views/menu/menu.ui" line="87"/>
         <source>Settings</source>
-        <translation>设置</translation>
+        <translation type="vanished">设置</translation>
     </message>
     <message>
-        <location filename="../src/views/menu/menu.ui" line="155"/>
         <source>login</source>
-        <translation>登录</translation>
+        <translation type="vanished">登录</translation>
     </message>
     <message>
-        <location filename="../src/views/menu/menu.ui" line="193"/>
         <source>Connecting server ...</source>
-        <translation>正在连接服务器...</translation>
+        <translation type="vanished">正在连接服务器...</translation>
     </message>
     <message>
-        <location filename="../src/views/menu/menu.cpp" line="70"/>
         <source>Connected with server</source>
-        <translation>已连接服务器</translation>
+        <translation type="vanished">已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/menu/menu.cpp" line="76"/>
         <source>Disconnected with server</source>
-        <translation>连接已断开</translation>
+        <translation type="vanished">连接已断开</translation>
     </message>
 </context>
 <context>
@@ -155,45 +316,33 @@
 <context>
     <name>SettingPage</name>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="14"/>
-        <source>Form</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/views/setting/settingpage.ui" line="29"/>
         <source>Run as Service</source>
         <translatorcomment>不启动客户端也能被控</translatorcomment>
-        <translation>以服务运行</translation>
+        <translation type="vanished">以服务运行</translation>
     </message>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="36"/>
         <source>Auto refresh access token</source>
-        <translation>自动更新验证码</translation>
+        <translation type="vanished">自动更新验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="57"/>
         <source>Relay Server</source>
-        <translation>中继服务器</translation>
+        <translation type="vanished">中继服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="67"/>
         <source>Confirm</source>
-        <translation>确认</translation>
+        <translation type="vanished">确认</translation>
     </message>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="88"/>
         <source>Fullscreen Mode</source>
-        <translation>全屏模式</translation>
+        <translation type="vanished">全屏模式</translation>
     </message>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="95"/>
         <source>Fullscreen</source>
-        <translation>全屏独占</translation>
+        <translation type="vanished">全屏独占</translation>
     </message>
     <message>
-        <location filename="../src/views/setting/settingpage.ui" line="102"/>
         <source>Windowed Fullscreen</source>
-        <translation>窗口化全屏</translation>
+        <translation type="vanished">窗口化全屏</translation>
     </message>
 </context>
 </TS>

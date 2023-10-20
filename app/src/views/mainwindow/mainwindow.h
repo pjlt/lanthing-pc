@@ -28,24 +28,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <functional>
 
+#include <QValidator>
 #include <QtWidgets/QMainWindow>
+#include <QtWidgets/qlabel.h>
 
+#include <views/components/progress_widget.h>
 #include <views/gui.h>
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+#include <transport/transport.h>
 
-class Menu;
-class MainPage;
-class SettingPage;
+QT_BEGIN_NAMESPACE
+
+class Ui_MainWindow;
+
+QT_END_NAMESPACE
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -57,6 +57,7 @@ public:
     void switchToMainPage();
 
     void switchToSettingPage();
+
     void setLoginStatus(lt::GUI::ErrCode code);
 
     void setDeviceID(int64_t device_id);
@@ -76,22 +77,74 @@ public:
     void infoMessageBox(const std::string& message);
 
 protected:
-    void closeEvent(QCloseEvent* ev) override;
+    bool eventFilter(QObject* obj, QEvent* ev) override; // override?
 
 private:
-    void doConnect(const std::string& dev_id, const std::string& token);
+    void setupOtherCallbacks();
 
-    void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void setupClientIndicators();
+
+    void loadPixmap();
+
+    void swapTabBtnStyleSheet();
+
+    void onConnectBtnClicked();
+
+    void onShowTokenPressed();
+
+    void onCopyPressed();
+
+    void onUpdateIndicator();
+
+    void onTimeoutHideToken();
+
+    static void setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
+                                      const QPixmap& white, const QPixmap& gray, const QPixmap& red,
+                                      const QPixmap& green);
 
 private:
     lt::GUI::Params params_;
-    Ui::MainWindow* ui;
+    lt::VideoCodecType video_codec_ = lt::VideoCodecType::Unknown;
+    std::string access_token_text_;
+    bool token_showing_ = false;
+    int64_t token_last_show_time_ms_ = 0;
+    std::optional<int64_t> peer_client_device_id_;
+    std::vector<std::string> history_device_ids_;
+    QPixmap copy_;
+    QPixmap eye_close_;
+    QPixmap eye_open_;
+    QPixmap kick_;
+    QPixmap mouse_;
+    QPixmap mouse_white_;
+    QPixmap mouse_gray_;
+    QPixmap mouse_red_;
+    QPixmap mouse_green_;
+    QPixmap kb_;
+    QPixmap kb_white_;
+    QPixmap kb_gray_;
+    QPixmap kb_red_;
+    QPixmap kb_green_;
+    QPixmap gp_;
+    QPixmap gp_white_;
+    QPixmap gp_gray_;
+    QPixmap gp_red_;
+    QPixmap gp_green_;
+    int64_t mouse_hit_time_ = 0;
+    int64_t keyboard_hit_time_ = 0;
+    int64_t gamepad_hit_time_ = 0;
+    bool enable_mouse_ = false;
+    bool enable_keyboard_ = false;
+    bool enable_gamepad_ = false;
+    bool gpu_encode_ = false;
+    bool gpu_decode_ = false;
+    bool p2p_ = false;
+    bool bandwidth_bps_ = 0;
 
-    Menu* menu_ui = nullptr;
-    MainPage* main_page_ui;
-    SettingPage* setting_page_ui;
+    Ui_MainWindow* ui;
+    QRegularExpressionValidator relay_validator_;
+    QPointF old_pos_{};
+    qt_componets::ProgressWidget* login_progress_ = nullptr;
 
     std::function<void()> switch_to_main_page_;
     std::function<void()> switch_to_setting_page_;
 };
-#endif // MAINWINDOW_H
