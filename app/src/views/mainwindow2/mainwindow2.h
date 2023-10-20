@@ -32,6 +32,7 @@
 
 #include <functional>
 
+#include <QValidator>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/qlabel.h>
 
@@ -78,9 +79,7 @@ public:
 protected:
     void closeEvent(QCloseEvent* ev) override;
 
-    void mousePressEvent(QMouseEvent* ev) override;
-
-    void mouseMoveEvent(QMouseEvent* ev) override;
+    bool eventFilter(QObject* obj, QEvent* ev) override; // override?
 
 private:
     void setupOtherCallbacks();
@@ -91,11 +90,11 @@ private:
 
     void swapTabBtnStyleSheet();
 
-    void onConnectBtnPressed();
+    void onConnectBtnClicked();
 
-    void onShowTokenClicked();
+    void onShowTokenPressed();
 
-    void onCopyClicked();
+    void onCopyPressed();
 
     void onUpdateIndicator();
 
@@ -143,8 +142,8 @@ private:
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
 
-    // qt
     Ui_MainWindow2* ui;
+    QRegularExpressionValidator relay_validator_;
     QPointF old_pos_{};
     qt_componets::ProgressWidget* login_progress_ = nullptr;
 

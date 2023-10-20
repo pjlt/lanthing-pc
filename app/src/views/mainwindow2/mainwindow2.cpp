@@ -96,19 +96,31 @@ std::string toString(lt::VideoCodecType codec) {
 MainWindow2::MainWindow2(const lt::GUI::Params& params, QWidget* parent)
     : QMainWindow(parent)
     , params_(params)
+    , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)"))
     , ui(new Ui_MainWindow2) {
-    assert(app);
+
     ui->setupUi(this);
+
+    qApp->installEventFilter(this);
+
+    loadPixmap();
 
     // 无边框
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
-    ui->leditAccessToken->setValidator(new AccesstokenValidator(this));
+    // 调整"已复制"标签的SizePolicy，让它在隐藏的时候保持占位
+    QSizePolicy sp_retain = ui->labelCopied->sizePolicy();
+    sp_retain.setRetainSizeWhenHidden(true);
+    ui->labelCopied->setSizePolicy(sp_retain);
+    ui->labelCopied->hide();
 
+    // 登录进度条
     login_progress_ = new qt_componets::ProgressWidget();
     login_progress_->setVisible(false);
     login_progress_->setProgressColor(toColor("#8198ff"));
 
+    // 调整设备码输入样式
+    history_device_ids_ = params.get_history_device_ids();
     QIcon pc_icon{":/icons/icons/pc.png"};
     if (history_device_ids_.empty()) {
         ui->cbDeviceID->addItem(pc_icon, "");
@@ -119,12 +131,31 @@ MainWindow2::MainWindow2(const lt::GUI::Params& params, QWidget* parent)
         }
     }
 
+    // 验证码
     QAction* lock_position = new QAction();
     lock_position->setIcon(QIcon(":/icons/icons/lock.png"));
     ui->leditAccessToken->addAction(lock_position, QLineEdit::LeadingPosition);
+    ui->leditAccessToken->setValidator(new AccesstokenValidator(this));
 
+    // 客户端指示器
     setupClientIndicators();
 
+    // '设置'页面
+    auto settings = params.get_settings();
+    ui->checkboxService->setChecked(settings.run_as_daemon);
+    ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
+    ui->leditRelay->setText(QString::fromStdString(settings.relay_server));
+    ui->btnRelay->setEnabled(false);
+    if (settings.windowed_fullscreen.has_value()) {
+        ui->radioRealFullscreen->setChecked(!settings.windowed_fullscreen.value());
+        ui->radioWindowedFullscreen->setChecked(settings.windowed_fullscreen.value());
+    }
+    else {
+        ui->radioRealFullscreen->setChecked(false);
+        ui->radioWindowedFullscreen->setChecked(false);
+    }
+
+    // 其它回调
     setupOtherCallbacks();
 }
 
@@ -133,13 +164,17 @@ MainWindow2::~MainWindow2() {
 }
 
 void MainWindow2::switchToMainPage() {
-    ui->stackedWidget->setCurrentIndex(0);
-    swapTabBtnStyleSheet();
+    if (ui->stackedWidget->currentIndex() != 0) {
+        ui->stackedWidget->setCurrentIndex(0);
+        swapTabBtnStyleSheet();
+    }
 }
 
 void MainWindow2::switchToSettingPage() {
-    ui->stackedWidget->setCurrentIndex(1);
-    swapTabBtnStyleSheet();
+    if (ui->stackedWidget->currentIndex() != 1) {
+        ui->stackedWidget->setCurrentIndex(1);
+        swapTabBtnStyleSheet();
+    }
 }
 
 void MainWindow2::setLoginStatus(lt::GUI::ErrCode code) {
@@ -322,14 +357,24 @@ void MainWindow2::infoMessageBox(const std::string& message) {}
 
 void MainWindow2::closeEvent(QCloseEvent* ev) {}
 
-void MainWindow2::mousePressEvent(QMouseEvent* ev) {
-    old_pos_ = ev->globalPosition();
-}
+bool MainWindow2::eventFilter(QObject* obj, QEvent* evt) {
+    if (obj == ui->windowBar && evt->type() == QEvent::MouseButtonPress) {
+        QMouseEvent* ev = static_cast<QMouseEvent*>(evt);
+        if (ev->buttons() & Qt::LeftButton) {
 
-void MainWindow2::mouseMoveEvent(QMouseEvent* ev) {
-    const QPointF delta = ev->globalPosition() - old_pos_;
-    move(x() + delta.x(), y() + delta.y());
-    old_pos_ = ev->globalPosition();
+            // old_pos_ = ev->globalPosition() - ui->windowBar->geometry().topLeft();
+            old_pos_ = ev->globalPosition();
+        }
+    }
+    if (obj == ui->windowBar && evt->type() == QEvent::MouseMove) {
+        QMouseEvent* ev = static_cast<QMouseEvent*>(evt);
+        if (ev->buttons() & Qt::LeftButton) {
+            const QPointF delta = ev->globalPosition() - old_pos_;
+            move(x() + delta.x(), y() + delta.y());
+            old_pos_ = ev->globalPosition();
+        }
+    }
+    return QObject::eventFilter(obj, evt);
 }
 
 void MainWindow2::setupOtherCallbacks() {
@@ -338,14 +383,38 @@ void MainWindow2::setupOtherCallbacks() {
     connect(ui->btnMinimize, &QPushButton::pressed,
             [this]() { setWindowState(Qt::WindowState::WindowMinimized); });
     connect(ui->btnClose, &QPushButton::pressed, [this]() { hide(); });
+    connect(ui->btnCopy, &QPushButton::pressed, this, &MainWindow2::onCopyPressed);
+    connect(ui->btnShowToken, &QPushButton::pressed, this, &MainWindow2::onShowTokenPressed);
+    connect(ui->btnConnect, &QPushButton::clicked, this, &MainWindow2::onConnectBtnClicked);
+    connect(ui->checkboxService, &QCheckBox::stateChanged,
+            [this](int) { params_.enable_run_as_service(ui->checkboxService->isChecked()); });
+    connect(ui->checkboxRefreshPassword, &QCheckBox::stateChanged, [this](int) {
+        params_.enable_auto_refresh_access_token(ui->checkboxRefreshPassword->isChecked());
+    });
+    connect(ui->radioWindowedFullscreen, &QRadioButton::toggled,
+            [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
+    connect(ui->leditRelay, &QLineEdit::textChanged, [this](const QString& _text) {
+        if (_text.isEmpty()) {
+            ui->btnRelay->setEnabled(true);
+            return;
+        }
+        QString text = _text;
+        int pos = text.length(); // -1; ???
+        QValidator::State state = relay_validator_.validate(text, pos);
+        ui->btnRelay->setEnabled(state == QValidator::State::Acceptable);
+    });
+    connect(ui->btnRelay, &QPushButton::clicked, [this]() {
+        ui->btnRelay->setEnabled(false);
+        params_.set_relay_server(ui->leditRelay->text().toStdString());
+    });
 }
 
 void MainWindow2::setupClientIndicators() {
     ui->indicator2->hide();
     ui->indicator1->hide();
-    ui->indicator1->setToolTipDuration(1000 * 10);
-    ui->indicator1->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-    connect(ui->indicator1, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
+    ui->labelClient1->setToolTipDuration(1000 * 10);
+    ui->labelClient1->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    connect(ui->labelClient1, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
         QMenu* menu = new QMenu(this);
 
         QAction* gamepad = new QAction(gp_, tr("gamepad"), menu);
@@ -399,7 +468,7 @@ void MainWindow2::setupClientIndicators() {
         menu->addAction(mouse);
         menu->addAction(kick);
 
-        menu->exec(ui->indicator1->mapToGlobal(pos));
+        menu->exec(ui->labelClient1->mapToGlobal(pos));
     });
 }
 
@@ -435,7 +504,7 @@ void MainWindow2::swapTabBtnStyleSheet() {
     ui->btnLinkTab->setStyleSheet(stylesheet);
 }
 
-void MainWindow2::onConnectBtnPressed() {
+void MainWindow2::onConnectBtnClicked() {
     auto dev_id = ui->cbDeviceID->currentText();
     auto token = ui->leditAccessToken->text().toStdString();
     int64_t deviceID = dev_id.toLongLong();
@@ -447,7 +516,7 @@ void MainWindow2::onConnectBtnPressed() {
     }
 }
 
-void MainWindow2::onShowTokenClicked() {
+void MainWindow2::onShowTokenPressed() {
     if (token_showing_) {
         token_showing_ = false;
         ui->labelMyAccessToken->setText("••••••");
@@ -460,7 +529,7 @@ void MainWindow2::onShowTokenClicked() {
     }
 }
 
-void MainWindow2::onCopyClicked() {
+void MainWindow2::onCopyPressed() {
     auto clipboard = QApplication::clipboard();
     QString device_id = ui->labelMyDeviceID->text();
     device_id = device_id.simplified();
