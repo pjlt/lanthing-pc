@@ -36,6 +36,7 @@
 
 #include <ltproto/client2service/time_sync.pb.h>
 #include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/mouse_event.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/client2worker/send_side_stat.pb.h>
 #include <ltproto/client2worker/start_transmission.pb.h>
@@ -816,11 +817,16 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
         onTimeSync(msg);
         return;
     case ltype::kMouseEvent:
-        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true));
+    {
+        auto mouse_msg = std::static_pointer_cast<ltproto::client2worker::MouseEvent>(msg);
+        if (mouse_msg->has_key_falg()) {
+            postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true));
+        }
         if (!enable_mouse_) {
             return;
         }
         break;
+    }
     case ltype::kKeyboardEvent:
         postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, true, false));
         if (!enable_keyboard_) {

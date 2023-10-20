@@ -37,6 +37,7 @@
 #include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qwidget.h>
 #include <qapplication.h>
+#include <qfile.h>
 #include <qobject.h>
 #include <qtranslator.h>
 
@@ -125,11 +126,10 @@ private:
 };
 
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
-    //  qt
     qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
     setLanguage();
-    QIcon icon(":/icons/icons/pc2.png");
+    QIcon icon(":/res/png_icons/pc2.png");
     QApplication::setWindowIcon(icon);
     QApplication::setApplicationName("Lanthing");
     QApplication::setQuitOnLastWindowClosed(false);

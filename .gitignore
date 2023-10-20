@@ -45,7 +45,6 @@ options-user.cmake
 # misc
 draft.txt
 fonts/
-icons/
 .VSCodeCounter
 
 /third_party/prebuilt
