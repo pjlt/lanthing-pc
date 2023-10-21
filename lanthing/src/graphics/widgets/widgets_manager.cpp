@@ -56,20 +56,26 @@ WidgetsManager::WidgetsManager(const Params& params)
     : dev_{params.dev}
     , ctx_{params.ctx}
     , window_{params.window}
-    , status_{std::make_shared<StatusWidget>(params.video_width, params.video_height)}
-    , statistics_{std::make_shared<StatisticsWidget>(params.video_width, params.video_height)} {
+    , video_width_{params.video_width}
+    , video_height_{params.video_height}
+    , set_bitrate_{params.set_bitrate} {
     auto d3d11_dev = reinterpret_cast<ID3D11Device*>(params.dev);
     auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(params.ctx);
     d3d11_dev->AddRef();
     d3d11_ctx->AddRef();
-    HWND hwnd = reinterpret_cast<HWND>(params.window);
+    initImgui();
+}
+
+void WidgetsManager::initImgui() {
+    HWND hwnd = reinterpret_cast<HWND>(window_);
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGui_ImplWin32_Init(hwnd);
-    ImGui_ImplDX11_Init(d3d11_dev, d3d11_ctx);
+    ImGui_ImplDX11_Init(reinterpret_cast<ID3D11Device*>(dev_),
+                        reinterpret_cast<ID3D11DeviceContext*>(ctx_));
     ControlBarWidget::Params control_params{};
-    control_params.video_width = params.video_width;
-    control_params.video_height = params.video_height;
+    control_params.video_width = video_width_;
+    control_params.video_height = video_height_;
     control_params.exit = []() {
         SDL_Event ev{};
         ev.type = SDL_QUIT;
@@ -82,7 +88,7 @@ WidgetsManager::WidgetsManager(const Params& params)
         ev.user.code = 2;
         SDL_PushEvent(&ev);
     };
-    control_params.set_bitrate = params.set_bitrate;
+    control_params.set_bitrate = set_bitrate_;
     control_params.show_stat = [this](bool show) { show_statistics_ = show; };
     control_bar_ = std::make_shared<ControlBarWidget>(control_params);
     // 中文字体太大了，暂时不加上去
@@ -92,14 +98,23 @@ WidgetsManager::WidgetsManager(const Params& params)
     // io.Fonts->AddFontFromMemoryTTF((void*)font.begin(), static_cast<int>(font.size()), 14,
     // nullptr,
     //                                io.Fonts->GetGlyphRangesChineseFull());
+    status_ = std::make_shared<StatusWidget>(video_width_, video_height_);
+    statistics_ = std::make_shared<StatisticsWidget>(video_width_, video_height_);
     setImGuiValid(); // 最后
 }
 
-WidgetsManager::~WidgetsManager() {
+void WidgetsManager::uninitImgui() {
     setImGuiInvalid(); // 最先
+    status_ = nullptr;
+    statistics_ = nullptr;
+    control_bar_ = nullptr;
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
+}
+
+WidgetsManager::~WidgetsManager() {
+    uninitImgui();
     auto d3d11_dev = reinterpret_cast<ID3D11Device*>(dev_);
     auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(ctx_);
     d3d11_dev->Release();
@@ -121,8 +136,9 @@ void WidgetsManager::render() {
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 
-void WidgetsManager::resize() {
-    status_->resize();
+void WidgetsManager::reset() {
+    uninitImgui();
+    initImgui();
 }
 
 void WidgetsManager::enableStatus() {

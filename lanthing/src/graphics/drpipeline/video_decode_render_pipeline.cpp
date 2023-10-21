@@ -270,7 +270,6 @@ void VDRPipeline::setLossRate(float rate) {
 }
 
 void VDRPipeline::resetRenderTarget() {
-    widgets_->resize();
     video_renderer_->resetRenderTarget();
 }
 
@@ -357,8 +356,20 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
                            << ltlib::steady_now_us() - frame->capture_time - time_diff_;
                 statistics_->addRenderVideo();
                 auto start = ltlib::steady_now_us();
-                video_renderer_->render(frame->no);
+                auto result = video_renderer_->render(frame->no);
                 auto end = ltlib::steady_now_us();
+                switch (result) {
+                case VideoRenderer::RenderResult::Failed:
+                    // TODO: 更好地通知退出
+                    LOG(ERR) << "Render failed, exit render loop";
+                    return;
+                case VideoRenderer::RenderResult::Reset:
+                    widgets_->reset();
+                    break;
+                case VideoRenderer::RenderResult::Success:
+                default:
+                    break;
+                }
                 statistics_->updateRenderVideoTime(end - start);
             }
             auto start = ltlib::steady_now_us();
