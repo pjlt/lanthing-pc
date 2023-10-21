@@ -33,6 +33,7 @@
 #include <mutex>
 
 // 暂时写死SDL
+#include <SDL.h>
 #include <backends/imgui_impl_sdl2.h>
 
 static bool g_imgui_valid = false;
@@ -45,9 +46,15 @@ bool rendererGrabInputs(void* inputs) {
     if (!g_imgui_valid) {
         return false;
     }
-    if (ImGui_ImplSDL2_ProcessEvent(reinterpret_cast<const SDL_Event*>(inputs))) {
+    auto ev = reinterpret_cast<const SDL_Event*>(inputs);
+    if (ImGui_ImplSDL2_ProcessEvent(ev)) {
         auto& io = ImGui::GetIO();
-        if (io.WantCaptureKeyboard || io.WantCaptureMouse) {
+        if (io.WantCaptureKeyboard &&
+            (ev->type == SDL_MOUSEBUTTONUP || ev->type == SDL_MOUSEBUTTONDOWN ||
+             ev->type == SDL_MOUSEMOTION || ev->type == SDL_MOUSEWHEEL)) {
+            return true;
+        }
+        if (io.WantCaptureMouse && (ev->type == SDL_KEYUP || ev->type == SDL_KEYDOWN)) {
             return true;
         }
     }

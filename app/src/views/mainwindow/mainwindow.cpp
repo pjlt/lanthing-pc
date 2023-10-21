@@ -96,9 +96,9 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
     // 调整"已复制"标签的SizePolicy，让它在隐藏的时候保持占位
-    QSizePolicy sp_retain = ui->labelCopied->sizePolicy();
-    sp_retain.setRetainSizeWhenHidden(true);
-    ui->labelCopied->setSizePolicy(sp_retain);
+    QSizePolicy retain = ui->labelCopied->sizePolicy();
+    retain.setRetainSizeWhenHidden(true);
+    ui->labelCopied->setSizePolicy(retain);
     ui->labelCopied->hide();
 
     // 登录进度条
@@ -414,8 +414,11 @@ void MainWindow::setupOtherCallbacks() {
 }
 
 void MainWindow::setupClientIndicators() {
-    ui->indicator2->hide();
+    QSizePolicy policy = ui->indicator1->sizePolicy();
+    policy.setRetainSizeWhenHidden(true);
+    ui->indicator1->setSizePolicy(policy);
     ui->indicator1->hide();
+    ui->indicator2->hide();
     ui->labelClient1->setToolTipDuration(1000 * 10);
     ui->labelClient1->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
     connect(ui->labelClient1, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {

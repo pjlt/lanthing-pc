@@ -1,6 +1,8 @@
-此文件列举了Lanthing直接使用的第三方软件，以及这些第三方软件要求提及的声明或（和）协议。
+This document lists the third-party software used directly by Lanthing,
+as well as the statements or/and agreements required to be mentioned by
+these third-party software.
 
-上述声明和协议列举如下：
+The statements and agreements are listed below:
 
 -------------------------------------------------------------------------------
 ---------------------------1-AMF-----------------------------------------------
@@ -761,7 +763,7 @@ SOFTWARE.
 --------------------------------------------------------------------------
 -------------------------10-opus------------------------------------------
 --------------------------------------------------------------------------
-opus（详细license请到opus项目查看）（https://github.com/xiph/opus.git）
+opus（https://github.com/xiph/opus.git）
 
 Contributions to the collaboration shall not be considered confidential.
 

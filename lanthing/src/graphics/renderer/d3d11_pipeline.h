@@ -31,10 +31,10 @@
 #pragma once
 #include <graphics/renderer/video_renderer.h>
 
+#include <atomic>
 #include <cstdint>
 #include <optional>
 #include <vector>
-#include <atomic>
 
 #include <d3d11_1.h>
 #include <dxgi1_3.h>
@@ -66,7 +66,7 @@ public:
     ~D3D11Pipeline() override;
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
-    bool render(int64_t frame) override;
+    RenderResult render(int64_t frame) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
@@ -85,7 +85,7 @@ private:
     bool initShaderResources(const std::vector<ID3D11Texture2D*>& textures);
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
-    bool tryResetSwapChain();
+    RenderResult tryResetSwapChain();
 
 private:
     HWND hwnd_;

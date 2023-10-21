@@ -179,11 +179,14 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
     return initShaderResources(textures);
 }
 
-bool D3D11Pipeline::render(int64_t frame) {
-    tryResetSwapChain();
+VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
+    RenderResult result = tryResetSwapChain();
+    if (result == RenderResult::Failed) {
+        return result;
+    }
     if (frame >= static_cast<int64_t>(shader_views_.size())) {
         LOG(ERR) << "Can not find shader view for texutre " << frame;
-        return false;
+        return RenderResult::Failed;
     }
     size_t index = static_cast<size_t>(frame);
     // mapTextureToFile(d3d11_dev_.Get(), d3d11_ctx_.Get(),
@@ -196,7 +199,7 @@ bool D3D11Pipeline::render(int64_t frame) {
     d3d11_ctx_->OMSetRenderTargets(1, render_view_.GetAddressOf(), nullptr);
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
-    return true;
+    return result;
 }
 
 bool D3D11Pipeline::present() {
@@ -213,12 +216,12 @@ void D3D11Pipeline::resetRenderTarget() {
     reset_ = true;
 }
 
-bool D3D11Pipeline::tryResetSwapChain() {
+VideoRenderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
     if (reset_.exchange(false)) {
         RECT rect;
         if (!GetClientRect(hwnd_, &rect)) {
             LOG(ERR) << "GetClientRect failed";
-            return false;
+            return RenderResult::Failed;
         }
         display_width_ = rect.right - rect.left;
         display_height_ = rect.bottom - rect.top;
@@ -228,7 +231,7 @@ bool D3D11Pipeline::tryResetSwapChain() {
             DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
         if (FAILED(hr)) {
             LOGF(ERR, "SwapChain resize buffers failed %#x", hr);
-            return false;
+            return RenderResult::Failed;
         }
         if (waitable_obj_) {
             CloseHandle(waitable_obj_);
@@ -237,23 +240,24 @@ bool D3D11Pipeline::tryResetSwapChain() {
         waitable_obj_ = swap_chain_->GetFrameLatencyWaitableObject();
         if (!waitable_obj_) {
             LOG(ERR) << "SwapChain GetFrameLatencyWaitableObject failed";
-            return false;
+            return RenderResult::Failed;
         }
         ComPtr<ID3D11Resource> back_buffer;
         hr =
             swap_chain_->GetBuffer(0, __uuidof(ID3D11Resource), (void**)back_buffer.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(ERR, "IDXGISwapChain::GetBuffer failed: %#x", hr);
-            return false;
+            return RenderResult::Failed;
         }
         hr = d3d11_dev_->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_view_);
         if (FAILED(hr)) {
             LOGF(ERR, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
-            return false;
+            return RenderResult::Failed;
         }
         setupRSStage();
+        return RenderResult::Reset;
     }
-    return true;
+    return RenderResult::Success;
 }
 
 bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {

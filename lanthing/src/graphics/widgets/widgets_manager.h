@@ -65,7 +65,7 @@ public:
     static std::unique_ptr<WidgetsManager> create(const Params& params);
     ~WidgetsManager();
     void render();
-    void resize();
+    void reset();
     void enableStatus();
     void disableStatus();
     void enableStatistics();
@@ -77,6 +77,8 @@ public:
 
 private:
     WidgetsManager(const Params& params);
+    void initImgui();
+    void uninitImgui();
 
 private:
     void* dev_;
@@ -84,7 +86,10 @@ private:
     void* window_;
     bool show_status_ = true;
     bool show_statistics_ = false;
+    uint32_t video_width_;
+    uint32_t video_height_;
     // bool show_control_bar_ = true;
+    std::function<void(uint32_t bps)> set_bitrate_;
     std::shared_ptr<StatusWidget> status_;
     std::shared_ptr<StatisticsWidget> statistics_;
     std::shared_ptr<ControlBarWidget> control_bar_;
