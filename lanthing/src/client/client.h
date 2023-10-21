@@ -115,6 +115,7 @@ private:
     void onSignalingMessageAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendKeepaliveToSignalingServer();
 
     // transport
     bool initTransport();
@@ -168,6 +169,7 @@ private:
     int64_t rtt_ = 0;
     int64_t time_diff_ = 0;
     bool windowed_fullscreen_ = true;
+    bool signaling_keepalive_inited_ = false;
 };
 
 } // namespace cli

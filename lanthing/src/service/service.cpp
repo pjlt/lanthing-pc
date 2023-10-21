@@ -35,6 +35,7 @@
 #include <ltlib/win_service.h>
 
 #include <ltlib/strings.h>
+#include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
@@ -224,6 +225,9 @@ void Service::checkRunAsService() {
 void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
     switch (type) {
+    case ltype::kKeepAliveAck:
+        // do nothing
+        break;
     case ltype::kLoginDeviceAck:
         onLoginDeviceAck(msg);
         break;
@@ -241,15 +245,22 @@ void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::M
 
 void Service::onServerDisconnected() {
     // 怎么办？
+    server_connected_ = false;
 }
 
 void Service::onServerReconnecting() {
+    server_connected_ = false;
     LOG(INFO) << "Reconnecting to lanthing server...";
 }
 
 void Service::onServerConnected() {
     LOG(INFO) << "Connected to server";
+    server_connected_ = true;
     loginDevice();
+    if (!keepalive_inited_) {
+        keepalive_inited_ = true;
+        sendKeepAliveToServer();
+    }
 }
 
 void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -331,6 +342,14 @@ void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> ms
 
 void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     (void)msg;
+}
+
+void Service::sendKeepAliveToServer() {
+    auto msg = std::make_shared<ltproto::common::KeepAlive>();
+    sendMessageToServer(ltproto::id(msg), msg);
+    // 10秒发一个心跳包，当前服务端不会检测超时
+    // 但是反向代理比如nginx可能设置了proxy_timeout，超过这个时间没有包就会被断链
+    postDelayTask(10'000, std::bind(&Service::sendKeepAliveToServer, this));
 }
 
 void Service::onCreateSessionCompletedThreadSafe(

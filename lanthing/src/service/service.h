@@ -71,6 +71,8 @@ private:
     void onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    // 加ToServer是因为我们还以客户端的身份，连接了App，用于一眼消除歧义
+    void sendKeepAliveToServer();
 
     // app
     void onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -108,6 +110,8 @@ private:
     bool app_connected_ = false;
     uint32_t app_not_connected_count_ = 0;
     std::optional<WorkerSession::Params> cached_worker_params_;
+    bool keepalive_inited_ = false;
+    bool server_connected_ = false;
 };
 
 } // namespace svc

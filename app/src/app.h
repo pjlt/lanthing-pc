@@ -95,6 +95,7 @@ private:
     void onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void loginDevice();
     void allocateDeviceID();
+    void sendKeepAlive();
 
     void handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -131,7 +132,6 @@ private:
     std::string relay_server_;
     std::mt19937 rand_engine_;
     std::uniform_int_distribution<size_t> rand_distrib_;
-
-    // UiCallback* ui_;
+    bool signaling_keepalive_inited_ = false;
 };
 } // namespace lt

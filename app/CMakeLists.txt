@@ -88,6 +88,10 @@ deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 
 install(TARGETS ${PROJECT_NAME})
 install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
+install(
+    FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
+)
 
 # …Ë÷√VSµ˜ ‘¬∑æ∂
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

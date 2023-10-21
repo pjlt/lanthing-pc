@@ -23,12 +23,12 @@ function cmake_clean() {
 }
 
 function check_build_type() {
-    if ($script:build_type -eq "debug") {
+    if ($script:build_type -ieq "debug") {
         $script:build_type = "Debug"
         Write-Host -ForegroundColor Green Debug
-    } elseif ($script:build_type -eq "release") {
-        Write-Host -ForegroundColor Green Release
-        $script:build_type = "Release"
+    } elseif (($script:build_type -ieq "release") -or ($script:build_type -ieq "RelWithDebInfo")) {
+        Write-Host -ForegroundColor Green RelWithDebInfo
+        $script:build_type = "RelWithDebInfo"
     } else {
         Write-Host -ForegroundColor Red 'Please specify target type [ Debug | Release ]'
         Exit -1
@@ -36,7 +36,7 @@ function check_build_type() {
 }
 
 function rtc_fetch() {
-    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.3.0/rtc.zip"
+    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.3.1/rtc.zip"
     New-Item -ItemType Directory -ErrorAction SilentlyContinue transport/rtc
     echo "Fetch $RtcUri"
     Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.zip

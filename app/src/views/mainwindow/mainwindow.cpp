@@ -78,17 +78,6 @@ QColor toColor(QString colorstr) {
     return color;
 }
 
-std::string toString(lt::VideoCodecType codec) {
-    switch (codec) {
-    case lt::VideoCodecType::H264:
-        return "AVC";
-    case lt::VideoCodecType::H265:
-        return "HEVC";
-    default:
-        return "Unknown";
-    }
-}
-
 } // namespace
 
 MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
@@ -282,7 +271,7 @@ void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLit
         gamepad_hit_time_ = msg->hit_gamepad() ? ltlib::steady_now_ms() : gamepad_hit_time_;
         std::ostringstream oss;
         oss << msg->device_id() << " " << delay_ms << "ms " << std::fixed << std::setprecision(1)
-            << Mbps << "Mbps " << toString(video_codec_) << " " << (p2p_ ? "P2P " : "Relay ")
+            << Mbps << "Mbps " << video_codec_ << " " << (p2p_ ? "P2P " : "Relay ")
             << (gpu_encode_ ? "GPU:" : "CPU:") << (gpu_decode_ ? "GPU " : "CPU ");
         ui->labelClient1->setToolTip(QString::fromStdString(oss.str()));
     });
@@ -311,10 +300,14 @@ void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLi
         gpu_encode_ = msg->gpu_encode();
         gpu_decode_ = msg->gpu_decode();
         p2p_ = msg->p2p();
-        video_codec_ = video_codec_ = lt::VideoCodecType::Unknown;
+        video_codec_ = ltproto::common::VideoCodecType_Name(msg->video_codec());
+        // 为了防止protobuf名字冲突，未知类型定义为"UnknownVCT"(UnknownVideoCodecType)，但是这个名字展示给用户并不好看
+        if (msg->video_codec() == ltproto::common::UnknownVCT) {
+            video_codec_ = "?";
+        }
         peer_client_device_id_ = msg->device_id();
         std::ostringstream oss;
-        oss << msg->device_id() << " ?ms ?Mbps " << toString(video_codec_) << " "
+        oss << msg->device_id() << " ?ms ?Mbps " << video_codec_ << " "
             << (p2p_ ? "P2P " : "Relay ") << (gpu_encode_ ? "GPU:" : "CPU:")
             << (gpu_decode_ ? "GPU " : "CPU ");
         ui->labelClient1->setToolTip(QString::fromStdString(oss.str()));
@@ -342,7 +335,7 @@ void MainWindow::onDisconnectedConnection(int64_t device_id) {
         gpu_decode_ = false;
         p2p_ = false;
         bandwidth_bps_ = false;
-        video_codec_ = lt::VideoCodecType::Unknown;
+        video_codec_ = "?";
         enable_gamepad_ = false;
         enable_keyboard_ = false;
         enable_mouse_ = false;
