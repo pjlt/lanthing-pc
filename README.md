@@ -29,7 +29,7 @@ Lanthing是一款开源的串流/远程控制工具。除了主控端和被控�
 ```powershell
 git clone --recursive https://github.com/pjlt/lanthing-pc.git
 cd lanthing-pc
-cp options-default.cmake options-user.cmake  #可选，如果需要修改编译选项则执行此步，并修改响应选项
+cp options-default.cmake options-user.cmake  #可选，如果需要修改编译选项则执行此步，并修改相应选项
 ./build.ps1 prebuilt fetch
 ./build.ps1 build Release
 ```
