@@ -344,6 +344,9 @@ void Client::onSignalingNetMessage(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
     switch (type) {
+    case ltype::kKeepAliveAck:
+        // do nothing
+        break;
     case ltype::kJoinRoomAck:
         onJoinRoomAck(msg);
         break;
@@ -374,6 +377,10 @@ void Client::onSignalingConnected() {
     msg->set_session_id(signaling_params_.client_id);
     msg->set_room_id(signaling_params_.room_id);
     ioloop_->post([this, msg]() { signaling_client_->send(ltproto::id(msg), msg); });
+    if (!signaling_keepalive_inited_) {
+        signaling_keepalive_inited_ = true;
+        sendKeepaliveToSignalingServer();
+    }
 }
 
 void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -447,6 +454,12 @@ void Client::dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::Mess
     if (coremsg.key() == kSigCoreClose) {
         sdl_->stop();
     }
+}
+
+void Client::sendKeepaliveToSignalingServer() {
+    auto msg = std::make_shared<ltproto::common::KeepAlive>();
+    signaling_client_->send(ltproto::id(msg), msg);
+    postDelayTask(10'000, std::bind(&Client::sendKeepaliveToSignalingServer, this));
 }
 
 bool Client::initTransport() {

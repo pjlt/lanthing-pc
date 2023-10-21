@@ -467,6 +467,9 @@ void WorkerSession::onSignalingMessageFromNet(uint32_t type,
                                               std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
     switch (type) {
+    case ltype::kKeepAliveAck:
+        // do nothing
+        break;
     case ltype::kJoinRoomAck:
         onSignalingJoinRoomAck(msg);
         break;
@@ -495,7 +498,13 @@ void WorkerSession::onSignalingConnected() {
     auto msg = std::make_shared<ltproto::signaling::JoinRoom>();
     msg->set_session_id(service_id_);
     msg->set_room_id(room_id_);
-    signaling_client_->send(ltproto::id(msg), msg);
+    sendToSignalingServer(ltproto::id(msg), msg);
+
+    // 当前线程模型没有cancel功能，需要搞一个flag
+    if (!signaling_keepalive_inited_) {
+        signaling_keepalive_inited_ = true;
+        sendKeepAliveToSignalingServer();
+    }
 }
 
 void WorkerSession::onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -563,7 +572,20 @@ void WorkerSession::sendSigClose() {
     auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
     auto coremsg = msg->mutable_core_message();
     coremsg->set_key(kSigCoreClose);
-    signaling_client_->send(ltproto::id(msg), msg);
+    sendToSignalingServer(ltproto::id(msg), msg);
+}
+
+void WorkerSession::sendToSignalingServer(uint32_t type,
+                                          std::shared_ptr<google::protobuf::MessageLite> msg) {
+    signaling_client_->send(type, msg);
+}
+
+void WorkerSession::sendKeepAliveToSignalingServer() {
+    auto msg = std::make_shared<ltproto::common::KeepAlive>();
+    sendToSignalingServer(ltproto::id(msg), msg);
+    // 10秒发一个心跳包，当前服务端不会检测超时
+    // 但是反向代理比如nginx可能设置了proxy_timeout，超过这个时间没有包就会被断链
+    postDelayTask(10'000, std::bind(&WorkerSession::sendKeepAliveToSignalingServer, this));
 }
 
 bool WorkerSession::initPipeServer(ltlib::IOLoop* ioloop) {
@@ -738,7 +760,7 @@ void WorkerSession::onTpSignalingMessage(void* user_data, const char* key, const
         return;
     }
     that->postTask([that, signaling_msg]() {
-        that->signaling_client_->send(ltproto::id(signaling_msg), signaling_msg);
+        that->sendToSignalingServer(ltproto::id(signaling_msg), signaling_msg);
     });
 }
 
@@ -922,9 +944,9 @@ void WorkerSession::tellAppAccpetedConnection() {
     msg->set_enable_gamepad(enable_gamepad_);
     msg->set_enable_keyboard(enable_keyboard_);
     msg->set_enable_mouse(enable_mouse_);
-    msg->set_gpu_decode(true);
+    msg->set_gpu_decode(true); // 当前只支持硬编硬解
     msg->set_gpu_encode(true);
-    msg->set_p2p(true);
+    msg->set_p2p(is_p2p_);
     auto negotiated_params =
         std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
     msg->set_video_codec((ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));

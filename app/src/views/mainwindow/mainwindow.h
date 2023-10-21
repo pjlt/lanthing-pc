@@ -39,8 +39,6 @@
 #include <views/components/progress_widget.h>
 #include <views/gui.h>
 
-#include <transport/transport.h>
-
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow;
@@ -104,7 +102,7 @@ private:
 
 private:
     lt::GUI::Params params_;
-    lt::VideoCodecType video_codec_ = lt::VideoCodecType::Unknown;
+    std::string video_codec_ = "?";
     std::string access_token_text_;
     bool token_showing_ = false;
     int64_t token_last_show_time_ms_ = 0;

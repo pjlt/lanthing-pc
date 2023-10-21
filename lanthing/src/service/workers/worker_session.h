@@ -113,6 +113,8 @@ private:
     void dispatchSignalingMessageRtc(std::shared_ptr<google::protobuf::MessageLite> msg);
     void dispatchSignalingMessageCore(std::shared_ptr<google::protobuf::MessageLite> msg);
     void sendSigClose();
+    void sendToSignalingServer(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendKeepAliveToSignalingServer();
 
     // worker process
     bool initPipeServer(ltlib::IOLoop* ioloop);
@@ -199,6 +201,7 @@ private:
     int64_t time_diff_ = 0;
     float loss_rate_ = .0f;
     bool is_p2p_ = false;
+    bool signaling_keepalive_inited_ = false;
 
     std::atomic<bool> enable_gamepad_ = true;
     std::atomic<bool> enable_keyboard_ = false;
