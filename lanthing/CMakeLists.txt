@@ -140,6 +140,7 @@ else()
 endif()
 
 add_executable(${PROJECT_NAME}
+    ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
     ${LT_SRCS}
     ${PLATFORM_SRCS}
 )

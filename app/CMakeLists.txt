@@ -46,6 +46,7 @@ set(APP_UI_VIEWS
 )
 
 add_executable(${PROJECT_NAME} 
+    ${CMAKE_CURRENT_SOURCE_DIR}/app.rc
     ${APP_SRCS} 
     ${APP_UI_VIEWS} 
     # VS安装QT扩展工具可以直接编辑

@@ -70,22 +70,22 @@
         <translation>拒绝</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="424"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="427"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="425"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="428"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="426"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="429"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="427"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="430"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
