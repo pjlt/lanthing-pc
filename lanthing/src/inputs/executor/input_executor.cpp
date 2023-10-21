@@ -76,9 +76,6 @@ bool InputExecutor::init() {
     gamepad_ =
         Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this, std::placeholders::_1,
                                   std::placeholders::_2, std::placeholders::_3));
-    if (gamepad_ == nullptr) {
-        return false;
-    }
     return true;
 }
 
@@ -110,6 +107,9 @@ bool InputExecutor::isAbsoluteMouse() const {
 
 void InputExecutor::onControllerAddedRemoved(
     const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+    if (gamepad_ == nullptr) {
+        return;
+    }
     auto controller = std::static_pointer_cast<ltproto::client2worker::ControllerAddedRemoved>(msg);
     if (controller->is_added()) {
         gamepad_->plugin(controller->index());
@@ -120,6 +120,9 @@ void InputExecutor::onControllerAddedRemoved(
 }
 
 void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+    if (gamepad_ == nullptr) {
+        return;
+    }
     auto controller = std::static_pointer_cast<ltproto::client2worker::ControllerStatus>(msg);
     if (controller->gamepad_index() >= XUSER_MAX_COUNT) {
         LOG(ERR) << "Gamepad index exceed limit: " << controller->gamepad_index();
