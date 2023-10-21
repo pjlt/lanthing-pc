@@ -191,6 +191,10 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 install(TARGETS ${PROJECT_NAME})
+install(
+    FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
+)
 
 install(CODE [[
     file(GET_RUNTIME_DEPENDENCIES

@@ -674,7 +674,8 @@ void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageL
     }
     sendMessageToRemoteClient(ltproto::id(ack), ack, true);
     tellAppAccpetedConnection();
-    postDelayTask(1000, std::bind(&WorkerSession::sendConnectionStatus, this, false, false, false));
+    postDelayTask(1000,
+                  std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false, false));
 }
 
 void WorkerSession::sendToWorker(uint32_t type,
@@ -801,6 +802,8 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
     video_frame.size = static_cast<uint32_t>(encoded_frame->frame().size());
     video_frame.ltframe_id = encoded_frame->picture_id();
     tp_server_->sendVideo(video_frame);
+
+    calcVideoSpeed(video_frame.size);
     // static std::ofstream out{"./service_stream", std::ios::binary};
     // out.write(reinterpret_cast<const char*>(encoded_frame.data), encoded_frame.size);
     // out.flush();
@@ -842,7 +845,8 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     {
         auto mouse_msg = std::static_pointer_cast<ltproto::client2worker::MouseEvent>(msg);
         if (mouse_msg->has_key_falg()) {
-            postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true));
+            postTask(
+                std::bind(&WorkerSession::sendConnectionStatus, this, false, false, false, true));
         }
         if (!enable_mouse_) {
             return;
@@ -850,13 +854,13 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
         break;
     }
     case ltype::kKeyboardEvent:
-        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, true, false));
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true, false));
         if (!enable_keyboard_) {
             return;
         }
         break;
     case ltype::kControllerStatus:
-        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false));
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, true, false, false));
         if (!enable_gamepad_) {
             return;
         }
@@ -953,10 +957,10 @@ void WorkerSession::tellAppAccpetedConnection() {
     on_accepted_connection_(msg);
 }
 
-void WorkerSession::sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hit) {
+void WorkerSession::sendConnectionStatus(bool repeat, bool gp_hit, bool kb_hit, bool mouse_hit) {
     auto status = std::make_shared<ltproto::service2app::ConnectionStatus>();
     // FIXME: 这个值是错的，我们要显示实际值，而这里是估计值
-    status->set_bandwidth_bps(static_cast<int32_t>(bwe_bps_));
+    status->set_bandwidth_bps(static_cast<int32_t>(video_send_bps_));
     status->set_delay_ms(static_cast<int32_t>(rtt_ / 2 / 1000));
     status->set_device_id(client_device_id_);
     status->set_enable_gamepad(enable_gamepad_);
@@ -967,6 +971,31 @@ void WorkerSession::sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hi
     status->set_hit_mouse(mouse_hit);
     status->set_p2p(is_p2p_);
     on_connection_status_(status);
+    if (repeat) {
+        postDelayTask(
+            1000, std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false, false));
+    }
+}
+
+void WorkerSession::calcVideoSpeed(int64_t new_frame_bytes) {
+    SpeedEntry se{};
+    auto now_ms = ltlib::steady_now_ms();
+    se.timestamp_ms = now_ms;
+    se.value = new_frame_bytes;
+    video_send_history_.push_back(se);
+    while (!video_send_history_.empty()) {
+        if (video_send_history_.front().timestamp_ms + 1000 < now_ms) {
+            video_send_history_.pop_front();
+        }
+        else {
+            break;
+        }
+    }
+    int64_t sum = 0;
+    for (auto& entry : video_send_history_) {
+        sum += entry.value;
+    }
+    video_send_bps_ = sum * 8;
 }
 
 bool WorkerSession::sendMessageToRemoteClient(

@@ -35,57 +35,57 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="184"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="173"/>
         <source>Connected with server</source>
         <translation>已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="196"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="185"/>
         <source>Disconnected with server</source>
         <translation>连接已断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="230"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="219"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="232"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="221"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="236"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="225"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="238"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="227"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="239"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="228"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="431"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="424"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="432"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="425"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="433"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="426"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="434"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="427"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>

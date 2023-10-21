@@ -50,6 +50,11 @@ namespace svc {
 class WorkerProcess;
 
 class WorkerSession : public std::enable_shared_from_this<WorkerSession> {
+    struct SpeedEntry {
+        int64_t value;
+        int64_t timestamp_ms;
+    };
+
 public:
     enum class CloseReason {
         ClientClose,
@@ -159,7 +164,8 @@ private:
     void syncTime();
     void getTransportStat();
     void tellAppAccpetedConnection();
-    void sendConnectionStatus(bool gp_hit, bool kb_hit, bool mouse_hit);
+    void sendConnectionStatus(bool repeat, bool gp_hit, bool kb_hit, bool mouse_hit);
+    void calcVideoSpeed(int64_t new_frame_bytes);
 
 private:
     std::string session_name_;
@@ -202,6 +208,8 @@ private:
     float loss_rate_ = .0f;
     bool is_p2p_ = false;
     bool signaling_keepalive_inited_ = false;
+    std::deque<SpeedEntry> video_send_history_;
+    int64_t video_send_bps_ = 0;
 
     std::atomic<bool> enable_gamepad_ = true;
     std::atomic<bool> enable_keyboard_ = false;
