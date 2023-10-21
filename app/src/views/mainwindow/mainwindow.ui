@@ -112,8 +112,30 @@ border-bottom: 3px solid rgb(44, 49, 58);
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_8">
           <property name="spacing">
-           <number>0</number>
+           <number>6</number>
           </property>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="maximumSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: transparent;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="../../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QLabel" name="labelTitle">
             <property name="styleSheet">
@@ -330,7 +352,7 @@ border: none;</string>
                  <number>0</number>
                 </property>
                 <item>
-                 <widget class="QLabel" name="labelLogo">
+                 <widget class="QLabel" name="labelProfile">
                   <property name="minimumSize">
                    <size>
                     <width>130</width>
