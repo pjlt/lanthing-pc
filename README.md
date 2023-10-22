@@ -42,7 +42,7 @@ Lanthing的端到端加密具体是如何实现的：
 ```powershell
 git clone --recursive https://github.com/pjlt/lanthing-pc.git
 cd lanthing-pc
-cp options-default.cmake options-user.cmake  #可选，如果需要修改编译选项则执行此步，并修改响应选项；如果QT不在变量里，则必须修改LT_QT_CMAKE_PATH
+cp options-default.cmake options-user.cmake  #可选，如果需要修改编译选项则执行此步，并修改相应选项；如果QT不在变量里，则必须修改LT_QT_CMAKE_PATH
 ./build.ps1 prebuilt fetch
 ./build.ps1 build Release
 ```
