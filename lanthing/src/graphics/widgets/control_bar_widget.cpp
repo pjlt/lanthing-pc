@@ -64,8 +64,7 @@ void ControlBarWidget::render() {
 
     ImGui::Begin("Tool", nullptr,
                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNavInputs |
-                     ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoSavedSettings);
+                     ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoResize);
     if (ImGui::IsWindowCollapsed()) {
         collapse_ = true;
     }
