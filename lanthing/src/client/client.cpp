@@ -696,7 +696,7 @@ bool Client::sendMessageToHost(uint32_t type,
                                bool reliable) {
     auto packet = ltproto::Packet::create({type, msg}, false);
     if (!packet.has_value()) {
-        LOG(ERR) << "Create Peer2Peer packet failed, type:" << type;
+        LOG(ERR) << "Create ltproto::Packet failed, type:" << type;
         return false;
     }
     const auto& pkt = packet.value();
