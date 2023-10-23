@@ -185,7 +185,6 @@ target_link_libraries(${PROJECT_NAME}
     ltlib
     ltproto
     rtc
-    nbp2p
     transport_api
     transport
     #fonts

@@ -58,21 +58,10 @@ WidgetsManager::WidgetsManager(const Params& params)
     , window_{params.window}
     , video_width_{params.video_width}
     , video_height_{params.video_height}
-    , set_bitrate_{params.set_bitrate} {
-    auto d3d11_dev = reinterpret_cast<ID3D11Device*>(params.dev);
-    auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(params.ctx);
-    d3d11_dev->AddRef();
-    d3d11_ctx->AddRef();
-    initImgui();
-}
+    , set_bitrate_{params.set_bitrate}
+    , status_{std::make_shared<StatusWidget>(video_width_, video_height_)}
+    , statistics_{std::make_shared<StatisticsWidget>(video_width_, video_height_)} {
 
-void WidgetsManager::initImgui() {
-    HWND hwnd = reinterpret_cast<HWND>(window_);
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-    ImGui_ImplWin32_Init(hwnd);
-    ImGui_ImplDX11_Init(reinterpret_cast<ID3D11Device*>(dev_),
-                        reinterpret_cast<ID3D11DeviceContext*>(ctx_));
     ControlBarWidget::Params control_params{};
     control_params.video_width = video_width_;
     control_params.video_height = video_height_;
@@ -91,23 +80,35 @@ void WidgetsManager::initImgui() {
     control_params.set_bitrate = set_bitrate_;
     control_params.show_stat = [this](bool show) { show_statistics_ = show; };
     control_bar_ = std::make_shared<ControlBarWidget>(control_params);
-    // 中文字体太大了，暂时不加上去
-    // auto& io = ImGui::GetIO();
-    // auto fs = cmrc::fonts::get_filesystem();
-    // auto font = fs.open("fonts/NotoSansSC-Medium.ttf");
-    // io.Fonts->AddFontFromMemoryTTF((void*)font.begin(), static_cast<int>(font.size()), 14,
-    // nullptr,
-    //                                io.Fonts->GetGlyphRangesChineseFull());
-    status_ = std::make_shared<StatusWidget>(video_width_, video_height_);
-    statistics_ = std::make_shared<StatisticsWidget>(video_width_, video_height_);
+
+    auto d3d11_dev = reinterpret_cast<ID3D11Device*>(params.dev);
+    auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(params.ctx);
+    d3d11_dev->AddRef();
+    d3d11_ctx->AddRef();
+    initImgui();
+}
+
+void WidgetsManager::initImgui() {
+    HWND hwnd = reinterpret_cast<HWND>(window_);
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplWin32_Init(hwnd);
+    ImGui_ImplDX11_Init(reinterpret_cast<ID3D11Device*>(dev_),
+                        reinterpret_cast<ID3D11DeviceContext*>(ctx_));
+
+    //  中文字体太大了，暂时不加上去
+    //  auto& io = ImGui::GetIO();
+    //  auto fs = cmrc::fonts::get_filesystem();
+    //  auto font = fs.open("fonts/NotoSansSC-Medium.ttf");
+    //  io.Fonts->AddFontFromMemoryTTF((void*)font.begin(), static_cast<int>(font.size()), 14,
+    //  nullptr,
+    //                                 io.Fonts->GetGlyphRangesChineseFull());
+    status_->resize();
     setImGuiValid(); // 最后
 }
 
 void WidgetsManager::uninitImgui() {
     setImGuiInvalid(); // 最先
-    status_ = nullptr;
-    statistics_ = nullptr;
-    control_bar_ = nullptr;
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();

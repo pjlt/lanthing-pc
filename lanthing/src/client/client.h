@@ -29,11 +29,13 @@
  */
 
 #pragma once
-#include <condition_variable>
 #include <cstdint>
+
+#include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 
 #include <ltlib/io/client.h>
@@ -170,6 +172,7 @@ private:
     int64_t time_diff_ = 0;
     bool windowed_fullscreen_ = true;
     bool signaling_keepalive_inited_ = false;
+    std::optional<bool> is_p2p_;
 };
 
 } // namespace cli

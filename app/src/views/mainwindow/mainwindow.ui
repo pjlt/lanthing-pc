@@ -37,6 +37,12 @@ QFrame {
 QLabel {
   border: none;
 }
+QToolTip { 
+  background-color: rgb(33, 37, 43); 
+  color:  rgb(255, 121, 198);	
+  border: black solid 1px
+}
+
 border:none;</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_6">

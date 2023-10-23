@@ -91,87 +91,87 @@
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="149"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="155"/>
         <source>Lanthing</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="437"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="443"/>
         <source>Main Page</source>
         <translation>主页</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="450"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="456"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="474"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="480"/>
         <source>Connecting...</source>
         <translation>正在连接...</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="601"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="607"/>
         <source>Device ID</source>
         <translation>设备码</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="618"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="624"/>
         <source>*********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="657"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="663"/>
         <source>Copied√</source>
         <translation>已复制√</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="687"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="693"/>
         <source>Access Token</source>
         <translation>验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="704"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="710"/>
         <source>********</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1281"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1287"/>
         <source>v0.1.0</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1310"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1316"/>
         <source>Run as Service</source>
         <translation>以服务运行</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1317"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1323"/>
         <source>Auto refresh access token</source>
         <translation>自动更新验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1348"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1354"/>
         <source>Fullscreen Mode</source>
         <translation>全屏模式</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1355"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1361"/>
         <source>Fullscreen</source>
         <translation>全屏独占</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1362"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1368"/>
         <source>Windowed Fullscreen</source>
         <translation>窗口化全屏</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1381"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1387"/>
         <source>Relay Server</source>
         <translation>中继服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1432"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1438"/>
         <source>Confirm</source>
         <translation>确认</translation>
     </message>

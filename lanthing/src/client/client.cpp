@@ -30,8 +30,7 @@
 
 #include "client.h"
 
-#include <ltlib/logging.h>
-#include <ltproto/ltproto.h>
+#include <sstream>
 
 #include <ltproto/client2service/time_sync.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
@@ -39,6 +38,7 @@
 #include <ltproto/client2worker/start_transmission.pb.h>
 #include <ltproto/client2worker/start_transmission_ack.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
+#include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/signaling/join_room.pb.h>
@@ -46,6 +46,7 @@
 #include <ltproto/signaling/signaling_message.pb.h>
 #include <ltproto/signaling/signaling_message_ack.pb.h>
 
+#include <ltlib/logging.h>
 #include <ltlib/time_sync.h>
 #include <string_keys.h>
 
@@ -82,6 +83,19 @@ lt::AudioCodecType atype() {
     default:
         LOG(FATAL) << "Unknown transport type";
         return lt::AudioCodecType::OPUS;
+    }
+}
+
+std::string toString(lt::VideoCodecType codec) {
+    switch (codec) {
+
+    case lt::VideoCodecType::H264:
+        return "AVC";
+    case lt::VideoCodecType::H265:
+        return "HEVC";
+    case lt::VideoCodecType::Unknown:
+    default:
+        return "?";
     }
 }
 
@@ -401,6 +415,7 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
         return;
     }
     LOG(INFO) << "Initialize SDL success";
+    sdl_->setTitle("Connecting....");
     video_params_.sdl = sdl_.get();
     input_params_.sdl = sdl_.get();
     if (!initTransport()) {
@@ -640,6 +655,13 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     start->set_token(that->auth_token_);
     that->sendMessageToHost(ltproto::id(start), start, true);
     that->postTask(std::bind(&Client::syncTime, that));
+
+    // setTitle
+    that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
+    std::ostringstream oss;
+    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ")
+        << toString(that->video_params_.codec_type) << " GPU:GPU"; // 暂时只支持硬件编解码.
+    that->sdl_->setTitle(oss.str());
 }
 
 void Client::onTpConnChanged(void*) {}
@@ -696,7 +718,7 @@ bool Client::sendMessageToHost(uint32_t type,
                                bool reliable) {
     auto packet = ltproto::Packet::create({type, msg}, false);
     if (!packet.has_value()) {
-        LOG(ERR) << "Create Peer2Peer packet failed, type:" << type;
+        LOG(ERR) << "Create ltproto::Packet failed, type:" << type;
         return false;
     }
     const auto& pkt = packet.value();

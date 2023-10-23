@@ -81,6 +81,7 @@ private:
     VideoCodecType codec_type_ = VideoCodecType::Unknown;
     std::mutex mutex_;
     std::vector<std::function<void()>> tasks_;
+    bool manual_bitrate_ = false;
 };
 
 VCEPipeline::VCEPipeline(const VideoCaptureEncodePipeline::Params& params)
@@ -198,9 +199,30 @@ void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _
     std::lock_guard lock{mutex_};
     tasks_.push_back([_msg, this]() {
         auto msg = std::static_pointer_cast<ltproto::worker2service::ReconfigureVideoEncoder>(_msg);
+        // 如果设置了手动码率，只接受带有trigger的Reconfigure消息
+        if (manual_bitrate_ && !msg->has_trigger()) {
+            return;
+        }
+        if (msg->has_trigger()) {
+            switch (msg->trigger()) {
+            case ltproto::worker2service::ReconfigureVideoEncoder_Trigger_TurnOnAuto:
+                LOG(DEBUG) << "Turn on auto bitrate";
+                manual_bitrate_ = false;
+                return;
+            case ltproto::worker2service::ReconfigureVideoEncoder_Trigger_TurnOffAuto:
+                LOG(DEBUG) << "Turn off auto bitrate";
+                manual_bitrate_ = true;
+                break;
+            default:
+                LOG(WARNING) << "ReconfigureVideoEncoder has wrong trigger value: "
+                             << (int)msg->trigger();
+                break;
+            }
+        }
         VideoEncoder::ReconfigureParams params{};
         bool changed = false;
         if (msg->has_bitrate_bps()) {
+            LOG(DEBUG) << "Set bitrate " << msg->bitrate_bps();
             params.bitrate_bps = msg->bitrate_bps();
             changed = true;
         }

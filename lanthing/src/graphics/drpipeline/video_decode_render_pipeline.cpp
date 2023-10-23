@@ -40,6 +40,9 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#include <ltproto/ltproto.h>
+#include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
+
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
 
@@ -340,8 +343,15 @@ void VDRPipeline::onStat() {
 }
 
 void VDRPipeline::onUserSetBitrate(uint32_t bps) {
-    (void)bps;
-    // TODO: 定义新的proto，告诉被控修改码率
+    auto msg = std::make_shared<ltproto::worker2service::ReconfigureVideoEncoder>();
+    if (bps == 0) {
+        msg->set_trigger(ltproto::worker2service::ReconfigureVideoEncoder_Trigger_TurnOnAuto);
+    }
+    else {
+        msg->set_trigger(ltproto::worker2service::ReconfigureVideoEncoder_Trigger_TurnOffAuto);
+        msg->set_bitrate_bps(bps);
+    }
+    send_message_to_host_(ltproto::id(msg), msg, true);
 }
 
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
