@@ -30,9 +30,11 @@
 
 #pragma once
 #include <cstdint>
+
 #include <functional>
 #include <future>
 #include <memory>
+#include <string>
 
 #include <inputs/capturer/input_event.h>
 
@@ -61,6 +63,8 @@ public:
     virtual void setInputHandler(const OnInputEvent&) = 0;
 
     virtual void toggleFullscreen() = 0;
+
+    virtual void setTitle(const std::string& title) = 0;
 
     virtual void stop() = 0;
 

@@ -43,6 +43,7 @@ namespace {
 constexpr int32_t kUserEventResetDRPipeline = 1;
 constexpr int32_t kUserEventToggleFullscreen = 2;
 constexpr int32_t kUserEventStop = 3;
+constexpr int32_t kUserEventSetTitle = 4;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -66,6 +67,8 @@ public:
     void setInputHandler(const OnInputEvent& on_event) override;
 
     void toggleFullscreen() override;
+
+    void setTitle(const std::string& title) override;
 
     void stop() override;
 
@@ -94,6 +97,7 @@ private: // 事件处理
     DispatchResult handleSdlJoyDeviceAdded(const SDL_Event& ev);
     DispatchResult handleSdlTouchEvent(const SDL_Event& ev);
     DispatchResult handleToggleFullscreen();
+    DispatchResult handleSetTitle();
 
 private:
     SDL_Window* window_ = nullptr;
@@ -103,6 +107,7 @@ private:
     std::mutex mutex_;
     std::unique_ptr<SdlInput> input_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
+    std::string title_ = "Lanthing";
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
@@ -138,6 +143,17 @@ SDL_Window* PcSdlImpl::window() {
 
 void PcSdlImpl::setInputHandler(const OnInputEvent& on_event) {
     input_->setInputHandler(on_event);
+}
+
+void PcSdlImpl::setTitle(const std::string& title) {
+    {
+        std::lock_guard lk{mutex_};
+        title_ = title;
+    }
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventSetTitle;
+    SDL_PushEvent(&ev);
 }
 
 void PcSdlImpl::toggleFullscreen() {
@@ -294,6 +310,8 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
         return resetDrPipeline();
     case kUserEventToggleFullscreen:
         return handleToggleFullscreen();
+    case kUserEventSetTitle:
+        return handleSetTitle();
     case kUserEventStop:
         LOG(INFO) << "SDL loop received user stop";
         return DispatchResult::kStop;
@@ -396,6 +414,17 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleToggleFullscreen() {
     SDL_WindowFlags fullscreen_mode =
         windowed_fullscreen_ ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
     SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : fullscreen_mode);
+    return DispatchResult::kContinue;
+}
+
+PcSdlImpl::DispatchResult PcSdlImpl::handleSetTitle() {
+    std::string title;
+    {
+        std::lock_guard lk{mutex_};
+        title = title_;
+    }
+    LOG(DEBUG) << "Set title " << title;
+    SDL_SetWindowTitle(window_, title.c_str());
     return DispatchResult::kContinue;
 }
 
