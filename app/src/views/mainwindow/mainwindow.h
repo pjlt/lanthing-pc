@@ -35,6 +35,7 @@
 #include <QValidator>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/qlabel.h>
+#include <QtWidgets/qpushbutton.h>
 
 #include <views/components/progress_widget.h>
 #include <views/gui.h>
@@ -55,6 +56,10 @@ public:
     void switchToMainPage();
 
     void switchToSettingPage();
+
+    void switchToManagerPage();
+
+    void switchToAboutPage();
 
     void setLoginStatus(lt::GUI::ErrCode code);
 
@@ -84,7 +89,9 @@ private:
 
     void loadPixmap();
 
-    void swapTabBtnStyleSheet();
+    QPushButton* indexToTabButton(int32_t index);
+
+    void swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* new_selected);
 
     void onConnectBtnClicked();
 

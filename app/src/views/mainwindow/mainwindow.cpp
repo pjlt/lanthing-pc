@@ -152,15 +152,31 @@ MainWindow::~MainWindow() {
 
 void MainWindow::switchToMainPage() {
     if (ui->stackedWidget->currentIndex() != 0) {
+        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnLinkTab);
         ui->stackedWidget->setCurrentIndex(0);
-        swapTabBtnStyleSheet();
     }
 }
 
 void MainWindow::switchToSettingPage() {
     if (ui->stackedWidget->currentIndex() != 1) {
+        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
+                             ui->btnManagerTab);
         ui->stackedWidget->setCurrentIndex(1);
-        swapTabBtnStyleSheet();
+    }
+}
+
+void MainWindow::switchToManagerPage() {
+    if (ui->stackedWidget->currentIndex() != 2) {
+        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
+                             ui->btnSettingsTab);
+        ui->stackedWidget->setCurrentIndex(2);
+    }
+}
+
+void MainWindow::switchToAboutPage() {
+    if (ui->stackedWidget->currentIndex() != 3) {
+        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnAboutTab);
+        ui->stackedWidget->setCurrentIndex(3);
     }
 }
 
@@ -384,6 +400,8 @@ void MainWindow::setupOtherCallbacks() {
     // 注意，有些按下就有效，有些要按下再释放
     connect(ui->btnLinkTab, &QPushButton::pressed, [this]() { switchToMainPage(); });
     connect(ui->btnSettingsTab, &QPushButton::pressed, [this]() { switchToSettingPage(); });
+    connect(ui->btnManagerTab, &QPushButton::pressed, [this]() { switchToManagerPage(); });
+    connect(ui->btnAboutTab, &QPushButton::pressed, [this]() { switchToAboutPage(); });
     connect(ui->btnMinimize, &QPushButton::clicked,
             [this]() { setWindowState(Qt::WindowState::WindowMinimized); });
     connect(ui->btnClose, &QPushButton::clicked, [this]() { hide(); });
@@ -505,10 +523,27 @@ void MainWindow::loadPixmap() {
     gp_green_.load(":/res/png_icons/gamepad_green.png");
 }
 
-void MainWindow::swapTabBtnStyleSheet() {
-    QString stylesheet = ui->btnSettingsTab->styleSheet();
-    ui->btnSettingsTab->setStyleSheet(ui->btnLinkTab->styleSheet());
-    ui->btnLinkTab->setStyleSheet(stylesheet);
+QPushButton* MainWindow::indexToTabButton(int32_t index) {
+    switch (index) {
+    case 0:
+        return ui->btnLinkTab;
+    case 1:
+        return ui->btnManagerTab;
+    case 2:
+        return ui->btnSettingsTab;
+    case 3:
+        return ui->btnAboutTab;
+    default:
+        // maybe fatal
+        LOG(ERR) << "Unknown tab index!";
+        return ui->btnLinkTab;
+    };
+}
+
+void MainWindow::swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* new_selected) {
+    QString stylesheet = new_selected->styleSheet();
+    new_selected->setStyleSheet(old_selected->styleSheet());
+    old_selected->setStyleSheet(stylesheet);
 }
 
 void MainWindow::onConnectBtnClicked() {
