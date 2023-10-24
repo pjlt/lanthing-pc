@@ -45,6 +45,7 @@
 #include <ltlib/strings.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 
+#include "friendly_error_code.h"
 #include "mainwindow/mainwindow.h"
 
 namespace {
@@ -113,6 +114,8 @@ public:
     void errorMessageBox(const std::string& message);
 
     void infoMessageBox(const std::string& message);
+
+    void errorCode(int32_t code);
 
 private:
     void setLanguage();
@@ -189,7 +192,9 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
 }
 
 int GUIImpl::exec() {
-    return qapp_->exec();
+    int ret = qapp_->exec();
+    WinToastLib::WinToast::instance()->clear();
+    return ret;
 }
 
 void GUIImpl::setDeviceID(int64_t device_id) {
@@ -235,11 +240,16 @@ void GUIImpl::onDisconnectedConnection(int64_t device_id) {
 }
 
 void GUIImpl::errorMessageBox(const std::string& message) {
-    main_window_->errorMessageBox(message);
+    main_window_->errorMessageBox(QString::fromStdString(message));
 }
 
 void GUIImpl::infoMessageBox(const std::string& message) {
-    main_window_->infoMessageBox(message);
+    main_window_->infoMessageBox(QString::fromStdString(message));
+}
+
+void GUIImpl::errorCode(int32_t code) {
+    QString error_msg = errorCode2FriendlyMessage(code);
+    main_window_->errorMessageBox(error_msg);
 }
 
 void GUIImpl::setLanguage() {
@@ -306,6 +316,10 @@ void GUI::errorMessageBox(const std::string& message) {
 
 void GUI::infoMessageBox(const std::string& message) {
     impl_->infoMessageBox(message);
+}
+
+void GUI::errorCode(int32_t code) {
+    impl_->errorCode(code);
 }
 
 } // namespace lt

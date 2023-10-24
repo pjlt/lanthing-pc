@@ -32,6 +32,8 @@ set(APP_SRCS
     # gui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/gui.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/friendly_error_code.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views/friendly_error_code.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/components/progress_widget.h

@@ -297,8 +297,15 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         worker_sessions_[session_name] = nullptr;
     }
     // 2. 准备启动worker的参数
+    std::string id_str = std::to_string(msg->client_device_id());
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
+    worker_params.enable_gamepad =
+        settings_->getBoolean("enable_gamepad_for_" + id_str).value_or(true);
+    worker_params.enable_keyboard =
+        settings_->getBoolean("enable_keyboard_for_" + id_str).value_or(false);
+    worker_params.enable_mouse =
+        settings_->getBoolean("enable_mouse_for_" + id_str).value_or(false);
     worker_params.ioloop = ioloop_.get();
     worker_params.post_task = std::bind(&Service::postTask, this, std::placeholders::_1);
     worker_params.post_delay_task =

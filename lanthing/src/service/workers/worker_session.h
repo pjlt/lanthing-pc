@@ -76,6 +76,9 @@ public:
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
+        bool enable_gamepad;
+        bool enable_keyboard;
+        bool enable_mouse;
     };
 
 public:
@@ -211,9 +214,9 @@ private:
     std::deque<SpeedEntry> video_send_history_;
     int64_t video_send_bps_ = 0;
 
-    std::atomic<bool> enable_gamepad_ = true;
-    std::atomic<bool> enable_keyboard_ = false;
-    std::atomic<bool> enable_mouse_ = false;
+    std::atomic<bool> enable_gamepad_;
+    std::atomic<bool> enable_keyboard_;
+    std::atomic<bool> enable_mouse_;
 };
 
 } // namespace svc

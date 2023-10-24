@@ -109,7 +109,10 @@ WorkerSession::WorkerSession(const Params& params)
     , on_connection_status_(params.on_connection_status)
     , user_defined_relay_server_(params.user_defined_relay_server)
     , on_create_session_completed_(params.on_create_completed)
-    , on_closed_(params.on_closed) {
+    , on_closed_(params.on_closed)
+    , enable_gamepad_(params.enable_gamepad)
+    , enable_keyboard_(params.enable_keyboard)
+    , enable_mouse_(params.enable_mouse) {
     constexpr int kRandLength = 4;
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {

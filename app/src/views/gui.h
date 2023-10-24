@@ -55,11 +55,21 @@ public:
 
     enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
 
+    enum class DeviceType { Gamepad, Mouse, Keyboard };
+
     struct Settings {
         bool run_as_daemon;
         bool auto_refresh_access_token;
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
+    };
+
+    struct TrustedDevice {
+        int64_t device_id;
+        bool gamepad;
+        bool mouse;
+        bool keyboard;
+        int64_t last_access_time_s;
     };
 
     struct Params {
@@ -72,6 +82,9 @@ public:
         std::function<void(const std::string&)> set_relay_server;
         std::function<void(int64_t, ConfirmResult)> on_user_confirmed_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_operate_connection;
+        std::function<void(int64_t, DeviceType, bool)> enable_device_permission;
+        std::function<void(int64_t)> delete_trusted_device;
+        std::function<std::vector<TrustedDevice>()> get_trusted_devices;
     };
 
 public:
@@ -98,6 +111,10 @@ public:
     void errorMessageBox(const std::string& message);
 
     void infoMessageBox(const std::string& message);
+
+    void errorCode(int32_t code);
+
+    void updateTrustedDevice(const TrustedDevice& device);
 
 private:
     std::shared_ptr<GUIImpl> impl_;

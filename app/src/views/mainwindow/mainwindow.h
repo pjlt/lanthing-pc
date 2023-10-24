@@ -35,6 +35,7 @@
 #include <QValidator>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/qlabel.h>
+#include <QtWidgets/qpushbutton.h>
 
 #include <views/components/progress_widget.h>
 #include <views/gui.h>
@@ -56,6 +57,10 @@ public:
 
     void switchToSettingPage();
 
+    void switchToManagerPage();
+
+    void switchToAboutPage();
+
     void setLoginStatus(lt::GUI::ErrCode code);
 
     void setDeviceID(int64_t device_id);
@@ -70,9 +75,11 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
-    void errorMessageBox(const std::string& message);
+    void errorMessageBox(const QString& message);
 
-    void infoMessageBox(const std::string& message);
+    void infoMessageBox(const QString& message);
+
+    void addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s);
 
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override; // override?
@@ -84,7 +91,9 @@ private:
 
     void loadPixmap();
 
-    void swapTabBtnStyleSheet();
+    QPushButton* indexToTabButton(int32_t index);
+
+    void swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* new_selected);
 
     void onConnectBtnClicked();
 
@@ -95,6 +104,13 @@ private:
     void onUpdateIndicator();
 
     void onTimeoutHideToken();
+
+    void addOrUpdateTrustedDevices();
+
+    void addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool mouse, bool keyboard,
+                                  int64_t last_access_time);
+
+    QWidget* makeWidgetHCentered(QWidget* widget);
 
     static void setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
                                       const QPixmap& white, const QPixmap& gray, const QPixmap& red,
