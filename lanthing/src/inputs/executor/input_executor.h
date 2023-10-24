@@ -76,6 +76,8 @@ private:
     // void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor);
 
+    void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+
 private:
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>

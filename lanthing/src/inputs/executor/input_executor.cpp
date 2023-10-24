@@ -41,6 +41,7 @@
 #include <ltproto/client2worker/controller_added_removed.pb.h>
 #include <ltproto/client2worker/controller_response.pb.h>
 #include <ltproto/client2worker/controller_status.pb.h>
+#include <ltproto/client2worker/switch_mouse_mode.pb.h>
 #include <ltproto/ltproto.h>
 
 #include "win_send_input.h"
@@ -87,7 +88,8 @@ bool InputExecutor::registerHandlers() {
         {ltype::kKeyboardEvent, std::bind(&InputExecutor::onKeyboardEvent, this, ph::_1)},
         {ltype::kControllerAddedRemoved,
          std::bind(&InputExecutor::onControllerAddedRemoved, this, ph::_1)},
-        {ltype::kControllerStatus, std::bind(&InputExecutor::onControllerStatus, this, ph::_1)}};
+        {ltype::kControllerStatus, std::bind(&InputExecutor::onControllerStatus, this, ph::_1)},
+        {ltype::kSwitchMouseMode, std::bind(&InputExecutor::onSwitchMouseMode, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler_(handler.first, handler.second)) {
             return false;
@@ -145,6 +147,11 @@ void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint
     controller->set_large_motor(large_motor);
     controller->set_small_moror(small_motor);
     sendMessagte(ltproto::id(controller), controller);
+}
+
+void InputExecutor::onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
+    auto msg = std::static_pointer_cast<ltproto::client2worker::SwitchMouseMode>(_msg);
+    is_absolute_mouse_ = msg->absolute();
 }
 
 } // namespace lt
