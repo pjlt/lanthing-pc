@@ -70,9 +70,9 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
-    void errorMessageBox(const std::string& message);
+    void errorMessageBox(const QString& message);
 
-    void infoMessageBox(const std::string& message);
+    void infoMessageBox(const QString& message);
 
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override; // override?

@@ -342,19 +342,19 @@ void MainWindow::onDisconnectedConnection(int64_t device_id) {
     });
 }
 
-void MainWindow::errorMessageBox(const std::string& message) {
+void MainWindow::errorMessageBox(const QString& message) {
     dispatchToUiThread([this, message]() {
         QMessageBox msgbox;
-        msgbox.setText(QString::fromStdString(message));
+        msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Critical);
         msgbox.exec();
     });
 }
 
-void MainWindow::infoMessageBox(const std::string& message) {
+void MainWindow::infoMessageBox(const QString& message) {
     dispatchToUiThread([this, message]() {
         QMessageBox msgbox;
-        msgbox.setText(QString::fromStdString(message));
+        msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Information);
         msgbox.exec();
     });

@@ -376,9 +376,8 @@ void App::onLaunchClientSuccess(int64_t device_id) { // 只将“合法”的dev
 }
 
 void App::onConnectFailed(int64_t device_id, int32_t error_code) {
-    std::ostringstream ss;
-    ss << "Connect(" << device_id << ") error: " << error_code;
-    gui_.errorMessageBox(ss.str());
+    (void)device_id;
+    gui_.errorCode(error_code);
 }
 
 void App::postTask(const std::function<void()>& task) {

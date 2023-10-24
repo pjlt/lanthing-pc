@@ -99,6 +99,8 @@ public:
 
     void infoMessageBox(const std::string& message);
 
+    void errorCode(int32_t code);
+
 private:
     std::shared_ptr<GUIImpl> impl_;
 };
