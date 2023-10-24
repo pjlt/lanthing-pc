@@ -37,6 +37,7 @@
 #include <ltproto/client2worker/send_side_stat.pb.h>
 #include <ltproto/client2worker/start_transmission.pb.h>
 #include <ltproto/client2worker/start_transmission_ack.pb.h>
+#include <ltproto/client2worker/switch_mouse_mode.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
@@ -354,6 +355,14 @@ void Client::toggleFullscreen() {
     sdl_->toggleFullscreen();
 }
 
+void Client::switchMouseMode() {
+    absolute_mouse_ = !absolute_mouse_;
+    sdl_->switchMouseMode(absolute_mouse_);
+    auto msg = std::make_shared<ltproto::client2worker::SwitchMouseMode>();
+    msg->set_absolute(absolute_mouse_);
+    sendMessageToHost(ltproto::id(msg), msg, true);
+}
+
 void Client::onSignalingNetMessage(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
@@ -638,6 +647,7 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     that->input_params_.host_height = that->video_params_.height;
     that->input_params_.host_width = that->video_params_.width;
     that->input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, that);
+    that->input_params_.switch_mouse_mode = std::bind(&Client::switchMouseMode, that);
     that->input_capturer_ = InputCapturer::create(that->input_params_);
     if (that->input_capturer_ == nullptr) {
         LOG(ERR) << "Create InputCapturer failed";

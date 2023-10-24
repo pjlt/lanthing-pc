@@ -106,6 +106,7 @@ private:
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
     void syncTime();
     void toggleFullscreen();
+    void switchMouseMode();
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -173,6 +174,7 @@ private:
     bool windowed_fullscreen_ = true;
     bool signaling_keepalive_inited_ = false;
     std::optional<bool> is_p2p_;
+    bool absolute_mouse_ = true;
 };
 
 } // namespace cli

@@ -49,6 +49,7 @@ public:
         std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
             send_message;
         std::function<void()> toggle_fullscreen;
+        std::function<void()> switch_mouse_mode;
     };
 
 public:
