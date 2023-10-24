@@ -31,11 +31,10 @@
 #pragma once
 #include <cstdint>
 
-#include <fstream>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <ltlib/ltlib.h>
 
@@ -60,6 +59,8 @@ public:
     virtual void setString(const std::string& key, const std::string& value) = 0;
     virtual auto getString(const std::string& key) -> std::optional<std::string> = 0;
     virtual auto getUpdateTime(const std::string& key) -> std::optional<int64_t> = 0;
+    virtual auto getKeysStartWith(const std::string& prefix) -> std::vector<std::string> = 0;
+    virtual void deleteKey(const std::string& key) = 0;
 
 protected:
     virtual bool init() = 0;

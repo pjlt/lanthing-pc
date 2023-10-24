@@ -79,6 +79,8 @@ public:
 
     void infoMessageBox(const QString& message);
 
+    void addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s);
+
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override; // override?
 
@@ -102,6 +104,13 @@ private:
     void onUpdateIndicator();
 
     void onTimeoutHideToken();
+
+    void addOrUpdateTrustedDevices();
+
+    void addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool mouse, bool keyboard,
+                                  int64_t last_access_time);
+
+    QWidget* makeWidgetHCentered(QWidget* widget);
 
     static void setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
                                       const QPixmap& white, const QPixmap& gray, const QPixmap& red,

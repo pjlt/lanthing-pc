@@ -72,6 +72,9 @@ private:
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onFullscreenModeChanged(bool is_windowed);
+    void enableDevicePermission(int64_t device_id, GUI::DeviceType type, bool enable);
+    void deleteTrustedDevice(int64_t device_id);
+    std::vector<GUI::TrustedDevice> getTrustedDevices();
 
     void createAndStartService();
     void stopService();

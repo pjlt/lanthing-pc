@@ -31,6 +31,7 @@
 #include "app.h"
 
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <thread>
 
@@ -42,6 +43,7 @@
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
+#include <ltproto/service2app/accepted_connection.pb.h>
 
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
@@ -197,6 +199,12 @@ int App::exec(int argc, char** argv) {
     params.set_relay_server = std::bind(&App::setRelayServer, this, std::placeholders::_1);
     params.set_fullscreen_mode =
         std::bind(&App::onFullscreenModeChanged, this, std::placeholders::_1);
+    params.enable_device_permission =
+        std::bind(&App::enableDevicePermission, this, std::placeholders::_1, std::placeholders ::_2,
+                  std::placeholders::_3);
+    params.delete_trusted_device =
+        std::bind(&App::deleteTrustedDevice, this, std::placeholders::_1);
+    params.get_trusted_devices = std::bind(&App::getTrustedDevices, this);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -268,6 +276,71 @@ void App::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg
 
 void App::onFullscreenModeChanged(bool is_windowed) {
     postTask([this, is_windowed]() { settings_->setBoolean("windowed_fullscreen", is_windowed); });
+}
+
+void App::enableDevicePermission(int64_t device_id, GUI::DeviceType type, bool enable) {
+    std::string key;
+    switch (type) {
+    case GUI::DeviceType::Gamepad:
+        key = "enable_gamepad_for_" + std::to_string(device_id);
+        break;
+    case GUI::DeviceType::Mouse:
+        key = "enable_mouse_for_" + std::to_string(device_id);
+        break;
+    case GUI::DeviceType::Keyboard:
+        key = "enable_keyboard_for_" + std::to_string(device_id);
+        break;
+    default:
+        LOG(ERR) << "Unknown DeviceType " << (int)type;
+        return;
+    }
+    settings_->setBoolean(key, enable);
+}
+
+void App::deleteTrustedDevice(int64_t device_id) {
+    LOG(INFO) << "deleteTrustedDevice " << device_id;
+    std::string id_str = std::to_string(device_id);
+    std::string key = "from_" + id_str;
+    settings_->deleteKey(key);
+    key = "enable_mouse_for_" + id_str;
+    settings_->deleteKey(key);
+    key = "enable_keyboard_for_" + id_str;
+    settings_->deleteKey(key);
+    key = "enable_gamepad_for_" + id_str;
+    settings_->deleteKey(key);
+    key = "last_time_from_" + id_str;
+    settings_->deleteKey(key);
+}
+
+std::vector<GUI::TrustedDevice> App::getTrustedDevices() {
+    std::vector<GUI::TrustedDevice> result;
+    auto keys = settings_->getKeysStartWith("from_");
+    LOG(INFO) << "getKeysStartWith " << keys.size();
+    for (auto& key : keys) {
+        int64_t device_id = -1;
+        int ret = sscanf(key.c_str(), "from_%" PRId64, &device_id);
+        if (ret == EOF) {
+            LOG(ERR) << "key " << key << " sscanf failed";
+            continue;
+        }
+        auto id_str = std::to_string(device_id);
+        std::string key2 = "enable_gamepad_for_" + id_str;
+        auto gamepad = settings_->getBoolean(key2);
+        key2 = "enable_mouse_for_" + id_str;
+        auto mouse = settings_->getBoolean(key2);
+        key2 = "enable_keyboard_for_" + id_str;
+        auto keyboard = settings_->getBoolean(key2);
+        key2 = "last_time_from_" + id_str;
+        auto last_time = settings_->getInteger(key2);
+        GUI::TrustedDevice device{};
+        device.device_id = device_id;
+        device.gamepad = gamepad.value_or(true);
+        device.keyboard = keyboard.value_or(false);
+        device.mouse = mouse.value_or(false);
+        device.last_access_time_s = last_time.value_or(0);
+        result.push_back(device);
+    }
+    return result;
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -535,8 +608,11 @@ void App::onConfirmConnection(int64_t device_id) {
     gui_.onConfirmConnection(device_id);
 }
 
-void App::onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    gui_.onAccptedConnection(msg);
+void App::onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedConnection>(_msg);
+    std::string key = "last_time_from_" + std::to_string(msg->device_id());
+    settings_->setInteger(key, ltlib::utc_now_ms() / 1000);
+    gui_.onAccptedConnection(_msg);
 }
 
 void App::onDisconnectedConnection(int64_t device_id) {

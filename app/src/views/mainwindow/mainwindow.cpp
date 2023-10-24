@@ -43,6 +43,7 @@
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qscrollarea.h>
 #include <qclipboard.h>
+#include <qdatetime.h>
 #include <qmenu.h>
 
 #include <ltlib/logging.h>
@@ -142,6 +143,9 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->radioWindowedFullscreen->setChecked(false);
     }
 
+    // 客户端表格
+    addOrUpdateTrustedDevices();
+
     // 其它回调
     setupOtherCallbacks();
 }
@@ -157,7 +161,7 @@ void MainWindow::switchToMainPage() {
     }
 }
 
-void MainWindow::switchToSettingPage() {
+void MainWindow::switchToManagerPage() {
     if (ui->stackedWidget->currentIndex() != 1) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
                              ui->btnManagerTab);
@@ -165,7 +169,7 @@ void MainWindow::switchToSettingPage() {
     }
 }
 
-void MainWindow::switchToManagerPage() {
+void MainWindow::switchToSettingPage() {
     if (ui->stackedWidget->currentIndex() != 2) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
                              ui->btnSettingsTab);
@@ -373,6 +377,12 @@ void MainWindow::infoMessageBox(const QString& message) {
         msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Information);
         msgbox.exec();
+    });
+}
+
+void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s) {
+    dispatchToUiThread([this, device_id, time_s]() {
+        addOrUpdateTrustedDevice(device_id, true, false, false, time_s);
     });
 }
 
@@ -607,6 +617,87 @@ void MainWindow::onTimeoutHideToken() {
         QTimer::singleShot(token_last_show_time_ms_ + 5'100 - now_ms,
                            std::bind(&MainWindow::onTimeoutHideToken, this));
     }
+}
+
+void MainWindow::addOrUpdateTrustedDevices() {
+    auto trusted_devices = params_.get_trusted_devices();
+    for (auto& device : trusted_devices) {
+        addOrUpdateTrustedDevice(device.device_id, device.gamepad, device.mouse, device.keyboard,
+                                 device.last_access_time_s);
+    }
+    // 简化逻辑，固定5秒查一次，不然内部要存很多状态
+    QTimer::singleShot(5'000, this, &MainWindow::addOrUpdateTrustedDevices);
+}
+
+void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool mouse,
+                                          bool keyboard, int64_t last_access_time) {
+    int row = -1;
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
+        if (ui->tableWidget->item(i, 0)->data(Qt::DisplayRole).toLongLong() == device_id) {
+            row = i;
+            break;
+        }
+    }
+    if (row == -1) {
+        row = ui->tableWidget->rowCount();
+        ui->tableWidget->setRowCount(row + 1);
+    }
+
+    // id
+    QTableWidgetItem* id_item = new QTableWidgetItem;
+    ui->tableWidget->setItem(row, 0, id_item);
+    id_item->setData(Qt::DisplayRole, device_id);
+    // gamepad
+    QCheckBox* gamepad_item = new QCheckBox();
+    gamepad_item->setChecked(gamepad);
+    connect(gamepad_item, &QCheckBox::stateChanged, [this, gamepad_item, device_id](int) {
+        params_.enable_device_permission(device_id, lt::GUI::DeviceType::Gamepad,
+                                         gamepad_item->isChecked());
+    });
+    ui->tableWidget->setCellWidget(row, 1, makeWidgetHCentered(gamepad_item));
+    // mouse
+    QCheckBox* mouse_item = new QCheckBox();
+    mouse_item->setChecked(mouse);
+    connect(mouse_item, &QCheckBox::stateChanged, [this, mouse_item, device_id](int) {
+        params_.enable_device_permission(device_id, lt::GUI::DeviceType::Mouse,
+                                         mouse_item->isChecked());
+    });
+    ui->tableWidget->setCellWidget(row, 2, makeWidgetHCentered(mouse_item));
+    // keyboard
+    QCheckBox* keyboard_item = new QCheckBox();
+    keyboard_item->setChecked(keyboard);
+    connect(keyboard_item, &QCheckBox::stateChanged, [this, keyboard_item, device_id](int) {
+        params_.enable_device_permission(device_id, lt::GUI::DeviceType::Keyboard,
+                                         keyboard_item->isChecked());
+    });
+    ui->tableWidget->setCellWidget(row, 3, makeWidgetHCentered(keyboard_item));
+    // time
+    QTableWidgetItem* time_item =
+        new QTableWidgetItem(QDateTime::fromSecsSinceEpoch(last_access_time)
+                                 .toLocalTime()
+                                 .toString("yyyy.MM.dd hh:mm:ss"));
+    ui->tableWidget->setItem(row, 4, time_item);
+    // delete
+    QPushButton* delete_item = new QPushButton(tr("delete"));
+    connect(delete_item, &QPushButton::clicked, [this, device_id]() {
+        for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
+            if (ui->tableWidget->item(i, 0)->data(Qt::DisplayRole).toLongLong() == device_id) {
+                ui->tableWidget->removeRow(i);
+                break;
+            }
+        }
+        params_.delete_trusted_device(device_id);
+    });
+    ui->tableWidget->setCellWidget(row, 5, delete_item);
+}
+
+QWidget* MainWindow::makeWidgetHCentered(QWidget* input_widget) {
+    QWidget* output_widget = new QWidget();
+    QHBoxLayout* layout = new QHBoxLayout(output_widget);
+    layout->addWidget(input_widget);
+    layout->setAlignment(Qt::AlignCenter);
+    layout->setContentsMargins(0, 0, 0, 0);
+    return output_widget;
 }
 
 void MainWindow::setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
