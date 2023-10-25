@@ -1698,7 +1698,7 @@ QHeaderView::section:vertical
                       <item>
                        <widget class="QLabel" name="labelShotcutMouseModeName">
                         <property name="text">
-                         <string>Mouse mode</string>
+                         <string>Mouse mode (Not working yet)</string>
                         </property>
                        </widget>
                       </item>

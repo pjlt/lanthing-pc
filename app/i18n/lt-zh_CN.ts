@@ -192,6 +192,11 @@
         <translation>确认</translation>
     </message>
     <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1701"/>
+        <source>Mouse mode (Not working yet)</source>
+        <translation type="unfinished">鼠标模式（暂不生效）</translation>
+    </message>
+    <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1412"/>
         <source>Trusted clients:</source>
         <translation>已信任客户端：</translation>
@@ -242,9 +247,8 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1701"/>
         <source>Mouse mode</source>
-        <translation>鼠标模式</translation>
+        <translation type="vanished">鼠标模式</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1708"/>

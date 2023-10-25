@@ -71,6 +71,7 @@ public:
 
     virtual void switchMouseMode(bool absolute) = 0;
 
+    // DO NOT USE THIS TWO FUNCTIONS
     // Currently only support preset cursor
     virtual void setCursorShape(int32_t preset_id) = 0;
 

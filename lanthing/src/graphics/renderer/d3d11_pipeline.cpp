@@ -207,8 +207,6 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     d3d11_ctx_->OMSetRenderTargets(1, render_view_.GetAddressOf(), nullptr);
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
-
-    ID3D11ShaderResourceView* const cursor_view[1] = {cursors_[0].view.Get()};
     return result;
 }
 
@@ -323,9 +321,9 @@ bool D3D11Pipeline::init() {
     if (!setupRenderPipeline()) {
         return false;
     }
-    if (!createCursors()) {
-        return false;
-    }
+    // if (!createCursors()) {
+    //     return false;
+    // }
     return true;
 }
 
