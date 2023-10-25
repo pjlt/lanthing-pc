@@ -65,6 +65,7 @@ public:
 
 private:
     void mainLoop(const std::function<void()>& i_am_alive);
+    void loadSystemCursor();
     bool registerHandlers();
     void consumeTasks();
     void captureAndSendCursor();
@@ -107,6 +108,7 @@ VCEPipeline::~VCEPipeline() {
 }
 
 bool VCEPipeline::init() {
+    loadSystemCursor();
     if (!registerHandlers()) {
         return false;
     }
@@ -187,6 +189,28 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive) {
         captureAndSendCursor();
     }
     stop_promise_->set_value();
+}
+
+void VCEPipeline::loadSystemCursor() { // 释放?
+    cursors_[LoadCursorA(nullptr, IDC_ARROW)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_Arrow;
+    cursors_[LoadCursorA(nullptr, IDC_IBEAM)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_Ibeam;
+    cursors_[LoadCursorA(nullptr, IDC_WAIT)] = ltproto::client2worker::CursorInfo_PresetCursor_Wait;
+    cursors_[LoadCursorA(nullptr, IDC_CROSS)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_Cross;
+    cursors_[LoadCursorA(nullptr, IDC_SIZENWSE)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeNwse;
+    cursors_[LoadCursorA(nullptr, IDC_SIZENESW)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeNesw;
+    cursors_[LoadCursorA(nullptr, IDC_SIZEWE)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeWe;
+    cursors_[LoadCursorA(nullptr, IDC_SIZENS)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeNs;
+    cursors_[LoadCursorA(nullptr, IDC_SIZEALL)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeAll;
+    cursors_[LoadCursorA(nullptr, IDC_NO)] = ltproto::client2worker::CursorInfo_PresetCursor_No;
+    cursors_[LoadCursorA(nullptr, IDC_HAND)] = ltproto::client2worker::CursorInfo_PresetCursor_Hand;
 }
 
 bool VCEPipeline::registerHandlers() {

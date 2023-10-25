@@ -70,7 +70,7 @@ protected:
     virtual void onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>&) = 0;
 
     void sendMessage(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    bool isAbsoluteMouse() const;
+    bool isAbsoluteMouse();
 
 private:
     bool init();

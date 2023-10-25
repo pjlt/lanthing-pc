@@ -106,7 +106,7 @@ void InputExecutor::switchMouseMode(bool absolute) {
     is_absolute_mouse_ = absolute;
 }
 
-bool InputExecutor::isAbsoluteMouse() const {
+bool InputExecutor::isAbsoluteMouse() {
     std::lock_guard lk{mutex_};
     return is_absolute_mouse_;
 }
