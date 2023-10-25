@@ -161,6 +161,7 @@ private:
     bool sendMessageToRemoteClient(uint32_t type,
                                    const std::shared_ptr<google::protobuf::MessageLite>& msg,
                                    bool reliable);
+    void bypassToClient(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void updateLastRecvTime();
     void checkTimeout();
