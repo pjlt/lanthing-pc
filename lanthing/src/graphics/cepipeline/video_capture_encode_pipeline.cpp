@@ -69,6 +69,7 @@ private:
     bool registerHandlers();
     void consumeTasks();
     void captureAndSendCursor();
+    void captureAndSendVideoFrame();
 
     // 从service收到的消息
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -173,18 +174,7 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive) {
         // vblank后应该第一时间抓屏还是消费任务？
         consumeTasks();
         capturer_->waitForVBlank();
-        auto captured_frame = capturer_->capture();
-        capturer_->doneWithFrame();
-        if (!captured_frame.has_value()) {
-            continue;
-        }
-        auto encoded_frame = encoder_->encode(captured_frame.value());
-        if (encoded_frame == nullptr) {
-            continue;
-        }
-        // TODO: 计算编码完成距离上一次vblank时间
-        send_message_(ltproto::id(encoded_frame), encoded_frame);
-
+        captureAndSendVideoFrame();
         // 光标逻辑是否要放到其它线程捕获？先在同一线程做，后面做优化再来测，用数据说话
         captureAndSendCursor();
     }
@@ -290,6 +280,20 @@ void VCEPipeline::captureAndSendCursor() {
         LOGF(ERR, "GetCursorInfo=>%u and GetCursorPos=>%u", error1, error2);
     }
     get_cursor_failed_ = true;
+}
+
+void VCEPipeline::captureAndSendVideoFrame() {
+    auto captured_frame = capturer_->capture();
+    capturer_->doneWithFrame();
+    if (!captured_frame.has_value()) {
+        return;
+    }
+    auto encoded_frame = encoder_->encode(captured_frame.value());
+    if (encoded_frame == nullptr) {
+        return;
+    }
+    // TODO: 计算编码完成距离上一次vblank时间
+    send_message_(ltproto::id(encoded_frame), encoded_frame);
 }
 
 void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _msg) {

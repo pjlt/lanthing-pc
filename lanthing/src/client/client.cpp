@@ -774,6 +774,8 @@ void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg)
 
 void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(_msg);
+    LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y%d", msg->preset(), msg->w(), msg->h(),
+         msg->x(), msg->y());
     if (msg->w() == 0 || msg->h() == 0) {
         if (!last_w_or_h_is_0_) {
             last_w_or_h_is_0_ = true;
