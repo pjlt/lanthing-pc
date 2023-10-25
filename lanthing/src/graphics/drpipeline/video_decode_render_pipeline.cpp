@@ -34,6 +34,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
+#include <tuple>
 
 #include <ltlib/logging.h>
 #define SDL_MAIN_HANDLED
@@ -74,6 +75,7 @@ public:
     void setNack(uint32_t nack);
     void setLossRate(float rate);
     void resetRenderTarget();
+    void setCursorInfo(int32_t cursor_id, float x, float y);
 
 private:
     void decodeLoop(const std::function<void()>& i_am_alive);
@@ -84,6 +86,7 @@ private:
     bool waitForRender(std::chrono::microseconds ms);
     void onStat();
     void onUserSetBitrate(uint32_t bps);
+    std::tuple<int32_t, float, float> getCursorInfo();
 
 private:
     const uint32_t width_;
@@ -124,6 +127,11 @@ private:
     uint32_t bwe_ = 0;
     uint32_t nack_ = 0;
     float loss_rate_ = .0f;
+
+    int32_t cursor_id_ = 0;
+    float cursor_x_ = 0.f;
+    float cursor_y_ = 0.f;
+    bool absolute_moute_ = true;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -276,6 +284,13 @@ void VDRPipeline::resetRenderTarget() {
     video_renderer_->resetRenderTarget();
 }
 
+void VDRPipeline::setCursorInfo(int32_t cursor_id, float x, float y) {
+    std::lock_guard lk{render_mtx_};
+    cursor_id_ = cursor_id;
+    cursor_x_ = x;
+    cursor_y_ = y;
+}
+
 bool VDRPipeline::waitForDecode(std::vector<VideoFrameInternal>& frames,
                                 std::chrono::microseconds max_delay) {
     std::unique_lock<std::mutex> lock(decode_mtx_);
@@ -354,6 +369,11 @@ void VDRPipeline::onUserSetBitrate(uint32_t bps) {
     send_message_to_host_(ltproto::id(msg), msg, true);
 }
 
+std::tuple<int32_t, float, float> VDRPipeline::getCursorInfo() {
+    std::lock_guard lk{render_mtx_};
+    return {cursor_id_, cursor_x_, cursor_y_};
+}
+
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
@@ -382,9 +402,11 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
                 }
                 statistics_->updateRenderVideoTime(end - start);
             }
+            auto [cursor, x, y] = getCursorInfo();
             auto start = ltlib::steady_now_us();
             widgets_->render();
             auto mid = ltlib::steady_now_us();
+            video_renderer_->renderCursor(cursor, x, y);
             video_renderer_->present();
             auto end = ltlib::steady_now_us();
             statistics_->addPresent();

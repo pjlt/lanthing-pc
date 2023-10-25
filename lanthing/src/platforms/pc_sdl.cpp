@@ -88,7 +88,8 @@ private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
     bool initSdlSubSystems();
     void quitSdlSubSystems();
-    void createSystenCursors();
+    void createSystemCursors();
+    void destroySystemCursors();
 
 private: // 事件处理
     enum class DispatchResult {
@@ -148,13 +149,7 @@ PcSdlImpl::PcSdlImpl(const Params& params)
     , windowed_fullscreen_{params.windowed_fullscreen}
     , absolute_mouse_{params.absolute_mouse} {}
 
-PcSdlImpl::~PcSdlImpl() {
-    for (auto& cursor : system_cursors_) {
-        if (cursor.second) {
-            SDL_FreeCursor(cursor.second);
-        }
-    }
-}
+PcSdlImpl::~PcSdlImpl() {}
 
 bool PcSdlImpl::init() {
     std::promise<bool> promise;
@@ -243,6 +238,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         promise.set_value(false);
         return;
     }
+    createSystemCursors();
     int desktop_width = 1920;
     int desktop_height = 1080;
     SDL_DisplayMode dm{};
@@ -300,6 +296,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
 CLEANUP:
     // 回收资源，删除解码器等
     SDL_DestroyWindow(window_);
+    destroySystemCursors();
     quitSdlSubSystems();
     on_exit_();
 }
@@ -329,7 +326,7 @@ void PcSdlImpl::quitSdlSubSystems() {
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-void PcSdlImpl::createSystenCursors() {
+void PcSdlImpl::createSystemCursors() {
     for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++) {
         SDL_Cursor* cursor = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
         if (cursor == nullptr) {
@@ -337,6 +334,14 @@ void PcSdlImpl::createSystenCursors() {
             continue;
         }
         system_cursors_[i] = cursor;
+    }
+}
+
+void PcSdlImpl::destroySystemCursors() {
+    for (auto& cursor : system_cursors_) {
+        if (cursor.second) {
+            SDL_FreeCursor(cursor.second);
+        }
     }
 }
 
