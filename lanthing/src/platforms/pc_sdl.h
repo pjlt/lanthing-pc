@@ -52,6 +52,7 @@ public:
         std::function<void()> on_reset;
         std::function<void()> on_exit;
         bool windowed_fullscreen = true;
+        bool absolute_mouse = true;
     };
 
 public:
@@ -67,6 +68,14 @@ public:
     virtual void setTitle(const std::string& title) = 0;
 
     virtual void stop() = 0;
+
+    virtual void switchMouseMode(bool absolute) = 0;
+
+    // DO NOT USE THIS TWO FUNCTIONS
+    // Currently only support preset cursor
+    virtual void setCursorShape(int32_t preset_id) = 0;
+
+    virtual void setCursorInfo(int32_t preset_id, float x, float y) = 0;
 
 protected:
     PcSdl() = default;

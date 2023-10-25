@@ -51,6 +51,7 @@ public:
     virtual ~VideoRenderer() = default;
     virtual bool bindTextures(const std::vector<void*>& textures) = 0;
     virtual RenderResult render(int64_t frame) = 0;
+    virtual void renderCursor(int32_t cursor_id, float x, float y) = 0;
     virtual void resetRenderTarget() = 0;
     virtual bool present() = 0;
     virtual bool waitForPipeline(int64_t max_wait_ms) = 0;

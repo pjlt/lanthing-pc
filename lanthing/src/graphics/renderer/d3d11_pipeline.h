@@ -33,6 +33,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <vector>
 
@@ -51,6 +52,10 @@ class D3D11Pipeline : public VideoRenderer {
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> y;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> uv;
     };
+    struct CursorRes {
+        Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
+    };
 
 public:
     struct Params {
@@ -67,6 +72,7 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
+    void renderCursor(int32_t cursor_id, float x, float y) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
@@ -83,6 +89,11 @@ private:
     bool setupPSStage();
     bool setupOMStage();
     bool initShaderResources(const std::vector<ID3D11Texture2D*>& textures);
+    bool createCursors();
+    bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height,
+                            std::vector<uint8_t>& data);
+    void createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+                                        const std::vector<uint8_t>& data);
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
     RenderResult tryResetSwapChain();
@@ -104,6 +115,7 @@ private:
     bool pipeline_ready_ = false;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> render_view_ = nullptr;
     std::vector<ShaderView> shader_views_;
+    std::map<size_t, CursorRes> cursors_;
 
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;

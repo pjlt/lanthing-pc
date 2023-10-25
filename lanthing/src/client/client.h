@@ -106,6 +106,7 @@ private:
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
     void syncTime();
     void toggleFullscreen();
+    void switchMouseMode();
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -142,6 +143,7 @@ private:
     void onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::unique_ptr<ltlib::Settings> settings_;
@@ -173,6 +175,8 @@ private:
     bool windowed_fullscreen_ = true;
     bool signaling_keepalive_inited_ = false;
     std::optional<bool> is_p2p_;
+    bool absolute_mouse_ = true;
+    bool last_w_or_h_is_0_ = false;
 };
 
 } // namespace cli

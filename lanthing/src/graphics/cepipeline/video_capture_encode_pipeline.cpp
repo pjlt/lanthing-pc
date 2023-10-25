@@ -30,17 +30,23 @@
 
 #include "video_capture_encode_pipeline.h"
 
+#include <Windows.h>
+#include <winuser.h>
+
 #include <atomic>
 #include <cstdint>
 #include <future>
 
 #include <google/protobuf/message_lite.h>
-#include <ltlib/logging.h>
 
-#include <ltlib/threads.h>
+#include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
+
+#include <ltlib/logging.h>
+#include <ltlib/system.h>
+#include <ltlib/threads.h>
 
 #include <graphics/capturer/video_capturer.h>
 #include <graphics/encoder/video_encoder.h>
@@ -54,12 +60,16 @@ public:
     bool init();
     void start();
     void stop();
+    void switchMouseMode(bool absolute);
     VideoCodecType codec() const;
 
 private:
     void mainLoop(const std::function<void()>& i_am_alive);
+    void loadSystemCursor();
     bool registerHandlers();
     void consumeTasks();
+    void captureAndSendCursor();
+    void captureAndSendVideoFrame();
 
     // 从service收到的消息
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -82,6 +92,9 @@ private:
     std::mutex mutex_;
     std::vector<std::function<void()>> tasks_;
     bool manual_bitrate_ = false;
+    bool absolute_mouese_ = true;
+    std::map<HCURSOR, int32_t> cursors_;
+    bool get_cursor_failed_ = false;
 };
 
 VCEPipeline::VCEPipeline(const VideoCaptureEncodePipeline::Params& params)
@@ -96,6 +109,7 @@ VCEPipeline::~VCEPipeline() {
 }
 
 bool VCEPipeline::init() {
+    loadSystemCursor();
     if (!registerHandlers()) {
         return false;
     }
@@ -142,6 +156,11 @@ void VCEPipeline::stop() {
     }
 }
 
+void VCEPipeline::switchMouseMode(bool absolute) {
+    std::lock_guard lk{mutex_};
+    absolute_mouese_ = absolute;
+}
+
 VideoCodecType VCEPipeline::codec() const {
     return codec_type_;
 }
@@ -155,19 +174,33 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive) {
         // vblank后应该第一时间抓屏还是消费任务？
         consumeTasks();
         capturer_->waitForVBlank();
-        auto captured_frame = capturer_->capture();
-        capturer_->doneWithFrame();
-        if (!captured_frame.has_value()) {
-            continue;
-        }
-        auto encoded_frame = encoder_->encode(captured_frame.value());
-        if (encoded_frame == nullptr) {
-            continue;
-        }
-        // TODO: 计算编码完成距离上一次vblank时间
-        send_message_(ltproto::id(encoded_frame), encoded_frame);
+        captureAndSendVideoFrame();
+        // 光标逻辑是否要放到其它线程捕获？先在同一线程做，后面做优化再来测，用数据说话
+        captureAndSendCursor();
     }
     stop_promise_->set_value();
+}
+
+void VCEPipeline::loadSystemCursor() { // 释放?
+    cursors_[LoadCursorA(nullptr, IDC_ARROW)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_Arrow;
+    cursors_[LoadCursorA(nullptr, IDC_IBEAM)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_Ibeam;
+    cursors_[LoadCursorA(nullptr, IDC_WAIT)] = ltproto::client2worker::CursorInfo_PresetCursor_Wait;
+    cursors_[LoadCursorA(nullptr, IDC_CROSS)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_Cross;
+    cursors_[LoadCursorA(nullptr, IDC_SIZENWSE)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeNwse;
+    cursors_[LoadCursorA(nullptr, IDC_SIZENESW)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeNesw;
+    cursors_[LoadCursorA(nullptr, IDC_SIZEWE)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeWe;
+    cursors_[LoadCursorA(nullptr, IDC_SIZENS)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeNs;
+    cursors_[LoadCursorA(nullptr, IDC_SIZEALL)] =
+        ltproto::client2worker::CursorInfo_PresetCursor_SizeAll;
+    cursors_[LoadCursorA(nullptr, IDC_NO)] = ltproto::client2worker::CursorInfo_PresetCursor_No;
+    cursors_[LoadCursorA(nullptr, IDC_HAND)] = ltproto::client2worker::CursorInfo_PresetCursor_Hand;
 }
 
 bool VCEPipeline::registerHandlers() {
@@ -193,6 +226,74 @@ void VCEPipeline::consumeTasks() {
     for (auto& task : tasks) {
         task();
     }
+}
+
+void VCEPipeline::captureAndSendCursor() {
+    {
+        std::lock_guard lk{mutex_};
+        if (absolute_mouese_) {
+            return;
+        }
+    }
+    auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
+    msg->set_w(ltlib::getScreenWidth());
+    msg->set_h(ltlib::getScreenHeight());
+    CURSORINFO pci{};
+    POINT pos{};
+    DWORD error1 = 0;
+    DWORD error2 = 0;
+    pci.cbSize = sizeof(pci);
+    if (GetCursorInfo(&pci)) {
+        get_cursor_failed_ = false;
+        msg->set_x(pci.ptScreenPos.x);
+        msg->set_y(pci.ptScreenPos.y);
+        auto iter = cursors_.find(pci.hCursor);
+        if (iter == cursors_.end()) {
+            msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
+        }
+        else {
+            msg->set_preset(
+                static_cast<ltproto::client2worker::CursorInfo_PresetCursor>(iter->second));
+        }
+        send_message_(ltproto::id(msg), msg);
+        return;
+    }
+    else {
+        error1 = GetLastError();
+    }
+
+    if (GetCursorPos(&pos)) {
+        get_cursor_failed_ = false;
+        msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
+        msg->set_x(pos.x);
+        msg->set_y(pos.y);
+        send_message_(ltproto::id(msg), msg);
+        return;
+    }
+    else {
+        error2 = GetLastError();
+    }
+
+    // 这个标志位是为了只打一次这个日志
+    if (!get_cursor_failed_) {
+        // 这么写获取不到错误码，但是要获得错误码的写法很丑
+        LOGF(ERR, "GetCursorInfo=>%u and GetCursorPos=>%u", error1, error2);
+    }
+    get_cursor_failed_ = true;
+}
+
+void VCEPipeline::captureAndSendVideoFrame() {
+    auto captured_frame = capturer_->capture();
+    capturer_->doneWithFrame();
+    if (!captured_frame.has_value()) {
+        return;
+    }
+    auto encoded_frame = encoder_->encode(captured_frame.value());
+    if (encoded_frame == nullptr) {
+        return;
+    }
+    // TODO: 计算编码完成距离上一次vblank时间
+    send_message_(ltproto::id(encoded_frame), encoded_frame);
 }
 
 void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -237,6 +338,7 @@ void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _
 }
 
 void VCEPipeline::onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)msg;
     std::lock_guard lock{mutex_};
     tasks_.push_back([this] { encoder_->requestKeyframe(); });
 }
@@ -263,6 +365,10 @@ void VideoCaptureEncodePipeline::start() {
 
 void VideoCaptureEncodePipeline::stop() {
     impl_->stop();
+}
+
+void VideoCaptureEncodePipeline::switchMouseMode(bool absolute) {
+    impl_->switchMouseMode(absolute);
 }
 
 VideoCodecType VideoCaptureEncodePipeline::codec() const {

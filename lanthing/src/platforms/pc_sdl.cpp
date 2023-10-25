@@ -30,13 +30,18 @@
 
 #include "pc_sdl.h"
 
-#include <ltlib/logging.h>
+#include <optional>
+
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#include "pc_sdl_input.h"
-#include <graphics/renderer/renderer_grab_inputs.h>
+#include <ltlib/logging.h>
 #include <ltlib/threads.h>
+#include <ltproto/client2worker/cursor_info.pb.h>
+
+#include <graphics/renderer/renderer_grab_inputs.h>
+
+#include "pc_sdl_input.h"
 
 namespace {
 
@@ -44,6 +49,7 @@ constexpr int32_t kUserEventResetDRPipeline = 1;
 constexpr int32_t kUserEventToggleFullscreen = 2;
 constexpr int32_t kUserEventStop = 3;
 constexpr int32_t kUserEventSetTitle = 4;
+constexpr int32_t kUserEventSetCursor = 5;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -60,7 +66,7 @@ namespace lt {
 class PcSdlImpl : public PcSdl {
 public:
     PcSdlImpl(const Params& params);
-    ~PcSdlImpl() override {}
+    ~PcSdlImpl() override;
     bool init();
     SDL_Window* window() override;
 
@@ -72,10 +78,18 @@ public:
 
     void stop() override;
 
+    void switchMouseMode(bool absolute) override;
+
+    void setCursorShape(int32_t preset_id) override;
+
+    void setCursorInfo(int32_t preset_id, float x, float y) override;
+
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
     bool initSdlSubSystems();
     void quitSdlSubSystems();
+    void createSystemCursors();
+    void destroySystemCursors();
 
 private: // 事件处理
     enum class DispatchResult {
@@ -98,6 +112,7 @@ private: // 事件处理
     DispatchResult handleSdlTouchEvent(const SDL_Event& ev);
     DispatchResult handleToggleFullscreen();
     DispatchResult handleSetTitle();
+    DispatchResult handleSetCursor();
 
 private:
     SDL_Window* window_ = nullptr;
@@ -108,6 +123,11 @@ private:
     std::unique_ptr<SdlInput> input_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::string title_ = "Lanthing";
+    bool absolute_mouse_;
+    int32_t cursor_id_ = SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW;
+    std::map<int32_t, SDL_Cursor*> system_cursors_;
+    std::optional<float> cursor_x_;
+    std::optional<float> cursor_y_;
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
@@ -126,7 +146,10 @@ std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
 PcSdlImpl::PcSdlImpl(const Params& params)
     : on_reset_(params.on_reset)
     , on_exit_(params.on_exit)
-    , windowed_fullscreen_{params.windowed_fullscreen} {}
+    , windowed_fullscreen_{params.windowed_fullscreen}
+    , absolute_mouse_{params.absolute_mouse} {}
+
+PcSdlImpl::~PcSdlImpl() {}
 
 bool PcSdlImpl::init() {
     std::promise<bool> promise;
@@ -170,11 +193,52 @@ void PcSdlImpl::stop() {
     SDL_PushEvent(&ev);
 }
 
+void PcSdlImpl::switchMouseMode(bool absolute) {
+    {
+        std::lock_guard lk{mutex_};
+        cursor_id_ = SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW;
+        absolute_mouse_ = absolute; // 暂时用不上
+    }
+    if (absolute) {
+        SDL_Event ev{};
+        ev.type = SDL_USEREVENT;
+        ev.user.code = kUserEventSetCursor;
+        SDL_PushEvent(&ev);
+    }
+}
+
+void PcSdlImpl::setCursorShape(int32_t preset_id) {
+    {
+        std::lock_guard lk{mutex_};
+        cursor_id_ = preset_id;
+        cursor_x_ = std::nullopt;
+        cursor_y_ = std::nullopt;
+    }
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventSetCursor;
+    SDL_PushEvent(&ev);
+}
+
+void PcSdlImpl::setCursorInfo(int32_t preset_id, float x, float y) {
+    {
+        std::lock_guard lk{mutex_};
+        cursor_id_ = preset_id;
+        cursor_x_ = x;
+        cursor_y_ = y;
+    }
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventSetCursor;
+    SDL_PushEvent(&ev);
+}
+
 void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive) {
     if (!initSdlSubSystems()) {
         promise.set_value(false);
         return;
     }
+    createSystemCursors();
     int desktop_width = 1920;
     int desktop_height = 1080;
     SDL_DisplayMode dm{};
@@ -232,6 +296,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
 CLEANUP:
     // 回收资源，删除解码器等
     SDL_DestroyWindow(window_);
+    destroySystemCursors();
     quitSdlSubSystems();
     on_exit_();
 }
@@ -259,6 +324,25 @@ void PcSdlImpl::quitSdlSubSystems() {
     SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
+void PcSdlImpl::createSystemCursors() {
+    for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++) {
+        SDL_Cursor* cursor = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+        if (cursor == nullptr) {
+            LOG(ERR) << "Create cursor " << i << " failed: " << SDL_GetError();
+            continue;
+        }
+        system_cursors_[i] = cursor;
+    }
+}
+
+void PcSdlImpl::destroySystemCursors() {
+    for (auto& cursor : system_cursors_) {
+        if (cursor.second) {
+            SDL_FreeCursor(cursor.second);
+        }
+    }
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::dispatchSdlEvent(const SDL_Event& ev) {
@@ -312,6 +396,8 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
         return handleToggleFullscreen();
     case kUserEventSetTitle:
         return handleSetTitle();
+    case kUserEventSetCursor:
+        return handleSetCursor();
     case kUserEventStop:
         LOG(INFO) << "SDL loop received user stop";
         return DispatchResult::kStop;
@@ -425,6 +511,30 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSetTitle() {
     }
     LOG(DEBUG) << "Set title " << title;
     SDL_SetWindowTitle(window_, title.c_str());
+    return DispatchResult::kContinue;
+}
+
+PcSdlImpl::DispatchResult PcSdlImpl::handleSetCursor() {
+    float x = -1.0;
+    float y = -1.0;
+    int32_t cursor_id = 0;
+    {
+        std::lock_guard lk{mutex_};
+        x = cursor_x_.value_or(x);
+        y = cursor_y_.value_or(y);
+        cursor_id = cursor_id_;
+    }
+    auto iter = system_cursors_.find(cursor_id);
+    if (iter != system_cursors_.end()) {
+        SDL_SetCursor(iter->second);
+    }
+    if (x >= 0.0 && y >= 0.0) {
+        int w = 1;
+        int h = 1;
+        SDL_GetWindowSize(window_, &w, &h);
+        SDL_WarpMouseInWindow(window_, static_cast<int>(w * x), static_cast<int>(h * y));
+    }
+
     return DispatchResult::kContinue;
 }
 

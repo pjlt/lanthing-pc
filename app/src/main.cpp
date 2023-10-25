@@ -75,6 +75,7 @@ void initLogging() {
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
         log_dir /= "lanthing";
+        log_dir /= "log";
         log_dir /= kPrefix;
     }
     else {

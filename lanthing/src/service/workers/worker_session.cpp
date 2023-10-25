@@ -650,6 +650,9 @@ void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,
     case ltype::kAudioData:
         onCapturedAudio(msg);
         break;
+    case ltype::kCursorInfo:
+        bypassToClient(type, msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type:" << type;
         break;
@@ -1012,6 +1015,11 @@ bool WorkerSession::sendMessageToRemoteClient(
     // rtc的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
     bool success = tp_server_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
+}
+
+void WorkerSession::bypassToClient(uint32_t type,
+                                   std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToRemoteClient(type, msg, true);
 }
 
 } // namespace svc

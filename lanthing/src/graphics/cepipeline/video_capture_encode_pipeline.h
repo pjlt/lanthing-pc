@@ -55,6 +55,7 @@ public:
     static std::unique_ptr<VideoCaptureEncodePipeline> create(const Params& params);
     void start();
     void stop();
+    void switchMouseMode(bool absolute);
     VideoCodecType codec() const;
 
 private:

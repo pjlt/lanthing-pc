@@ -92,6 +92,14 @@ float4 main_PS(PSIn psin) : SV_TARGET
 }
 )";
 
+struct Color {
+    uint8_t B;
+    uint8_t G;
+    uint8_t R;
+    uint8_t A;
+};
+static_assert(sizeof(Color) == 4);
+
 struct Vertex {
     float x;
     float y;
@@ -202,6 +210,12 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     return result;
 }
 
+void D3D11Pipeline::renderCursor(int32_t cursor_id, float x, float y) {
+    (void)cursor_id;
+    (void)x;
+    (void)y;
+}
+
 bool D3D11Pipeline::present() {
     auto hr = swap_chain_->Present(0, 0);
     pipeline_ready_ = false;
@@ -307,6 +321,9 @@ bool D3D11Pipeline::init() {
     if (!setupRenderPipeline()) {
         return false;
     }
+    // if (!createCursors()) {
+    //     return false;
+    // }
     return true;
 }
 
@@ -591,7 +608,6 @@ bool D3D11Pipeline::setupOMStage() {
 
 bool D3D11Pipeline::initShaderResources(const std::vector<ID3D11Texture2D*>& textures) {
     shader_views_.resize(textures.size());
-    CD3D11_SHADER_RESOURCE_VIEW_DESC();
     D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
     srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
     srv_desc.Texture2DArray.MostDetailedMip = 0;
@@ -616,6 +632,172 @@ bool D3D11Pipeline::initShaderResources(const std::vector<ID3D11Texture2D*>& tex
         }
     }
     return true;
+}
+
+bool D3D11Pipeline::createCursors() {
+    std::vector<LPSTR> kCursors = {IDC_ARROW,    IDC_IBEAM,    IDC_WAIT,   IDC_CROSS,
+                                   IDC_SIZENWSE, IDC_SIZENESW, IDC_SIZEWE, IDC_SIZENS,
+                                   IDC_SIZEALL,  IDC_NO,       IDC_HAND};
+    for (size_t i = 0; i < kCursors.size(); i++) {
+        int32_t width = 0;
+        int32_t height = 0;
+        std::vector<uint8_t> data;
+        if (!loadCursorAsBitmap(kCursors[i], width, height, data)) {
+            continue;
+        }
+        createCursorResourceFromBitmap(i, width, height, data);
+    }
+    return true;
+}
+
+bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& out_height,
+                                       std::vector<uint8_t>& out_data) {
+    auto cursor = LoadCursorA(nullptr, name);
+    if (cursor == nullptr) {
+        LOG(ERR) << "LoadCursor failed: 0x" << std::hex << GetLastError();
+        return false;
+    }
+    ICONINFO iconinfo{};
+    BOOL ret = GetIconInfo(cursor, &iconinfo);
+    if (ret != TRUE) {
+        LOG(ERR) << "GetIconInfo failed: 0x" << std::hex << GetLastError();
+        return false;
+    }
+    std::vector<uint8_t> color_data;
+    std::vector<uint8_t> mask_data;
+    int32_t color_width = 0;
+    int32_t color_height = 0;
+    int32_t color_bits_pixel = 0;
+    int32_t mask_width = 0;
+    int32_t mask_height = 0;
+    int32_t mask_bits_pixel = 0;
+    do {
+        if (iconinfo.hbmMask) {
+            BITMAP bmp{};
+            GetObjectA(iconinfo.hbmMask, sizeof(BITMAP), &bmp);
+            if (!bmp.bmWidthBytes || !bmp.bmHeight) {
+                break;
+            }
+
+            mask_data.resize(bmp.bmWidthBytes * bmp.bmHeight);
+            if (!GetBitmapBits(iconinfo.hbmMask, bmp.bmWidthBytes * bmp.bmHeight,
+                               mask_data.data())) {
+                break;
+            }
+
+            mask_width = bmp.bmWidth;
+            mask_height = bmp.bmHeight;
+            mask_bits_pixel = bmp.bmBitsPixel;
+        }
+        if (iconinfo.hbmColor) {
+            BITMAP bmp{};
+            GetObjectA(iconinfo.hbmColor, sizeof(BITMAP), &bmp);
+            if (!bmp.bmWidthBytes || !bmp.bmHeight) {
+                break;
+            }
+
+            color_data.resize(bmp.bmWidthBytes * bmp.bmHeight);
+            if (!GetBitmapBits(iconinfo.hbmColor, bmp.bmWidthBytes * bmp.bmHeight,
+                               color_data.data())) {
+                break;
+            }
+
+            color_width = bmp.bmWidth;
+            color_height = bmp.bmHeight;
+            color_bits_pixel = bmp.bmBitsPixel;
+        }
+    } while (false);
+    if (iconinfo.hbmColor) {
+        DeleteObject(iconinfo.hbmColor);
+    }
+    if (iconinfo.hbmMask) {
+        DeleteObject(iconinfo.hbmMask);
+    }
+    if (cursor) {
+        DestroyCursor(cursor);
+    }
+    std::vector<Color> cursor_color;
+    if (color_data.empty()) {
+        if (!mask_data.empty() && mask_bits_pixel == 1) {
+            std::vector<uint8_t> mask_data2(mask_data.cbegin(),
+                                            mask_data.cbegin() + mask_data.size() / 2);
+            std::vector<uint8_t> color_data2(mask_data.cbegin() + mask_data.size() / 2,
+                                             mask_data.cend());
+            cursor_color.resize(mask_width * mask_height / 2);
+            for (int32_t i = 0; i < mask_height / 2; ++i) {
+                for (int32_t j = 0; j < mask_width; ++j) {
+                    auto index = i * mask_data.size() / mask_height + j / 8;
+                    auto pos = j % 8;
+                    auto bit_mask = (mask_data2[index] & (0b10000000 >> pos)) ? 1 : 0;
+                    auto bit_color = (color_data2[index] & (0b10000000 >> pos)) ? 1 : 0;
+                    cursor_color[i * mask_width + j].B = bit_color ? 255 : 0;
+                    cursor_color[i * mask_width + j].G = bit_color ? 255 : 0;
+                    cursor_color[i * mask_width + j].R = bit_color ? 255 : 0;
+                    cursor_color[i * mask_width + j].A =
+                        static_cast<uint8_t>(bit_mask ? bit_color * 255 : 255);
+                }
+            }
+        }
+    }
+    else {
+        cursor_color.resize(color_width * color_height);
+        for (int32_t i = 0; i < color_height; ++i) {
+            for (int32_t j = 0; j < color_width; ++j) {
+                cursor_color[i * color_width + j].B = color_data[i * color_width * 4 + j * 4];
+                cursor_color[i * color_width + j].G = color_data[i * color_width * 4 + j * 4 + 1];
+                cursor_color[i * color_width + j].R = color_data[i * color_width * 4 + j * 4 + 2];
+                cursor_color[i * mask_width + j].A = color_data[i * color_width * 4 + j * 4 + 3];
+            }
+        }
+    }
+    out_width = mask_width;
+    out_height = mask_height;
+    if (color_data.empty() && mask_bits_pixel == 1) {
+        out_height = out_height / 2;
+    }
+    out_data.resize(cursor_color.size() * sizeof(Color));
+    memcpy(out_data.data(), cursor_color.data(), out_data.size());
+    return true;
+}
+
+void D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+                                                   const std::vector<uint8_t>& data) {
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.MiscFlags = 0;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    D3D11_SUBRESOURCE_DATA subresource{};
+    subresource.pSysMem = data.data();
+    subresource.SysMemPitch = sizeof(Color) * width;
+    subresource.SysMemSlicePitch = sizeof(Color) * width * height;
+    ComPtr<ID3D11Texture2D> texture;
+    HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, &subresource, texture.GetAddressOf());
+    if (hr != S_OK) {
+        LOGF(ERR, "CreateTexture2D failed with %#x", hr);
+        return;
+    }
+    D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+    srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srv_desc.Texture2D.MostDetailedMip = 0;
+    srv_desc.Texture2D.MipLevels = 1;
+    srv_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    ComPtr<ID3D11ShaderResourceView> sv;
+    hr = d3d11_dev_->CreateShaderResourceView(texture.Get(), &srv_desc, sv.GetAddressOf());
+    if (hr != S_OK) {
+        LOGF(ERR, "CreateShaderResourceView failed with %#x", hr);
+        return;
+    }
+    CursorRes cr{};
+    cr.texture = texture;
+    cr.view = sv;
+    cursors_[id] = cr;
+    LOG(INFO) << "Create D3D11 Resource for cursor " << id << " success";
 }
 
 const D3D11Pipeline::ColorMatrix& D3D11Pipeline::getColorMatrix() const {

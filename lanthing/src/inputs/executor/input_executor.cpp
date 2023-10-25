@@ -96,12 +96,18 @@ bool InputExecutor::registerHandlers() {
     return true;
 };
 
-void InputExecutor::sendMessagte(uint32_t type,
-                                 const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void InputExecutor::sendMessage(uint32_t type,
+                                const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     send_message_(type, msg);
 }
 
-bool InputExecutor::isAbsoluteMouse() const {
+void InputExecutor::switchMouseMode(bool absolute) {
+    std::lock_guard lk{mutex_};
+    is_absolute_mouse_ = absolute;
+}
+
+bool InputExecutor::isAbsoluteMouse() {
+    std::lock_guard lk{mutex_};
     return is_absolute_mouse_;
 }
 
@@ -144,7 +150,7 @@ void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint
     controller->set_gamepad_index(index);
     controller->set_large_motor(large_motor);
     controller->set_small_moror(small_motor);
-    sendMessagte(ltproto::id(controller), controller);
+    sendMessage(ltproto::id(controller), controller);
 }
 
 } // namespace lt

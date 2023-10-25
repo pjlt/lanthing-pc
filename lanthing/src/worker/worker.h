@@ -94,6 +94,7 @@ private:
     void onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const uint32_t client_width_;

@@ -117,6 +117,7 @@ private:
     std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
         send_message_to_host_;
     std::function<void()> toggle_fullscreen_;
+    std::function<void()> switch_mouse_mode_;
     // 0表示松开，非0表示按下。不用bool而用uint8_t是担心menset()之类函数不好处理bool数组
     std::array<uint8_t, 512> key_states_ = {0};
     uint32_t host_width_;
@@ -137,7 +138,8 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     , host_width_{params.host_width}
     , host_height_{params.host_height}
     , send_message_to_host_{params.send_message}
-    , toggle_fullscreen_{params.toggle_fullscreen} {}
+    , toggle_fullscreen_{params.toggle_fullscreen}
+    , switch_mouse_mode_{params.switch_mouse_mode} {}
 
 void InputCapturerImpl::init() {
     sdl_->setInputHandler(
@@ -427,6 +429,10 @@ void InputCapturerImpl::processHotKeys() {
         key_states_[Scancode::SCANCODE_Z]) {
         toggle_fullscreen_();
     }
+    // if (key_states_[Scancode::SCANCODE_LGUI] && key_states_[Scancode::SCANCODE_LSHIFT] &&
+    //     key_states_[Scancode::SCANCODE_X]) {
+    //     switch_mouse_mode_();
+    // }
 }
 
 } // namespace lt

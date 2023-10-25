@@ -315,7 +315,6 @@ void App::deleteTrustedDevice(int64_t device_id) {
 std::vector<GUI::TrustedDevice> App::getTrustedDevices() {
     std::vector<GUI::TrustedDevice> result;
     auto keys = settings_->getKeysStartWith("from_");
-    LOG(INFO) << "getKeysStartWith " << keys.size();
     for (auto& key : keys) {
         int64_t device_id = -1;
         int ret = sscanf(key.c_str(), "from_%" PRId64, &device_id);

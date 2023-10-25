@@ -36,10 +36,13 @@
 
 #include <optional>
 
-#include <ltlib/logging.h>
-
+#include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/keyboard_event.pb.h>
 #include <ltproto/client2worker/mouse_event.pb.h>
+#include <ltproto/ltproto.h>
+
+#include <ltlib/logging.h>
+#include <ltlib/system.h>
 
 namespace {
 
@@ -191,6 +194,10 @@ void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::Mes
     inputs[0].ki.time = 0;
     SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }
+
+Win32SendInput::Win32SendInput(uint32_t screen_width, uint32_t screen_height)
+    : screen_width_(screen_width)
+    , screen_height_(screen_height) {}
 
 bool Win32SendInput::initKeyMouse() {
     return true;
