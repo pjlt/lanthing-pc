@@ -72,7 +72,9 @@ public:
     virtual void switchMouseMode(bool absolute) = 0;
 
     // Currently only support preset cursor
-    virtual void setCursor(int32_t preset_id) = 0;
+    virtual void setCursorShape(int32_t preset_id) = 0;
+
+    virtual void setCursorInfo(int32_t preset_id, float x, float y) = 0;
 
 protected:
     PcSdl() = default;

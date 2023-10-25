@@ -30,13 +30,14 @@
 
 #include "pc_sdl.h"
 
-#include <ltlib/logging.h>
+#include <optional>
+
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#include <ltproto/client2worker/cursor_info.pb.h>
-
+#include <ltlib/logging.h>
 #include <ltlib/threads.h>
+#include <ltproto/client2worker/cursor_info.pb.h>
 
 #include <graphics/renderer/renderer_grab_inputs.h>
 
@@ -79,7 +80,9 @@ public:
 
     void switchMouseMode(bool absolute) override;
 
-    void setCursor(int32_t preset_id) override;
+    void setCursorShape(int32_t preset_id) override;
+
+    void setCursorInfo(int32_t preset_id, float x, float y) override;
 
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
@@ -122,6 +125,8 @@ private:
     bool absolute_mouse_;
     int32_t cursor_id_ = SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW;
     std::map<int32_t, SDL_Cursor*> system_cursors_;
+    std::optional<float> cursor_x_;
+    std::optional<float> cursor_y_;
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
@@ -207,10 +212,25 @@ void PcSdlImpl::switchMouseMode(bool absolute) {
     }
 }
 
-void PcSdlImpl::setCursor(int32_t preset_id) {
+void PcSdlImpl::setCursorShape(int32_t preset_id) {
     {
         std::lock_guard lk{mutex_};
         cursor_id_ = preset_id;
+        cursor_x_ = std::nullopt;
+        cursor_y_ = std::nullopt;
+    }
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventSetCursor;
+    SDL_PushEvent(&ev);
+}
+
+void PcSdlImpl::setCursorInfo(int32_t preset_id, float x, float y) {
+    {
+        std::lock_guard lk{mutex_};
+        cursor_id_ = preset_id;
+        cursor_x_ = x;
+        cursor_y_ = y;
     }
     SDL_Event ev{};
     ev.type = SDL_USEREVENT;
@@ -490,10 +510,26 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSetTitle() {
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handleSetCursor() {
-    auto iter = system_cursors_.find(cursor_id_);
+    float x = -1.0;
+    float y = -1.0;
+    int32_t cursor_id = 0;
+    {
+        std::lock_guard lk{mutex_};
+        x = cursor_x_.value_or(x);
+        y = cursor_y_.value_or(y);
+        cursor_id = cursor_id_;
+    }
+    auto iter = system_cursors_.find(cursor_id);
     if (iter != system_cursors_.end()) {
         SDL_SetCursor(iter->second);
     }
+    if (x >= 0.0 && y >= 0.0) {
+        int w = 1;
+        int h = 1;
+        SDL_GetWindowSize(window_, &w, &h);
+        SDL_WarpMouseInWindow(window_, static_cast<int>(w * x), static_cast<int>(h * y));
+    }
+
     return DispatchResult::kContinue;
 }
 

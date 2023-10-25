@@ -54,6 +54,12 @@ cp options-default.cmake options-user.cmake  #可选，如果需要修改编译�
 1. 下载[Github Releases](https://github.com/pjlt/lanthing-pc/releases)页面下的lanthing.zip并解压
 2. 管理员运行app.exe
 
+## 进度
+
+开发者这么久不发版本？是不是在摸鱼！
+
+让我瞅瞅有没有在[磨洋工](https://github.com/orgs/pjlt/projects/1/views/1)。
+
 ## 交流
 
 QQ群: 89746161

@@ -33,6 +33,7 @@
 #include <sstream>
 
 #include <ltproto/client2service/time_sync.pb.h>
+#include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/client2worker/send_side_stat.pb.h>
 #include <ltproto/client2worker/start_transmission.pb.h>
@@ -709,6 +710,9 @@ void Client::dispatchRemoteMessage(uint32_t type,
     case ltproto::type::kSendSideStat:
         onSendSideStat(msg);
         break;
+    case ltproto::type::kCursorInfo:
+        onCursorInfo(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
         break;
@@ -766,6 +770,19 @@ void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg)
     auto msg = std::static_pointer_cast<ltproto::client2worker::SendSideStat>(_msg);
     video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));
     video_pipeline_->setBWE(static_cast<uint32_t>(msg->bwe()));
+}
+
+void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(_msg);
+    if (msg->w() == 0 || msg->h() == 0) {
+        if (!last_w_or_h_is_0_) {
+            last_w_or_h_is_0_ = true;
+            LOG(ERR) << "Received CursorInfo with w " << msg->w() << " h " << msg->h();
+        }
+        return;
+    }
+    last_w_or_h_is_0_ = false;
+    sdl_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(), 1.0f * msg->y() / msg->h());
 }
 
 } // namespace cli
