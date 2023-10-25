@@ -43,13 +43,10 @@ private:
     bool initKeyMouse() override;
     void onMouseEvent(const std::shared_ptr<google::protobuf::MessageLite>&) override;
     void onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>&) override;
-    void sendCursorInfo();
 
 private:
     uint32_t screen_width_;
     uint32_t screen_height_;
-    bool get_cursor_failed_ = false;
-    std::map<void*, int32_t> cursors_;
 };
 
 } // namespace lt

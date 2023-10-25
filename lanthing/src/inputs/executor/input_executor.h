@@ -31,8 +31,10 @@
 #pragma once
 
 #include <cstdint>
+
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include <google/protobuf/message_lite.h>
 
@@ -60,6 +62,8 @@ public:
     static std::unique_ptr<InputExecutor> create(const Params& params);
     virtual ~InputExecutor() = default;
 
+    void switchMouseMode(bool absolute);
+
 protected:
     virtual bool initKeyMouse() = 0;
     virtual void onMouseEvent(const std::shared_ptr<google::protobuf::MessageLite>&) = 0;
@@ -76,12 +80,11 @@ private:
     // void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor);
 
-    void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-
 private:
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
         send_message_;
+    std::mutex mutex_;
     bool is_absolute_mouse_ = true;
     std::shared_ptr<Gamepad> gamepad_;
 };

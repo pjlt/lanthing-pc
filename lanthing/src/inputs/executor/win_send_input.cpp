@@ -195,43 +195,6 @@ void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::Mes
     SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }
 
-void Win32SendInput::sendCursorInfo() {
-    auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
-    msg->set_w(ltlib::getScreenWidth());
-    msg->set_h(ltlib::getScreenHeight());
-    CURSORINFO pci{};
-    POINT pos{};
-    pci.cbSize = sizeof(pci);
-    if (GetCursorInfo(&pci)) {
-        get_cursor_failed_ = false;
-        msg->set_x(pci.ptScreenPos.x);
-        msg->set_y(pci.ptScreenPos.y);
-        auto iter = cursors_.find(pci.hCursor);
-        if (iter == cursors_.end()) {
-            msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
-        }
-        else {
-            msg->set_preset(
-                static_cast<ltproto::client2worker::CursorInfo_PresetCursor>(iter->second));
-        }
-        sendMessage(ltproto::id(msg), msg);
-    }
-    else if (GetCursorPos(&pos)) {
-        get_cursor_failed_ = false;
-        msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
-        msg->set_x(pos.x);
-        msg->set_y(pos.y);
-        sendMessage(ltproto::id(msg), msg);
-    }
-    else {
-        if (!get_cursor_failed_) {
-            // 这么写获取不到错误码，但是要获得错误码的写法很丑
-            LOG(ERR) << "GetCursorInfo and GetCursorPos failed";
-        }
-        get_cursor_failed_ = true;
-    }
-}
-
 Win32SendInput::Win32SendInput(uint32_t screen_width, uint32_t screen_height)
     : screen_width_(screen_width)
     , screen_height_(screen_height) {
@@ -329,11 +292,6 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
     // FIXME: implement it;
     inputs[0].mi.time = 0;
     SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-
-    if (!isAbsoluteMouse()) {
-        // TODO: 将sendcursor的操作放到VideoCapture去做
-        sendCursorInfo();
-    }
 }
 
 } // namespace lt
