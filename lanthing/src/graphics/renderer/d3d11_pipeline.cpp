@@ -331,10 +331,10 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     }
     const float widht = 1.0f * iter->second.width / display_width_;
     const float height = 1.0f * iter->second.height / display_height_;
-    Vertex verts[] = {{c.x - 0.5f, c.y - 0.5f, 0.0f, 0.0f},
-                      {c.x - 0.5f + widht, c.y - 0.5f, 1.0f, 0.0f},
-                      {c.x - 0.5f + widht, c.y - 0.5f - height, 1.0f, 1.0f},
-                      {c.x - 0.5f, c.y - 0.5f - height, 0.0f, 1.0f}};
+    Vertex verts[] = {{(c.x - .5f) * 2.f, (.5f - c.y) * 2.f, 0.0f, 0.0f},
+                      {(c.x - .5f + widht) * 2.f, (.5f - c.y) * 2.f, 1.0f, 0.0f},
+                      {(c.x - .5f + widht) * 2.f, (.5f - c.y - height) * 2.f, 1.0f, 1.0f},
+                      {(c.x - .5f) * 2.f, (.5f - c.y - height) * 2.f, 0.0f, 1.0f}};
     D3D11_BUFFER_DESC vb_desc = {};
     vb_desc.ByteWidth = sizeof(verts);
     vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
