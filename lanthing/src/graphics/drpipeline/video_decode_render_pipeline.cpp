@@ -75,7 +75,8 @@ public:
     void setNack(uint32_t nack);
     void setLossRate(float rate);
     void resetRenderTarget();
-    void setCursorInfo(int32_t cursor_id, float x, float y);
+    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
+    void switchMouseMode(bool absolute);
 
 private:
     void decodeLoop(const std::function<void()>& i_am_alive);
@@ -87,6 +88,7 @@ private:
     void onStat();
     void onUserSetBitrate(uint32_t bps);
     std::tuple<int32_t, float, float> getCursorInfo();
+    bool isAbsoluteMouse();
 
 private:
     const uint32_t width_;
@@ -131,7 +133,8 @@ private:
     int32_t cursor_id_ = 0;
     float cursor_x_ = 0.f;
     float cursor_y_ = 0.f;
-    bool absolute_moute_ = true;
+    bool visible_ = true;
+    bool absolute_mouse_ = true;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -284,11 +287,17 @@ void VDRPipeline::resetRenderTarget() {
     video_renderer_->resetRenderTarget();
 }
 
-void VDRPipeline::setCursorInfo(int32_t cursor_id, float x, float y) {
+void VDRPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
     std::lock_guard lk{render_mtx_};
     cursor_id_ = cursor_id;
     cursor_x_ = x;
     cursor_y_ = y;
+    visible_ = visible;
+}
+
+void VDRPipeline::switchMouseMode(bool absolute) {
+    std::lock_guard lk{render_mtx_};
+    absolute_mouse_ = absolute;
 }
 
 bool VDRPipeline::waitForDecode(std::vector<VideoFrameInternal>& frames,
@@ -374,6 +383,11 @@ std::tuple<int32_t, float, float> VDRPipeline::getCursorInfo() {
     return {cursor_id_, cursor_x_, cursor_y_};
 }
 
+bool VDRPipeline::isAbsoluteMouse() {
+    std::lock_guard lk{render_mtx_};
+    return absolute_mouse_;
+}
+
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
@@ -381,7 +395,10 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
         if (video_renderer_->waitForPipeline(16) && waitForRender(2ms)) {
             auto frame = smoother_.get(cur_time.microseconds());
             smoother_.pop();
+            video_renderer_->switchMouseMode(isAbsoluteMouse());
             if (frame.has_value()) {
+                auto [cursor, x, y] = getCursorInfo();
+                video_renderer_->updateCursor(cursor, x, y, visible_);
                 LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
                            << ltlib::steady_now_us() - frame->capture_time - time_diff_;
                 statistics_->addRenderVideo();
@@ -402,7 +419,6 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
                 }
                 statistics_->updateRenderVideoTime(end - start);
             }
-            auto [cursor, x, y] = getCursorInfo();
             auto start = ltlib::steady_now_us();
             widgets_->render();
             auto mid = ltlib::steady_now_us();
@@ -476,6 +492,14 @@ void VideoDecodeRenderPipeline::setNack(uint32_t nack) {
 
 void VideoDecodeRenderPipeline::setLossRate(float rate) {
     impl_->setLossRate(rate);
+}
+
+void VideoDecodeRenderPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
+    impl_->setCursorInfo(cursor_id, x, y, visible);
+}
+
+void VideoDecodeRenderPipeline::switchMouseMode(bool absolute) {
+    impl_->switchMouseMode(absolute);
 }
 
 } // namespace lt

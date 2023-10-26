@@ -229,8 +229,12 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     return RenderResult::Success;
 }
 
-void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visiable) {
-    cursor_info_ = CursorInfo{cursor_id, x, y, visiable};
+void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
+    cursor_info_ = CursorInfo{cursor_id, x, y, visible};
+}
+
+void D3D11Pipeline::switchMouseMode(bool absolute) {
+    absolute_mouse_ = absolute;
 }
 
 bool D3D11Pipeline::present() {
@@ -317,7 +321,36 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
-    RenderResult::Success;
+    CursorInfo c = cursor_info_;
+    if (absolute_mouse_ || !c.visible) {
+        return RenderResult::Success;
+    }
+    auto iter = cursors_.find(c.id);
+    if (iter == cursors_.end()) {
+        iter = cursors_.find(0);
+    }
+    const float widht = 1.0f * iter->second.width / display_width_;
+    const float height = 1.0f * iter->second.height / display_height_;
+    Vertex verts[] = {{c.x - 0.5f, c.y - 0.5f, 0.0f, 0.0f},
+                      {c.x - 0.5f + widht, c.y - 0.5f, 1.0f, 0.0f},
+                      {c.x - 0.5f + widht, c.y - 0.5f - height, 1.0f, 1.0f},
+                      {c.x - 0.5f, c.y - 0.5f - height, 0.0f, 1.0f}};
+    D3D11_BUFFER_DESC vb_desc = {};
+    vb_desc.ByteWidth = sizeof(verts);
+    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
+    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vb_desc.CPUAccessFlags = 0;
+    vb_desc.MiscFlags = 0;
+    vb_desc.StructureByteStride = sizeof(Vertex);
+
+    D3D11_SUBRESOURCE_DATA vb_data = {};
+    vb_data.pSysMem = verts;
+    cursor_vertex_buffer_ = nullptr;
+    HRESULT hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, cursor_vertex_buffer_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
+        return RenderResult::Failed;
+    }
     d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
     d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
     UINT stride = sizeof(Vertex);
@@ -327,15 +360,8 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     d3d11_ctx_->IASetIndexBuffer(video_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
     d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     d3d11_ctx_->PSSetShader(cursor_pixel_shader_.Get(), nullptr, 0);
-    ID3D11Buffer* cbarray[] = {cursor_pixel_buffer_.Get()};
-    d3d11_ctx_->PSSetConstantBuffers(0, 1, cbarray);
     d3d11_ctx_->PSSetSamplers(0, 1, cursor_sampler_.GetAddressOf());
 
-    CursorInfo c = cursor_info_;
-    auto iter = cursors_.find(c.id);
-    if (iter == cursors_.end()) {
-        iter = cursors_.find(0);
-    }
     ID3D11ShaderResourceView* const shader_views[1] = {iter->second.view.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
@@ -389,9 +415,9 @@ bool D3D11Pipeline::init() {
     if (!setupRenderPipeline()) {
         return false;
     }
-    // if (!createCursors()) {
-    //     return false;
-    // }
+    if (!createCursors()) {
+        return false;
+    }
     return true;
 }
 
@@ -653,7 +679,25 @@ bool D3D11Pipeline::setupPSStage() {
 }
 
 bool D3D11Pipeline::setupOMStage() {
-    // 暂时不需要
+    D3D11_BLEND_DESC desc = {};
+    desc.AlphaToCoverageEnable = FALSE;
+    desc.IndependentBlendEnable = FALSE;
+    desc.RenderTarget[0].BlendEnable = TRUE;
+    desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    ComPtr<ID3D11BlendState> bs;
+    auto hr = d3d11_dev_->CreateBlendState(&desc, bs.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
+        return false;
+    }
+    d3d11_ctx_->OMSetBlendState(bs.Get(), nullptr, 0xffffffff);
     return true;
 }
 
@@ -835,7 +879,6 @@ bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     subresource.pSysMem = data.data();
     subresource.SysMemPitch = sizeof(Color) * width;
     subresource.SysMemSlicePitch = 0;
-    // subresource.SysMemSlicePitch = sizeof(Color) * width * height;
     ComPtr<ID3D11Texture2D> texture;
     HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, &subresource, texture.GetAddressOf());
     if (hr != S_OK) {
@@ -856,39 +899,21 @@ bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     CursorRes cr{};
     cr.texture = texture;
     cr.view = sv;
+    cr.width = width;
+    cr.height = height;
     cursors_[id] = cr;
     LOG(INFO) << "Create D3D11 Resource for cursor " << id << " success";
     return true;
 }
 
 bool D3D11Pipeline::setupCursorD3DResources() {
-    Vertex verts[] = {{-1.0f, 1.0f, 0.0f, 0.0f},
-                      {1.0f, 1.0f, 1.0f, 0.0f},
-                      {1.0f, -1.0f, 1.0f, 1.0f},
-                      {-1.0f, -1.0f, 0.0f, 1.0f}};
-    D3D11_BUFFER_DESC vb_desc = {};
-    vb_desc.ByteWidth = sizeof(verts);
-    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
-    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vb_desc.CPUAccessFlags = 0;
-    vb_desc.MiscFlags = 0;
-    vb_desc.StructureByteStride = sizeof(Vertex);
-
-    D3D11_SUBRESOURCE_DATA vb_data = {};
-    vb_data.pSysMem = verts;
-
-    HRESULT hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, cursor_vertex_buffer_.GetAddressOf());
-    if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
-        return false;
-    }
     D3D11_SAMPLER_DESC samplerDesc = {};
     samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
     samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
     samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
     samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
     samplerDesc.MaxAnisotropy = 16;
-    hr = d3d11_dev_->CreateSamplerState(&samplerDesc, &cursor_sampler_);
+    HRESULT hr = d3d11_dev_->CreateSamplerState(&samplerDesc, &cursor_sampler_);
     if (hr != S_OK) {
         LOGF(ERR, "CreateSamplerState failed with %#x", hr);
         return false;

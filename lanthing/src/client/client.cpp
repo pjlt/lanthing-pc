@@ -359,6 +359,7 @@ void Client::toggleFullscreen() {
 void Client::switchMouseMode() {
     absolute_mouse_ = !absolute_mouse_;
     sdl_->switchMouseMode(absolute_mouse_);
+    video_pipeline_->switchMouseMode(absolute_mouse_);
     auto msg = std::make_shared<ltproto::client2worker::SwitchMouseMode>();
     msg->set_absolute(absolute_mouse_);
     sendMessageToHost(ltproto::id(msg), msg, true);
@@ -778,6 +779,7 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y%d", msg->preset(), msg->w(), msg->h(),
          msg->x(), msg->y());
     if (msg->w() == 0 || msg->h() == 0) {
+        // 这个这么丑的flag，只是为了不让这行错误日志频繁打
         if (!last_w_or_h_is_0_) {
             last_w_or_h_is_0_ = true;
             LOG(ERR) << "Received CursorInfo with w " << msg->w() << " h " << msg->h();
@@ -785,7 +787,8 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         return;
     }
     last_w_or_h_is_0_ = false;
-    sdl_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(), 1.0f * msg->y() / msg->h());
+    video_pipeline_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(),
+                                   1.0f * msg->y() / msg->h(), msg->visible());
 }
 
 } // namespace cli

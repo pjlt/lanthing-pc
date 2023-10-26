@@ -55,12 +55,14 @@ class D3D11Pipeline : public VideoRenderer {
     struct CursorRes {
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
+        int32_t width;
+        int32_t height;
     };
     struct CursorInfo {
         int32_t id;
         float x;
         float y;
-        bool visiable;
+        bool visible;
     };
 
 public:
@@ -78,7 +80,8 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void updateCursor(int32_t cursor_id, float x, float y, bool visiable) override;
+    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
+    void switchMouseMode(bool absolute) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
@@ -139,11 +142,11 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_vertex_buffer_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_index_buffer_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> cursor_pixel_shader_;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
+    // Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
 
-    std::atomic<CursorInfo> cursor_info_;
-
+    CursorInfo cursor_info_;
+    bool absolute_mouse_ = true;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;
     std::atomic<bool> reset_{false};
