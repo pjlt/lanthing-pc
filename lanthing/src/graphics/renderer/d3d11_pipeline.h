@@ -84,6 +84,7 @@ public:
 private:
     bool createD3D();
     bool setupRenderPipeline();
+    bool setupRenderTarget();
     bool setupIAAndVSStage();
     bool setupRSStage();
     bool setupPSStage();
@@ -97,6 +98,8 @@ private:
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
     RenderResult tryResetSwapChain();
+    RenderResult renderVideo(int64_t frame);
+    RenderResult renderCursor();
 
 private:
     HWND hwnd_;
@@ -114,8 +117,23 @@ private:
     HANDLE waitable_obj_ = NULL;
     bool pipeline_ready_ = false;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> render_view_ = nullptr;
-    std::vector<ShaderView> shader_views_;
+    std::vector<ShaderView> video_shader_views_;
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> video_vertex_shader_;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> video_input_layout_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> video_vertex_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> video_index_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> video_pixel_shader_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> video_pixel_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> video_sampler_;
+
     std::map<size_t, CursorRes> cursors_;
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> cursor_vertex_shader_;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> cursor_input_layout_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_vertex_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_index_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> cursor_pixel_shader_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
 
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;

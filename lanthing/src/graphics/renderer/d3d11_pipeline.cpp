@@ -188,26 +188,34 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
 }
 
 VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
+    // 1. 检查是否需要重置渲染目标
+    // 2. 设置渲染目标
+    // 3. 渲染视频
+    // 4. 渲染光标
     RenderResult result = tryResetSwapChain();
     if (result == RenderResult::Failed) {
         return result;
-    }
-    if (frame >= static_cast<int64_t>(shader_views_.size())) {
-        LOG(ERR) << "Can not find shader view for texutre " << frame;
-        return RenderResult::Failed;
     }
     size_t index = static_cast<size_t>(frame);
     // mapTextureToFile(d3d11_dev_.Get(), d3d11_ctx_.Get(),
     //                  (ID3D11Texture2D*)shader_views_[index].texture, index);
     //  std::lock_guard<std::mutex> lock(pipeline_mtx_);
     const float clear[4] = {0.f, 0.f, 0.f, 0.f};
-    ID3D11ShaderResourceView* const shader_views[2] = {shader_views_[index].y.Get(),
-                                                       shader_views_[index].uv.Get()};
     d3d11_ctx_->ClearRenderTargetView(render_view_.Get(), clear);
     d3d11_ctx_->OMSetRenderTargets(1, render_view_.GetAddressOf(), nullptr);
-    d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
-    d3d11_ctx_->DrawIndexed(6, 0, 0);
-    return result;
+    RenderResult video_result = renderVideo(frame);
+    if (video_result == RenderResult::Failed) {
+        return result;
+    }
+    RenderResult cursor_result = renderCursor();
+    if (cursor_result == RenderResult::Failed) {
+        return result;
+    }
+    if (result == RenderResult::Reset || video_result == RenderResult::Reset ||
+        cursor_result == RenderResult::Reset) {
+        return RenderResult::Reset;
+    }
+    return RenderResult::Success;
 }
 
 void D3D11Pipeline::renderCursor(int32_t cursor_id, float x, float y) {
@@ -271,6 +279,60 @@ VideoRenderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
         setupRSStage();
         return RenderResult::Reset;
     }
+    return RenderResult::Success;
+}
+
+D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
+    d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    ID3D11Buffer* vbarray[] = {video_vertex_buffer_.Get()};
+    d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
+    d3d11_ctx_->IASetIndexBuffer(video_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
+    d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    d3d11_ctx_->PSSetShader(video_pixel_shader_.Get(), nullptr, 0);
+    ID3D11Buffer* cbarray[] = {video_pixel_buffer_.Get()};
+    d3d11_ctx_->PSSetConstantBuffers(0, 1, cbarray);
+    d3d11_ctx_->PSSetSamplers(0, 1, video_sampler_.GetAddressOf());
+    if (frame >= static_cast<int64_t>(video_shader_views_.size())) {
+        LOG(ERR) << "Can not find shader view for texutre " << frame;
+        return RenderResult::Failed;
+    }
+    size_t index = static_cast<size_t>(frame);
+    ID3D11ShaderResourceView* const shader_views[2] = {video_shader_views_[index].y.Get(),
+                                                       video_shader_views_[index].uv.Get()};
+    d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
+    d3d11_ctx_->DrawIndexed(6, 0, 0);
+    return RenderResult::Success;
+}
+
+D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
+    // VSSetShader
+    // IASetInputLayout
+    // IASetVertexBuffers
+    // IASetIndexBuffer
+    // IASetPrimitiveTopology
+    // PSSetShader
+    // PSSetConstantBuffers
+    // PSSetSamplers
+    // PSSetShaderResources
+    // DrawIndexed
+    d3d11_ctx_->VSSetShader(cursor_vertex_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->IASetInputLayout(cursor_input_layout_.Get());
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    ID3D11Buffer* vbarray[] = {cursor_vertex_buffer_.Get()};
+    d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
+    d3d11_ctx_->IASetIndexBuffer(cursor_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
+    d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    d3d11_ctx_->PSSetShader(cursor_pixel_shader_.Get(), nullptr, 0);
+    ID3D11Buffer* cbarray[] = {cursor_pixel_buffer_.Get()};
+    d3d11_ctx_->PSSetConstantBuffers(0, 1, cbarray);
+    d3d11_ctx_->PSSetSamplers(0, 1, cursor_sampler_.GetAddressOf());
+    ID3D11ShaderResourceView* const shader_views[1] = {};
+    d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
+    d3d11_ctx_->DrawIndexed(6, 0, 0);
     return RenderResult::Success;
 }
 
@@ -375,6 +437,17 @@ bool D3D11Pipeline::createD3D() {
 }
 
 bool D3D11Pipeline::setupRenderPipeline() {
+
+    if (!setupRenderTarget() || !setupIAAndVSStage() || !setupRSStage() || !setupPSStage() ||
+        !setupOMStage()) {
+        return false;
+    }
+    LOGF(INFO, "d3d11 %u:%u, %u:%u", display_width_, display_height_, video_width_, video_height_);
+
+    return true;
+}
+
+bool D3D11Pipeline::setupRenderTarget() {
     RECT rect;
     if (!GetClientRect(hwnd_, &rect)) {
         LOG(ERR) << "GetClientRect failed";
@@ -430,12 +503,6 @@ bool D3D11Pipeline::setupRenderPipeline() {
         LOGF(ERR, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
         return false;
     }
-
-    if (!setupIAAndVSStage() || !setupRSStage() || !setupPSStage() || !setupOMStage()) {
-        return false;
-    }
-    LOGF(INFO, "d3d11 %u:%u, %u:%u", display_width_, display_height_, video_width_, video_height_);
-
     return true;
 }
 
@@ -495,10 +562,6 @@ bool D3D11Pipeline::setupIAAndVSStage() {
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
     ID3D11Buffer* vbarray[] = {vertex_buf.Get()};
-    // 踩了一个ComPtr陷阱，CPU侧编译运行没有输出任何错误，查了两天。。。
-    // IASetVertexBuffers()第三个参数的类型是 ID3D11Buffer *const *ppVertexBuffers
-    // 之前的传值写成 &vertex_buf，buffer本身是一个指针，传成它的地址了
-    // 而这里其实想要的是一个由buffer指针组成的数组
     d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
 
     // 索引
@@ -607,25 +670,25 @@ bool D3D11Pipeline::setupOMStage() {
 }
 
 bool D3D11Pipeline::initShaderResources(const std::vector<ID3D11Texture2D*>& textures) {
-    shader_views_.resize(textures.size());
+    video_shader_views_.resize(textures.size());
     D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
     srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
     srv_desc.Texture2DArray.MostDetailedMip = 0;
     srv_desc.Texture2DArray.MipLevels = 1;
     srv_desc.Texture2DArray.ArraySize = 1;
-    for (size_t i = 0; i < shader_views_.size(); i++) {
-        shader_views_[i].texture = textures[i];
+    for (size_t i = 0; i < video_shader_views_.size(); i++) {
+        video_shader_views_[i].texture = textures[i];
         srv_desc.Format = DXGI_FORMAT_R8_UNORM;
         srv_desc.Texture2DArray.FirstArraySlice = static_cast<UINT>(i);
         auto hr = d3d11_dev_->CreateShaderResourceView(textures[i], &srv_desc,
-                                                       shader_views_[i].y.GetAddressOf());
+                                                       video_shader_views_[i].y.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(WARNING, "ID3D11Device::CreateShaderResourceView() failed: 0x%08x", hr);
             return false;
         }
         srv_desc.Format = DXGI_FORMAT_R8G8_UNORM;
         hr = d3d11_dev_->CreateShaderResourceView(textures[i], &srv_desc,
-                                                  shader_views_[i].uv.GetAddressOf());
+                                                  video_shader_views_[i].uv.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(WARNING, "ID3D11Device::CreateShaderResourceView() failed: 0x%08x", hr);
             return false;
@@ -801,7 +864,8 @@ void D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
 }
 
 const D3D11Pipeline::ColorMatrix& D3D11Pipeline::getColorMatrix() const {
-    // TODO: 颜色空间转换系数的选择，应该从编码的时候就确定，下策是从解码器中探知，下下策是乱选一个
+    // TODO:
+    // 颜色空间转换系数的选择，应该从编码的时候就确定，下策是从解码器中探知，下下策是乱选一个
     // https://zhuanlan.zhihu.com/p/493035194
     // clang-format off
     static const ColorMatrix kBT709 =
@@ -815,7 +879,7 @@ const D3D11Pipeline::ColorMatrix& D3D11Pipeline::getColorMatrix() const {
 }
 
 std::optional<D3D11Pipeline::ShaderView> D3D11Pipeline::getShaderView(void* texture) {
-    for (auto& view : shader_views_) {
+    for (auto& view : video_shader_views_) {
         if (view.texture == texture) {
             return view;
         }
