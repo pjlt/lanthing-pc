@@ -132,6 +132,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     auto settings = params.get_settings();
     ui->checkboxService->setChecked(settings.run_as_daemon);
     ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
+    ui->checkboxForceRelay->setChecked(settings.force_relay);
     ui->leditRelay->setText(QString::fromStdString(settings.relay_server));
     ui->btnRelay->setEnabled(false);
     if (settings.windowed_fullscreen.has_value()) {
@@ -439,6 +440,8 @@ void MainWindow::setupOtherCallbacks() {
         ui->btnRelay->setEnabled(false);
         params_.set_relay_server(ui->leditRelay->text().toStdString());
     });
+    connect(ui->checkboxForceRelay, &QCheckBox::stateChanged,
+            [this](int) { params_.force_relay(ui->checkboxForceRelay->isChecked()); });
 }
 
 void MainWindow::setupClientIndicators() {

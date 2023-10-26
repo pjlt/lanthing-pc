@@ -79,6 +79,7 @@ public:
         bool enable_gamepad;
         bool enable_keyboard;
         bool enable_mouse;
+        bool force_relay;
     };
 
 public:
@@ -214,6 +215,7 @@ private:
     bool signaling_keepalive_inited_ = false;
     std::deque<SpeedEntry> video_send_history_;
     int64_t video_send_bps_ = 0;
+    bool force_relay_ = false;
 
     std::atomic<bool> enable_gamepad_;
     std::atomic<bool> enable_keyboard_;

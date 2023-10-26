@@ -96,11 +96,11 @@ void initLogAndMinidump(Role role) {
     switch (role) {
     case Role::Client:
         prefix = "client";
-        rtc_prefix = "ltcli_";
+        rtc_prefix = "ltcli.";
         break;
     case Role::Service:
         prefix = "service";
-        rtc_prefix = "ltsvr_";
+        rtc_prefix = "ltsvr.";
         break;
     case Role::Worker:
         prefix = "worker";
@@ -144,6 +144,7 @@ void initLogAndMinidump(Role role) {
 
     // g3log必须再minidump前初始化
     g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
+    g_minidump_genertator->addCallback([]() { rtc::flushLogs(); });
     signal(SIGINT, sigint_handler);
     if (LT_CRASH_ON_THREAD_HANGS) {
         ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
