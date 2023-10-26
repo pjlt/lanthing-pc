@@ -152,6 +152,11 @@
         <translation></translation>
     </message>
     <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1392"/>
+        <source>v0.1.4</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1497"/>
         <source>Last Time</source>
         <translation>上次连接</translation>
@@ -196,19 +201,13 @@
         <translation>确认</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1712"/>
         <source>Mouse mode (Not working yet)</source>
-        <translation>鼠标模式（暂不生效）</translation>
+        <translation type="vanished">鼠标模式（暂不生效）</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1412"/>
         <source>Trusted clients:</source>
         <translation>已信任客户端：</translation>
-    </message>
-    <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1392"/>
-        <source>v0.1.3</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1477"/>
@@ -238,7 +237,7 @@
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1597"/>
         <source>Force Relay</source>
-        <translation type="unfinished">强制中转</translation>
+        <translation>强制中转</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1685"/>
@@ -256,8 +255,9 @@
         <translation></translation>
     </message>
     <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1712"/>
         <source>Mouse mode</source>
-        <translation type="vanished">鼠标模式</translation>
+        <translation>鼠标模式</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1719"/>
