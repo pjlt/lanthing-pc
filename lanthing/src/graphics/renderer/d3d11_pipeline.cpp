@@ -65,7 +65,7 @@ VSOut main_VS(VSIn vsin)
 }
 )";
 
-const std::string kPixelShader = R"(
+const std::string kVideoPixelShader = R"(
 // https://zhuanlan.zhihu.com/p/493035194
 Texture2D<float> yChannel : register(t0);
 Texture2D<float2> uvChannel : register(t1);
@@ -89,6 +89,17 @@ float4 main_PS(PSIn psin) : SV_TARGET
     float2 uv = uvChannel.Sample(splr, psin.tex);
     float4 rgb = mul(float4(y, uv.x, uv.y, 1.0), colorMatrix);
     return rgb;
+}
+)";
+
+const std::string kCursorPixelShader = R"(
+Texture2D<float4> cursorTexture : t0;
+SamplerState splr;
+
+float4 main_PS(float2 tex : TEXCOORD) : SV_TARGET
+{
+    float4 color = cursorTexture.Sample(splr, tex);
+    return color;
 }
 )";
 
@@ -196,10 +207,10 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     if (result == RenderResult::Failed) {
         return result;
     }
-    size_t index = static_cast<size_t>(frame);
+    // size_t index = static_cast<size_t>(frame);
     // mapTextureToFile(d3d11_dev_.Get(), d3d11_ctx_.Get(),
     //                  (ID3D11Texture2D*)shader_views_[index].texture, index);
-    //  std::lock_guard<std::mutex> lock(pipeline_mtx_);
+    // std::lock_guard<std::mutex> lock(pipeline_mtx_);
     const float clear[4] = {0.f, 0.f, 0.f, 0.f};
     d3d11_ctx_->ClearRenderTargetView(render_view_.Get(), clear);
     d3d11_ctx_->OMSetRenderTargets(1, render_view_.GetAddressOf(), nullptr);
@@ -218,10 +229,8 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     return RenderResult::Success;
 }
 
-void D3D11Pipeline::renderCursor(int32_t cursor_id, float x, float y) {
-    (void)cursor_id;
-    (void)x;
-    (void)y;
+void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visiable) {
+    cursor_info_ = CursorInfo{cursor_id, x, y, visiable};
 }
 
 bool D3D11Pipeline::present() {
@@ -308,29 +317,26 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
-    // VSSetShader
-    // IASetInputLayout
-    // IASetVertexBuffers
-    // IASetIndexBuffer
-    // IASetPrimitiveTopology
-    // PSSetShader
-    // PSSetConstantBuffers
-    // PSSetSamplers
-    // PSSetShaderResources
-    // DrawIndexed
-    d3d11_ctx_->VSSetShader(cursor_vertex_shader_.Get(), nullptr, 0);
-    d3d11_ctx_->IASetInputLayout(cursor_input_layout_.Get());
+    RenderResult::Success;
+    d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
     ID3D11Buffer* vbarray[] = {cursor_vertex_buffer_.Get()};
     d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
-    d3d11_ctx_->IASetIndexBuffer(cursor_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
+    d3d11_ctx_->IASetIndexBuffer(video_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
     d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     d3d11_ctx_->PSSetShader(cursor_pixel_shader_.Get(), nullptr, 0);
     ID3D11Buffer* cbarray[] = {cursor_pixel_buffer_.Get()};
     d3d11_ctx_->PSSetConstantBuffers(0, 1, cbarray);
     d3d11_ctx_->PSSetSamplers(0, 1, cursor_sampler_.GetAddressOf());
-    ID3D11ShaderResourceView* const shader_views[1] = {};
+
+    CursorInfo c = cursor_info_;
+    auto iter = cursors_.find(c.id);
+    if (iter == cursors_.end()) {
+        iter = cursors_.find(0);
+    }
+    ID3D11ShaderResourceView* const shader_views[1] = {iter->second.view.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
     return RenderResult::Success;
@@ -518,24 +524,20 @@ bool D3D11Pipeline::setupIAAndVSStage() {
         LOGF(WARNING, "Failed to compile vertex shader, hr:0x%08x", hr);
         return false;
     }
-    ComPtr<ID3D11VertexShader> vertex_shader;
     hr = d3d11_dev_->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL,
-                                        vertex_shader.GetAddressOf());
+                                        video_vertex_shader_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create vertex shader, hr:0x%08x", hr);
         return false;
     }
-    d3d11_ctx_->VSSetShader(vertex_shader.Get(), nullptr, 0);
 
-    ComPtr<ID3D11InputLayout> layout;
     hr = d3d11_dev_->CreateInputLayout(Vertex::input_desc, ARRAYSIZE(Vertex::input_desc),
                                        blob->GetBufferPointer(), blob->GetBufferSize(),
-                                       layout.GetAddressOf());
+                                       video_input_layout_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create input layout: %#x", hr);
         return false;
     }
-    d3d11_ctx_->IASetInputLayout(layout.Get());
     float u = (float)video_width_ / _ALIGN(video_width_, align_);
     float v = (float)video_height_ / _ALIGN(video_height_, align_);
     Vertex verts[] = {{-1.0f, 1.0f, 0.0f, 0.0f},
@@ -553,16 +555,11 @@ bool D3D11Pipeline::setupIAAndVSStage() {
     D3D11_SUBRESOURCE_DATA vb_data = {};
     vb_data.pSysMem = verts;
 
-    ComPtr<ID3D11Buffer> vertex_buf;
-    hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, vertex_buf.GetAddressOf());
+    hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, video_vertex_buffer_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
         return false;
     }
-    UINT stride = sizeof(Vertex);
-    UINT offset = 0;
-    ID3D11Buffer* vbarray[] = {vertex_buf.Get()};
-    d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
 
     // 索引
     const uint32_t indexes[] = {0, 1, 2, 0, 2, 3};
@@ -578,14 +575,12 @@ bool D3D11Pipeline::setupIAAndVSStage() {
     index_buffer_data.pSysMem = indexes;
     index_buffer_data.SysMemPitch = sizeof(uint32_t);
 
-    ComPtr<ID3D11Buffer> index_buf;
-    hr = d3d11_dev_->CreateBuffer(&index_buffer_desc, &index_buffer_data, index_buf.GetAddressOf());
+    hr = d3d11_dev_->CreateBuffer(&index_buffer_desc, &index_buffer_data,
+                                  video_index_buffer_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create index buffer, 0x%08x", hr);
         return false;
     }
-    d3d11_ctx_->IASetIndexBuffer(index_buf.Get(), DXGI_FORMAT_R32_UINT, 0);
-    d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     return true;
 }
 
@@ -608,20 +603,18 @@ bool D3D11Pipeline::setupPSStage() {
 #ifdef _DEBUG
     flags1 |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
-    auto hr = D3DCompile(kPixelShader.c_str(), kPixelShader.size(), NULL, NULL, NULL, "main_PS",
-                         "ps_5_0", flags1, 0, blob.GetAddressOf(), NULL);
+    auto hr = D3DCompile(kVideoPixelShader.c_str(), kVideoPixelShader.size(), NULL, NULL, NULL,
+                         "main_PS", "ps_5_0", flags1, 0, blob.GetAddressOf(), NULL);
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to compile pixel shader, hr:0x%08x", hr);
         return false;
     }
-    ComPtr<ID3D11PixelShader> pixel_shader = nullptr;
     hr = d3d11_dev_->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL,
-                                       pixel_shader.GetAddressOf());
+                                       video_pixel_shader_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create pixel shader, hr:0x%08x", hr);
         return false;
     }
-    d3d11_ctx_->PSSetShader(pixel_shader.Get(), nullptr, 0);
 
     D3D11_BUFFER_DESC const_desc = {};
     const_desc.ByteWidth = sizeof(ColorMatrix);
@@ -634,14 +627,11 @@ bool D3D11Pipeline::setupPSStage() {
     D3D11_SUBRESOURCE_DATA const_data = {};
     const_data.pSysMem = &color_matrix;
 
-    ComPtr<ID3D11Buffer> buffer;
-    hr = d3d11_dev_->CreateBuffer(&const_desc, &const_data, buffer.GetAddressOf());
+    hr = d3d11_dev_->CreateBuffer(&const_desc, &const_data, video_pixel_buffer_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create const buffer, hr:0x%08x", hr);
         return false;
     }
-    ID3D11Buffer* cbarray[] = {buffer.Get()};
-    d3d11_ctx_->PSSetConstantBuffers(0, 1, cbarray);
 
     D3D11_SAMPLER_DESC sample_desc = {};
     sample_desc.MipLODBias = 0.0f;
@@ -654,13 +644,11 @@ bool D3D11Pipeline::setupPSStage() {
     sample_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sample_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 
-    ComPtr<ID3D11SamplerState> sampler = nullptr;
-    hr = d3d11_dev_->CreateSamplerState(&sample_desc, sampler.GetAddressOf());
+    hr = d3d11_dev_->CreateSamplerState(&sample_desc, video_sampler_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create sample state, hr:0x%08x", hr);
         return false;
     }
-    d3d11_ctx_->PSSetSamplers(0, 1, sampler.GetAddressOf());
     return true;
 }
 
@@ -706,9 +694,18 @@ bool D3D11Pipeline::createCursors() {
         int32_t height = 0;
         std::vector<uint8_t> data;
         if (!loadCursorAsBitmap(kCursors[i], width, height, data)) {
+            if (i == 0) {
+                // 普通箭头必须成功，作为兜底项
+                return false;
+            }
             continue;
         }
-        createCursorResourceFromBitmap(i, width, height, data);
+        if (!createCursorResourceFromBitmap(i, width, height, data)) {
+            return false;
+        }
+    }
+    if (!setupCursorD3DResources()) {
+        return false;
     }
     return true;
 }
@@ -823,7 +820,7 @@ bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& 
     return true;
 }
 
-void D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
                                                    const std::vector<uint8_t>& data) {
     D3D11_TEXTURE2D_DESC desc{};
     desc.Width = width;
@@ -833,17 +830,17 @@ void D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     desc.SampleDesc.Count = 1;
     desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    desc.MiscFlags = 0;
     desc.Usage = D3D11_USAGE_DEFAULT;
     D3D11_SUBRESOURCE_DATA subresource{};
     subresource.pSysMem = data.data();
     subresource.SysMemPitch = sizeof(Color) * width;
-    subresource.SysMemSlicePitch = sizeof(Color) * width * height;
+    subresource.SysMemSlicePitch = 0;
+    // subresource.SysMemSlicePitch = sizeof(Color) * width * height;
     ComPtr<ID3D11Texture2D> texture;
     HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, &subresource, texture.GetAddressOf());
     if (hr != S_OK) {
         LOGF(ERR, "CreateTexture2D failed with %#x", hr);
-        return;
+        return false;
     }
     D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
     srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -854,13 +851,66 @@ void D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     hr = d3d11_dev_->CreateShaderResourceView(texture.Get(), &srv_desc, sv.GetAddressOf());
     if (hr != S_OK) {
         LOGF(ERR, "CreateShaderResourceView failed with %#x", hr);
-        return;
+        return false;
     }
     CursorRes cr{};
     cr.texture = texture;
     cr.view = sv;
     cursors_[id] = cr;
     LOG(INFO) << "Create D3D11 Resource for cursor " << id << " success";
+    return true;
+}
+
+bool D3D11Pipeline::setupCursorD3DResources() {
+    Vertex verts[] = {{-1.0f, 1.0f, 0.0f, 0.0f},
+                      {1.0f, 1.0f, 1.0f, 0.0f},
+                      {1.0f, -1.0f, 1.0f, 1.0f},
+                      {-1.0f, -1.0f, 0.0f, 1.0f}};
+    D3D11_BUFFER_DESC vb_desc = {};
+    vb_desc.ByteWidth = sizeof(verts);
+    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
+    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vb_desc.CPUAccessFlags = 0;
+    vb_desc.MiscFlags = 0;
+    vb_desc.StructureByteStride = sizeof(Vertex);
+
+    D3D11_SUBRESOURCE_DATA vb_data = {};
+    vb_data.pSysMem = verts;
+
+    HRESULT hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, cursor_vertex_buffer_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
+        return false;
+    }
+    D3D11_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.MaxAnisotropy = 16;
+    hr = d3d11_dev_->CreateSamplerState(&samplerDesc, &cursor_sampler_);
+    if (hr != S_OK) {
+        LOGF(ERR, "CreateSamplerState failed with %#x", hr);
+        return false;
+    }
+    ComPtr<ID3DBlob> blob;
+    UINT flags1 = 0;
+#ifdef _DEBUG
+    flags1 |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+    hr = D3DCompile(kCursorPixelShader.c_str(), kCursorPixelShader.size(), NULL, NULL, NULL,
+                    "main_PS", "ps_5_0", flags1, 0, blob.GetAddressOf(), NULL);
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to compile vertex shader, hr:0x%08x", hr);
+        return false;
+    }
+    hr = d3d11_dev_->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL,
+                                       cursor_pixel_shader_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create pixel shader, hr:0x%08x", hr);
+        return false;
+    }
+    return true;
 }
 
 const D3D11Pipeline::ColorMatrix& D3D11Pipeline::getColorMatrix() const {

@@ -406,7 +406,6 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             auto start = ltlib::steady_now_us();
             widgets_->render();
             auto mid = ltlib::steady_now_us();
-            video_renderer_->renderCursor(cursor, x, y);
             video_renderer_->present();
             auto end = ltlib::steady_now_us();
             statistics_->addPresent();

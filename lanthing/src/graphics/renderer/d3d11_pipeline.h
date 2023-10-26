@@ -56,6 +56,12 @@ class D3D11Pipeline : public VideoRenderer {
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
     };
+    struct CursorInfo {
+        int32_t id;
+        float x;
+        float y;
+        bool visiable;
+    };
 
 public:
     struct Params {
@@ -72,7 +78,7 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void renderCursor(int32_t cursor_id, float x, float y) override;
+    void updateCursor(int32_t cursor_id, float x, float y, bool visiable) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
@@ -93,8 +99,9 @@ private:
     bool createCursors();
     bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height,
                             std::vector<uint8_t>& data);
-    void createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+    bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
                                         const std::vector<uint8_t>& data);
+    bool setupCursorD3DResources();
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
     RenderResult tryResetSwapChain();
@@ -134,6 +141,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D11PixelShader> cursor_pixel_shader_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
+
+    std::atomic<CursorInfo> cursor_info_;
 
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;
