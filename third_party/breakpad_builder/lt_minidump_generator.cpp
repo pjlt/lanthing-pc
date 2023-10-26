@@ -16,6 +16,8 @@ static bool minidump_callback(const wchar_t* dump_path,
 	(void)assertion;
 	(void)succeeded;
 	std::cout << "dump written" << std::endl;
+	auto that = reinterpret_cast<LTMinidumpGenerator*>(context);
+	that->invokeCallbacks();
 	return false;
 }
 
@@ -28,7 +30,7 @@ LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path)
 		wpath,
 		nullptr, /*filter*/
 		minidump_callback,
-		nullptr, /*context*/
+		this, /*context*/
 		google_breakpad::ExceptionHandler::HANDLER_ALL
 	};
 	impl_ = handler;
@@ -38,4 +40,16 @@ LTMinidumpGenerator::~LTMinidumpGenerator()
 {
 	auto handler = reinterpret_cast<google_breakpad::ExceptionHandler*>(impl_);
 	delete handler;
+}
+
+void LTMinidumpGenerator::addCallback(const std::function<void()>& callback)
+{
+	callbacks_.push_back(callback);
+}
+
+void LTMinidumpGenerator::invokeCallbacks()
+{
+	for (auto& cb : callbacks_) {
+		cb();
+	}
 }

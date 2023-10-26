@@ -144,6 +144,7 @@ void initLogAndMinidump(Role role) {
 
     // g3log必须再minidump前初始化
     g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
+    g_minidump_genertator->addCallback([]() { rtc::flushLogs(); });
     signal(SIGINT, sigint_handler);
     if (LT_CRASH_ON_THREAD_HANGS) {
         ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();

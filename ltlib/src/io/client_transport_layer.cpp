@@ -205,7 +205,9 @@ uv_handle_t* LibuvCTransport::uvhandle_release() {
 
 void LibuvCTransport::reconnect() {
     uv_handle_t* conn = uvhandle_release();
-    uv_close(conn, &LibuvCTransport::delay_reconnect);
+    if (conn != nullptr) {
+        uv_close(conn, &LibuvCTransport::delay_reconnect);
+    }
     on_reconnecting_();
 }
 
