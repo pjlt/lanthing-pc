@@ -55,6 +55,14 @@ class D3D11Pipeline : public VideoRenderer {
     struct CursorRes {
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
+        int32_t width;
+        int32_t height;
+    };
+    struct CursorInfo {
+        int32_t id;
+        float x;
+        float y;
+        bool visible;
     };
 
 public:
@@ -72,7 +80,8 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void renderCursor(int32_t cursor_id, float x, float y) override;
+    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
+    void switchMouseMode(bool absolute) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
@@ -84,6 +93,7 @@ public:
 private:
     bool createD3D();
     bool setupRenderPipeline();
+    bool setupRenderTarget();
     bool setupIAAndVSStage();
     bool setupRSStage();
     bool setupPSStage();
@@ -92,11 +102,14 @@ private:
     bool createCursors();
     bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height,
                             std::vector<uint8_t>& data);
-    void createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+    bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
                                         const std::vector<uint8_t>& data);
+    bool setupCursorD3DResources();
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
     RenderResult tryResetSwapChain();
+    RenderResult renderVideo(int64_t frame);
+    RenderResult renderCursor();
 
 private:
     HWND hwnd_;
@@ -114,9 +127,26 @@ private:
     HANDLE waitable_obj_ = NULL;
     bool pipeline_ready_ = false;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> render_view_ = nullptr;
-    std::vector<ShaderView> shader_views_;
-    std::map<size_t, CursorRes> cursors_;
+    std::vector<ShaderView> video_shader_views_;
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> video_vertex_shader_;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> video_input_layout_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> video_vertex_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> video_index_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> video_pixel_shader_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> video_pixel_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> video_sampler_;
 
+    std::map<size_t, CursorRes> cursors_;
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> cursor_vertex_shader_;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> cursor_input_layout_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_vertex_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_index_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> cursor_pixel_shader_;
+    // Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
+
+    CursorInfo cursor_info_;
+    bool absolute_mouse_ = true;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;
     std::atomic<bool> reset_{false};

@@ -429,10 +429,10 @@ void InputCapturerImpl::processHotKeys() {
         key_states_[Scancode::SCANCODE_Z]) {
         toggle_fullscreen_();
     }
-    // if (key_states_[Scancode::SCANCODE_LGUI] && key_states_[Scancode::SCANCODE_LSHIFT] &&
-    //     key_states_[Scancode::SCANCODE_X]) {
-    //     switch_mouse_mode_();
-    // }
+    if (key_states_[Scancode::SCANCODE_LGUI] && key_states_[Scancode::SCANCODE_LSHIFT] &&
+        key_states_[Scancode::SCANCODE_X]) {
+        switch_mouse_mode_();
+    }
 }
 
 } // namespace lt

@@ -247,6 +247,7 @@ void VCEPipeline::captureAndSendCursor() {
         get_cursor_failed_ = false;
         msg->set_x(pci.ptScreenPos.x);
         msg->set_y(pci.ptScreenPos.y);
+        msg->set_visible(pci.flags != 0);
         auto iter = cursors_.find(pci.hCursor);
         if (iter == cursors_.end()) {
             msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
@@ -267,6 +268,7 @@ void VCEPipeline::captureAndSendCursor() {
         msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
         msg->set_x(pos.x);
         msg->set_y(pos.y);
+        msg->set_visible(true);
         send_message_(ltproto::id(msg), msg);
         return;
     }

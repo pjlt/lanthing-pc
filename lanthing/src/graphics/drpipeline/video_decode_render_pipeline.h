@@ -73,6 +73,8 @@ public:
     void setBWE(uint32_t bps);
     void setNack(uint32_t nack);
     void setLossRate(float rate);
+    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
+    void switchMouseMode(bool absolute);
 
 private:
     VideoDecodeRenderPipeline() = default;

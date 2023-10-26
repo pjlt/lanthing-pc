@@ -49,12 +49,12 @@ bool rendererGrabInputs(void* inputs) {
     auto ev = reinterpret_cast<const SDL_Event*>(inputs);
     if (ImGui_ImplSDL2_ProcessEvent(ev)) {
         auto& io = ImGui::GetIO();
-        if (io.WantCaptureKeyboard &&
+        if (io.WantCaptureMouse &&
             (ev->type == SDL_MOUSEBUTTONUP || ev->type == SDL_MOUSEBUTTONDOWN ||
              ev->type == SDL_MOUSEMOTION || ev->type == SDL_MOUSEWHEEL)) {
             return true;
         }
-        if (io.WantCaptureMouse && (ev->type == SDL_KEYUP || ev->type == SDL_KEYDOWN)) {
+        if (io.WantCaptureKeyboard && (ev->type == SDL_KEYUP || ev->type == SDL_KEYDOWN)) {
             return true;
         }
     }
