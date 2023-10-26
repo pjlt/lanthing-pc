@@ -153,6 +153,7 @@ bool App::init() {
     auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
     relay_server_ = settings_->getString("relay").value_or("");
     windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
+    force_relay_ = settings_->getBoolean("force_relay").value_or(false);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -205,6 +206,7 @@ int App::exec(int argc, char** argv) {
     params.delete_trusted_device =
         std::bind(&App::deleteTrustedDevice, this, std::placeholders::_1);
     params.get_trusted_devices = std::bind(&App::getTrustedDevices, this);
+    params.force_relay = std::bind(&App::setForceRelay, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -246,6 +248,7 @@ GUI::Settings App::getSettings() const {
     settings.run_as_daemon = run_as_daemon_;
     settings.relay_server = relay_server_;
     settings.windowed_fullscreen = windowed_fullscreen_;
+    settings.force_relay = force_relay_;
     return settings;
 }
 
@@ -340,6 +343,11 @@ std::vector<GUI::TrustedDevice> App::getTrustedDevices() {
         result.push_back(device);
     }
     return result;
+}
+
+void App::setForceRelay(bool force) {
+    force_relay_ = force;
+    settings_->setBoolean("force_relay", force);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

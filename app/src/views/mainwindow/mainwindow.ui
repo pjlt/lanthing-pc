@@ -1590,24 +1590,33 @@ QHeaderView::section:vertical
                    <property name="frameShadow">
                     <enum>QFrame::Raised</enum>
                    </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_6">
+                   <layout class="QVBoxLayout" name="verticalLayout_20">
                     <item>
-                     <widget class="QLabel" name="labelRelay">
+                     <widget class="QCheckBox" name="checkboxForceRelay">
                       <property name="text">
-                       <string>Relay Server</string>
+                       <string>Force Relay</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QLineEdit" name="leditRelay">
-                      <property name="minimumSize">
-                       <size>
-                        <width>0</width>
-                        <height>30</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">
+                     <layout class="QHBoxLayout" name="horizontalLayout_6">
+                      <item>
+                       <widget class="QLabel" name="labelRelay">
+                        <property name="text">
+                         <string>Relay Server</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLineEdit" name="leditRelay">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>30</height>
+                         </size>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">
 #leditRelay {
 	background-color: rgb(33, 37, 43);
 	border-radius: 5px;
@@ -1623,13 +1632,13 @@ QHeaderView::section:vertical
 	border: 2px solid rgb(91, 101, 124);
 }
 </string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="btnRelay">
-                      <property name="styleSheet">
-                       <string notr="true">
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="btnRelay">
+                        <property name="styleSheet">
+                         <string notr="true">
 #btnRelay {
 	border: 2px solid rgb(52, 59, 72);
 	border-radius: 5px;	
@@ -1643,11 +1652,13 @@ QHeaderView::section:vertical
 	background-color: rgb(35, 40, 49);
 	border: 2px solid rgb(43, 50, 61);
 }</string>
-                      </property>
-                      <property name="text">
-                       <string>Confirm</string>
-                      </property>
-                     </widget>
+                        </property>
+                        <property name="text">
+                         <string>Confirm</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
                     </item>
                    </layout>
                   </widget>

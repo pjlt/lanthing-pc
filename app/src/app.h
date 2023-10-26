@@ -75,6 +75,7 @@ private:
     void enableDevicePermission(int64_t device_id, GUI::DeviceType type, bool enable);
     void deleteTrustedDevice(int64_t device_id);
     std::vector<GUI::TrustedDevice> getTrustedDevices();
+    void setForceRelay(bool force);
 
     void createAndStartService();
     void stopService();
@@ -131,6 +132,7 @@ private:
     std::vector<std::string> history_ids_;
     bool run_as_daemon_ = false;
     bool auto_refresh_access_token_ = false;
+    bool force_relay_ = false;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;

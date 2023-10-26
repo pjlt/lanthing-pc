@@ -62,6 +62,7 @@ public:
         bool auto_refresh_access_token;
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
+        bool force_relay;
     };
 
     struct TrustedDevice {
@@ -85,6 +86,7 @@ public:
         std::function<void(int64_t, DeviceType, bool)> enable_device_permission;
         std::function<void(int64_t)> delete_trusted_device;
         std::function<std::vector<TrustedDevice>()> get_trusted_devices;
+        std::function<void(bool)> force_relay;
     };
 
 public:

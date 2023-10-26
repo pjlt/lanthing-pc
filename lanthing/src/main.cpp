@@ -96,11 +96,11 @@ void initLogAndMinidump(Role role) {
     switch (role) {
     case Role::Client:
         prefix = "client";
-        rtc_prefix = "ltcli_";
+        rtc_prefix = "ltcli.";
         break;
     case Role::Service:
         prefix = "service";
-        rtc_prefix = "ltsvr_";
+        rtc_prefix = "ltsvr.";
         break;
     case Role::Worker:
         prefix = "worker";

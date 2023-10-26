@@ -540,11 +540,12 @@ tp::Client* Client::createRtcClient() {
         reflex_servers.push_back(svr.data());
         // LOG(DEBUG) << "Reflex: " << svr;
     }
+    bool force_relay = settings_->getBoolean("force_relay").value_or(false);
     if (params.use_nbp2p) {
-        params.nbp2p_params.disable_ipv6 = false;
-        params.nbp2p_params.disable_lan_udp = false;
-        params.nbp2p_params.disable_mapping = false;
-        params.nbp2p_params.disable_reflex = false;
+        params.nbp2p_params.disable_ipv6 = force_relay;
+        params.nbp2p_params.disable_lan_udp = force_relay;
+        params.nbp2p_params.disable_mapping = force_relay;
+        params.nbp2p_params.disable_reflex = force_relay;
         params.nbp2p_params.disable_relay = false;
         params.nbp2p_params.username = p2p_username_.c_str();
         params.nbp2p_params.password = p2p_password_.c_str();
