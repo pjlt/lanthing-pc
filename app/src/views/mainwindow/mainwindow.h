@@ -83,6 +83,8 @@ public:
 
     void addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s);
 
+    void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
+
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override; // override?
 

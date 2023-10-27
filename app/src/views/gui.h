@@ -91,6 +91,7 @@ public:
         std::function<void(int64_t)> delete_trusted_device;
         std::function<std::vector<TrustedDevice>()> get_trusted_devices;
         std::function<void(bool)> force_relay;
+        std::function<void(int64_t)> ignore_version;
     };
 
 public:
@@ -122,7 +123,7 @@ public:
 
     void errorCode(int32_t code);
 
-    void updateTrustedDevice(const TrustedDevice& device);
+    void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::shared_ptr<GUIImpl> impl_;

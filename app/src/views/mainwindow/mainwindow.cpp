@@ -45,10 +45,12 @@
 #include <qclipboard.h>
 #include <qdatetime.h>
 #include <qmenu.h>
+#include <qstringbuilder.h>
 
 #include <ltlib/logging.h>
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
+#include <ltproto/server/new_version.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
 #include <ltproto/service2app/operate_connection.pb.h>
@@ -92,6 +94,11 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     qApp->installEventFilter(this);
 
     loadPixmap();
+
+    // 版本号
+    std::stringstream oss_ver;
+    oss_ver << "v" << LT_VERSION_MAJOR << "." << LT_VERSION_MINOR << "." << LT_VERSION_PATCH;
+    ui->labelVersion->setText(QString::fromStdString(oss_ver.str()));
 
     // 无边框
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
@@ -371,6 +378,54 @@ void MainWindow::infoMessageBox(const QString& message) {
 void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s) {
     dispatchToUiThread([this, device_id, time_s]() {
         addOrUpdateTrustedDevice(device_id, true, false, false, time_s);
+    });
+}
+
+void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    dispatchToUiThread([this, _msg]() {
+        auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
+        int64_t version =
+            msg->version_major() * 1'000'000 + msg->version_minor() * 1'000 + msg->version_patch();
+        std::ostringstream oss;
+        oss << "v" << msg->version_major() << "." << msg->version_minor() << "."
+            << msg->version_patch();
+        QString message = tr("The new version %s has been released, please download it<br>from <a "
+                             "href='%s'>Github</a>.");
+        std::vector<char> buffer(512);
+        snprintf(buffer.data(), buffer.size(), message.toStdString().c_str(), oss.str().c_str(),
+                 msg->url().c_str());
+        oss.clear();
+
+        auto date = QDateTime::fromSecsSinceEpoch(msg->timestamp());
+        QString details = tr("Version: ") % "v" % QString::number(msg->version_major()) % "." %
+                          QString::number(msg->version_minor()) % "." %
+                          QString::number(msg->version_patch()) % "\n\n" % tr("Released date: ") %
+                          date.toLocalTime().toString("yyyy/MM/dd") % "\n\n" % tr("New features:") %
+                          "\n";
+        for (int i = 0; i < msg->featrues_size(); i++) {
+            details = details % QString::number(i + 1) % ". " %
+                      QString::fromStdString(msg->featrues().Get(i)) % "\n";
+        }
+        details = details % "\n" % tr("Bug fix:") % "\n";
+        for (int i = 0; i < msg->bugfix_size(); i++) {
+            details = details % QString::number(i + 1) % ". " %
+                      QString::fromStdString(msg->bugfix().Get(i)) % "\n";
+        }
+
+        QMessageBox msgbox;
+        msgbox.setTextFormat(Qt::TextFormat::RichText);
+        msgbox.setWindowTitle(tr("New Version"));
+        msgbox.setText(buffer.data());
+        msgbox.setStandardButtons(QMessageBox::Ok | QMessageBox::Ignore);
+        msgbox.setDetailedText(details);
+        int ret = msgbox.exec();
+        switch (ret) {
+        case QMessageBox::Ignore:
+            params_.ignore_version(version);
+            break;
+        default:
+            break;
+        }
     });
 }
 

@@ -41,6 +41,7 @@
 #include <ltproto/server/allocate_device_id_ack.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
+#include <ltproto/server/new_version.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
@@ -207,6 +208,7 @@ int App::exec(int argc, char** argv) {
         std::bind(&App::deleteTrustedDevice, this, std::placeholders::_1);
     params.get_trusted_devices = std::bind(&App::getTrustedDevices, this);
     params.force_relay = std::bind(&App::setForceRelay, this, std::placeholders::_1);
+    params.ignore_version = std::bind(&App::ignoreVersion, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -348,6 +350,10 @@ std::vector<GUI::TrustedDevice> App::getTrustedDevices() {
 void App::setForceRelay(bool force) {
     force_relay_ = force;
     settings_->setBoolean("force_relay", force);
+}
+
+void App::ignoreVersion(int64_t version) {
+    settings_->setBoolean("ignore_version_" + std::to_string(version), true);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -546,6 +552,9 @@ void App::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
     case ltype::kRequestConnectionAck:
         handleRequestConnectionAck(msg);
         break;
+    case ltype::kNewVersion:
+        handleNewVersion(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown server message:" << type;
         break;
@@ -556,6 +565,9 @@ void App::loginDevice() {
     // NOTE: 运行在ioloop
     auto msg = std::make_shared<ltproto::server::LoginDevice>();
     msg->set_device_id(device_id_);
+    msg->set_version_major(LT_VERSION_MAJOR);
+    msg->set_version_minor(LT_VERSION_MINOR);
+    msg->set_version_patch(LT_VERSION_PATCH);
     sendMessage(ltproto::id(msg), msg);
 }
 
@@ -595,6 +607,28 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
 
 void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     client_manager_->onRequestConnectionAck(msg);
+}
+
+void App::handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
+    int64_t new_version =
+        msg->version_major() * 1'000'000 + msg->version_minor() * 1'000 + msg->version_patch();
+    int64_t my_version = LT_VERSION_MAJOR * 1'000'000 + LT_VERSION_MINOR * 1'000 + LT_VERSION_PATCH;
+    if (my_version == new_version) {
+        return;
+    }
+    else if (my_version > new_version) {
+        LOG(WARNING) << "New version " << new_version << " smaller than current version "
+                     << my_version << ",  bug or testing?";
+        return;
+    }
+    auto ignore = settings_->getBoolean("ignore_version_" + std::to_string(new_version));
+    if (ignore.has_value()) {
+        LOG(INFO) << "The user has previously chosen not to upgrade to this version "
+                  << new_version;
+        return;
+    }
+    gui_.onNewVersion(msg);
 }
 
 bool App::initServiceManager() {

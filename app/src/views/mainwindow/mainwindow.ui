@@ -1429,7 +1429,7 @@ QLabel {
                     <item>
                      <widget class="QLabel" name="labelVersion">
                       <property name="text">
-                       <string>v0.1.4</string>
+                       <string>v0.0.0</string>
                       </property>
                       <property name="alignment">
                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

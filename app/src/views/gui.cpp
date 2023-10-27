@@ -119,6 +119,8 @@ public:
 
     void errorCode(int32_t code);
 
+    void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
+
 private:
     void setLanguage();
 
@@ -258,6 +260,10 @@ void GUIImpl::errorCode(int32_t code) {
     main_window_->errorMessageBox(error_msg);
 }
 
+void GUIImpl::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onNewVersion(msg);
+}
+
 void GUIImpl::setLanguage() {
     QLocale locale;
     switch (locale.language()) {
@@ -330,6 +336,10 @@ void GUI::infoMessageBox(const std::string& message) {
 
 void GUI::errorCode(int32_t code) {
     impl_->errorCode(code);
+}
+
+void GUI::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onNewVersion(msg);
 }
 
 } // namespace lt

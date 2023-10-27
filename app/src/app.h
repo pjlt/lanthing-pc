@@ -76,6 +76,7 @@ private:
     void deleteTrustedDevice(int64_t device_id);
     std::vector<GUI::TrustedDevice> getTrustedDevices();
     void setForceRelay(bool force);
+    void ignoreVersion(int64_t version);
 
     void createAndStartService();
     void stopService();
@@ -104,6 +105,7 @@ private:
     void handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // service
     bool initServiceManager();
