@@ -111,6 +111,7 @@ private:
     void onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onDisconnectedConnection(int64_t device_id);
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onServiceStatus(ServiceManager::ServiceStatus status);
 
     //
     bool initClientManager();

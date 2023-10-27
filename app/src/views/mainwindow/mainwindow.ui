@@ -363,7 +363,7 @@ background-color:transparent;
             </property>
             <property name="maximumSize">
              <size>
-              <width>16777215</width>
+              <width>130</width>
               <height>16777215</height>
              </size>
             </property>
@@ -567,6 +567,12 @@ border:none;
              </item>
              <item>
               <widget class="QFrame" name="statusBar">
+               <property name="styleSheet">
+                <string notr="true">#statusBar .QLabel {
+font: 290 8pt &quot;Microsoft YaHei UI&quot;;
+color: rgb(190, 190, 190);
+}</string>
+               </property>
                <property name="frameShape">
                 <enum>QFrame::NoFrame</enum>
                </property>
@@ -576,16 +582,50 @@ border:none;
                <property name="lineWidth">
                 <number>0</number>
                </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_10">
+               <layout class="QVBoxLayout" name="verticalLayout_22">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>2</number>
+                </property>
                 <item>
-                 <layout class="QVBoxLayout" name="loginStatusLayout">
+                 <layout class="QVBoxLayout" name="statusBarLayout">
+                  <property name="sizeConstraint">
+                   <enum>QLayout::SetDefaultConstraint</enum>
+                  </property>
+                  <property name="leftMargin">
+                   <number>3</number>
+                  </property>
                   <item>
                    <widget class="QLabel" name="labelLoginInfo">
+                    <property name="styleSheet">
+                     <string notr="true"/>
+                    </property>
                     <property name="text">
-                     <string>Connecting...</string>
+                     <string>🟡Connecting server...</string>
+                    </property>
+                    <property name="textFormat">
+                     <enum>Qt::PlainText</enum>
                     </property>
                     <property name="alignment">
-                     <set>Qt::AlignCenter</set>
+                     <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="labelControlledInfo">
+                    <property name="text">
+                     <string>🟡Starting controlled modules ...</string>
+                    </property>
+                    <property name="textFormat">
+                     <enum>Qt::PlainText</enum>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                    </property>
+                    <property name="wordWrap">
+                     <bool>true</bool>
                     </property>
                    </widget>
                   </item>
@@ -1757,6 +1797,9 @@ QHeaderView::section:vertical
                       <property name="text">
                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing is a remote control tool created by &lt;a href=&quot;https://github.com/pjlt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;Project Lanthing&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                       </property>
+                      <property name="openExternalLinks">
+                       <bool>true</bool>
+                      </property>
                      </widget>
                     </item>
                    </layout>
@@ -1785,6 +1828,9 @@ QHeaderView::section:vertical
                      <widget class="QLabel" name="labelLicenseContent">
                       <property name="text">
                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing release under &lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/LICENSE&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;BSD-3-Clause license&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Thirdparty software licenses are listed in&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      </property>
+                      <property name="openExternalLinks">
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>

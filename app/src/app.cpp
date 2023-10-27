@@ -513,7 +513,7 @@ void App::onServerConnected() {
     else {
         allocateDeviceID();
     }
-    gui_.setLoginStatus(GUI::ErrCode::OK);
+    gui_.setLoginStatus(GUI::LoginStatus::Connected);
     if (!signaling_keepalive_inited_) {
         signaling_keepalive_inited_ = false;
         sendKeepAlive();
@@ -522,12 +522,12 @@ void App::onServerConnected() {
 
 void App::onServerDisconnected() {
     LOG(ERR) << "Disconnected from server";
-    gui_.setLoginStatus(GUI::ErrCode::FALIED);
+    gui_.setLoginStatus(GUI::LoginStatus::Disconnected);
 }
 
 void App::onServerReconnecting() {
     LOG(WARNING) << "Reconnecting to server...";
-    gui_.setLoginStatus(GUI::ErrCode::CONNECTING);
+    gui_.setLoginStatus(GUI::LoginStatus::Connecting);
 }
 
 void App::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -607,6 +607,7 @@ bool App::initServiceManager() {
     params.on_connection_status = std::bind(&App::onConnectionStatus, this, std::placeholders::_1);
     params.on_disconnected_connection =
         std::bind(&App::onDisconnectedConnection, this, std::placeholders::_1);
+    params.on_service_status = std::bind(&App::onServiceStatus, this, std::placeholders::_1);
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }
@@ -628,6 +629,19 @@ void App::onDisconnectedConnection(int64_t device_id) {
 
 void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
     gui_.onConnectionStatus(msg);
+}
+
+void App::onServiceStatus(ServiceManager::ServiceStatus status) {
+    switch (status) {
+    case lt::ServiceManager::ServiceStatus::Up:
+        gui_.onServiceStatus(GUI::ServiceStatus::Up);
+        break;
+    case lt::ServiceManager::ServiceStatus::Down:
+        gui_.onServiceStatus(GUI::ServiceStatus::Down);
+        break;
+    default:
+        break;
+    }
 }
 
 bool App::initClientManager() {

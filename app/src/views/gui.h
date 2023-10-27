@@ -45,12 +45,16 @@ namespace lt {
 class GUIImpl;
 class GUI {
 public:
-    enum class ErrCode : uint8_t {
-        OK = 0,
-        TIMEOUT,
-        FALIED,
-        CONNECTING,
-        SYSTEM_ERROR,
+    enum class LoginStatus {
+        Connected,
+        Connecting,
+        Disconnected,
+    };
+
+    enum class ServiceStatus {
+        Up,
+        Launching,
+        Down,
     };
 
     enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
@@ -100,7 +104,7 @@ public:
 
     void setAccessToken(const std::string& token);
 
-    void setLoginStatus(ErrCode err_code);
+    void setLoginStatus(LoginStatus statu);
 
     void onConfirmConnection(int64_t device_id);
 
@@ -109,6 +113,8 @@ public:
     void onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onDisconnectedConnection(int64_t device_id);
+
+    void onServiceStatus(ServiceStatus status);
 
     void errorMessageBox(const std::string& message);
 
