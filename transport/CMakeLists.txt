@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 project(transport)
 
 add_library(${PROJECT_NAME}_api INTERFACE)
