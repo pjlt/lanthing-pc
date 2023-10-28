@@ -568,6 +568,7 @@ void App::loginDevice() {
     msg->set_version_major(LT_VERSION_MAJOR);
     msg->set_version_minor(LT_VERSION_MINOR);
     msg->set_version_patch(LT_VERSION_PATCH);
+    msg->set_cookie(settings_->getString("device_cookie").value_or(""));
     sendMessage(ltproto::id(msg), msg);
 }
 
@@ -598,10 +599,54 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
         LOG(ERR) << "Login with device id(" << device_id_ << ") failed";
         return;
     }
-    // 登录成功才显示device id
+    switch (ack->err_code()) {
+    case ltproto::ErrorCode::Success:
+        LOG(INFO) << "LoginDeviceAck: Success";
+        break;
+    case ltproto::ErrorCode::LoginDeviceInvalidStatus:
+        // 服务端产生无法解决的错误，客户端也无法处理，直接返回
+        LOG(ERR) << "LoginDevice failed, LoginDeviceInvalidStatus " << ack->err_code();
+        gui_.errorCode(ack->err_code());
+        return;
+    case ltproto::ErrorCode::LoginDeviceInvalidID:
+        // ID错误，如果服务端下发了新ID，则使用新ID继续流程，否则当成错误直接返回
+        LOG(ERR) << "LoginDevice failed, LoginDeviceInvalidID";
+        if (ack->new_device_id() != 0) {
+            LOG(WARNING) << "Use the new device " << ack->new_device_id()
+                         << " to replace the old one " << device_id_;
+            device_id_ = ack->new_device_id();
+        }
+        else {
+            return;
+        }
+        break;
+    case ltproto::ErrorCode::LoginDeviceInvalidCookie:
+        // cookie错误，可能在settings.db手写了别人的ID。如果服务端下发了新ID则使用新ID，否则当成错误返回
+        LOG(ERR) << "LoginDevice failed, LoginDeviceInvalidCookie " << ack->err_code();
+        if (ack->new_device_id() != 0) {
+            LOG(WARNING) << "Use the new device " << ack->new_device_id()
+                         << " to replace the old one " << device_id_;
+            device_id_ = ack->new_device_id();
+        }
+        else {
+            return;
+        }
+        break;
+    default:
+        // 未知错误
+        LOG(ERR) << "LoginDevice failed, unknown error: " << static_cast<int>(ack->err_code());
+        gui_.errorCode(ack->err_code());
+        return;
+    }
+    // 服务端随时可能下发新cookie
+    if (!ack->new_cookie().empty()) {
+        // NOTE: 这个cookie不能在log打出来！！！
+        LOG(INFO) << "Update device cookie";
+        settings_->setString("device_cookie", ack->new_cookie());
+    }
+    // 在UI上显示ID，并启动被控服务
     gui_.setDeviceID(device_id_);
     gui_.setAccessToken(access_token_);
-    LOG(INFO) << "LoginDeviceAck: Success";
     createAndStartService();
 }
 
