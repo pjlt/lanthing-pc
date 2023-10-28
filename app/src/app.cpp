@@ -595,10 +595,6 @@ void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLit
 
 void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::LoginDeviceAck>(_msg);
-    if (ack->err_code() != ltproto::ErrorCode::Success) {
-        LOG(ERR) << "Login with device id(" << device_id_ << ") failed";
-        return;
-    }
     switch (ack->err_code()) {
     case ltproto::ErrorCode::Success:
         LOG(INFO) << "LoginDeviceAck: Success";
@@ -615,8 +611,10 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
             LOG(WARNING) << "Use the new device " << ack->new_device_id()
                          << " to replace the old one " << device_id_;
             device_id_ = ack->new_device_id();
+            settings_->setInteger("device_id", device_id_);
         }
         else {
+            gui_.errorCode(ack->err_code());
             return;
         }
         break;
@@ -627,8 +625,10 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
             LOG(WARNING) << "Use the new device " << ack->new_device_id()
                          << " to replace the old one " << device_id_;
             device_id_ = ack->new_device_id();
+            settings_->setInteger("device_id", device_id_);
         }
         else {
+            gui_.errorCode(ack->err_code());
             return;
         }
         break;

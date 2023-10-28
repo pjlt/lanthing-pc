@@ -411,6 +411,8 @@ void Service::loginDevice() {
     else {
         msg->set_allow_control(false);
     }
+    msg->set_cookie(settings_->getString("device_cookie").value_or(""));
+
     tcp_client_->send(ltproto::id(msg), msg);
 }
 
