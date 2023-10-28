@@ -611,8 +611,7 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
 
 void App::handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
-    int64_t new_version =
-        msg->version_major() * 1'000'000 + msg->version_minor() * 1'000 + msg->version_patch();
+    int64_t new_version = msg->major() * 1'000'000 + msg->minor() * 1'000 + msg->patch();
     int64_t my_version = LT_VERSION_MAJOR * 1'000'000 + LT_VERSION_MINOR * 1'000 + LT_VERSION_PATCH;
     if (my_version == new_version) {
         return;
