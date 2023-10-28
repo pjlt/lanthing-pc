@@ -45,12 +45,16 @@ namespace lt {
 class GUIImpl;
 class GUI {
 public:
-    enum class ErrCode : uint8_t {
-        OK = 0,
-        TIMEOUT,
-        FALIED,
-        CONNECTING,
-        SYSTEM_ERROR,
+    enum class LoginStatus {
+        Connected,
+        Connecting,
+        Disconnected,
+    };
+
+    enum class ServiceStatus {
+        Up,
+        Launching,
+        Down,
     };
 
     enum class ConfirmResult { Accept, AcceptWithNextTime, Reject };
@@ -87,6 +91,7 @@ public:
         std::function<void(int64_t)> delete_trusted_device;
         std::function<std::vector<TrustedDevice>()> get_trusted_devices;
         std::function<void(bool)> force_relay;
+        std::function<void(int64_t)> ignore_version;
     };
 
 public:
@@ -100,7 +105,7 @@ public:
 
     void setAccessToken(const std::string& token);
 
-    void setLoginStatus(ErrCode err_code);
+    void setLoginStatus(LoginStatus statu);
 
     void onConfirmConnection(int64_t device_id);
 
@@ -110,13 +115,15 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
+    void onServiceStatus(ServiceStatus status);
+
     void errorMessageBox(const std::string& message);
 
     void infoMessageBox(const std::string& message);
 
     void errorCode(int32_t code);
 
-    void updateTrustedDevice(const TrustedDevice& device);
+    void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::shared_ptr<GUIImpl> impl_;

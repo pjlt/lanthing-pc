@@ -42,12 +42,17 @@ namespace lt {
 //
 class ServiceManager {
 public:
+    enum class ServiceStatus {
+        Up,
+        Down,
+    };
     struct Params {
         ltlib::IOLoop* ioloop;
         std::function<void(int64_t)> on_confirm_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
         std::function<void(int64_t)> on_disconnected_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
+        std::function<void(ServiceStatus)> on_service_status;
     };
 
 public:
@@ -75,5 +80,6 @@ private:
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection_;
     std::function<void(int64_t)> on_disconnected_connection_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
+    std::function<void(ServiceStatus)> on_service_status_;
 };
 } // namespace lt

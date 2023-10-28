@@ -61,7 +61,9 @@ public:
 
     void switchToAboutPage();
 
-    void setLoginStatus(lt::GUI::ErrCode code);
+    void setLoginStatus(lt::GUI::LoginStatus status);
+
+    void setServiceStatus(lt::GUI::ServiceStatus status);
 
     void setDeviceID(int64_t device_id);
 
@@ -81,11 +83,17 @@ public:
 
     void addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s);
 
+    void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
+
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override; // override?
 
 private:
     void setupOtherCallbacks();
+
+    void setLoginStatusInUIThread(lt::GUI::LoginStatus status);
+
+    void setServiceStatusInUIThread(lt::GUI::ServiceStatus status);
 
     void setupClientIndicators();
 

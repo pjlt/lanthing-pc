@@ -53,7 +53,8 @@ ServiceManager::ServiceManager(const Params& params)
     : on_confirm_connection_{params.on_confirm_connection}
     , on_accepted_connection_{params.on_accepted_connection}
     , on_disconnected_connection_{params.on_disconnected_connection}
-    , on_connection_status_{params.on_connection_status} {}
+    , on_connection_status_{params.on_connection_status}
+    , on_service_status_{params.on_service_status} {}
 
 bool ServiceManager::init(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
@@ -75,11 +76,13 @@ bool ServiceManager::init(ltlib::IOLoop* ioloop) {
 void ServiceManager::onPipeAccepted(uint32_t fd) {
     LOG(INFO) << "Service accepted " << fd;
     fd_ = fd;
+    on_service_status_(ServiceStatus::Up);
 }
 
 void ServiceManager::onPipeDisconnected(uint32_t fd) {
     LOG(INFO) << "Service disconnected " << fd;
     fd_ = std::numeric_limits<uint32_t>::max();
+    on_service_status_(ServiceStatus::Down);
 }
 
 void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,

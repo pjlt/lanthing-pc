@@ -101,7 +101,7 @@ public:
 
     void setAccessToken(const std::string& token);
 
-    void setLoginStatus(GUI::ErrCode err_code);
+    void setLoginStatus(GUI::LoginStatus status);
 
     void onConfirmConnection(int64_t device_id);
 
@@ -111,11 +111,15 @@ public:
 
     void onDisconnectedConnection(int64_t device_id);
 
+    void onServiceStatus(GUI::ServiceStatus status);
+
     void errorMessageBox(const std::string& message);
 
     void infoMessageBox(const std::string& message);
 
     void errorCode(int32_t code);
+
+    void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     void setLanguage();
@@ -205,8 +209,8 @@ void GUIImpl::setAccessToken(const std::string& token) {
     main_window_->setAccessToken(token);
 }
 
-void GUIImpl::setLoginStatus(GUI::ErrCode err_code) {
-    main_window_->setLoginStatus(err_code);
+void GUIImpl::setLoginStatus(GUI::LoginStatus status) {
+    main_window_->setLoginStatus(status);
 }
 
 void GUIImpl::onConfirmConnection(int64_t device_id) {
@@ -239,6 +243,10 @@ void GUIImpl::onDisconnectedConnection(int64_t device_id) {
     main_window_->onDisconnectedConnection(device_id);
 }
 
+void GUIImpl::onServiceStatus(GUI::ServiceStatus status) {
+    main_window_->setServiceStatus(status);
+}
+
 void GUIImpl::errorMessageBox(const std::string& message) {
     main_window_->errorMessageBox(QString::fromStdString(message));
 }
@@ -250,6 +258,10 @@ void GUIImpl::infoMessageBox(const std::string& message) {
 void GUIImpl::errorCode(int32_t code) {
     QString error_msg = errorCode2FriendlyMessage(code);
     main_window_->errorMessageBox(error_msg);
+}
+
+void GUIImpl::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    main_window_->onNewVersion(msg);
 }
 
 void GUIImpl::setLanguage() {
@@ -290,8 +302,8 @@ void GUI::setAccessToken(const std::string& token) {
     impl_->setAccessToken(token);
 }
 
-void GUI::setLoginStatus(ErrCode err_code) {
-    impl_->setLoginStatus(err_code);
+void GUI::setLoginStatus(LoginStatus status) {
+    impl_->setLoginStatus(status);
 }
 
 void GUI::onConfirmConnection(int64_t device_id) {
@@ -310,6 +322,10 @@ void GUI::onDisconnectedConnection(int64_t device_id) {
     impl_->onDisconnectedConnection(device_id);
 }
 
+void GUI::onServiceStatus(ServiceStatus status) {
+    impl_->onServiceStatus(status);
+}
+
 void GUI::errorMessageBox(const std::string& message) {
     impl_->errorMessageBox(message);
 }
@@ -320,6 +336,10 @@ void GUI::infoMessageBox(const std::string& message) {
 
 void GUI::errorCode(int32_t code) {
     impl_->errorCode(code);
+}
+
+void GUI::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    impl_->onNewVersion(msg);
 }
 
 } // namespace lt

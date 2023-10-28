@@ -62,6 +62,10 @@ add_definitions(-DLT_TRANSPORT_RTC=${LT_TRANSPORT_RTC})
 add_definitions(-DLT_TRANSPORT_RTC2=${LT_TRANSPORT_RTC2})
 add_definitions(-DLT_TRANSPORT_TCP=${LT_TRANSPORT_TCP})
 add_definitions(-DLT_TRANSPORT_TYPE=${LT_TRANSPORT_TYPE})
+#version
+add_definitions(-DLT_VERSION_MAJOR=${LT_VERSION_MAJOR})
+add_definitions(-DLT_VERSION_MINOR=${LT_VERSION_MINOR})
+add_definitions(-DLT_VERSION_PATCH=${LT_VERSION_PATCH})
 #misc
 add_definitions(-DLT_CRASH_ON_THREAD_HANGS=$<IF:$<BOOL:${LT_CRASH_ON_THREAD_HANGS}>,true,false>)
 add_definitions(-DLT_ENABLE_SELF_CONNECT=$<IF:$<BOOL:${LT_ENABLE_SELF_CONNECT}>,true,false>)

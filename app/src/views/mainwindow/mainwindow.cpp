@@ -45,10 +45,12 @@
 #include <qclipboard.h>
 #include <qdatetime.h>
 #include <qmenu.h>
+#include <qstringbuilder.h>
 
 #include <ltlib/logging.h>
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
+#include <ltproto/server/new_version.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
 #include <ltproto/service2app/operate_connection.pb.h>
@@ -93,6 +95,11 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     loadPixmap();
 
+    // 版本号
+    std::stringstream oss_ver;
+    oss_ver << "v" << LT_VERSION_MAJOR << "." << LT_VERSION_MINOR << "." << LT_VERSION_PATCH;
+    ui->labelVersion->setText(QString::fromStdString(oss_ver.str()));
+
     // 无边框
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
@@ -103,9 +110,10 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     ui->labelCopied->hide();
 
     // 登录进度条
-    login_progress_ = new qt_componets::ProgressWidget();
-    login_progress_->setVisible(false);
-    login_progress_->setProgressColor(toColor("#8198ff"));
+    // （因为新增显示“service状态”，再用ProgressWidget去显示“登录状态”就不合适，暂时没有想到更好的UI，先屏蔽）
+    // login_progress_ = new qt_componets::ProgressWidget();
+    // login_progress_->setVisible(false);
+    // login_progress_->setProgressColor(toColor("#8198ff"));
 
     // 调整设备码输入样式
     history_device_ids_ = params.get_history_device_ids();
@@ -143,6 +151,10 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->radioRealFullscreen->setChecked(false);
         ui->radioWindowedFullscreen->setChecked(false);
     }
+
+    // 左下角状态栏
+    setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
+    setServiceStatusInUIThread(lt::GUI::ServiceStatus::Launching);
 
     // 客户端表格
     addOrUpdateTrustedDevices();
@@ -185,30 +197,12 @@ void MainWindow::switchToAboutPage() {
     }
 }
 
-void MainWindow::setLoginStatus(lt::GUI::ErrCode code) {
-    dispatchToUiThread([this, code]() {
-        switch (code) {
-        case lt::GUI::ErrCode::OK:
-            ui->loginStatusLayout->removeWidget(login_progress_);
-            login_progress_->setVisible(false);
-            ui->labelLoginInfo->setText(tr("Connected with server"));
-            ui->labelLoginInfo->setStyleSheet("QLabel{}");
-            break;
-        case lt::GUI::ErrCode::CONNECTING:
-            ui->loginStatusLayout->addWidget(login_progress_);
-            login_progress_->setVisible(true);
-            ui->labelLoginInfo->setStyleSheet("QLabel{}");
-            break;
-        case lt::GUI::ErrCode::FALIED:
-        default:
-            ui->loginStatusLayout->removeWidget(login_progress_);
-            login_progress_->setVisible(false);
-            ui->labelLoginInfo->setText(tr("Disconnected with server"));
-            ui->labelLoginInfo->setStyleSheet("QLabel{color: red}");
-            LOG(WARNING) << "Unknown LoginRet " << static_cast<int32_t>(code);
-            break;
-        }
-    });
+void MainWindow::setLoginStatus(lt::GUI::LoginStatus status) {
+    dispatchToUiThread([this, status]() { setLoginStatusInUIThread(status); });
+}
+
+void MainWindow::setServiceStatus(lt::GUI::ServiceStatus status) {
+    dispatchToUiThread([this, status]() { setServiceStatusInUIThread(status); });
 }
 
 void MainWindow::setDeviceID(int64_t device_id) {
@@ -387,6 +381,52 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s) {
     });
 }
 
+void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    dispatchToUiThread([this, _msg]() {
+        auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
+        int64_t version = msg->major() * 1'000'000 + msg->minor() * 1'000 + msg->patch();
+        std::ostringstream oss;
+        oss << "v" << msg->major() << "." << msg->minor() << "." << msg->patch();
+        QString message = tr("The new version %s has been released, please download it<br>from <a "
+                             "href='%s'>Github</a>.");
+        std::vector<char> buffer(512);
+        snprintf(buffer.data(), buffer.size(), message.toStdString().c_str(), oss.str().c_str(),
+                 msg->url().c_str());
+        oss.clear();
+
+        auto date = QDateTime::fromSecsSinceEpoch(msg->timestamp());
+        QString details = tr("Version: ") % "v" % QString::number(msg->major()) % "." %
+                          QString::number(msg->minor()) % "." % QString::number(msg->patch()) %
+                          "\n\n" % tr("Released date: ") %
+                          date.toLocalTime().toString("yyyy/MM/dd") % "\n\n" % tr("New features:") %
+                          "\n";
+        for (int i = 0; i < msg->features_size(); i++) {
+            details = details % QString::number(i + 1) % ". " %
+                      QString::fromStdString(msg->features().Get(i)) % "\n";
+        }
+        details = details % "\n" % tr("Bug fix:") % "\n";
+        for (int i = 0; i < msg->bugfix_size(); i++) {
+            details = details % QString::number(i + 1) % ". " %
+                      QString::fromStdString(msg->bugfix().Get(i)) % "\n";
+        }
+
+        QMessageBox msgbox;
+        msgbox.setTextFormat(Qt::TextFormat::RichText);
+        msgbox.setWindowTitle(tr("New Version"));
+        msgbox.setText(buffer.data());
+        msgbox.setStandardButtons(QMessageBox::Ok | QMessageBox::Ignore);
+        msgbox.setDetailedText(details);
+        int ret = msgbox.exec();
+        switch (ret) {
+        case QMessageBox::Ignore:
+            params_.ignore_version(version);
+            break;
+        default:
+            break;
+        }
+    });
+}
+
 bool MainWindow::eventFilter(QObject* obj, QEvent* evt) {
     if (obj == ui->windowBar && evt->type() == QEvent::MouseButtonPress) {
         QMouseEvent* ev = static_cast<QMouseEvent*>(evt);
@@ -442,6 +482,49 @@ void MainWindow::setupOtherCallbacks() {
     });
     connect(ui->checkboxForceRelay, &QCheckBox::stateChanged,
             [this](int) { params_.force_relay(ui->checkboxForceRelay->isChecked()); });
+}
+
+void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {
+    switch (status) {
+    case lt::GUI::LoginStatus::Connected:
+        // ui->statusBarLayout->removeWidget(login_progress_);
+        // login_progress_->setVisible(false);
+        ui->labelLoginInfo->setText(tr("🟢Connected to server"));
+        break;
+    case lt::GUI::LoginStatus::Connecting:
+        // ui->statusBarLayout->addWidget(login_progress_);
+        // login_progress_->setVisible(true);
+        //  ui->labelLoginInfo->setStyleSheet("QLabel{}");
+        ui->labelLoginInfo->setText(tr("🟡Connecting..."));
+        break;
+    case lt::GUI::LoginStatus::Disconnected:
+    default:
+        // ui->statusBarLayout->removeWidget(login_progress_);
+        // login_progress_->setVisible(false);
+        ui->labelLoginInfo->setText(tr("🔴Disconnected from server"));
+        if (status != lt::GUI::LoginStatus::Disconnected) {
+            LOG(ERR) << "Unknown Login status " << static_cast<int32_t>(status);
+        }
+        break;
+    }
+}
+
+void MainWindow::setServiceStatusInUIThread(lt::GUI::ServiceStatus status) {
+    switch (status) {
+    case lt::GUI::ServiceStatus::Up:
+        ui->labelControlledInfo->setText(tr("🟢Controlled module up"));
+        break;
+    case lt::GUI::ServiceStatus::Launching:
+        ui->labelControlledInfo->setText(tr("🟡Starting controlled module"));
+        break;
+    case lt::GUI::ServiceStatus::Down:
+    default:
+        ui->labelControlledInfo->setText(tr("🔴Controlled module down"));
+        if (status != lt::GUI::ServiceStatus::Down) {
+            LOG(ERR) << "Unknown ServiceStatus " << static_cast<int32_t>(status);
+        }
+        break;
+    }
 }
 
 void MainWindow::setupClientIndicators() {
