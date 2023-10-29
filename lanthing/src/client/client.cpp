@@ -789,6 +789,7 @@ void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         LOG(DEBUG) << "rtt:" << rtt_ << ", time_diff:" << time_diff_;
         if (video_pipeline_) {
             video_pipeline_->setTimeDiff(time_diff_);
+            video_pipeline_->setRTT(rtt_);
         }
     }
 }
