@@ -750,7 +750,6 @@ void Client::sendKeepAlive() {
 
 void Client::onKeepAliveAck() {
     // Ack是worker回复的，其它消息可能是service发送的，我们的目的是判断worker还在不在，所以只用KeepAliveAck来更新时间
-    LOG(INFO) << "onKeepAliveAck";
     last_received_keepalive_ = ltlib::steady_now_ms();
 }
 
