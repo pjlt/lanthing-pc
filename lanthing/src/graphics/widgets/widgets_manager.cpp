@@ -125,6 +125,10 @@ WidgetsManager::~WidgetsManager() {
 void WidgetsManager::render() {
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
+    auto& io = ImGui::GetIO();
+    if (io.DeltaTime <= 0) {
+        io.DeltaTime = 0.0000001f;
+    }
     ImGui::NewFrame();
     control_bar_->render();
     if (show_status_) {
