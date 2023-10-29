@@ -312,10 +312,12 @@ LibuvSTransport::Conn::Conn(StreamType _stype)
 
 LibuvSTransport::Conn::~Conn() {
     if (stype == StreamType::Pipe) {
-        delete reinterpret_cast<uv_pipe_t*>(handle);
+        uv_close(reinterpret_cast<uv_handle_t*>(handle),
+                 [](uv_handle_t* handle) { delete reinterpret_cast<uv_pipe_t*>(handle); });
     }
     else {
-        delete reinterpret_cast<uv_tcp_t*>(handle);
+        uv_close(reinterpret_cast<uv_handle_t*>(handle),
+                 [](uv_handle_t* handle) { delete reinterpret_cast<uv_tcp_t*>(handle); });
     }
 }
 

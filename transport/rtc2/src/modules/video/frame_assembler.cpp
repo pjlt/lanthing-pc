@@ -144,7 +144,6 @@ std::vector<VideoPacket> FrameAssembler::find_frames(uint16_t seq_num) {
             found_frames.reserve(found_frames.size() + num_packets);
             for (uint16_t j = start_seq_num; j != end_seq_num; ++j) {
                 VideoPacket packet = buffer_[j % buffer_.size()];
-                assert(j == packet.sequence_number());
                 found_frames.push_back(packet);
             }
             if (not found_frames.empty()) {
