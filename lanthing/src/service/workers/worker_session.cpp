@@ -703,15 +703,7 @@ void WorkerSession::onWorkerStoped() {
 
 void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg) {
     negotiated_streaming_params_ = msg;
-    sendWorkerKeepAlive();
     maybeOnCreateSessionCompleted();
-}
-
-void WorkerSession::sendWorkerKeepAlive() {
-    // 运行在ioloop
-    auto msg = std::make_shared<ltproto::common::KeepAlive>();
-    sendToWorker(ltproto::id(msg), msg);
-    postDelayTask(500, std::bind(&WorkerSession::sendWorkerKeepAlive, this));
 }
 
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {
@@ -900,7 +892,9 @@ void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::Messag
 }
 
 void WorkerSession::onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    // 是否需要回ack
+    // 是否需给client要回ack
+    // 转发给worker
+    postTask([this, msg]() { sendToWorker(ltproto::type::kKeepAlive, msg); });
 }
 
 void WorkerSession::updateLastRecvTime() {
