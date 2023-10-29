@@ -254,6 +254,7 @@ void ClientManager::tryRemoveSession(int64_t request_id) {
     else {
         sessions_.erase(iter);
         LOG(WARNING) << "Remove session(request_id:" << request_id << ") by timeout";
+        on_connect_failed_(0, ltproto::ErrorCode::RequestConnectionTimeout);
     }
 }
 
