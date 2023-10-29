@@ -600,6 +600,9 @@ void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLit
     auto ack = std::static_pointer_cast<ltproto::server::AllocateDeviceIDAck>(msg);
     device_id_ = ack->device_id();
     settings_->setInteger("device_id", device_id_);
+    if (!ack->cookie().empty()) {
+        settings_->setString("device_cookie", ack->cookie());
+    }
     loginDevice();
 }
 
