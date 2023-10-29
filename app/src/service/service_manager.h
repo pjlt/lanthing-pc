@@ -72,6 +72,7 @@ private:
     void onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onDisconnectedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onServiceStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::unique_ptr<ltlib::Server> pipe_server_;

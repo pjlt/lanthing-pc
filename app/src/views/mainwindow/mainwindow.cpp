@@ -154,7 +154,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
-    setServiceStatusInUIThread(lt::GUI::ServiceStatus::Launching);
+    setServiceStatusInUIThread(lt::GUI::ServiceStatus::Down);
 
     // 客户端表格
     addOrUpdateTrustedDevices();
@@ -513,9 +513,6 @@ void MainWindow::setServiceStatusInUIThread(lt::GUI::ServiceStatus status) {
     switch (status) {
     case lt::GUI::ServiceStatus::Up:
         ui->labelControlledInfo->setText(tr("🟢Controlled module up"));
-        break;
-    case lt::GUI::ServiceStatus::Launching:
-        ui->labelControlledInfo->setText(tr("🟡Starting controlled module"));
         break;
     case lt::GUI::ServiceStatus::Down:
     default:

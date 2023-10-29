@@ -113,37 +113,36 @@
         <translation>🟢被控模块正常</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="518"/>
         <source>🟡Starting controlled module</source>
-        <translation>🟡正在启动被控模块</translation>
+        <translation type="vanished">🟡正在启动被控模块</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="522"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="519"/>
         <source>🔴Controlled module down</source>
         <translation>🔴被控模块掉线</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="541"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="538"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="542"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="539"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="543"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="540"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="544"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="541"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="767"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="764"/>
         <source>delete</source>
         <translation>删除</translation>
     </message>
