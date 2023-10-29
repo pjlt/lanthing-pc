@@ -113,37 +113,36 @@
         <translation>🟢被控模块正常</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="518"/>
         <source>🟡Starting controlled module</source>
-        <translation>🟡正在启动被控模块</translation>
+        <translation type="vanished">🟡正在启动被控模块</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="522"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="519"/>
         <source>🔴Controlled module down</source>
         <translation>🔴被控模块掉线</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="541"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="538"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="542"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="539"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="543"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="540"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="544"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="541"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="767"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="764"/>
         <source>delete</source>
         <translation>删除</translation>
     </message>
@@ -269,7 +268,7 @@
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1432"/>
         <source>v0.0.0</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1452"/>
@@ -593,11 +592,16 @@
         <translation>请求连接失败，对方不在线</translation>
     </message>
     <message>
+        <location filename="../src/views/friendly_error_code.cpp" line="83"/>
+        <source>Request connection timeout</source>
+        <translation>请求超时</translation>
+    </message>
+    <message>
         <source>Request connection failed, server can not create order, probably controlled side is serving another clinet, or controlled side&apos;s &apos;lanthing.exe&apos; is hanging. If it&apos;s the second situation, try to kill all &apos;lanthing.exe&apos; and &apos;app.exe&apos; processes</source>
         <translation type="vanished">请求连接失败，服务器未能为这次连接创建订单，可能是被控端正在服务其它客户端，也可能是被控端的&apos;lanthing.exe&apos;进程卡住了。如果是后者，请尝试杀掉所有的&apos;lanthing.exe&apos;和&apos;app.exe&apos;进程，再启动试试</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="85"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="86"/>
         <source>Signaling server error, join room failed, probably a bug</source>
         <translation>信令服务器错误，加入房间失败，可能是bug导致的</translation>
     </message>
@@ -606,7 +610,7 @@
         <translation type="vanished">信令服务器错误，加入房间失败，可能是bug导致的</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="87"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="88"/>
         <source>Send signaling message failed, peer not online</source>
         <translation>发送信令消息失败，对方未连接信令服务器</translation>
     </message>

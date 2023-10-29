@@ -141,5 +141,6 @@ private:
     std::mt19937 rand_engine_;
     std::uniform_int_distribution<size_t> rand_distrib_;
     bool signaling_keepalive_inited_ = false;
+    bool stoped_ = true;
 };
 } // namespace lt

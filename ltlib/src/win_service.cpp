@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,21 +28,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ltlib/win_service.h>
 #include <ltlib/strings.h>
+#include <ltlib/win_service.h>
 
-namespace
-{
+namespace {
 
 ltlib::WinApp* g_app;
 SERVICE_STATUS g_status;
 SERVICE_STATUS_HANDLE g_status_handle;
 
-bool get_service_status(SC_HANDLE service_handle, SERVICE_STATUS_PROCESS& service_status_process)
-{
+bool get_service_status(SC_HANDLE service_handle, SERVICE_STATUS_PROCESS& service_status_process) {
     DWORD bytes_needed = 0;
     if (::QueryServiceStatusEx(service_handle, SC_STATUS_PROCESS_INFO,
-            (LPBYTE)&service_status_process, sizeof(service_status_process), &bytes_needed)) {
+                               (LPBYTE)&service_status_process, sizeof(service_status_process),
+                               &bytes_needed)) {
         return true;
     }
     return false;
@@ -50,8 +49,7 @@ bool get_service_status(SC_HANDLE service_handle, SERVICE_STATUS_PROCESS& servic
 
 } // namespace
 
-namespace ltlib
-{
+namespace ltlib {
 
 ServiceApp::ServiceApp(WinApp* app)
 //: service_name_ { service_name }
@@ -61,12 +59,9 @@ ServiceApp::ServiceApp(WinApp* app)
     g_app = app;
 }
 
-ServiceApp::~ServiceApp()
-{
-}
+ServiceApp::~ServiceApp() {}
 
-void ServiceApp::run()
-{
+void ServiceApp::run() {
     // 只能用脚本或其他进程提前创建好服务
     // if (create_service()) {
     run_service();
@@ -121,20 +116,17 @@ void ServiceApp::run()
 //     return true;
 // }
 
-void ServiceApp::run_service()
-{
-    wchar_t service_name[1024] = { 0 };
-    SERVICE_TABLE_ENTRYW dispatch_table[] = {
-        { service_name, (LPSERVICE_MAIN_FUNCTIONW)serviceMain },
-        { NULL, NULL }
-    };
+void ServiceApp::run_service() {
+    wchar_t service_name[1024] = {0};
+    SERVICE_TABLE_ENTRYW dispatch_table[] = {{service_name, (LPSERVICE_MAIN_FUNCTIONW)serviceMain},
+                                             {NULL, NULL}};
     ::StartServiceCtrlDispatcherW(dispatch_table);
     // DWORD error = GetLastError();
     //  printf("ret:%d, error:%d", ret, error);
 }
 
-bool ServiceApp::reportStatus(uint32_t current_state, uint32_t win32_exit_code, uint32_t wait_hint)
-{
+bool ServiceApp::reportStatus(uint32_t current_state, uint32_t win32_exit_code,
+                              uint32_t wait_hint) {
     if (current_state == SERVICE_START_PENDING)
         g_status.dwControlsAccepted = 0;
     else
@@ -152,8 +144,7 @@ bool ServiceApp::reportStatus(uint32_t current_state, uint32_t win32_exit_code, 
     return SetServiceStatus(g_status_handle, &g_status) == TRUE;
 }
 
-void __stdcall ServiceApp::serviceMain()
-{
+void __stdcall ServiceApp::serviceMain() {
     std::wstring service_name;
     g_status_handle = ::RegisterServiceCtrlHandlerW(service_name.c_str(), &serviceControlHandler);
     g_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
@@ -165,8 +156,7 @@ void __stdcall ServiceApp::serviceMain()
     reportStatus(SERVICE_STOPPED, NO_ERROR, 0);
 }
 
-void __stdcall ServiceApp::serviceControlHandler(unsigned long ctrl_code)
-{
+void __stdcall ServiceApp::serviceControlHandler(unsigned long ctrl_code) {
     switch (ctrl_code) {
     case SERVICE_CONTROL_STOP:
     case SERVICE_CONTROL_SHUTDOWN:
@@ -178,8 +168,25 @@ void __stdcall ServiceApp::serviceControlHandler(unsigned long ctrl_code)
     }
 }
 
-bool ServiceCtrl::createService(const std::string& _service_name, const std::string& _display_name, const std::string& _bin_path)
-{
+static bool maybeChangeBinaryPath(SC_HANDLE manager_handle, const std::wstring& service_name,
+                                  const std::wstring& display_name, const std::wstring& bin_path) {
+    SC_HANDLE service_handle =
+        ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
+    if (service_handle == NULL) {
+        ::CloseServiceHandle(manager_handle);
+        return false;
+    }
+    BOOL success = ChangeServiceConfigW(service_handle, SERVICE_WIN32_OWN_PROCESS,
+                                        SERVICE_AUTO_START, SERVICE_ERROR_NORMAL, bin_path.c_str(),
+                                        NULL, NULL, NULL, NULL, NULL, display_name.c_str());
+
+    ::CloseServiceHandle(manager_handle);
+    ::CloseServiceHandle(service_handle);
+    return success == TRUE;
+}
+
+bool ServiceCtrl::createService(const std::string& _service_name, const std::string& _display_name,
+                                const std::string& _bin_path) {
     auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (!manager_handle) {
         return false;
@@ -187,26 +194,17 @@ bool ServiceCtrl::createService(const std::string& _service_name, const std::str
     std::wstring service_name = utf8To16(_service_name);
     std::wstring display_name = utf8To16(_display_name);
     std::wstring bin_path = utf8To16(_bin_path);
-    SC_HANDLE service_handle = ::CreateServiceW(
-        manager_handle,
-        service_name.c_str(),
-        display_name.c_str(),
-        SERVICE_ALL_ACCESS,
-        SERVICE_WIN32_OWN_PROCESS,
-        SERVICE_AUTO_START,
-        SERVICE_ERROR_NORMAL,
-        bin_path.c_str(),
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
+    SC_HANDLE service_handle =
+        ::CreateServiceW(manager_handle, service_name.c_str(), display_name.c_str(),
+                         SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START,
+                         SERVICE_ERROR_NORMAL, bin_path.c_str(), NULL, NULL, NULL, NULL, NULL);
     if (service_handle == NULL) {
-        ::CloseServiceHandle(manager_handle);
         const DWORD error = GetLastError();
         if (error == ERROR_SERVICE_EXISTS) {
-            return true;
-        } else {
+            return maybeChangeBinaryPath(manager_handle, service_name, display_name, bin_path);
+        }
+        else {
+            ::CloseServiceHandle(manager_handle);
             return false;
         }
     }
@@ -226,14 +224,14 @@ bool ServiceCtrl::createService(const std::string& _service_name, const std::str
     return true;
 }
 
-bool ServiceCtrl::startService(const std::string& _service_name)
-{
+bool ServiceCtrl::startService(const std::string& _service_name) {
     auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (!manager_handle) {
         return false;
     }
     std::wstring service_name = utf8To16(_service_name);
-    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
+    SC_HANDLE service_handle =
+        ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
     ::CloseServiceHandle(manager_handle);
     if (service_handle == NULL) {
         return false;
@@ -243,14 +241,14 @@ bool ServiceCtrl::startService(const std::string& _service_name)
     return success;
 }
 
-bool ServiceCtrl::stopService(const std::string& _service_name)
-{
+bool ServiceCtrl::stopService(const std::string& _service_name) {
     auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (!manager_handle) {
         return false;
     }
     std::wstring service_name = utf8To16(_service_name);
-    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
+    SC_HANDLE service_handle =
+        ::OpenServiceW(manager_handle, service_name.c_str(), SERVICE_ALL_ACCESS);
     ::CloseServiceHandle(manager_handle);
     if (service_handle == NULL) {
         return false;
@@ -261,20 +259,18 @@ bool ServiceCtrl::stopService(const std::string& _service_name)
     return success;
 }
 
-bool ServiceCtrl::isServiceRunning(const std::string& _name, uint32_t& pid)
-{
+bool ServiceCtrl::isServiceRunning(const std::string& _name, uint32_t& pid) {
     std::wstring name = utf8To16(_name);
     auto manager_handle = ::OpenSCManagerW(NULL, NULL, SC_MANAGER_QUERY_LOCK_STATUS);
     if (!manager_handle) {
         return false;
     }
-    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, name.c_str(),
-        SERVICE_QUERY_STATUS);
+    SC_HANDLE service_handle = ::OpenServiceW(manager_handle, name.c_str(), SERVICE_QUERY_STATUS);
     if (service_handle == NULL) {
         ::CloseServiceHandle(manager_handle);
         return false;
     }
-    SERVICE_STATUS_PROCESS status { 0 };
+    SERVICE_STATUS_PROCESS status{0};
     get_service_status(service_handle, status);
     ::CloseServiceHandle(service_handle);
     ::CloseServiceHandle(manager_handle);

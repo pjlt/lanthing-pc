@@ -80,6 +80,7 @@ QString errorCode2FriendlyMessage(int32_t code) {
              "retry")},
         {ltproto::ErrorCode::RequestConnectionPeerNotOnline,
          QObject::tr("Request connection failed, peer not online")},
+        {ltproto::ErrorCode::RequestConnectionTimeout, QObject::tr("Request connection timeout")},
         //*******************************************
         {ltproto::ErrorCode::JoinRoomFailed,
          QObject::tr("Signaling server error, join room failed, probably a bug")},
@@ -87,7 +88,7 @@ QString errorCode2FriendlyMessage(int32_t code) {
          QObject::tr("Send signaling message failed, peer not online")},
     };
     QString final_msg = kPrefix.arg(code);
-    final_msg += "\n\t";
+    final_msg += "\n    ";
     auto iter = kCode2Msg.find(code);
     if (iter == kCode2Msg.end()) {
         iter = kCode2Msg.find(ltproto::ErrorCode::Unknown);

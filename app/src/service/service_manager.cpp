@@ -36,6 +36,7 @@
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
 #include <ltproto/service2app/disconnected_connection.pb.h>
+#include <ltproto/service2app/service_status.pb.h>
 
 #include <ltlib/logging.h>
 
@@ -76,7 +77,6 @@ bool ServiceManager::init(ltlib::IOLoop* ioloop) {
 void ServiceManager::onPipeAccepted(uint32_t fd) {
     LOG(INFO) << "Service accepted " << fd;
     fd_ = fd;
-    on_service_status_(ServiceStatus::Up);
 }
 
 void ServiceManager::onPipeDisconnected(uint32_t fd) {
@@ -102,6 +102,9 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
     case ltproto::type::kConnectionStatus:
         onConnectionStatus(msg);
         break;
+    case ltproto::type::kServiceStatus:
+        onServiceStatus(msg);
+        break;
     default:
         LOG(WARNING) << "ServiceManager received unknown messge type " << type;
         break;
@@ -124,6 +127,16 @@ void ServiceManager::onDisconnectedConnection(std::shared_ptr<google::protobuf::
 
 void ServiceManager::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
     on_connection_status_(msg);
+}
+
+void ServiceManager::onServiceStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::service2app::ServiceStatus>(_msg);
+    if (msg->status() == ltproto::ErrorCode::Success) {
+        on_service_status_(ServiceStatus::Up);
+    }
+    else {
+        on_service_status_(ServiceStatus::Up);
+    }
 }
 
 void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {

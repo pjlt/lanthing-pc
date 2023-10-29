@@ -161,7 +161,6 @@ int DtlsChannel::sendPacket(const uint8_t* data, uint32_t size, bool bypass) {
     switch (dtls_state()) {
     case DtlsState::Connected:
         if (bypass) {
-            assert(!srtp_ciphers_.empty());
             if (!IsRtpPacket(data, size)) {
                 return -1;
             }

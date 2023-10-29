@@ -46,6 +46,7 @@
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
 #include <ltproto/service2app/disconnected_connection.pb.h>
 #include <ltproto/service2app/operate_connection.pb.h>
+#include <ltproto/service2app/service_status.pb.h>
 
 namespace lt {
 
@@ -90,8 +91,6 @@ bool Service::init() {
             mainLoop(i_am_alive);
         });
     future.get();
-    // FIXME: 在IOLoop正式run起来前，无法投递任务，这是临时解决方案
-    std::this_thread::sleep_for(std::chrono::milliseconds{20});
     postDelayTask(1000, std::bind(&Service::checkRunAsService, this));
     return true;
 }
@@ -246,11 +245,20 @@ void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::M
 void Service::onServerDisconnected() {
     // 怎么办？
     server_connected_ = false;
+    LOG(ERR) << "Disconnected from server";
+
+    auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
+    status->set_status(ltproto::ErrorCode::ServiceStatusDisconnectedFromServer);
+    sendMessageToApp(ltproto::id(status), status);
 }
 
 void Service::onServerReconnecting() {
     server_connected_ = false;
     LOG(INFO) << "Reconnecting to lanthing server...";
+
+    auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
+    status->set_status(ltproto::ErrorCode::ServiceStatusDisconnectedFromServer);
+    sendMessageToApp(ltproto::id(status), status);
 }
 
 void Service::onServerConnected() {
@@ -346,6 +354,13 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
 void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     auto ack = std::static_pointer_cast<ltproto::server::LoginDeviceAck>(msg);
     LOG(INFO) << "LoginDeviceAck: " << ltproto::ErrorCode_Name(ack->err_code());
+
+    // 只有LoginDevice成功后才能告知app，service正常
+    if (ack->err_code() == ltproto::ErrorCode::Success) {
+        auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
+        status->set_status(ltproto::ErrorCode::Success);
+        sendMessageToApp(ltproto::id(status), status);
+    }
 }
 
 void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -474,6 +489,16 @@ void Service::onAppReconnecting() {
 void Service::onAppConnected() {
     LOG(INFO) << "Connected to App";
     app_connected_ = true;
+
+    // 告知app，service是否已连上server
+    auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
+    if (server_connected_) {
+        status->set_status(ltproto::ErrorCode::Success);
+    }
+    else {
+        status->set_status(ltproto::ErrorCode::ServiceStatusDisconnectedFromServer);
+    }
+    sendMessageToApp(ltproto::id(status), status);
 }
 
 void Service::sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {

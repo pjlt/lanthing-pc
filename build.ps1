@@ -56,7 +56,7 @@ class BuiltLib {
 function prebuilt_fetch() {
     $libs = @(
         [BuiltLib]::new("mbedtls", "https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-1/mbedtls.zip"),
-        [BuiltLib]::new("sdl", "https://github.com/numbaa/sdl-build/releases/download/v2.0.20-1/sdl.zip"),
+        [BuiltLib]::new("sdl", "https://github.com/numbaa/sdl-build/releases/download/v2.28.4-1/sdl.zip"),
         [BuiltLib]::new("vigemclient", "https://github.com/numbaa/vigemclient-build/releases/download/v1/vigemclient.zip"),
         [BuiltLib]::new("libuv", "https://github.com/numbaa/libuv-build/releases/download/v1.44.1-1/libuv.zip"),
         [BuiltLib]::new("onevpl", "https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-1/onevpl.zip"),

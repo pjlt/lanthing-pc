@@ -53,7 +53,6 @@ public:
 
     enum class ServiceStatus {
         Up,
-        Launching,
         Down,
     };
 

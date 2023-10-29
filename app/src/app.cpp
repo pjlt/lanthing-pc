@@ -135,6 +135,7 @@ App::App() {
 App::~App() {
     {
         std::lock_guard lock{ioloop_mutex_};
+        stoped_ = true;
         tcp_client_.reset();
         service_manager_.reset();
         client_manager_.reset();
@@ -178,6 +179,7 @@ bool App::init() {
         return false;
     }
     loadHistoryIDs();
+    stoped_ = false;
     return true;
 }
 
@@ -579,6 +581,14 @@ void App::allocateDeviceID() {
 }
 
 void App::sendKeepAlive() {
+    bool stoped = false;
+    {
+        std::lock_guard lk{ioloop_mutex_};
+        stoped = stoped;
+    }
+    if (stoped) {
+        return;
+    }
     auto msg = std::make_shared<ltproto::common::KeepAlive>();
     sendMessage(ltproto::id(msg), msg);
     // 10秒发一个心跳包，当前服务端不会检测超时

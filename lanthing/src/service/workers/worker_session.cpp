@@ -43,6 +43,7 @@
 #include <ltproto/client2worker/start_transmission_ack.pb.h>
 #include <ltproto/client2worker/video_frame.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
+#include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
@@ -639,6 +640,9 @@ void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,
     }
     namespace ltype = ltproto::type;
     switch (type) {
+    case ltype::kKeepAliveAck:
+        onKeepAliveAck();
+        break;
     case ltype::kStartWorkingAck:
         onStartWorkingAck(msg);
         break;
@@ -695,6 +699,11 @@ void WorkerSession::sendToWorkerFromOtherThread(
     postTask([this, type, msg]() { sendToWorker(type, msg); });
 }
 
+void WorkerSession::onKeepAliveAck() {
+    auto ack = std::make_shared<ltproto::common::KeepAliveAck>();
+    sendMessageToRemoteClient(ltproto::id(ack), ack, true);
+}
+
 void WorkerSession::onWorkerStoped() {
     // FIXME: worker退出不代表关闭，也可能是session改变
     // NOTE: 这是运行在WorkerProcess线程
@@ -703,15 +712,7 @@ void WorkerSession::onWorkerStoped() {
 
 void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg) {
     negotiated_streaming_params_ = msg;
-    sendWorkerKeepAlive();
     maybeOnCreateSessionCompleted();
-}
-
-void WorkerSession::sendWorkerKeepAlive() {
-    // 运行在ioloop
-    auto msg = std::make_shared<ltproto::common::KeepAlive>();
-    sendToWorker(ltproto::id(msg), msg);
-    postDelayTask(500, std::bind(&WorkerSession::sendWorkerKeepAlive, this));
 }
 
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {
@@ -900,7 +901,9 @@ void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::Messag
 }
 
 void WorkerSession::onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    // 是否需要回ack
+    // 是否需给client要回ack
+    // 转发给worker
+    postTask([this, msg]() { sendToWorker(ltproto::type::kKeepAlive, msg); });
 }
 
 void WorkerSession::updateLastRecvTime() {
