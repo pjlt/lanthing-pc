@@ -136,6 +136,7 @@ private:
     void sendToWorker(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void sendToWorkerFromOtherThread(uint32_t type,
                                      std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onKeepAliveAck();
     void onWorkerStoped();
     void onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
 

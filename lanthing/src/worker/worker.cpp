@@ -37,6 +37,7 @@
 
 #include <ltproto/client2worker/audio_data.pb.h>
 #include <ltproto/client2worker/switch_mouse_mode.pb.h>
+#include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
@@ -350,7 +351,7 @@ bool Worker::sendPipeMessageFromOtherThread(
 void Worker::printStats() {}
 
 void Worker::checkCimeout() {
-    constexpr int64_t kTimeout = 3'000;
+    constexpr int64_t kTimeout = 5'000;
     auto now = ltlib::steady_now_ms();
     if (now - last_time_received_from_service_ > kTimeout) {
         LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_
@@ -439,6 +440,8 @@ void Worker::onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>&
 
 void Worker::onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>&) {
     last_time_received_from_service_ = ltlib::steady_now_ms();
+    auto ack = std::make_shared<ltproto::common::KeepAliveAck>();
+    sendPipeMessage(ltproto::id(ack), ack);
 }
 
 void Worker::onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {

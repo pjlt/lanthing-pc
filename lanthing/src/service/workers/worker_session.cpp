@@ -43,6 +43,7 @@
 #include <ltproto/client2worker/start_transmission_ack.pb.h>
 #include <ltproto/client2worker/video_frame.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
+#include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
@@ -639,6 +640,9 @@ void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,
     }
     namespace ltype = ltproto::type;
     switch (type) {
+    case ltype::kKeepAliveAck:
+        onKeepAliveAck();
+        break;
     case ltype::kStartWorkingAck:
         onStartWorkingAck(msg);
         break;
@@ -693,6 +697,11 @@ void WorkerSession::sendToWorker(uint32_t type,
 void WorkerSession::sendToWorkerFromOtherThread(
     uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
     postTask([this, type, msg]() { sendToWorker(type, msg); });
+}
+
+void WorkerSession::onKeepAliveAck() {
+    auto ack = std::make_shared<ltproto::common::KeepAliveAck>();
+    sendMessageToRemoteClient(ltproto::id(ack), ack, true);
 }
 
 void WorkerSession::onWorkerStoped() {

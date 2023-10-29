@@ -107,6 +107,7 @@ private:
     void syncTime();
     void toggleFullscreen();
     void switchMouseMode();
+    void checkWorkerTimeout();
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -138,6 +139,7 @@ private:
     void dispatchRemoteMessage(uint32_t type,
                                const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void sendKeepAlive();
+    void onKeepAliveAck();
     bool sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
                            bool reliable);
     void onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
@@ -177,6 +179,7 @@ private:
     std::optional<bool> is_p2p_;
     bool absolute_mouse_ = true;
     bool last_w_or_h_is_0_ = false;
+    int64_t last_received_keepalive_;
 };
 
 } // namespace cli

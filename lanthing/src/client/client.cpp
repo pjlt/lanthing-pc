@@ -365,6 +365,19 @@ void Client::switchMouseMode() {
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
+void Client::checkWorkerTimeout() {
+    constexpr int64_t kFiveSeconds = 5'000;
+    constexpr int64_t k500ms = 500;
+    auto now = ltlib::steady_now_ms();
+    if (now - last_received_keepalive_ > kFiveSeconds) {
+        LOG(INFO) << "Didn't receive KeepAliveAck from worker for "
+                  << (now - last_received_keepalive_) << "ms, exit";
+        sdl_->stop();
+        return;
+    }
+    postDelayTask(k500ms, std::bind(&Client::checkWorkerTimeout, this));
+}
+
 void Client::onSignalingNetMessage(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     namespace ltype = ltproto::type;
@@ -661,7 +674,10 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
         LOG(INFO) << "Create AudioPlayer failed";
         return;
     }
+    // 心跳检测
     that->hb_thread_->post(std::bind(&Client::sendKeepAlive, that));
+    that->last_received_keepalive_ = ltlib::steady_now_ms();
+    that->postDelayTask(500, std::bind(&Client::checkWorkerTimeout, that));
     // 如果未来有“串流”以外的业务，在这个StartTransmission添加字段.
     auto start = std::make_shared<ltproto::client2worker::StartTransmission>();
     start->set_client_os(ltproto::client2worker::StartTransmission_ClientOS_Windows);
@@ -703,6 +719,9 @@ void Client::onTpSignalingMessage(void* user_data, const char* key, const char* 
 void Client::dispatchRemoteMessage(uint32_t type,
                                    const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     switch (type) {
+    case ltproto::type::kKeepAliveAck:
+        onKeepAliveAck();
+        break;
     case ltproto::type::kStartTransmissionAck:
         onStartTransmissionAck(msg);
         break;
@@ -727,6 +746,12 @@ void Client::sendKeepAlive() {
 
     const auto k500ms = ltlib::TimeDelta{500'000};
     hb_thread_->post_delay(k500ms, std::bind(&Client::sendKeepAlive, this));
+}
+
+void Client::onKeepAliveAck() {
+    // Ack是worker回复的，其它消息可能是service发送的，我们的目的是判断worker还在不在，所以只用KeepAliveAck来更新时间
+    LOG(INFO) << "onKeepAliveAck";
+    last_received_keepalive_ = ltlib::steady_now_ms();
 }
 
 bool Client::sendMessageToHost(uint32_t type,
