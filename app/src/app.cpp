@@ -747,8 +747,13 @@ bool App::initClientManager() {
         std::bind(&App::sendMessage, this, std::placeholders::_1, std::placeholders ::_2);
     params.on_connect_failed =
         std::bind(&App::onConnectFailed, this, std::placeholders::_1, std::placeholders ::_2);
+    params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != NULL;
+}
+
+void App::onClientStatus(int32_t err_code) {
+    gui_.errorCode(err_code);
 }
 
 size_t App::rand() {

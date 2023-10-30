@@ -30,6 +30,7 @@
 
 #include "client_manager.h"
 
+#include <ltproto/client2app/client_status.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
@@ -65,7 +66,8 @@ ClientManager::ClientManager(const Params& params)
     , post_delay_task_{params.post_delay_task}
     , send_message_{params.send_message}
     , on_launch_client_success_{params.on_launch_client_success}
-    , on_connect_failed_{params.on_connect_failed} {}
+    , on_connect_failed_{params.on_connect_failed}
+    , on_client_status_{params.on_client_status} {}
 
 std::unique_ptr<ClientManager> ClientManager::create(const Params& params) {
     std::unique_ptr<ClientManager> mgr{new ClientManager{params}};
@@ -102,8 +104,14 @@ void ClientManager::onPipeDisconnected(uint32_t fd) {
 
 void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
                                   std::shared_ptr<google::protobuf::MessageLite> msg) {
-    (void)msg;
-    LOGF(DEBUG, "Received local client %u msg %u", fd, type);
+    (void)fd;
+    switch (type) {
+    case ltproto::type::kClientStatus:
+        onClientStatus(msg);
+        break;
+    default:
+        break;
+    }
 }
 
 void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken,
@@ -274,6 +282,11 @@ void ClientManager::onClientExited(int64_t request_id) {
             LOG(INFO) << "Remove session(request_id:" << request_id << ") success";
         }
     });
+}
+
+void ClientManager::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::client2app::ClientStatus>(_msg);
+    on_client_status_(msg->status());
 }
 
 } // namespace lt

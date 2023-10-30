@@ -115,8 +115,9 @@ private:
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onServiceStatus(ServiceManager::ServiceStatus status);
 
-    //
+    // client manager
     bool initClientManager();
+    void onClientStatus(int32_t err_code);
 
     size_t rand();
     std::string generateAccessToken();
