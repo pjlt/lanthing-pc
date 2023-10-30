@@ -521,7 +521,6 @@ void App::onServerConnected() {
     else {
         allocateDeviceID();
     }
-    gui_.setLoginStatus(GUI::LoginStatus::Connected);
     if (!signaling_keepalive_inited_) {
         signaling_keepalive_inited_ = false;
         sendKeepAlive();
@@ -660,6 +659,7 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
     // 在UI上显示ID，并启动被控服务
     gui_.setDeviceID(device_id_);
     gui_.setAccessToken(access_token_);
+    gui_.setLoginStatus(GUI::LoginStatus::Connected);
     createAndStartService();
 }
 
