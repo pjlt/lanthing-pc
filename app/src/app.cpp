@@ -151,7 +151,7 @@ bool App::init() {
         return false;
     }
     device_id_ = settings_->getInteger("device_id").value_or(0);
-    run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
+    // run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
     auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
     relay_server_ = settings_->getString("relay").value_or("");
     windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
@@ -262,8 +262,10 @@ void App::enableRefreshAccessToken(bool enable) {
 }
 
 void App::enableRunAsDaemon(bool enable) {
-    run_as_daemon_ = enable;
-    settings_->setBoolean("daemon", enable);
+    // 屏蔽该功能，不支持无人值守
+    (void)enable;
+    // run_as_daemon_ = enable;
+    // settings_->setBoolean("daemon", enable);
 }
 
 void App::setRelayServer(const std::string& svr) {
