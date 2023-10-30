@@ -366,7 +366,7 @@ void App::ioLoop(const std::function<void()>& i_am_alive) {
 
 void App::createAndStartService() {
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
-    std::string path = ltlib::getProgramPath<char>();
+    std::string path = ltlib::getProgramPath();
     std::filesystem::path bin_path(path);
     bin_path /= "lanthing.exe";
     if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {

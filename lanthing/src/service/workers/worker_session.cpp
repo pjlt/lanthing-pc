@@ -363,7 +363,7 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     WorkerProcess::Params params{};
     params.pipe_name = pipe_name_;
     params.on_stoped = std::bind(&WorkerSession::onWorkerStoped, this);
-    params.path = ltlib::getProgramFullpath<char>();
+    params.path = ltlib::getProgramFullpath();
     params.client_width = client_width;
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;

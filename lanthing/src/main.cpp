@@ -110,8 +110,8 @@ void initLogAndMinidump(Role role) {
         return;
     }
 
-    std::string bin_path = ltlib::getProgramFullpath<char>();
-    std::string bin_dir = ltlib::getProgramPath<char>();
+    std::string bin_path = ltlib::getProgramFullpath();
+    std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getAppdataPath(true);
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
@@ -178,7 +178,7 @@ std::map<std::string, std::string> parseOptions(int argc, char* argv[]) {
 
 int runAsClient(std::map<std::string, std::string> options) {
     initLogAndMinidump(Role::Client);
-    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
+    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath());
     auto client = lt::cli::Client::create(options);
     if (client) {
         client->wait();
@@ -195,7 +195,7 @@ int runAsService(std::map<std::string, std::string> options) {
         return -1;
     }
     initLogAndMinidump(Role::Service);
-    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath<char>());
+    lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath());
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
     lt::svc::LanthingWinService svc;
     ltlib::ServiceApp app{&svc};
