@@ -120,8 +120,6 @@ public:
     bool sendAudio(const lt::AudioData& audio_data) override;
     bool sendVideo(const lt::VideoFrame& frame) override;
     void onSignalingMessage(const char* key, const char* value) override;
-    uint32_t bwe() const;
-    uint32_t nack() const;
 
 private:
     Server(const Params& params);

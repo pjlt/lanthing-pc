@@ -150,6 +150,7 @@ private:
     static void onTpRequestKeyframe(void* user_data);
     static void onTpLossRateUpdate(void* user_data, float rate);
     static void onTpEesimatedVideoBitreateUpdate(void* user_data, uint32_t bps);
+    static void onTpStat(void* user_data, uint32_t bwe_bps, uint32_t nack);
 
     // 数据通道
     void dispatchDcMessage(uint32_t type,
@@ -167,7 +168,6 @@ private:
     void updateLastRecvTime();
     void checkTimeout();
     void syncTime();
-    void getTransportStat();
     void tellAppAccpetedConnection();
     void sendConnectionStatus(bool repeat, bool gp_hit, bool kb_hit, bool mouse_hit);
     void calcVideoSpeed(int64_t new_frame_bytes);

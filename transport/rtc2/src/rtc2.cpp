@@ -198,12 +198,4 @@ void Server::onSignalingMessage(const char* key, const char* value) {
     conn_->onSignalingMessage(key, value);
 }
 
-uint32_t Server::bwe() const {
-    return 0;
-}
-
-uint32_t Server::nack() const {
-    return 0;
-}
-
 } // namespace rtc2
