@@ -39,6 +39,7 @@
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/allocate_device_id.pb.h>
 #include <ltproto/server/allocate_device_id_ack.pb.h>
+#include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/new_version.pb.h>
@@ -151,7 +152,7 @@ bool App::init() {
         return false;
     }
     device_id_ = settings_->getInteger("device_id").value_or(0);
-    run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
+    // run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
     auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
     relay_server_ = settings_->getString("relay").value_or("");
     windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
@@ -262,8 +263,10 @@ void App::enableRefreshAccessToken(bool enable) {
 }
 
 void App::enableRunAsDaemon(bool enable) {
-    run_as_daemon_ = enable;
-    settings_->setBoolean("daemon", enable);
+    // 屏蔽该功能，不支持无人值守
+    (void)enable;
+    // run_as_daemon_ = enable;
+    // settings_->setBoolean("daemon", enable);
 }
 
 void App::setRelayServer(const std::string& svr) {
@@ -366,7 +369,7 @@ void App::ioLoop(const std::function<void()>& i_am_alive) {
 
 void App::createAndStartService() {
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
-    std::string path = ltlib::getProgramPath<char>();
+    std::string path = ltlib::getProgramPath();
     std::filesystem::path bin_path(path);
     bin_path /= "lanthing.exe";
     if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
@@ -521,7 +524,6 @@ void App::onServerConnected() {
     else {
         allocateDeviceID();
     }
-    gui_.setLoginStatus(GUI::LoginStatus::Connected);
     if (!signaling_keepalive_inited_) {
         signaling_keepalive_inited_ = false;
         sendKeepAlive();
@@ -660,6 +662,7 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
     // 在UI上显示ID，并启动被控服务
     gui_.setDeviceID(device_id_);
     gui_.setAccessToken(access_token_);
+    gui_.setLoginStatus(GUI::LoginStatus::Connected);
     createAndStartService();
 }
 
@@ -747,8 +750,22 @@ bool App::initClientManager() {
         std::bind(&App::sendMessage, this, std::placeholders::_1, std::placeholders ::_2);
     params.on_connect_failed =
         std::bind(&App::onConnectFailed, this, std::placeholders::_1, std::placeholders ::_2);
+    params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
+    params.close_connection = std::bind(&App::closeConnectionByRoomID, this, std::placeholders::_1);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != NULL;
+}
+
+void App::onClientStatus(int32_t err_code) {
+    gui_.errorCode(err_code);
+}
+
+void App::closeConnectionByRoomID(const std::string& room_id) {
+    auto msg = std::make_shared<ltproto::server::CloseConnection>();
+    // 原因乱填的，涉及断链的逻辑都得重新理一理
+    msg->set_reason(ltproto::server::CloseConnection_Reason_ClientClose);
+    msg->set_room_id(room_id);
+    sendMessage(ltproto::id(msg), msg);
 }
 
 size_t App::rand() {

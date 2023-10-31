@@ -138,7 +138,8 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     // '设置'页面
     auto settings = params.get_settings();
-    ui->checkboxService->setChecked(settings.run_as_daemon);
+    // ui->checkboxService->setChecked(settings.run_as_daemon);
+    ui->checkboxService->hide();
     ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
     ui->checkboxForceRelay->setChecked(settings.force_relay);
     ui->leditRelay->setText(QString::fromStdString(settings.relay_server));

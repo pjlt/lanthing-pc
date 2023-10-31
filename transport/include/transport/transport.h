@@ -87,6 +87,7 @@ typedef void (*OnSignalingMessage)(void*, const char*, const char*);
 typedef void (*OnKeyframeRequest)(void*);
 typedef void (*OnVEncoderBitrateUpdate)(void*, uint32_t bps);
 typedef void (*OnLossRateUpdate)(void*, float);
+typedef void (*OnTransportStat)(void*, uint32_t /*bwe_bps*/, uint32_t /*nack*/);
 
 class TP_API Client {
 public:

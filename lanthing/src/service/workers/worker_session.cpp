@@ -330,6 +330,7 @@ tp::Server* WorkerSession::createRtcServer() {
     params.on_keyframe_request = &WorkerSession::onTpRequestKeyframe;
     params.on_video_bitrate_update = &WorkerSession::onTpEesimatedVideoBitreateUpdate;
     params.on_loss_rate_update = &WorkerSession::onTpLossRateUpdate;
+    params.on_transport_stat = &WorkerSession::onTpStat;
     return rtc::Server::create(std::move(params));
 }
 
@@ -363,7 +364,7 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     WorkerProcess::Params params{};
     params.pipe_name = pipe_name_;
     params.on_stoped = std::bind(&WorkerSession::onWorkerStoped, this);
-    params.path = ltlib::getProgramFullpath<char>();
+    params.path = ltlib::getProgramFullpath();
     params.client_width = client_width;
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
@@ -740,7 +741,6 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
         that->updateLastRecvTime();
         that->syncTime();
         that->postTask(std::bind(&WorkerSession::checkTimeout, that));
-        that->postTask(std::bind(&WorkerSession::getTransportStat, that));
     });
 }
 
@@ -792,6 +792,17 @@ void WorkerSession::onTpEesimatedVideoBitreateUpdate(void* user_data, uint32_t b
     auto msg = std::make_shared<ltproto::worker2service::ReconfigureVideoEncoder>();
     msg->set_bitrate_bps(bps);
     that->sendToWorkerFromOtherThread(ltproto::id(msg), msg);
+}
+
+void WorkerSession::onTpStat(void* user_data, uint32_t bwe_bps, uint32_t nack) {
+    auto that = reinterpret_cast<WorkerSession*>(user_data);
+    that->bwe_bps_ = bwe_bps;
+    auto msg = std::make_shared<ltproto::client2worker::SendSideStat>();
+    msg->set_bwe(bwe_bps);
+    msg->set_nack(nack);
+    msg->set_loss_rate(that->loss_rate_);
+    LOG(DEBUG) << "BWE " << bwe_bps << " NACK " << nack;
+    that->postTask([that, msg]() { that->sendMessageToRemoteClient(ltproto::id(msg), msg, true); });
 }
 
 void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -932,24 +943,6 @@ void WorkerSession::syncTime() {
     sendMessageToRemoteClient(ltproto::id(msg), msg, true);
     constexpr uint32_t k500ms = 500;
     postDelayTask(k500ms, std::bind(&WorkerSession::syncTime, this));
-}
-
-void WorkerSession::getTransportStat() {
-    if (rtc_closed_) {
-        return;
-    }
-#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
-    rtc::Server* svr = static_cast<rtc::Server*>(tp_server_);
-    bwe_bps_ = svr->bwe();
-    uint32_t nack_count = svr->nack();
-    auto msg = std::make_shared<ltproto::client2worker::SendSideStat>();
-    msg->set_bwe(bwe_bps_);
-    msg->set_nack(nack_count);
-    msg->set_loss_rate(loss_rate_);
-    LOG(DEBUG) << "BWE " << bwe_bps_ << " NACK " << nack_count;
-    sendMessageToRemoteClient(ltproto::id(msg), msg, true);
-    postDelayTask(1'000, std::bind(&WorkerSession::getTransportStat, this));
-#endif //  LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
 }
 
 void WorkerSession::tellAppAccpetedConnection() {

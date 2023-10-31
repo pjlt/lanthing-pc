@@ -98,6 +98,7 @@ private:
     bool init();
     bool initSettings();
     bool initSignalingClient();
+    bool initAppClient();
     void mainLoop(const std::function<void()>& i_am_alive);
     void onPlatformRenderTargetReset();
     void onPlatformExit();
@@ -108,6 +109,13 @@ private:
     void toggleFullscreen();
     void switchMouseMode();
     void checkWorkerTimeout();
+    void tellAppKeepAliveTimeout();
+
+    // app
+    void onAppConnected();
+    void onAppDisconnected();
+    void onAppReconnecting();
+    void onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -164,6 +172,7 @@ private:
     std::mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
+    std::unique_ptr<ltlib::Client> app_client_;
     lt::tp::Client* tp_client_ = nullptr;
     std::unique_ptr<PcSdl> sdl_;
     std::unique_ptr<ltlib::BlockingThread> main_thread_;
@@ -180,6 +189,7 @@ private:
     bool absolute_mouse_ = true;
     bool last_w_or_h_is_0_ = false;
     int64_t last_received_keepalive_;
+    bool connected_to_app_ = false;
 };
 
 } // namespace cli

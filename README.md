@@ -27,7 +27,7 @@ Lanthing的端到端加密具体是如何实现的：
 1. 不管是P2P还是中继，截取到流量的中间人不可能解密
 2. 服务器拿到的只是一个哈希值，并且流量不从这里走，没有解密这一说法
 
-上面提到的**安全通道**，Github Releases页面下载的lanthing，使用的是作者在香港服务器搭的lanthing-svr，走的TLS1.2。你也可以选择自建这个服务器。
+上面提到的**安全通道**，Github Releases页面下载的lanthing，使用的是开发者在香港服务器搭的[lanthing-svr](https://github.com/pjlt/lanthing-svr)，走的TLS1.2。你也可以选择自建这个服务器。
 
 ## 编译
 
@@ -49,10 +49,13 @@ cp options-default.cmake options-user.cmake  #可选，如果需要修改编译�
 ./build.ps1 build Release
 ```
 
-## 运行
+## 使用
 
 1. 下载[Github Releases](https://github.com/pjlt/lanthing-pc/releases)页面下的lanthing.zip并解压
 2. 管理员运行app.exe
+3. 输入对方设备码和校验码
+
+注意：**连接上对方默认只有手柄权限，鼠标和键盘权限需要被控方手动给予。** 如果不想每次都这么麻烦，可以在`管理`页面修改某个客户端的默认权限。
 
 ## 进度
 

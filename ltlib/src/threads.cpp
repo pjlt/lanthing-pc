@@ -144,13 +144,26 @@ void ThreadWatcher::disableCrashOnTimeout() {
 
 void ThreadWatcher::checkLoop() {
     set_current_thread_name("dead_thread_checker");
+    int64_t last_check_time = steady_now_ms();
+    int64_t next_sleep_ms = 700;
+    constexpr int64_t kOneMinute = 60'000;
     while (true) {
         std::unique_lock lock{mutex_};
-        cv_.wait_for(lock, std::chrono::milliseconds{700}, [this]() { return stoped_; });
+        cv_.wait_for(lock, std::chrono::milliseconds{next_sleep_ms}, [this]() { return stoped_; });
         if (stoped_) {
             return;
         }
         int64_t now = steady_now_ms();
+        if (now - last_check_time > kOneMinute) {
+            // 也许电脑休眠了，给其它线程一点时间，3秒后再检测
+            next_sleep_ms = 3'000;
+            last_check_time = now;
+            continue;
+        }
+        else {
+            last_check_time = now;
+            next_sleep_ms = 700;
+        }
         for (auto& th : threads_) {
             if (now - th.second.last_active_time > kMaxBlockTimeMS) {
                 if (terminate_callback_) {

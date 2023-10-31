@@ -32,6 +32,7 @@
 
 #include <sstream>
 
+#include <ltproto/client2app/client_status.pb.h>
 #include <ltproto/client2service/time_sync.pb.h>
 #include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
@@ -252,6 +253,10 @@ bool Client::init() {
         LOG(ERR) << "Create signaling client failed";
         return false;
     }
+    if (!initAppClient()) {
+        LOG(ERR) << "Create app client failed";
+        return false;
+    }
     hb_thread_ = ltlib::TaskThread::create("heart_beat");
     main_thread_ = ltlib::BlockingThread::create(
         "main_thread", [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
@@ -285,6 +290,21 @@ bool Client::initSignalingClient() {
 }
 #undef MACRO_TO_STRING
 #undef MACRO_TO_STRING_HELPER
+
+bool Client::initAppClient() {
+    ltlib::Client::Params params{};
+    params.stype = ltlib::StreamType::Pipe;
+    params.ioloop = ioloop_.get();
+    params.pipe_name = "\\\\?\\pipe\\lanthing_client_manager";
+    params.is_tls = false;
+    params.on_connected = std::bind(&Client::onAppConnected, this);
+    params.on_closed = std::bind(&Client::onAppDisconnected, this);
+    params.on_reconnecting = std::bind(&Client::onAppReconnecting, this);
+    params.on_message =
+        std::bind(&Client::onAppMessage, this, std::placeholders::_1, std::placeholders::_2);
+    app_client_ = ltlib::Client::create(params);
+    return app_client_ != nullptr;
+}
 
 void Client::wait() {
     std::unique_lock<std::mutex> lock{exit_mutex_};
@@ -372,10 +392,48 @@ void Client::checkWorkerTimeout() {
     if (now - last_received_keepalive_ > kFiveSeconds) {
         LOG(INFO) << "Didn't receive KeepAliveAck from worker for "
                   << (now - last_received_keepalive_) << "ms, exit";
-        sdl_->stop();
+        tellAppKeepAliveTimeout();
+        // 为了让消息发送到app，延迟50ms再关闭程序
+        postDelayTask(50, [this]() { sdl_->stop(); });
         return;
     }
     postDelayTask(k500ms, std::bind(&Client::checkWorkerTimeout, this));
+}
+
+void Client::tellAppKeepAliveTimeout() {
+    if (connected_to_app_) {
+        auto msg = std::make_shared<ltproto::client2app::ClientStatus>();
+        msg->set_status(ltproto::ErrorCode::ClientStatusKeepAliveTimeout);
+        app_client_->send(ltproto::id(msg), msg);
+    }
+    else {
+        LOG(WARNING) << "Not connected to app, won't send ClientStatus";
+    }
+}
+
+void Client::onAppConnected() {
+    LOG(INFO) << "Connected to app";
+    connected_to_app_ = true;
+}
+
+void Client::onAppDisconnected() {
+    LOG(ERR) << "Disconnected from app, won't reconnect again";
+    connected_to_app_ = false;
+}
+
+void Client::onAppReconnecting() {
+    LOG(INFO) << "Reconnecting to app...";
+    connected_to_app_ = false;
+}
+
+void Client::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+    (void)type;
+    (void)msg;
+    // switch (type) {
+    // default:
+    //     LOG(WARNING) << "Received unkonwn message from app: " << type;
+    //     break;
+    // }
 }
 
 void Client::onSignalingNetMessage(uint32_t type,

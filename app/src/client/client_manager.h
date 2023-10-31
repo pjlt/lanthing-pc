@@ -52,7 +52,10 @@ public:
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message;
         std::function<void(int64_t)> on_launch_client_success;
+        // TODO: 理一下on_connect_failed、on_client_status、on_client_exit几个回调，考虑合并成一个
         std::function<void(int64_t /*device_id*/, int32_t /*error_code*/)> on_connect_failed;
+        std::function<void(int32_t)> on_client_status;
+        std::function<void(const std::string& /*room_id*/)> close_connection;
     };
 
 public:
@@ -73,6 +76,7 @@ private:
     void tryRemoveSessionAfter10s(int64_t request_id);
     void tryRemoveSession(int64_t request_id);
     void onClientExited(int64_t request_id);
+    void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::function<void(const std::function<void()>&)> post_task_;
@@ -80,9 +84,10 @@ private:
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message_;
     std::function<void(int64_t)> on_launch_client_success_;
     std::function<void(int64_t, int32_t)> on_connect_failed_;
+    std::function<void(int32_t)> on_client_status_;
+    std::function<void(const std::string&)> close_connection_;
     std::atomic<int64_t> last_request_id_{0};
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;
-    std::mutex session_mutex_;
     std::unique_ptr<ltlib::Server> pipe_server_;
 };
 

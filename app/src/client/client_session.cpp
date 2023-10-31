@@ -69,7 +69,7 @@ bool ClientSession::start() {
     // TODO: 改成跨平台的方式
     // TODO: 参数通过管道传输
     std::stringstream ss;
-    ss << ltlib::getProgramPath<char>() << "\\"
+    ss << ltlib::getProgramPath() << "\\"
        << "lanthing.exe "
        << " -type client"
        << " -cid " << params_.client_id
@@ -173,6 +173,10 @@ void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
 
 std::string ClientSession::clientID() const {
     return params_.client_id;
+}
+
+std::string ClientSession::roomID() const {
+    return params_.room_id;
 }
 
 } // namespace lt

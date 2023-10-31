@@ -29,26 +29,27 @@
  */
 
 #include <Windows.h>
-#include <TlHelp32.h>
+
 #include <Shlobj.h>
-#include <string>
+#include <TlHelp32.h>
+
 #include <cstring>
 #include <functional>
+#include <string>
 #include <vector>
-#include <ltlib/system.h>
+
 #include <ltlib/strings.h>
+#include <ltlib/system.h>
 
-namespace
-{
+namespace {
 
-BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName)
-{
+BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName) {
     if (!lpName)
         return FALSE;
 
     HANDLE hProcessSnap = NULL;
     BOOL bRet = FALSE;
-    PROCESSENTRY32W pe32 = { 0 };
+    PROCESSENTRY32W pe32 = {0};
 
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hProcessSnap == INVALID_HANDLE_VALUE)
@@ -67,7 +68,8 @@ BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName)
             }
         } while (Process32NextW(hProcessSnap, &pe32));
         bRet = FALSE;
-    } else {
+    }
+    else {
         bRet = FALSE;
     }
 
@@ -75,8 +77,7 @@ BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName)
     return (bRet);
 }
 
-bool executeAsUser(const std::function<bool(HANDLE)>& func)
-{
+bool executeAsUser(const std::function<bool(HANDLE)>& func) {
     HANDLE hToken = NULL;
     bool res = false;
     do {
@@ -105,22 +106,9 @@ bool executeAsUser(const std::function<bool(HANDLE)>& func)
 
 } // namespace
 
-namespace ltlib
-{
+namespace ltlib {
 
-bool getProgramFilename(std::string& filename)
-{
-    char the_filename[MAX_PATH];
-    DWORD length = ::GetModuleFileNameA(nullptr, the_filename, MAX_PATH);
-    if (length > 0 && length < MAX_PATH) {
-        filename = the_filename;
-        return true;
-    }
-    return false;
-}
-
-bool getProgramFilename(std::wstring& filename)
-{
+bool getProgramFilename(std::wstring& filename) {
     const int kMaxPath = UNICODE_STRING_MAX_CHARS;
     std::vector<wchar_t> the_filename(kMaxPath);
     DWORD length = ::GetModuleFileNameW(nullptr, the_filename.data(), kMaxPath);
@@ -131,21 +119,7 @@ bool getProgramFilename(std::wstring& filename)
     return false;
 }
 
-bool getProgramPath(std::string& path)
-{
-    std::string filename;
-    if (getProgramFilename(filename)) {
-        std::string::size_type pos = filename.rfind('\\');
-        if (pos != std::string::npos) {
-            path = filename.substr(0, pos);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool getProgramPath(std::wstring& path)
-{
+bool getProgramPath(std::wstring& path) {
     std::wstring filename;
     if (getProgramFilename(filename)) {
         std::wstring::size_type pos = filename.rfind(L'\\');
@@ -157,40 +131,19 @@ bool getProgramPath(std::wstring& path)
     return false;
 }
 
-template <>
-std::string getProgramPath<char>()
-{
-    std::string path;
-    getProgramPath(path);
-    return path;
-}
-
-template <>
-std::wstring getProgramPath<wchar_t>()
-{
+std::string getProgramPath() {
     std::wstring path;
     getProgramPath(path);
-    return path;
+    return utf16To8(path);
 }
 
-template <>
-std::string getProgramFullpath<char>()
-{
-    std::string path;
-    getProgramFilename(path);
-    return path;
-}
-
-template <>
-std::wstring getProgramFullpath<wchar_t>()
-{
+std::string getProgramFullpath() {
     std::wstring path;
     getProgramFilename(path);
-    return path;
+    return utf16To8(path);
 }
 
-std::string getAppdataPath(bool is_service)
-{
+std::string getAppdataPath(bool is_service) {
     static std::string appdata_path;
     if (!appdata_path.empty()) {
         return appdata_path;
@@ -198,8 +151,8 @@ std::string getAppdataPath(bool is_service)
     std::wstring wappdata_path;
 
     auto get_path = [&](HANDLE) -> bool {
-        wchar_t m_lpszDefaultDir[MAX_PATH] = { 0 };
-        wchar_t szDocument[MAX_PATH] = { 0 };
+        wchar_t m_lpszDefaultDir[MAX_PATH] = {0};
+        wchar_t szDocument[MAX_PATH] = {0};
 
         LPITEMIDLIST pidl = NULL;
         auto hr = SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &pidl);
@@ -227,14 +180,13 @@ std::string getAppdataPath(bool is_service)
     return appdata_path;
 }
 
-bool isRunasLocalSystem()
-{
+bool isRunasLocalSystem() {
     BOOL bIsLocalSystem = FALSE;
     PSID psidLocalSystem;
     SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
 
-    BOOL fSuccess = ::AllocateAndInitializeSid(&ntAuthority, 1, SECURITY_LOCAL_SYSTEM_RID,
-        0, 0, 0, 0, 0, 0, 0, &psidLocalSystem);
+    BOOL fSuccess = ::AllocateAndInitializeSid(&ntAuthority, 1, SECURITY_LOCAL_SYSTEM_RID, 0, 0, 0,
+                                               0, 0, 0, 0, &psidLocalSystem);
     if (fSuccess) {
         fSuccess = ::CheckTokenMembership(0, psidLocalSystem, &bIsLocalSystem);
         ::FreeSid(psidLocalSystem);
@@ -243,8 +195,7 @@ bool isRunasLocalSystem()
     return bIsLocalSystem;
 }
 
-bool isRunAsService()
-{
+bool isRunAsService() {
     DWORD current_process_id = GetCurrentProcessId();
     DWORD prev_session_id = 0;
     if (FALSE == ProcessIdToSessionId(current_process_id, &prev_session_id)) {
@@ -253,24 +204,21 @@ bool isRunAsService()
     return prev_session_id == 0;
 }
 
-int32_t getScreenWidth()
-{
+int32_t getScreenWidth() {
     HDC hdc = GetDC(NULL);
     int32_t x = GetDeviceCaps(hdc, DESKTOPHORZRES);
     ReleaseDC(0, hdc);
     return x;
 }
 
-int32_t getScreenHeight()
-{
+int32_t getScreenHeight() {
     HDC hdc = GetDC(NULL);
     int32_t y = GetDeviceCaps(hdc, DESKTOPVERTRES);
     ReleaseDC(0, hdc);
     return y;
 }
 
-DisplayOutputDesc getDisplayOutputDesc()
-{
+DisplayOutputDesc getDisplayOutputDesc() {
     uint32_t width, height, frequency;
     DEVMODE dm;
     dm.dmSize = sizeof(DEVMODE);
@@ -278,12 +226,13 @@ DisplayOutputDesc getDisplayOutputDesc()
         width = dm.dmPelsWidth;
         height = dm.dmPelsHeight;
         frequency = dm.dmDisplayFrequency ? dm.dmDisplayFrequency : 60;
-    } else {
+    }
+    else {
         width = getScreenWidth();
         height = getScreenHeight();
         frequency = 60;
     }
-    return DisplayOutputDesc { width, height, frequency };
+    return DisplayOutputDesc{width, height, frequency};
 }
 
 } // namespace ltlib
