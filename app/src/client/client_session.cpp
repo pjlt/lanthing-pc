@@ -175,4 +175,8 @@ std::string ClientSession::clientID() const {
     return params_.client_id;
 }
 
+std::string ClientSession::roomID() const {
+    return params_.room_id;
+}
+
 } // namespace lt

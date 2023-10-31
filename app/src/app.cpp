@@ -39,6 +39,7 @@
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/server/allocate_device_id.pb.h>
 #include <ltproto/server/allocate_device_id_ack.pb.h>
+#include <ltproto/server/close_connection.pb.h>
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/new_version.pb.h>
@@ -750,12 +751,21 @@ bool App::initClientManager() {
     params.on_connect_failed =
         std::bind(&App::onConnectFailed, this, std::placeholders::_1, std::placeholders ::_2);
     params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
+    params.close_connection = std::bind(&App::closeConnectionByRoomID, this, std::placeholders::_1);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != NULL;
 }
 
 void App::onClientStatus(int32_t err_code) {
     gui_.errorCode(err_code);
+}
+
+void App::closeConnectionByRoomID(const std::string& room_id) {
+    auto msg = std::make_shared<ltproto::server::CloseConnection>();
+    // 原因乱填的，涉及断链的逻辑都得重新理一理
+    msg->set_reason(ltproto::server::CloseConnection_Reason_ClientClose);
+    msg->set_room_id(room_id);
+    sendMessage(ltproto::id(msg), msg);
 }
 
 size_t App::rand() {

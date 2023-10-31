@@ -67,7 +67,8 @@ ClientManager::ClientManager(const Params& params)
     , send_message_{params.send_message}
     , on_launch_client_success_{params.on_launch_client_success}
     , on_connect_failed_{params.on_connect_failed}
-    , on_client_status_{params.on_client_status} {}
+    , on_client_status_{params.on_client_status}
+    , close_connection_{params.close_connection} {}
 
 std::unique_ptr<ClientManager> ClientManager::create(const Params& params) {
     std::unique_ptr<ClientManager> mgr{new ClientManager{params}};
@@ -114,6 +115,7 @@ void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
     }
 }
 
+// 跑在IOLoop线程
 void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken,
                             const std::string& cookie) {
     // TODO: 先创建进程，从进程中获取一定信息才向服务器发请求
@@ -156,28 +158,25 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
         LOG(ERR) << "No decodability!";
         return;
     }
-    {
-        std::lock_guard<std::mutex> lock{session_mutex_};
-        auto result = sessions_.insert({request_id, nullptr});
-        if (!result.second) {
-            LOG(ERR) << "Another task already connected/connecting to device_id:" << peerDeviceID;
-            return;
-        }
+
+    auto result = sessions_.insert({request_id, nullptr});
+    if (!result.second) {
+        LOG(ERR) << "Another task already connected/connecting to device_id:" << peerDeviceID;
+        return;
     }
+
     sendMessage(ltproto::id(req), req);
     LOGF(INFO, "RequestConnection(device_id:%lld, request_id:%lld) sent", peerDeviceID, request_id);
     tryRemoveSessionAfter10s(request_id);
 }
 
+// 跑在IOLoop线程
 void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::RequestConnectionAck>(_msg);
     if (ack->err_code() != ltproto::ErrorCode::Success) {
         LOGF(WARNING, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
              ack->device_id(), ack->request_id());
-        {
-            std::lock_guard<std::mutex> lock{session_mutex_};
-            sessions_.erase(ack->request_id());
-        }
+        sessions_.erase(ack->request_id());
         on_connect_failed_(ack->device_id(), ack->err_code());
         return;
     }
@@ -203,36 +202,40 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
         params.reflex_servers.push_back(ack->reflex_servers(i));
     }
     auto session = std::make_shared<ClientSession>(params);
-    {
-        std::lock_guard<std::mutex> lock{session_mutex_};
-        auto iter = sessions_.find(ack->request_id());
-        if (iter == sessions_.end()) {
-            LOGF(INFO,
-                 "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64
-                 "), but too late",
-                 ack->device_id(), ack->request_id());
-            return;
-        }
-        else if (iter->second != nullptr) {
-            LOGF(INFO,
-                 "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64
-                 "), but another session "
-                 "already started",
-                 ack->device_id(), ack->request_id());
-            return;
-        }
-        else {
-            iter->second = session;
-            LOGF(INFO,
-                 "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64 ")",
-                 ack->device_id(), ack->request_id());
-        }
+
+    auto iter = sessions_.find(ack->request_id());
+    if (iter == sessions_.end()) {
+        LOGF(INFO,
+             "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64
+             "), but too late",
+             ack->device_id(), ack->request_id());
+        // 太晚了，通知服务器关闭订单
+        close_connection_(ack->room_id());
+        return;
     }
+    else if (iter->second != nullptr) {
+        LOGF(ERR,
+             "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64
+             "), but another session "
+             "already started",
+             ack->device_id(), ack->request_id());
+        // 同样的request_id，这是写bug了。应不应该通知服务器关闭订单？
+        close_connection_(ack->room_id());
+        return;
+    }
+    else {
+        iter->second = session;
+        LOGF(INFO, "Received RequestConnectionAck(device_id:%" PRId64 ", request_id:%" PRId64 ")",
+             ack->device_id(), ack->request_id());
+    }
+
     if (!session->start()) {
         LOGF(INFO, "Start session(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
              ack->device_id(), ack->request_id());
-        std::lock_guard<std::mutex> lock{session_mutex_};
         sessions_.erase(ack->request_id());
+        // 启动失败，通知服务器关闭订单
+        close_connection_(ack->room_id());
+        return;
     }
     on_launch_client_success_(ack->device_id());
 }
@@ -249,12 +252,13 @@ void ClientManager::sendMessage(uint32_t type, std::shared_ptr<google::protobuf:
     send_message_(type, msg);
 }
 
+// 这里有个小问题，如果被控10秒内不点“同意”，就没了
 void ClientManager::tryRemoveSessionAfter10s(int64_t request_id) {
     postDelayTask(10'000, [request_id, this]() { tryRemoveSession(request_id); });
 }
 
+// 跑在IOLoop线程
 void ClientManager::tryRemoveSession(int64_t request_id) {
-    std::lock_guard<std::mutex> lock{session_mutex_};
     auto iter = sessions_.find(request_id);
     if (iter == sessions_.end() || iter->second != nullptr) {
         return;
@@ -266,20 +270,21 @@ void ClientManager::tryRemoveSession(int64_t request_id) {
     }
 }
 
+// ClientSession线程 -> IOLoop线程
 void ClientManager::onClientExited(int64_t request_id) {
     postTask([this, request_id]() {
-        size_t size;
-        {
-            std::lock_guard<std::mutex> lock{session_mutex_};
-            size = sessions_.erase(request_id);
-        }
-        if (size == 0) {
+        auto iter = sessions_.find(request_id);
+        if (iter == sessions_.end()) {
             LOG(WARNING)
                 << "Try remove ClientSession due to client exited, but the session(request_id:"
                 << request_id << ") doesn't exist.";
         }
         else {
-            LOG(INFO) << "Remove session(request_id:" << request_id << ") success";
+            std::string room_id = iter->second->roomID();
+            sessions_.erase(iter);
+            LOG(INFO) << "Remove session(request_id:" << request_id << ", room_id: " << room_id
+                      << ") success";
+            close_connection_(room_id);
         }
     });
 }

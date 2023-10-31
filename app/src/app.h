@@ -84,8 +84,6 @@ private:
     void saveHistoryIDs();
     void insertNewestHistoryID(const std::string& device_id);
     void maybeRefreshAccessToken();
-    void onLaunchClientSuccess(int64_t device_id);
-    void onConnectFailed(int64_t device_id, int32_t error_code);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
 
@@ -117,7 +115,10 @@ private:
 
     // client manager
     bool initClientManager();
+    void onLaunchClientSuccess(int64_t device_id);
+    void onConnectFailed(int64_t device_id, int32_t error_code);
     void onClientStatus(int32_t err_code);
+    void closeConnectionByRoomID(const std::string& room_id);
 
     size_t rand();
     std::string generateAccessToken();
