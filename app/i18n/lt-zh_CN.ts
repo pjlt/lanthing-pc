@@ -463,22 +463,22 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/views/gui.cpp" line="148"/>
+        <location filename="../src/views/gui.cpp" line="152"/>
         <source>Main Page</source>
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="149"/>
+        <location filename="../src/views/gui.cpp" line="153"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="150"/>
+        <location filename="../src/views/gui.cpp" line="154"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="227"/>
+        <location filename="../src/views/gui.cpp" line="233"/>
         <source>%s connected to this machine</source>
         <translation>%s 正在连接</translation>
     </message>

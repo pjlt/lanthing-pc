@@ -105,8 +105,8 @@ add_subdirectory(third_party/prebuilt/ffmpeg/${LT_PLAT})
 add_subdirectory(third_party/breakpad_builder)
 #add_subdirectory(third_party/lodepng)
 add_subdirectory(third_party/prebuilt/sqlite/${LT_PLAT})
-add_subdirectory(third_party/wintoast)
 
+set(protobuf_MODULE_COMPATIBLE ON)
 #protobuf依赖absl
 find_package(absl REQUIRED PATHS third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX}/lib/cmake)
 find_package(protobuf REQUIRED PATHS third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX})
@@ -119,6 +119,7 @@ find_package(VPL REQUIRED PATHS third_party/prebuilt/onevpl/${LT_THIRD_POSTFIX})
 find_package(Opus REQUIRED PATHS third_party/prebuilt/opus/${LT_THIRD_POSTFIX})
 if (LT_WINDOWS)
     find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_BUILD_TYPE})
+    add_subdirectory(third_party/wintoast)
 endif()
 
 # 依赖于SDL

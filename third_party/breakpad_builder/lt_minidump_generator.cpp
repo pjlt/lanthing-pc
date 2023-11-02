@@ -1,6 +1,8 @@
 #include <iostream>
-#include <exception_handler.h>
 #include "lt_minidump_generator.h"
+
+#if defined(LT_WINDOWS)
+#include <exception_handler.h>
 
 static bool minidump_callback(const wchar_t* dump_path,
 	const wchar_t* minidump_id,
@@ -53,3 +55,15 @@ void LTMinidumpGenerator::invokeCallbacks()
 		cb();
 	}
 }
+
+#else
+
+LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path) { (void)path; }
+
+LTMinidumpGenerator::~LTMinidumpGenerator() {}
+
+void LTMinidumpGenerator::addCallback(const std::function<void()>& callback) { (void)callback; }
+
+void LTMinidumpGenerator::invokeCallbacks() {}
+
+#endif

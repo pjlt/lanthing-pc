@@ -51,7 +51,7 @@ add_executable(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/app.rc
     ${APP_SRCS} 
     ${APP_UI_VIEWS} 
-    # VS安装QT扩展工具可以直接编辑
+    # VS瀹夎QT鎵╁睍宸ュ叿鍙互鐩存帴缂栬緫
     ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
 )
 
@@ -72,6 +72,12 @@ set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
 
+if (LT_WINDOWS)
+    set(PLAT_LIBS wintoastlib)
+else()
+    set(PLAT_LIBS)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         Qt6::Widgets
@@ -79,7 +85,7 @@ target_link_libraries(${PROJECT_NAME}
         g3log
         protobuf::libprotobuf-lite
         breakpad
-        wintoastlib
+        ${PLAT_LIBS}
         ltlib
         transport
         ltproto
@@ -99,5 +105,5 @@ if (LT_WINDOWS)
     )
 endif()
 
-# 设置VS调试路径
+# 璁剧疆VS璋冭瘯璺緞
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
