@@ -31,10 +31,13 @@
 #include "client_secure_layer.h"
 #include "client_transport_layer.h"
 
+#include <cstring>
+
 #include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 
 // 忘了在哪个开源项目抄了一部分，sorry。这种写法不是很好理解，有bug也不好修（刚修了一个，在tls_read之后没有重置input
 // buffer，在遇到大消息bug就表现出来了） 一直想重写，但是能run，就没动手??
@@ -133,7 +136,8 @@ bool MbedtlsCTransport::tls_init_engine() {
         uvtransport_.is_tcp() ? uvtransport_.host() : uvtransport_.pipe_name();
     // std::string hostname = "lanthing.net";
     mbedtls_ssl_set_hostname(&ssl_, hostname.c_str());
-    memset(&session_, 0, sizeof(session_));
+    session_ = std::make_unique<mbedtls_ssl_session>();
+    memset(session_.get(), 0, sizeof(mbedtls_ssl_session));
     bio_in_ = BIO::create();
     bio_out_ = BIO::create();
     mbedtls_ssl_set_bio(&ssl_, this, mbed_ssl_send, mbed_ssl_recv, nullptr);
@@ -425,8 +429,8 @@ void MbedtlsCTransport::reconnect() {
     uvtransport_.reconnect();
 }
 
-#pragma warning(disable : 6011)
-#pragma warning(disable : 6001)
+WARNING_DISABLE(6011)
+WARNING_DISABLE(6001)
 BIO* BIO::create() {
 
     BIO* bio = (BIO*)calloc(1, sizeof(BIO));
@@ -497,7 +501,7 @@ int BIO::read(uint8_t* buf, size_t len) {
     return (int)total;
 }
 
-#pragma warning(default : 6011)
-#pragma warning(default : 6001)
+WARNING_ENABLE(6011)
+WARNING_ENABLE(6001)
 
 } // namespace ltlib

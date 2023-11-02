@@ -64,7 +64,7 @@ std::string randomStr(size_t len) {
     std::string tmp_s;
     tmp_s.reserve(len);
 
-    for (int i = 0; i < len; ++i) {
+    for (size_t i = 0; i < len; ++i) {
         tmp_s += alphanum[distrib(engine) % (sizeof(alphanum) - 1)];
     }
 

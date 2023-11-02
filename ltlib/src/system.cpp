@@ -28,10 +28,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if defined(LT_WINDOWS)
 #include <Windows.h>
 
 #include <Shlobj.h>
 #include <TlHelp32.h>
+#endif // LT_WINDOWS
 
 #include <cstring>
 #include <functional>
@@ -42,6 +44,8 @@
 #include <ltlib/system.h>
 
 namespace {
+
+#if defined(LT_WINDOWS)
 
 BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName) {
     if (!lpName)
@@ -104,9 +108,13 @@ bool executeAsUser(const std::function<bool(HANDLE)>& func) {
     return res;
 }
 
+#endif // LT_WINDOWS
+
 } // namespace
 
 namespace ltlib {
+
+#if defined(LT_WINDOWS)
 
 bool getProgramFilename(std::wstring& filename) {
     const int kMaxPath = UNICODE_STRING_MAX_CHARS;
@@ -234,5 +242,25 @@ DisplayOutputDesc getDisplayOutputDesc() {
     }
     return DisplayOutputDesc{width, height, frequency};
 }
+
+#elif defined(LT_LINUX)
+
+std::string getProgramFullpath() { return ""; }
+
+std::string getProgramPath() { return ""; }
+
+std::string getAppdataPath(bool is_service) { (void)is_service; return ""; }
+
+bool isRunasLocalSystem() { return false; }
+bool isRunAsService() { return false; }
+
+int32_t getScreenWidth() { return -1; }
+int32_t getScreenHeight() { return -1; }
+
+DisplayOutputDesc getDisplayOutputDesc() {
+    return {0, 0, 0};
+}
+
+#endif // #elif defined(LT_LINUX)
 
 } // namespace ltlib

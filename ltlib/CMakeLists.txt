@@ -1,10 +1,25 @@
 cmake_minimum_required(VERSION 3.21)
 project(ltlib)
 
+if (LT_WINDOWS)
+    set(PLAT_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/win_service.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/win_service.cpp
+    )
+    set(PLAT_LIBS
+        winmm.lib
+    )
+elseif (LT_LINUX)
+    set(PLAT_SRCS)
+    set(PLAT_LIBS)
+else()
+    set(PLAT_SRCS)
+    set(PLAT_LIBS)
+endif()
+
 
 set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/ltlib.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/win_service.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/strings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/system.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/event.h
@@ -24,8 +39,6 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/types.h
 
 
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/win_service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/strings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/event.cpp
@@ -63,7 +76,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-     	winmm.lib
+        ${PLAT_LIBS}
         utf8cpp
         sqlite3
         protobuf::libprotobuf-lite
