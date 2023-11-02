@@ -89,19 +89,19 @@ private:
 
 private:
     const bool is_server_;
-    Endpoint* connected_ep_ = nullptr;
     NetworkChannel* network_channel_;
-    const std::string password_;
-    const std::string username_;
     Address stun_;
     Address relay_addr_;
     const std::string relay_username_;
     const std::string relay_password_;
+    const std::string password_;
+    const std::string username_;
     std::function<void(const EndpointInfo&)> on_endpoint_info_gathered_;
-    std::function<void(const uint8_t*, uint32_t, int64_t)> on_read_;
+    std::function<void(int32_t)> on_error_;
     std::function<void(const EndpointInfo& local, const EndpointInfo& remote, int64_t used_time_ms)>
         on_conn_changed_;
-    std::function<void(int32_t)> on_error_;
+    std::function<void(const uint8_t*, uint32_t, int64_t)> on_read_;
+    Endpoint* connected_ep_ = nullptr;
     bool already_started_ = false;
     std::shared_ptr<LanEndpoint> lan_;
     std::shared_ptr<WanEndpoint> wan_;

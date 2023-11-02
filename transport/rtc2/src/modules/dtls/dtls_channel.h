@@ -89,17 +89,17 @@ private:
     bool checkAndHandleDtlsPacket(const uint8_t* data, uint32_t size);
 
 private:
-    NetworkChannel* network_channel_;
+    bool is_server_;
     std::shared_ptr<KeyAndCert> key_and_cert_;
     std::vector<uint8_t> remote_digest_;
+    NetworkChannel* network_channel_;
     std::unique_ptr<MbedDtls> mbed_;
     DtlsState dtls_state_ = DtlsState::New;
-    bool is_server_ = false;
     bool network_connected_ = false;
-    std::function<void()> on_connected_;
-    std::function<void()> on_disconnected_;
     std::function<void(const uint8_t*, uint32_t, int64_t)> on_read_packet_;
     std::function<void(const uint8_t*, uint32_t, int64_t)> on_read_rtp_packet_;
+    std::function<void()> on_connected_;
+    std::function<void()> on_disconnected_;
 };
 
 } // namespace rtc2

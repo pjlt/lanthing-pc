@@ -86,13 +86,13 @@ private:
 
 private:
     std::unique_ptr<UDPSocket> socket_;
-    std::function<void(Endpoint*, const uint8_t*, uint32_t, int64_t)> on_read_;
+    NetworkChannel* network_channel_;
     std::function<void(Endpoint*)> on_connected_;
+    std::function<void(Endpoint*, const uint8_t*, uint32_t, int64_t)> on_read_;
     bool received_request_ = false;
     bool received_response_ = false;
     EndpointInfo local_{};
     EndpointInfo remote_{};
-    NetworkChannel* network_channel_;
 };
 
 } // namespace rtc2

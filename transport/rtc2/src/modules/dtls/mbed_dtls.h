@@ -111,11 +111,11 @@ private:
     std::function<void(bool success)> on_handshake_done_;
     std::function<void()> on_eof_;
     std::function<void()> on_tls_error_;
+    std::shared_ptr<KeyAndCert> key_cert_;
     bool is_server_;
     std::vector<uint8_t> peer_digest_;
     std::vector<uint8_t> buffer_;
 
-    std::shared_ptr<KeyAndCert> key_cert_;
     mbedtls_ssl_config ssl_cfg_;
     mbedtls_ssl_context ssl_;
     mbedtls_ctr_drbg_context drbg_;

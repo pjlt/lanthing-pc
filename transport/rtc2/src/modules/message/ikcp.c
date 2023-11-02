@@ -9,8 +9,6 @@
 // + Lightweight, distributed as a single source file.
 //
 //=====================================================================
-#pragma warning(disable : 4100)
-#pragma warning(disable : 6011)
 #include "ikcp.h"
 
 #include <stdarg.h>
@@ -18,6 +16,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <ltlib/pragma_warning.h>
+
+WARNING_DISABLE(4100)
+WARNING_DISABLE(6011)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 //=====================================================================
 // KCP BASIC
@@ -1278,4 +1283,6 @@ IUINT32 ikcp_getconv(const void* ptr) {
     return conv;
 }
 
-#pragma warning(default : 4100)
+#pragma GCC diagnostic pop
+WARNING_ENABLE(6011)
+WARNING_ENABLE(4100)

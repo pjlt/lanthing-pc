@@ -27,9 +27,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#pragma warning(disable : 6297)
+
+#include <ltlib/pragma_warning.h>
+
+#include <cstring>
 
 #include "buffer.h"
+
+WARNING_DISABLE(6297)
 
 namespace rtc2 {
 
@@ -186,7 +191,7 @@ void BufferBase::insert(size_t index, std::vector<uint8_t>&& data) {
 
 uint8_t& BufferBase::operator[](size_t index) {
     if (buffer_.empty())
-        throw std::exception{"Buffer is empty"};
+        throw std::runtime_error{"Buffer is empty"};
     size_t curr_pos = 0;
     for (auto& chunk : buffer_) {
         if (chunk.size() + curr_pos > index) {
@@ -194,7 +199,7 @@ uint8_t& BufferBase::operator[](size_t index) {
         }
         curr_pos += chunk.size();
     }
-    throw std::exception{"Out of index"};
+    throw std::runtime_error{"Out of index"};
 }
 
 std::vector<std::span<uint8_t>> BufferBase::spans(size_t start, size_t end) {
@@ -323,42 +328,42 @@ Buffer Buffer::subbuf(size_t start, size_t count) {
 
 void Buffer::push_back(const std::span<const uint8_t> data, bool new_slice) {
     if (is_subbuf()) {
-        throw std::exception{"Unsupported function"};
+        throw std::runtime_error{"Unsupported function"};
     }
     base_->push_back(data, new_slice);
 }
 
 void Buffer::push_back(std::vector<uint8_t>&& data, bool new_slice) {
     if (is_subbuf()) {
-        throw std::exception{"Unsupported function"};
+        throw std::runtime_error{"Unsupported function"};
     }
     base_->push_back(std::move(data), new_slice);
 }
 
 void Buffer::insert(size_t index, const std::span<uint8_t> data) {
     if (is_subbuf()) {
-        throw std::exception{"Unsupported function"};
+        throw std::runtime_error{"Unsupported function"};
     }
     base_->insert(index, data);
 }
 
 void Buffer::insert(size_t index, std::vector<uint8_t>&& data) {
     if (is_subbuf()) {
-        throw std::exception{"Unsupported function"};
+        throw std::runtime_error{"Unsupported function"};
     }
     base_->insert(index, std::move(data));
 }
 
 uint8_t& Buffer::operator[](size_t index) {
     if (is_subbuf() && index >= (end_ - start_)) {
-        throw std::exception{"Out of index"};
+        throw std::runtime_error{"Out of index"};
     }
     return base_->operator[](index + start_);
 }
 
 const uint8_t& Buffer::operator[](size_t index) const {
     if (is_subbuf() && index >= (end_ - start_)) {
-        throw std::exception{"Out of index"};
+        throw std::runtime_error{"Out of index"};
     }
     return base_->operator[](index + start_);
 }
@@ -386,5 +391,7 @@ template <typename T> bool rtc2::Buffer::read_little_endian_at(size_t index, T& 
 template <typename T> bool rtc2::Buffer::write_little_endian_at(size_t index, T value) {
     return base_->write_little_endian_at(index + start_, value);
 }
+
+WARNING_ENABLE(6297)
 
 } // namespace rtc2
