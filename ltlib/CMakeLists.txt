@@ -86,10 +86,13 @@ set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 install(
 	TARGETS ${PROJECT_NAME}
 )
-install(
-    FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
-)
+
+if (LT_WINDOWS)
+    install(
+        FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
+    )
+endif()
 
 if(${LT_ENABLE_TEST})
 

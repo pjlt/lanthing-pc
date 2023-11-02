@@ -163,7 +163,9 @@ if(LT_WINDOWS)
     set(PLATFORM_LIBS
             Secur32.lib dmoguids.lib d3d11.lib d3dcompiler.lib
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
-            Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib)
+            Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
+            ViGEmClient::ViGEmClientShared
+    )
 else()
     set(PLATFORM_LIBS)
 endif()
@@ -181,7 +183,6 @@ target_link_libraries(${PROJECT_NAME}
     uv
     breakpad
     imgui
-    ViGEmClient::ViGEmClientShared
     ltlib
     ltproto
     rtc
@@ -191,10 +192,12 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 install(TARGETS ${PROJECT_NAME})
-install(
-    FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
-)
+if (LT_WINDOWS)
+    install(
+        FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
+    )
+endif()
 
 install(CODE [[
     file(GET_RUNTIME_DEPENDENCIES
