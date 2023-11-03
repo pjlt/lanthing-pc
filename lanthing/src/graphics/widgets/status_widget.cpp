@@ -30,8 +30,6 @@
 
 #include "status_widget.h"
 
-#include <d3d11.h>
-
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <imgui.h>
