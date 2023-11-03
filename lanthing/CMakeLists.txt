@@ -77,11 +77,15 @@ set(LT_VIDEO_RENDERER_SRCS
     # graphics->renderer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.cpp
 )
+if (LT_WINDOWS)
+    list(APPEND LT_VIDEO_RENDERER_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
+    )
+endif()
 
 set(LT_VIDEO_DR_PIPELINE_SRCS
     # graphics->drpipeline

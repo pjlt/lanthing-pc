@@ -30,7 +30,9 @@
 
 #include "video_renderer.h"
 
+#if LT_WINDOWS
 #include "d3d11_pipeline.h"
+#endif // LT_WINDOWS
 
 namespace lt {
 
@@ -48,6 +50,7 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     }
     return renderer;
 #else
+    (void)params;
     return nullptr;
 #endif //
 }

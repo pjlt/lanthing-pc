@@ -58,10 +58,10 @@ std::string to_string(lt::VideoCodecType codec) {
 
 namespace lt {
 
-#if defined(LT_WINDOWS)
-
 ClientSession::ClientSession(const Params& params)
     : params_(params) {}
+
+#if defined(LT_WINDOWS)
 
 ClientSession::~ClientSession() {
     TerminateProcess(handle_, 0);
@@ -176,6 +176,9 @@ void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
 }
 
 #else // LT_WINDOWS
+
+ClientSession::~ClientSession() {}
+
 bool ClientSession::start() {
     (void)to_string(lt::VideoCodecType::H264);
     return false;

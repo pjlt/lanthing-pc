@@ -70,7 +70,9 @@ target_include_directories(${PROJECT_NAME}
 
 set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
+if (LT_WINDOWS)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+endif(LT_WINDOWS)
 
 if (LT_WINDOWS)
     set(PLAT_LIBS wintoastlib)

@@ -72,6 +72,8 @@ void dispatchToUiThread(std::function<void()> callback) {
     QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
 }
 
+// -Werror=unused-function
+/*
 QColor toColor(QString colorstr) {
 
     int r = colorstr.mid(1, 2).toInt(nullptr, 16);
@@ -80,6 +82,7 @@ QColor toColor(QString colorstr) {
     QColor color = QColor(r, g, b);
     return color;
 }
+*/
 
 } // namespace
 
@@ -730,7 +733,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // id
     QTableWidgetItem* id_item = new QTableWidgetItem;
     ui->tableWidget->setItem(row, 0, id_item);
-    id_item->setData(Qt::DisplayRole, device_id);
+    id_item->setData(Qt::DisplayRole, QVariant::fromValue(device_id));
     // gamepad
     QCheckBox* gamepad_item = new QCheckBox();
     gamepad_item->setChecked(gamepad);

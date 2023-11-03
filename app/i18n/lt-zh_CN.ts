@@ -43,72 +43,72 @@
         <translation type="vanished">连接已断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="235"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="238"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="237"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="240"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="241"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="244"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="243"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="246"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="244"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="247"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="391"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="394"/>
         <source>The new version %s has been released, please download it&lt;br&gt;from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="399"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="402"/>
         <source>Version: </source>
         <translation>版本： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="401"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="404"/>
         <source>Released date: </source>
         <translation>发布日期： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="402"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="405"/>
         <source>New features:</source>
         <translation>新特性：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="408"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="411"/>
         <source>Bug fix:</source>
         <translation>修复：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="416"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="419"/>
         <source>New Version</source>
         <translation>新版本</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="493"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="496"/>
         <source>🟢Connected to server</source>
         <translation>🟢已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="505"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="508"/>
         <source>🔴Disconnected from server</source>
         <translation>🔴与服务器断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="516"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="519"/>
         <source>🟢Controlled module up</source>
         <translation>🟢被控模块正常</translation>
     </message>
@@ -117,32 +117,32 @@
         <translation type="vanished">🟡正在启动被控模块</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="520"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="523"/>
         <source>🔴Controlled module down</source>
         <translation>🔴被控模块掉线</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="539"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="542"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="540"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="543"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="541"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="544"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="542"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="545"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="765"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="768"/>
         <source>delete</source>
         <translation>删除</translation>
     </message>
@@ -251,7 +251,7 @@
         <translation type="vanished">鼠标模式（暂不生效）</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="499"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="502"/>
         <source>🟡Connecting...</source>
         <translation>🟡正在连接服务器</translation>
     </message>
