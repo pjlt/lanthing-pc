@@ -79,6 +79,10 @@ private:
     WidgetsManager(const Params& params);
     void initImgui();
     void uninitImgui();
+    void imguiImplInit();
+    void imguiImplShutdown();
+    void imguiImplNewFrame();
+    void imguiImplRender();
 
 private:
     void* dev_;
