@@ -136,8 +136,8 @@ bool MbedtlsCTransport::tls_init_engine() {
         uvtransport_.is_tcp() ? uvtransport_.host() : uvtransport_.pipe_name();
     // std::string hostname = "lanthing.net";
     mbedtls_ssl_set_hostname(&ssl_, hostname.c_str());
-    session_ = std::make_unique<mbedtls_ssl_session>();
-    memset(session_.get(), 0, sizeof(mbedtls_ssl_session));
+    // session_ = std::make_unique<mbedtls_ssl_session>();
+    // memset(session_.get(), 0, sizeof(mbedtls_ssl_session));
     bio_in_ = BIO::create();
     bio_out_ = BIO::create();
     mbedtls_ssl_set_bio(&ssl_, this, mbed_ssl_send, mbed_ssl_recv, nullptr);
@@ -145,9 +145,9 @@ bool MbedtlsCTransport::tls_init_engine() {
 }
 
 int MbedtlsCTransport::tls_reset_engine() {
-    if (mbedtls_ssl_get_session(&ssl_, session_.get()) != 0) {
-        mbedtls_ssl_session_free(session_.get());
-    }
+    // if (mbedtls_ssl_get_session(&ssl_, session_.get()) != 0) {
+    //     mbedtls_ssl_session_free(session_.get());
+    // }
     if (bio_in_) {
         BIO::destroy(bio_in_);
         bio_in_ = BIO::create();
@@ -351,10 +351,10 @@ MbedtlsCTransport::HandshakeState MbedtlsCTransport::continue_handshake(char* in
     if (in_bytes > 0) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(in), in_bytes);
     }
-    if (ssl_.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HELLO_REQUEST && session_ != nullptr) {
-        mbedtls_ssl_set_session(&ssl_, session_.get());
-        mbedtls_ssl_session_free(session_.get());
-    }
+    // if (ssl_.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HELLO_REQUEST && session_ != nullptr) {
+    //     mbedtls_ssl_set_session(&ssl_, session_.get());
+    //     mbedtls_ssl_session_free(session_.get());
+    // }
     int state = mbedtls_ssl_handshake(&ssl_);
     char err[1024];
     mbedtls_strerror(state, err, 1024);

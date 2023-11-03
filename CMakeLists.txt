@@ -118,7 +118,7 @@ find_package(SDL2 REQUIRED PATHS third_party/prebuilt/sdl/${LT_THIRD_POSTFIX})
 find_package(VPL REQUIRED PATHS third_party/prebuilt/onevpl/${LT_THIRD_POSTFIX})
 find_package(Opus REQUIRED PATHS third_party/prebuilt/opus/${LT_THIRD_POSTFIX})
 if (LT_WINDOWS)
-    find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_BUILD_TYPE})
+    find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_THIRD_POSTFIX})
     add_subdirectory(third_party/wintoast)
 endif()
 

@@ -21,8 +21,10 @@
 
 WARNING_DISABLE(4100)
 WARNING_DISABLE(6011)
+#if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif // __GNUC__
 
 //=====================================================================
 // KCP BASIC
@@ -1283,6 +1285,8 @@ IUINT32 ikcp_getconv(const void* ptr) {
     return conv;
 }
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif // __GNUC__
 WARNING_ENABLE(6011)
 WARNING_ENABLE(4100)

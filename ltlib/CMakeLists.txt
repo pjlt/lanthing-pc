@@ -63,6 +63,13 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.cpp
 )
 
+if (LT_WINDOWS)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/win_service.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/win_service.cpp
+    )
+endif()
+
 add_library(${PROJECT_NAME} SHARED
     ${LTLIB_SRCS}
 )

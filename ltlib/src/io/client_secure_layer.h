@@ -91,7 +91,7 @@ private:
     mbedtls_x509_crt own_cert_;
     // 下面几个是属于某一个connection
     mbedtls_ssl_context ssl_;
-    std::unique_ptr<mbedtls_ssl_session> session_;
+    // std::unique_ptr<mbedtls_ssl_session> session_;
     mbedtls_ctr_drbg_context drbg_;
     mbedtls_entropy_context entropy_;
     BIO* bio_in_;

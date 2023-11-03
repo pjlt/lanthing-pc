@@ -31,6 +31,7 @@
 #include <ltlib/pragma_warning.h>
 
 #include <cstring>
+#include <stdexcept>
 
 #include "buffer.h"
 
