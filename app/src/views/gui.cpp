@@ -203,7 +203,9 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
 
 int GUIImpl::exec() {
     int ret = qapp_->exec();
+#if defined(LT_WINDOWS)
     WinToastLib::WinToast::instance()->clear();
+#endif // LT_WINDOWS
     return ret;
 }
 

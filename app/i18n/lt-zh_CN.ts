@@ -478,7 +478,7 @@
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/views/gui.cpp" line="233"/>
+        <location filename="../src/views/gui.cpp" line="235"/>
         <source>%s connected to this machine</source>
         <translation>%s 正在连接</translation>
     </message>

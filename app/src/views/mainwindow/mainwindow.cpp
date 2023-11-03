@@ -32,7 +32,7 @@
 
 #include <cassert>
 
-#include "ui_MainWindow.h"
+#include "ui_mainwindow.h"
 
 #include <QMouseEvent>
 #include <QtCore/qtimer.h>
@@ -86,8 +86,8 @@ QColor toColor(QString colorstr) {
 MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     : QMainWindow(parent)
     , params_(params)
-    , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)"))
-    , ui(new Ui_MainWindow) {
+    , ui(new Ui_MainWindow)
+    , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)")) {
 
     ui->setupUi(this);
 

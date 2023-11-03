@@ -226,7 +226,7 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
         cursor_result == RenderResult::Reset) {
         return RenderResult::Reset;
     }
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
@@ -292,7 +292,7 @@ VideoRenderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
         setupRSStage();
         return RenderResult::Reset;
     }
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
@@ -317,13 +317,13 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
                                                        video_shader_views_[index].uv.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     CursorInfo c = cursor_info_;
     if (absolute_mouse_ || !c.visible) {
-        return RenderResult::Success;
+        return RenderResult::Success2;
     }
     auto iter = cursors_.find(c.id);
     if (iter == cursors_.end()) {
@@ -365,7 +365,7 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     ID3D11ShaderResourceView* const shader_views[1] = {iter->second.view.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {

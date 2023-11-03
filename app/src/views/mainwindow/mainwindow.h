@@ -31,6 +31,7 @@
 #pragma once
 
 #include <functional>
+#include <iomanip>
 
 #include <QValidator>
 #include <QtWidgets/QMainWindow>
@@ -42,7 +43,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_mainwindow;
+class Ui_MainWindow;
 
 QT_END_NAMESPACE
 
@@ -162,7 +163,7 @@ private:
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
 
-    Ui_mainwindow* ui;
+    Ui_MainWindow* ui;
     QRegularExpressionValidator relay_validator_;
     QPointF old_pos_{};
     qt_componets::ProgressWidget* login_progress_ = nullptr;

@@ -47,9 +47,13 @@
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 
+#include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
+#if defined(LT_WINDOWS)
 #include <ltlib/win_service.h>
+#endif // LT_WINDOWS
+
 #include <ltproto/ltproto.h>
 
 /************************************************************************************
@@ -225,13 +229,13 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
     }
-#pragma warning(disable : 4127)
+WARNING_DISABLE(4127)
     if (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
         LOG(INFO) << "Self connect is not allowed";
         gui_.infoMessageBox("Self connect is not allowed");
         return;
     }
-#pragma warning(default : 4127)
+WARNING_ENABLE(4127)
     postTask([peerDeviceID, accessToken, this]() {
         std::string cookie_name = "to_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);

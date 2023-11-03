@@ -137,7 +137,6 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     params->set_video_width(display_output_desc.width);
     params->set_video_height(display_output_desc.height);
     for (auto codec : kCodecPriority) {
-        using Backend = ltproto::common::StreamingParams::VideoEncodeBackend;
         using CodecType = ltproto::common::VideoCodecType;
         switch (codec) {
         case ltproto::common::AVC:
@@ -166,7 +165,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     }
 
     sendMessage(ltproto::id(req), req);
-    LOGF(INFO, "RequestConnection(device_id:%lld, request_id:%lld) sent", peerDeviceID, request_id);
+    LOGF(INFO, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") sent", peerDeviceID, request_id);
     tryRemoveSessionAfter10s(request_id);
 }
 

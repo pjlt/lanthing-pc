@@ -59,4 +59,4 @@ public:
 private:
     std::vector<Ability> abilities_;
 };
-}; // namespace lt
+} // namespace lt

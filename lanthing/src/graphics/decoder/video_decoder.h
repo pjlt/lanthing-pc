@@ -37,7 +37,8 @@
 
 namespace lt {
 
-enum class DecodeStatus { Success, EAgain, Failed };
+// Linux下不知道那个库似乎把'Success'变成常量
+enum class DecodeStatus { Success2, EAgain, Failed };
 
 struct DecodedFrame {
     DecodeStatus status;

@@ -98,7 +98,7 @@ private:
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
     PcSdl* sdl_;
-    HWND hwnd_;
+    void* window_;
 
     std::atomic<bool> request_i_frame_ = false;
     std::vector<VideoFrameInternal> encoded_frames_;
@@ -148,7 +148,11 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(params.sdl->window(), &info);
-    hwnd_ = info.info.win.window;
+#ifdef LT_WINDOWS
+    window_ = info.info.win.window;
+#else
+    window_ = nullptr;
+#endif
 }
 
 VDRPipeline::~VDRPipeline() {
@@ -173,7 +177,7 @@ bool VDRPipeline::init() {
     }
     uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
     VideoRenderer::Params render_params{};
-    render_params.window = hwnd_;
+    render_params.window = window_;
     render_params.device = target_adapter;
     render_params.video_width = width_;
     render_params.video_height = height_;
@@ -200,7 +204,7 @@ bool VDRPipeline::init() {
     WidgetsManager::Params widgets_params{};
     widgets_params.dev = video_renderer_->hwDevice();
     widgets_params.ctx = video_renderer_->hwContext();
-    widgets_params.window = hwnd_;
+    widgets_params.window = window_;
     widgets_params.video_width = width_;
     widgets_params.video_height = height_;
     widgets_params.set_bitrate =
@@ -227,7 +231,7 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
     // stream.flush();
-    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", _frame.capture_timestamp_us,
+    LOGF(DEBUG, "capture:%" PRId64 ", start_enc:% " PRId64 ", end_enc:%" PRId64, _frame.capture_timestamp_us,
          _frame.start_encode_timestamp_us, _frame.end_encode_timestamp_us);
     statistics_->addEncode();
     statistics_->updateVideoBW(_frame.size);
@@ -413,7 +417,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
                 case VideoRenderer::RenderResult::Reset:
                     widgets_->reset();
                     break;
-                case VideoRenderer::RenderResult::Success:
+                case VideoRenderer::RenderResult::Success2:
                 default:
                     break;
                 }

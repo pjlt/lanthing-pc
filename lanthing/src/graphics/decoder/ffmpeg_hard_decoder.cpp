@@ -29,7 +29,8 @@
  */
 
 // ffmpeg头文件的警告
-#pragma warning(disable : 4244)
+#include <ltlib/pragma_warning.h>
+WARNING_DISABLE(4244)
 #include "ffmpeg_hard_decoder.h"
 
 #include <ltlib/logging.h>
@@ -42,7 +43,7 @@ extern "C" {
 #include <libavutil/hwcontext_d3d11va.h>
 #endif
 
-#pragma warning(default : 4244)
+WARNING_ENABLE(4244)
 
 namespace {
 
@@ -70,6 +71,9 @@ void* getTexture(AVFrame* av_frame) {
 #if LT_WINDOWS
     return av_frame->data[1];
 #else
+//TODO: linux
+    (void)av_frame;
+    return nullptr;
 #endif
 }
 
@@ -96,7 +100,10 @@ void configAVHWDeviceContext(void* _avhw_dev_ctx, void* dev, void* ctx) {
     av_d3d11_ctx->device->AddRef();
     av_d3d11_ctx->device_context->AddRef();
 #else
-#error unsupport platform
+//TODO: linux
+    (void)avhw_dev_ctx;
+    (void)dev;
+    (void)ctx;
 #endif
 }
 
@@ -107,7 +114,8 @@ void configAVHWFramesContext(AVHWFramesContext* ctx) {
     // TODO: 尝试向texture字段赋值，只使用一个texture
     d3d11_frames_ctx->BindFlags = D3D11_BIND_DECODER | D3D11_BIND_SHADER_RESOURCE;
 #else
-#error unsupport platform
+//TODO: linux
+    (void)ctx;
 #endif
 }
 
@@ -115,7 +123,8 @@ AVPixelFormat hwPixFormat() {
 #if LT_WINDOWS
     return AVPixelFormat::AV_PIX_FMT_D3D11;
 #else
-#error unsupport platform
+//TODO: linux
+    return AVPixelFormat::AV_PIX_FMT_D3D11;
 #endif
 }
 
@@ -128,7 +137,8 @@ std::vector<void*> getTexturesFromAVHWFramesContext(AVHWFramesContext* ctx) {
         textures[i] = d3d_ctx->texture_infos[i].texture;
     }
 #else
-#error unsupport platform
+//TODO: linux
+    (void)ctx;
 #endif
     return textures;
 }
@@ -346,7 +356,7 @@ DecodedFrame FFmpegHardDecoder::decode(const uint8_t* data, uint32_t size) {
     ret = avcodec_receive_frame(ctx, av_frame);
     if (ret == 0) {
         frame.frame = static_cast<int64_t>((uintptr_t)getTexture(av_frame));
-        frame.status = DecodeStatus::Success;
+        frame.status = DecodeStatus::Success2;
         return frame;
     }
     else if (ret == AVERROR(EAGAIN)) {

@@ -30,7 +30,9 @@
 
 #include "client_session.h"
 
+#if defined(LT_WINDOWS)
 #include <Windows.h>
+#endif // LT_WINDOWS
 
 #include <sstream>
 
@@ -55,6 +57,8 @@ std::string to_string(lt::VideoCodecType codec) {
 } // namespace
 
 namespace lt {
+
+#if defined(LT_WINDOWS)
 
 ClientSession::ClientSession(const Params& params)
     : params_(params) {}
@@ -170,6 +174,16 @@ void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
         }
     };
 }
+
+#else // LT_WINDOWS
+bool ClientSession::start() {
+    (void)to_string(lt::VideoCodecType::H264);
+    return false;
+}
+void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
+    (void)i_am_alive;
+}
+#endif
 
 std::string ClientSession::clientID() const {
     return params_.client_id;
