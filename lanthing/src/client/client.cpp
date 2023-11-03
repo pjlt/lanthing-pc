@@ -656,7 +656,7 @@ tp::Client* Client::createRtc2Client() {
     params.video_recv_ssrc = 541651314;
     // TODO: key and cert合理的创建时机
     params.key_and_cert = rtc2::KeyAndCert::create();
-    params.remote_digest;
+    // params.remote_digest;
     // FIXME: 修改rtc2接口
     auto client = rtc2::Client::create(params);
     return client.release();

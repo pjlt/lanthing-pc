@@ -46,7 +46,7 @@
 
 #include <client/client.h>
 #include <worker/worker.h>
-#if LT_RUN_AS_SERVICE
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 #include <service/daemon/daemon.h>
 #else
 #include <service/service.h>
@@ -190,6 +190,7 @@ int runAsClient(std::map<std::string, std::string> options) {
 }
 
 int runAsService(std::map<std::string, std::string> options) {
+    (void)options;
     if (!ltlib::makeSingletonProcess("lanthing")) {
         printf("Another instance is running.\n");
         return -1;

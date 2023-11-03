@@ -110,14 +110,14 @@ private: // 事件处理
 
 private:
     SDL_Window* window_ = nullptr;
-    bool windowed_fullscreen_;
     std::function<void()> on_reset_;
     std::function<void()> on_exit_;
+    bool windowed_fullscreen_;
+    bool absolute_mouse_;
     std::mutex mutex_;
     std::unique_ptr<SdlInput> input_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::string title_ = "Lanthing";
-    bool absolute_mouse_;
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {

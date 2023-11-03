@@ -30,9 +30,11 @@
 
 #include "udp_socket.h"
 
-#include <ltlib/logging.h>
+#include <cstring>
+
 #include <uv.h>
 
+#include <ltlib/logging.h>
 #include <ltlib/times.h>
 
 namespace rtc2 {

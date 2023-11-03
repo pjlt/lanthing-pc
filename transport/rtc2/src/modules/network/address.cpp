@@ -41,6 +41,8 @@
 #include <fcntl.h>
 #endif
 
+#include <cstring>
+
 #include <sstream>
 
 namespace {

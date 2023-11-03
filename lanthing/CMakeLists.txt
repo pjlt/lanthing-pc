@@ -8,18 +8,7 @@ include(deploy_dlls)
 #    ${CMAKE_CURRENT_SOURCE_DIR}/fonts/NotoSansSC-Medium.ttf
 #)
 
-set(LT_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.h
-    #${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
-
-    # Client
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.cpp
-
+set(LT_SVC_SRCS
     # Service
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.cpp
@@ -29,7 +18,9 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_process.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.cpp
+)
 
+set(LT_WORKER_SRCS
     # Worker
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
@@ -37,7 +28,9 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
+)
 
+set(LT_VIDEO_ENCODER_SRCS
     # graphics->encoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.cpp
@@ -51,6 +44,9 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/amd_encoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/params_helper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/params_helper.cpp
+)
+
+set(LT_VIDEO_CAPTURER_SRCS
     # graphics->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.cpp
@@ -59,9 +55,15 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/common_types.h
+)
+
+set(LT_VIDEO_CE_PIPELINE_SRCS
     # graphics->cepipeline
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/cepipeline/video_capture_encode_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/cepipeline/video_capture_encode_pipeline.cpp
+)
+
+set(LT_VIDEO_DECODER_SRCS
     # graphics->decoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.cpp
@@ -69,6 +71,9 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_hard_decoder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_soft_decoder.h
     #${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_soft_decoder.cpp
+)
+
+set(LT_VIDEO_RENDERER_SRCS
     # graphics->renderer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.cpp
@@ -76,6 +81,9 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.cpp
+)
+
+set(LT_VIDEO_DR_PIPELINE_SRCS
     # graphics->drpipeline
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.cpp
@@ -85,6 +93,10 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_statistics.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_statistics.cpp
+)
+
+
+set(LT_VIDEO_WIDGET_SRCS
     # graphics->widget
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.cpp
@@ -94,23 +106,33 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/statistics_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/status_widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/status_widget.cpp
+)
 
+set(LT_AUDIO_CAPTURER_SRCS
     # audio->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.cpp
+)
+
+set(LT_AUDIO_PLAYER_SRCS
     # audio->player
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/audio_player.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/audio_player.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/sdl_audio_player.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/sdl_audio_player.cpp
+)
 
+set(LT_INPUT_CAPTURER_SRCS
     # input->capturer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_event.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_event.cpp
+)
+
+set(LT_INPUT_EXECUTOR_SRCS
     # input->executor
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.cpp
@@ -118,7 +140,15 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.cpp
+)
 
+set(LT_CLIENT_SRCS
+    # Client
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.cpp
+)
+
+set(LT_PLAT_SRCS
     # platforms
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.cpp
@@ -127,22 +157,54 @@ set(LT_SRCS
 )
 
 if(LT_WINDOWS)
-    set(PLATFORM_SRCS
+    set(LT_DAEMON_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon_win.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon_win.cpp
     )
 elseif(LT_LINUX)
-    set(PLATFORM_SRCS
+    set(LT_DAEMON_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon_linux.h
     )
 else()
-    set(PLATFORM_SRCS)
+    set(LT_DAEMON_SRCS)
+endif()
+
+set(LT_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/src/string_keys.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
+
+    ${LT_DAEMON_SRCS}
+
+    ${LT_CLIENT_SRCS}
+    ${LT_PLAT_SRCS}
+    
+    ${LT_VIDEO_DR_PIPELINE_SRCS}
+    ${LT_VIDEO_DECODER_SRCS}
+    ${LT_VIDEO_RENDERER_SRCS}
+    ${LT_VIDEO_WIDGET_SRCS}
+    ${LT_AUDIO_PLAYER_SRCS}
+    ${LT_INPUT_CAPTURER_SRCS}
+)
+
+if (LT_WINDOWS)
+    list(APPEND LT_SRCS
+        ${LT_SVC_SRCS}
+        ${LT_WORKER_SRCS}
+        ${LT_VIDEO_ENCODER_SRCS}
+        ${LT_VIDEO_CAPTURER_SRCS}
+        ${LT_VIDEO_CE_PIPELINE_SRCS}
+        ${LT_AUDIO_CAPTURER_SRCS}
+        ${LT_INPUT_EXECUTOR_SRCS}
+    )
 endif()
 
 add_executable(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
     ${LT_SRCS}
-    ${PLATFORM_SRCS}
 )
 
 # 按照原始目录结构展开

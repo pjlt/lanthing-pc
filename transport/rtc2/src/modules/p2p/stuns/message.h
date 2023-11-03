@@ -568,7 +568,7 @@ public:
         }
 
         const reference operator*() { return attr_; }
-        const pointer operator->() { return &attr_; }
+        pointer operator->() { return &attr_; }
 
         bool operator==(const self_type& rhs) { return attr_.attr_ptr() == rhs.attr_.attr_ptr(); }
         bool operator!=(const self_type& rhs) { return attr_.attr_ptr() != rhs.attr_.attr_ptr(); }

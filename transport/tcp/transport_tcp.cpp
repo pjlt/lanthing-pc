@@ -30,9 +30,14 @@
 
 #include <transport/transport_tcp.h>
 
+#ifdef LT_WINDOWS
 #include <WinSock2.h>
 #include <iphlpapi.h>
 #include <ws2tcpip.h>
+#else // LT_WINDOWS
+#include <sys/socket.h>
+#include <netinet/ip.h>
+#endif // LT_WINDOWS
 
 #include <ltlib/logging.h>
 
@@ -494,6 +499,7 @@ void ServerTCP::handleSigConnect() {
     }
 }
 
+#ifdef LT_WINDOWS
 // 仅取第一个非loopback的IPv4地址
 bool ServerTCP::gatherIP() {
     ULONG flags = (GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
@@ -533,6 +539,12 @@ bool ServerTCP::gatherIP() {
     }
     return false;
 }
+#else // LT_WINDOWS
+bool ServerTCP::gatherIP() {
+    //TODO: linux implementation
+    return false;
+}
+#endif // LT_WINDOWS
 
 void ServerTCP::invokeInternal(const std::function<void()>& task) {
     std::promise<void> promise;

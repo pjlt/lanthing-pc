@@ -563,7 +563,7 @@ int stun_attr_fingerprint_check(const stun_attr_uint32 *fingerprint,
                                 const stun_msg_hdr *msg_hdr);
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif // __STUNMSG_H__
