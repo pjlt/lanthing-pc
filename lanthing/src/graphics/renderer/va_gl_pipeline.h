@@ -28,41 +28,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "video_renderer.h"
-
-#if LT_WINDOWS
-#include "d3d11_pipeline.h"
-#elif LT_LINUX
-#include "va_gl_pipeline.h"
-#else
-#endif // LT_WINDOWS, LT_LINUX
+#pragma once
+#include <graphics/renderer/video_renderer.h>
 
 namespace lt {
 
-std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
-#if LT_WINDOWS
-    D3D11Pipeline::Params d3d11_params{};
-    d3d11_params.hwnd = (HWND)params.window;
-    d3d11_params.luid = params.device;
-    d3d11_params.widht = params.video_width;
-    d3d11_params.height = params.video_height;
-    d3d11_params.align = params.align;
-    auto renderer = std::make_unique<D3D11Pipeline>(d3d11_params);
-    if (!renderer->init()) {
-        return nullptr;
-    }
-    return renderer;
-#elif LT_LINUX
-    VaGlPipeline::Params va_gl_params{};
-    auto renderer = std::make_unique<VaGlPipeline>(va_gl_params);
-    if (!renderer->init()) {
-        return nullptr;
-    }
-    return renderer;
-#else
-    (void)params;
-    return nullptr;
-#endif //
-}
+class VaGlPipeline : public VideoRenderer {
+public:
+    struct Params {};
+
+public:
+    VaGlPipeline(const Params& params);
+    ~VaGlPipeline() override;
+    bool init();
+    bool bindTextures(const std::vector<void*>& textures) override;
+    RenderResult render(int64_t frame) override;
+    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
+    void switchMouseMode(bool absolute) override;
+    void resetRenderTarget() override;
+    bool present() override;
+    bool waitForPipeline(int64_t max_wait_ms) override;
+    void* hwDevice() override;
+    void* hwContext() override;
+    uint32_t displayWidth() override;
+    uint32_t displayHeight() override;
+};
 
 } // namespace lt

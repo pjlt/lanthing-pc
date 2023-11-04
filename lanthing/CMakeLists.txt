@@ -85,6 +85,11 @@ if (LT_WINDOWS)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
     )
+elseif (LT_LINUX)
+    list(APPEND LT_VIDEO_RENDERER_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/va_gl_pipeline.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/va_gl_pipeline.cpp
+    )
 endif()
 
 set(LT_VIDEO_DR_PIPELINE_SRCS

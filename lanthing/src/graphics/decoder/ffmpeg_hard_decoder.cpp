@@ -33,15 +33,23 @@
 WARNING_DISABLE(4244)
 #include "ffmpeg_hard_decoder.h"
 
-#include <ltlib/logging.h>
+#if LT_WINDOWS
+#elif LT_LINUX
+#include <va/va_drm.h>
+#endif
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/hwcontext.h>
-} // extern "C"
 #if LT_WINDOWS
 #include <libavutil/hwcontext_d3d11va.h>
+#elif LT_LINUX
+#include <libavutil/hwcontext_vaapi.h>
+#else
 #endif
+} // extern "C"
+
+#include <ltlib/logging.h>
 
 WARNING_ENABLE(4244)
 
@@ -51,6 +59,8 @@ AVHWDeviceType toAVHWDeviceType(lt::VaType type) {
     switch (type) {
     case lt::VaType::D3D11:
         return AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA;
+    case lt::VaType::VAAPI:
+        return AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI;
     default:
         return AVHWDeviceType::AV_HWDEVICE_TYPE_NONE;
     }
@@ -70,8 +80,10 @@ AVCodecID toAVCodecID(lt::VideoCodecType type) {
 void* getTexture(AVFrame* av_frame) {
 #if LT_WINDOWS
     return av_frame->data[1];
+#elif LT_LINUX
+    VASurfaceID va_surface = (uintptr_t)av_frame->data[3];
+    return (void*)va_surface;
 #else
-//TODO: linux
     (void)av_frame;
     return nullptr;
 #endif
@@ -99,8 +111,12 @@ void configAVHWDeviceContext(void* _avhw_dev_ctx, void* dev, void* ctx) {
     av_d3d11_ctx->device_context = reinterpret_cast<ID3D11DeviceContext*>(ctx);
     av_d3d11_ctx->device->AddRef();
     av_d3d11_ctx->device_context->AddRef();
+#elif LT_LINUX
+    // TODO: linux
+    auto av_va_ctx = reinterpret_cast<AVVAAPIDeviceContext*>(avhw_dev_ctx->hwctx);
+    av_va_ctx->display = ctx;
+    (void)dev;
 #else
-//TODO: linux
     (void)avhw_dev_ctx;
     (void)dev;
     (void)ctx;
@@ -114,7 +130,7 @@ void configAVHWFramesContext(AVHWFramesContext* ctx) {
     // TODO: 尝试向texture字段赋值，只使用一个texture
     d3d11_frames_ctx->BindFlags = D3D11_BIND_DECODER | D3D11_BIND_SHADER_RESOURCE;
 #else
-//TODO: linux
+    // TODO: linux
     (void)ctx;
 #endif
 }
@@ -122,9 +138,10 @@ void configAVHWFramesContext(AVHWFramesContext* ctx) {
 AVPixelFormat hwPixFormat() {
 #if LT_WINDOWS
     return AVPixelFormat::AV_PIX_FMT_D3D11;
+#elif LT_LINUX
+    return AVPixelFormat::AV_PIX_FMT_VAAPI;
 #else
-//TODO: linux
-    return AVPixelFormat::AV_PIX_FMT_D3D11;
+    return AVPixelFormat::;
 #endif
 }
 
@@ -137,7 +154,7 @@ std::vector<void*> getTexturesFromAVHWFramesContext(AVHWFramesContext* ctx) {
         textures[i] = d3d_ctx->texture_infos[i].texture;
     }
 #else
-//TODO: linux
+    // TODO: linux
     (void)ctx;
 #endif
     return textures;
@@ -189,8 +206,7 @@ bool FFmpegHardDecoder::init() {
     }
     const AVCodec* codec = avcodec_find_decoder(codec_id);
     if (codec == nullptr) {
-        LOGF(ERR,
-             "avcodec_find_decoder(%d) failed, maybe built libavcodec with wrong parameters",
+        LOGF(ERR, "avcodec_find_decoder(%d) failed, maybe built libavcodec with wrong parameters",
              (int)codec_id);
         return false;
     }
@@ -244,6 +260,7 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     // 2
     // 官方例子并没有创建AVHWFramesContext，但我们希望解码出来的在D3D11下能作为Shader Resource使用
     // 所以自定义AVHWFramesContext
+    // TODO: 在非D3D11下能不能保留这个逻辑?
     avbuffref_hw_frames_ctx = av_hwframe_ctx_alloc(avbuffref_hw_ctx);
     if (avbuffref_hw_frames_ctx == nullptr) {
         LOG(ERR) << "av_hwframe_ctx_alloc failed";
