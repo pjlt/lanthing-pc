@@ -13,7 +13,13 @@ set(PLATFORM_SOURCES
      ${IMGUI_FOLDER}/backends/imgui_impl_win32.cpp
 )
 else()
-set(PLATFORM_SOURCES)
+set(PLATFORM_SOURCES
+    ${IMGUI_FOLDER}/backends/imgui_impl_opengl3_loader.h
+    ${IMGUI_FOLDER}/backends/imgui_impl_opengl3.h
+    ${IMGUI_FOLDER}/backends/imgui_impl_opengl3.cpp
+    ${IMGUI_FOLDER}/backends/imgui_impl_sdl2.h
+    ${IMGUI_FOLDER}/backends/imgui_impl_sdl2.cpp
+)
 endif()
 
 set(IMGUI_SOURCES
@@ -30,7 +36,7 @@ add_library(${PROJECT_NAME}
     ${IMGUI_SOURCES}
 )
 
-# 按照原始目录结构展开
+# 鎸夌収鍘熷鐩綍缁撴瀯灞曞紑
 source_group(imgui TREE ${IMGUI_FOLDER} FILES ${IMGUI_SOURCES})
 
 target_include_directories(${PROJECT_NAME}

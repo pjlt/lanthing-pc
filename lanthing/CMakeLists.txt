@@ -232,12 +232,16 @@ if(LT_WINDOWS)
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
             ViGEmClient::ViGEmClientShared
     )
+elseif(LT_LINUX)
+    set(PLATFORM_LIBS
+        stdc++
+        X11
+    )
 else()
     set(PLATFORM_LIBS)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
-    ${PLATFORM_LIBS}
     g3log
     protobuf::libprotobuf-lite
     SDL2::SDL2
@@ -255,6 +259,8 @@ target_link_libraries(${PROJECT_NAME}
     transport_api
     transport
     #fonts
+    PkgConfig::GLib
+    ${PLATFORM_LIBS}
 )
 
 install(TARGETS ${PROJECT_NAME})
@@ -281,7 +287,7 @@ install(CODE [[
     endforeach()
 ]])
 
-deploy_dlls(${PROJECT_NAME})
+#deploy_dlls(${PROJECT_NAME})
 
 # 设置VS调试路径
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

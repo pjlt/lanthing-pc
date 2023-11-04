@@ -122,6 +122,9 @@ if (LT_WINDOWS)
     add_subdirectory(third_party/wintoast)
 endif()
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GLib REQUIRED IMPORTED_TARGET glib-2.0)
+
 # 依赖于SDL
 add_subdirectory(third_party/imgui_builder)
 

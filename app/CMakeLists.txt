@@ -3,8 +3,8 @@ project(app)
 
 set(CMAKE_AUTORCC ON)
 
-include (deploy_dlls)
-include (deploy_qt6)
+#include (deploy_dlls)
+#include (deploy_qt6)
 
 list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
 
@@ -76,6 +76,11 @@ endif(LT_WINDOWS)
 
 if (LT_WINDOWS)
     set(PLAT_LIBS wintoastlib)
+elseif(LT_LINUX)
+    set(PLAT_LIBS
+        stdc++
+        X11
+    )
 else()
     set(PLAT_LIBS)
 endif()
@@ -87,15 +92,15 @@ target_link_libraries(${PROJECT_NAME}
         g3log
         protobuf::libprotobuf-lite
         breakpad
-        ${PLAT_LIBS}
         ltlib
         transport
         ltproto
         rtc
+        ${PLAT_LIBS}
 )
 
-deploy_dlls(${PROJECT_NAME})
-deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
+#deploy_dlls(${PROJECT_NAME})
+#deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 
 install(TARGETS ${PROJECT_NAME})
 
