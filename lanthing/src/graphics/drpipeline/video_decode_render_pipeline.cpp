@@ -145,14 +145,7 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , send_message_to_host_{params.send_message_to_host}
     , sdl_{params.sdl}
     , statistics_{new VideoStatistics} {
-    SDL_SysWMinfo info{};
-    SDL_VERSION(&info.version);
-    SDL_GetWindowWMInfo(params.sdl->window(), &info);
-#ifdef LT_WINDOWS
-    window_ = info.info.win.window;
-#else
-    window_ = nullptr;
-#endif
+    window_ = params.sdl->window();
 }
 
 VDRPipeline::~VDRPipeline() {
@@ -231,8 +224,9 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
     // stream.flush();
-    LOGF(DEBUG, "capture:%" PRId64 ", start_enc:% " PRId64 ", end_enc:%" PRId64, _frame.capture_timestamp_us,
-         _frame.start_encode_timestamp_us, _frame.end_encode_timestamp_us);
+    LOGF(DEBUG, "capture:%" PRId64 ", start_enc:% " PRId64 ", end_enc:%" PRId64,
+         _frame.capture_timestamp_us, _frame.start_encode_timestamp_us,
+         _frame.end_encode_timestamp_us);
     statistics_->addEncode();
     statistics_->updateVideoBW(_frame.size);
     statistics_->updateEncodeTime(_frame.end_encode_timestamp_us -

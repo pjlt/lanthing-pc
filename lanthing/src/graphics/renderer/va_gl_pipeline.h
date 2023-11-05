@@ -31,11 +31,20 @@
 #pragma once
 #include <graphics/renderer/video_renderer.h>
 
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+
 namespace lt {
 
 class VaGlPipeline : public VideoRenderer {
 public:
-    struct Params {};
+    struct Params {
+        void* window;
+    };
 
 public:
     VaGlPipeline(const Params& params);
@@ -52,6 +61,21 @@ public:
     void* hwContext() override;
     uint32_t displayWidth() override;
     uint32_t displayHeight() override;
+
+private:
+    bool loadFuncs();
+    bool initVaDrm();
+    bool initEGL();
+    bool initOpenGL();
+
+private:
+    void* sdl_window_;
+    void* va_display_ = nullptr;
+    PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_ = nullptr;
+    PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_ = nullptr;
+    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_ = nullptr;
+    PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
+    PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;
 };
 
 } // namespace lt

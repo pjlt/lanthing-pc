@@ -41,6 +41,7 @@
 #endif
 // #include <cmrc/cmrc.hpp>
 #include <SDL.h>
+#include <SDL_syswm.h>
 #include <imgui.h>
 
 #include "control_bar_widget.h"
@@ -60,12 +61,17 @@ std::unique_ptr<WidgetsManager> WidgetsManager::create(const Params& params) {
 WidgetsManager::WidgetsManager(const Params& params)
     : dev_{params.dev}
     , ctx_{params.ctx}
-    , window_{params.window}
     , video_width_{params.video_width}
     , video_height_{params.video_height}
     , set_bitrate_{params.set_bitrate}
     , status_{std::make_shared<StatusWidget>(video_width_, video_height_)}
     , statistics_{std::make_shared<StatisticsWidget>(video_width_, video_height_)} {
+#if LT_WINDOWS
+    SDL_SysWMinfo info{};
+    SDL_VERSION(&info.version);
+    SDL_GetWindowWMInfo(reinterpret_cast<SDL_Window*>(params.window), &info);
+    window_ = info.info.win.window;
+#endif
 
     ControlBarWidget::Params control_params{};
     control_params.video_width = video_width_;

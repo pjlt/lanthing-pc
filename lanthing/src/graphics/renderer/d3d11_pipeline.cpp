@@ -35,6 +35,8 @@
 #include <d3dcompiler.h>
 #include <dwmapi.h>
 
+#include <SDL_syswm.h>
+
 #include <ltlib/logging.h>
 
 using namespace Microsoft::WRL;
@@ -181,6 +183,10 @@ D3D11Pipeline::D3D11Pipeline(const Params& params)
     , video_height_{params.height}
     , align_{params.align} {
     DwmEnableMMCSS(TRUE);
+    SDL_SysWMinfo info{};
+    SDL_VERSION(&info.version);
+    SDL_GetWindowWMInfo(reinterpret_cast<SDL_Window*>(params.window), &info);
+    hwnd_ = info.info.win.window;
 }
 
 D3D11Pipeline::~D3D11Pipeline() {

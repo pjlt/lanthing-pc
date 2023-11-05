@@ -87,7 +87,7 @@ private:
 private:
     void* dev_;
     void* ctx_;
-    void* window_;
+    void* window_ = nullptr;
     bool show_status_ = true;
     bool show_statistics_ = false;
     uint32_t video_width_;
