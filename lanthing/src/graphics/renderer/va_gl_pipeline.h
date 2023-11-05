@@ -37,13 +37,16 @@
 #include <GL/glext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <va/va.h>
+
+#include <SDL.h>
 
 namespace lt {
 
 class VaGlPipeline : public VideoRenderer {
 public:
     struct Params {
-        void* window;
+        SDL_Window* window;
     };
 
 public:
@@ -69,13 +72,16 @@ private:
     bool initOpenGL();
 
 private:
-    void* sdl_window_;
-    void* va_display_ = nullptr;
+    SDL_Window* sdl_window_ = nullptr;
+    VADisplay va_display_ = nullptr;
+    EGLDisplay egl_display_ = nullptr;
+    EGLSurface egl_surface_ = nullptr;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_ = nullptr;
     PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_ = nullptr;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_ = nullptr;
     PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
     PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;
+    GLuint textures_[2] = {0};
 };
 
 } // namespace lt

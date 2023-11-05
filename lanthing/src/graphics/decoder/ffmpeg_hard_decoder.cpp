@@ -81,8 +81,7 @@ void* getTexture(AVFrame* av_frame) {
 #if LT_WINDOWS
     return av_frame->data[1];
 #elif LT_LINUX
-    VASurfaceID va_surface = (uintptr_t)av_frame->data[3];
-    return (void*)va_surface;
+    return av_frame->data[3];
 #else
     (void)av_frame;
     return nullptr;

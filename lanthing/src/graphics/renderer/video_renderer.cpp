@@ -37,12 +37,19 @@
 #else
 #endif // LT_WINDOWS, LT_LINUX
 
+#include <SDL.h>
+#include <SDL_syswm.h>
+
 namespace lt {
 
 std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
+    SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(params.window);
+    SDL_SysWMinfo info{};
+    SDL_VERSION(&info.version);
+    SDL_GetWindowWMInfo(sdl_window, &info);
 #if LT_WINDOWS
     D3D11Pipeline::Params d3d11_params{};
-    d3d11_params.hwnd = (HWND)params.window;
+    d3d11_params.hwnd = info.info.win.window;
     d3d11_params.luid = params.device;
     d3d11_params.widht = params.video_width;
     d3d11_params.height = params.video_height;
@@ -54,6 +61,7 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     return renderer;
 #elif LT_LINUX
     VaGlPipeline::Params va_gl_params{};
+    va_gl_params.window = sdl_window;
     auto renderer = std::make_unique<VaGlPipeline>(va_gl_params);
     if (!renderer->init()) {
         return nullptr;

@@ -10,8 +10,10 @@
 #include <EGL/eglext.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <va/va.h>
+#include <libdrm/drm_fourcc.h>
+
 #include <va/va_drm.h>
+#include <va/va_drmcommon.h>
 
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -41,7 +43,80 @@ bool VaGlPipeline::init() {
 
 bool VaGlPipeline::bindTextures(const std::vector<void*>& textures) {}
 
-VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {}
+VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
+    // frame是(uintptr_t)frame->data[3]
+    VASurfaceID va_surface = static_cast<VASurfaceID>(frame);
+    VADRMPRIMESurfaceDescriptor prime;
+    VAStatus va_status = vaExportSurfaceHandle(
+        va_display_, va_surface, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+        VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS, &prime);
+    if (va_status != VA_STATUS_SUCCESS) {
+        LOG(ERR) << "vaExportSurfaceHandle failed";
+        return RenderResult::Failed;
+    }
+    if (prime.fourcc != VA_FOURCC_NV12) {
+        LOG(ERR) << "prime.fourcc != VA_FOURCC_NV12";
+        return RenderResult::Failed;
+    }
+    // TODO:  更好的同步方式
+    vaSyncSurface(va_display_, va_surface);
+
+    EGLImage images[2] = {0};
+    for (int i = 0; i < 2; ++i) {
+        constexpr uint32_t formats[2] = {DRM_FORMAT_R8, DRM_FORMAT_GR88};
+        if (prime.layers[i].drm_format != formats[i]) {
+            LOG(ERR) << "prime.layers[i].drm_format: " << prime.layers[i].drm_format
+                     << ", formats[i]: " << formats[i];
+        }
+        EGLint img_attr[] = {EGL_LINUX_DRM_FOURCC_EXT,
+                             formats[i],
+                             EGL_WIDTH,
+                             prime.width / (i + 1), // half size
+                             EGL_HEIGHT,
+                             prime.height / (i + 1), // for chroma
+                             EGL_DMA_BUF_PLANE0_FD_EXT,
+                             prime.objects[prime.layers[i].object_index[0]].fd,
+                             EGL_DMA_BUF_PLANE0_OFFSET_EXT,
+                             prime.layers[i].offset[0],
+                             EGL_DMA_BUF_PLANE0_PITCH_EXT,
+                             prime.layers[i].pitch[0],
+                             EGL_NONE};
+        images[i] =
+            eglCreateImageKHR_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, img_attr);
+        if (!images[i]) {
+            LOG(ERR) << "eglCreateImageKHR failed: " << i ? "chroma eglCreateImageKHR"
+                                                          : "luma eglCreateImageKHR";
+            return RenderResult::Failed;
+        }
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, textures_[i]);
+        while (glGetError()) {
+        }
+        glEGLImageTargetTexture2DOES_(GL_TEXTURE_2D, images[i]);
+        if (glGetError()) {
+            LOG(ERR) << "glEGLImageTargetTexture2DOES failed";
+            return RenderResult::Failed;
+        }
+    }
+    for (uint32_t i = 0; i < prime.num_objects; ++i) {
+        close(prime.objects[i].fd);
+    }
+    glClear(GL_COLOR_BUFFER_BIT);
+    while (glGetError()) {
+    }
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    GLenum err = glGetError();
+    if (err) {
+        LOG(ERR) << "glDrawArrays failed: " << err;
+        return RenderResult::Failed;
+    }
+    eglSwapBuffers(egl_display_, egl_surface_);
+    for (uint32_t i = 0; i < 2U; ++i) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        eglDestroyImageKHR_(egl_display_, images[i]);
+    }
+}
 
 void VaGlPipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {}
 
@@ -144,13 +219,12 @@ bool VaGlPipeline::initEGL() {
     //     return false;
     // }
 
-    EGLDisplay egl_display =
-        eglGetDisplay(reinterpret_cast<EGLNativeDisplayType>(info.info.x11.display));
-    if (egl_display == EGL_NO_DISPLAY) {
+    egl_display_ = eglGetDisplay(reinterpret_cast<EGLNativeDisplayType>(info.info.x11.display));
+    if (egl_display_ == EGL_NO_DISPLAY) {
         LOG(ERR) << "eglGetDisplay failed";
         return false;
     }
-    if (!eglInitialize(egl_display, NULL, NULL)) {
+    if (!eglInitialize(egl_display_, NULL, NULL)) {
         LOG(ERR) << "eglInitialize failed";
         return false;
     }
@@ -173,15 +247,14 @@ bool VaGlPipeline::initEGL() {
                             EGL_NONE};
     EGLConfig egl_cfg{};
     EGLint egl_cfg_count{};
-    EGLBoolean egl_ret = eglChooseConfig(egl_display, visual_attr, &egl_cfg, 1, &egl_cfg_count);
+    EGLBoolean egl_ret = eglChooseConfig(egl_display_, visual_attr, &egl_cfg, 1, &egl_cfg_count);
     if (!egl_ret || egl_cfg_count < 1) {
         LOG(ERR) << "eglChooseConfig failed, egl_ret:" << egl_ret
                  << ", egl_cfg_count:" << egl_cfg_count;
         return false;
     }
-    EGLSurface egl_surface =
-        eglCreateWindowSurface(egl_display, egl_cfg, info.info.x11.window, nullptr);
-    if (egl_surface == EGL_NO_SURFACE) {
+    egl_surface_ = eglCreateWindowSurface(egl_display_, egl_cfg, info.info.x11.window, nullptr);
+    if (egl_surface_ == EGL_NO_SURFACE) {
         LOG(ERR) << "eglCreateWindowSurface failed";
         return false;
     }
@@ -194,13 +267,13 @@ bool VaGlPipeline::initEGL() {
                              EGL_CONTEXT_MINOR_VERSION,
                              CORE_PROFILE_MINOR_VERSION,
                              EGL_NONE};
-    EGLContext egl_context = eglCreateContext(egl_display, egl_cfg, EGL_NO_CONTEXT, egl_ctx_attr);
+    EGLContext egl_context = eglCreateContext(egl_display_, egl_cfg, EGL_NO_CONTEXT, egl_ctx_attr);
     if (egl_context == EGL_NO_CONTEXT) {
         LOG(ERR) << "eglCreateContext failed";
         return false;
     }
-    eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context);
-    eglSwapInterval(egl_display, 0);
+    eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context);
+    eglSwapInterval(egl_display_, 0);
     return true;
 }
 
@@ -212,7 +285,7 @@ bool VaGlPipeline::initOpenGL() {
     GLuint vao;
     glGenVertexArrays_(1, &vao);
     glBindVertexArray_(vao);
-    constexpr char* kVertexShader = R"(
+    const char* kVertexShader = R"(
 #version 130
 const vec2 coords[4] = vec2[]( vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.) );
 uniform vec2 uTexCoordScale
@@ -223,7 +296,7 @@ void main() {
     gl_Position = vec4(c * vec2(2.,-2.) + vec2(-1.,1.), 0., 1.);
 }
 )";
-    constexpr char* kFragmentShader = R"(
+    const char* kFragmentShader = R"(
 #version 130
 in vec2 vTexCoord;
 uniform sampler2D uTexY, uTexC;
@@ -251,6 +324,7 @@ void main() {
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
     if (!fs) {
         LOG(ERR) << "glCreateShader(GL_FRAGMENT_SHADER) failed: " << glGetError();
+        glDeleteShader(vs);
         return false;
     }
     glShaderSource(vs, 1, &kVertexShader, NULL);
@@ -264,6 +338,8 @@ void main() {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(vs, buffer.size(), nullptr, buffer.data());
         LOG(ERR) << "glCompileShader(GL_VERTEX_SHADER) failed: " << buffer.data();
+        glDeleteShader(vs);
+        glDeleteShader(fs);
         return false;
     }
     glCompileShader(fs);
@@ -271,11 +347,37 @@ void main() {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(vs, buffer.size(), nullptr, buffer.data());
         LOG(ERR) << "glCompileShader(GL_FRAGMENT_SHADER) failed: " << buffer.data();
+        glDeleteShader(vs);
+        glDeleteShader(fs);
         return false;
     }
     glAttachShader(prog, vs);
     glAttachShader(prog, fs);
     glLinkProgram(prog);
+    glGetProgramiv(prog, GL_LINK_STATUS, &status);
+    if (status != GL_TRUE) {
+        glGetShaderInfoLog(vs, buffer.size(), nullptr, buffer.data());
+        LOG(ERR) << "glLinkProgram() failed: " << buffer.data();
+        glDeleteProgram(prog);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        return false;
+    }
+    glUseProgram(prog);
+    glUniform1i(glGetUniformLocation(prog, "uTexY"), 0);
+    glUniform1i(glGetUniformLocation(prog, "uTexC"), 1);
+    glGenTextures(2, textures_);
+    for (int i = 0; i < 2; ++i) {
+        glBindTexture(GL_TEXTURE_2D, textures_[i]);
+        setup_texture();
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    resize_window(vp[2], vp[3], decoder_ctx);
+
+    float texcoord_x1 = (float)((double)decoder_ctx->width / (double)prime.width);
+    float texcoord_y1 = (float)((double)decoder_ctx->height / (double)prime.height);
+    glUniform2f(glGetUniformLocation(prog, "uTexCoordScale"), texcoord_x1, texcoord_y1);
+    return true;
 }
 
 } // namespace lt
