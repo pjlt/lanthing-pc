@@ -43,7 +43,7 @@ rtc_fetch() {
 
 prebuilt_fetch() {
     libs=(
-        "mbedtls https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-2/mbedtls.linux.v3.2.1-2.tar.gz"
+        "mbedtls https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-3/mbedtls.linux.v3.2.1-3.tar.gz"
         "sdl https://github.com/numbaa/sdl-build/releases/download/v2.28.4-2/sdl.linux.v2.28.4-2.tar.gz"
         "libuv https://github.com/numbaa/libuv-build/releases/download/v1.44.1-3/libuv.linux.v1.44.1-3.tar.gz"
         "onevpl https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-2/onevpl.linux.v2023.3.1-2.tar.gz"

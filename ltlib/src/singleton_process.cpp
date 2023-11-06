@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <sys/file.h>
 #include <unistd.h>
+#include <pwd.h>
 #endif
 
 #include <cstring>
@@ -71,7 +72,7 @@ bool makeSingletonProcess(const std::string& name) {
         return no_other_process.value();
     }
     std::stringstream ss;
-    ss << "/var/run/" << name << ".pid";
+    ss << getpwuid(getuid())->pw_dir << "/.lanthing/" << name << ".pid";
     int pid_file = open(ss.str().c_str(), O_CREAT | O_RDWR, 0666);
     if (lockf(pid_file, F_TLOCK, 0) < 0) {
         no_other_process = false;

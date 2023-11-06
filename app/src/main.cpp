@@ -69,12 +69,11 @@ void terminateCallback(const std::string& last_word) {
 void initLogging() {
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
-    std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
+    std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
     std::string kPrefix = "app";
     std::filesystem::path log_dir;
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
-        log_dir /= "lanthing";
         log_dir /= "log";
         log_dir /= kPrefix;
     }

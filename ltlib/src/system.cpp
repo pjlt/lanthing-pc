@@ -28,14 +28,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(LT_WINDOWS)
+#if LT_WINDOWS
 #include <Windows.h>
 
 #include <Shlobj.h>
 #include <TlHelp32.h>
+#elif LT_LINUX
+#include <pwd.h>
+#include <unistd.h>
+#else
 #endif // LT_WINDOWS
 
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -151,7 +156,7 @@ std::string getProgramFullpath() {
     return utf16To8(path);
 }
 
-std::string getAppdataPath(bool is_service) {
+std::string getConfigPath(bool is_service) {
     static std::string appdata_path;
     if (!appdata_path.empty()) {
         return appdata_path;
@@ -173,6 +178,9 @@ std::string getAppdataPath(bool is_service) {
         CoTaskMemFree(pidl);
         GetShortPathNameW(szDocument, m_lpszDefaultDir, _MAX_PATH);
         appdata_path = utf16To8(std::wstring(m_lpszDefaultDir));
+        std::filesystem::path fs = appdata_path;
+        fs = fs / "lanthing";
+        appdata_path = fs.string();
         return true;
     };
 
@@ -245,17 +253,39 @@ DisplayOutputDesc getDisplayOutputDesc() {
 
 #elif defined(LT_LINUX)
 
-std::string getProgramFullpath() { return ""; }
+std::string getProgramFullpath() {
+    return "";
+}
 
-std::string getProgramPath() { return ""; }
+std::string getProgramPath() {
+    return "";
+}
 
-std::string getAppdataPath(bool is_service) { (void)is_service; return ""; }
+std::string getConfigPath(bool is_service) {
+    (void)is_service;
+    static std::string config_path;
+    if (!config_path.empty()) {
+        return config_path;
+    }
+    std::filesystem::path fs = getpwuid(getuid())->pw_dir;
+    fs = fs / ".lanthing";
+    config_path = fs.string();
+    return config_path;
+}
 
-bool isRunasLocalSystem() { return false; }
-bool isRunAsService() { return false; }
+bool isRunasLocalSystem() {
+    return false;
+}
+bool isRunAsService() {
+    return false;
+}
 
-int32_t getScreenWidth() { return -1; }
-int32_t getScreenHeight() { return -1; }
+int32_t getScreenWidth() {
+    return -1;
+}
+int32_t getScreenHeight() {
+    return -1;
+}
 
 DisplayOutputDesc getDisplayOutputDesc() {
     return {0, 0, 0};

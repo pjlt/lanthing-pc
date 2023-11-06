@@ -30,6 +30,8 @@
 
 #include "client_manager.h"
 
+#include <filesystem>
+
 #include <ltproto/client2app/client_status.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
@@ -82,7 +84,14 @@ bool ClientManager::init(ltlib::IOLoop* ioloop) {
     ltlib::Server::Params params{};
     params.stype = ltlib::StreamType::Pipe;
     params.ioloop = ioloop;
+#if LT_WINDOWS
     params.pipe_name = "\\\\?\\pipe\\lanthing_client_manager";
+#elif LT_LINUX
+    std::filesystem::path fs = ltlib::getConfigPath();
+    fs = fs / "pipe_lanthing_client_manager";
+    params.pipe_name = fs.string();
+#else
+#endif
     params.on_accepted = std::bind(&ClientManager::onPipeAccepted, this, std::placeholders::_1);
     params.on_closed = std::bind(&ClientManager::onPipeDisconnected, this, std::placeholders::_1);
     params.on_message = std::bind(&ClientManager::onPipeMessage, this, std::placeholders::_1,
@@ -165,7 +174,8 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     }
 
     sendMessage(ltproto::id(req), req);
-    LOGF(INFO, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") sent", peerDeviceID, request_id);
+    LOGF(INFO, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") sent",
+         peerDeviceID, request_id);
     tryRemoveSessionAfter10s(request_id);
 }
 

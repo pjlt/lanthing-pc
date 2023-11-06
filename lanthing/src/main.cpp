@@ -112,10 +112,9 @@ void initLogAndMinidump(Role role) {
 
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
-    std::string appdata_dir = ltlib::getAppdataPath(true);
+    std::string appdata_dir = ltlib::getConfigPath(true);
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
-        log_dir /= "lanthing";
         log_dir /= "log";
         log_dir /= prefix;
     }
@@ -202,7 +201,7 @@ int runAsService(std::map<std::string, std::string> options) {
     lt::svc::LanthingWinService svc;
     ltlib::ServiceApp app{&svc};
     app.run();
-#else // LT_RUN_AS_SERVICE
+#else  // LT_RUN_AS_SERVICE
     lt::svc::Service svc;
     if (!svc.init()) {
         return -1;
@@ -233,7 +232,7 @@ int runAsWorker(std::map<std::string, std::string> options) {
     else {
         return -1;
     }
-#else // LT_WINDOWS
+#else  // LT_WINDOWS
     printf("Unavailable 'runAsWorker' for current platform\n");
     return -1;
 #endif // LT_WINDOWS

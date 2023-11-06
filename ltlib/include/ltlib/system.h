@@ -38,7 +38,7 @@ std::string LT_API getProgramFullpath();
 
 std::string LT_API getProgramPath();
 
-std::string LT_API getAppdataPath(bool is_service);
+std::string LT_API getConfigPath(bool is_service = false);
 
 bool LT_API isRunasLocalSystem();
 bool LT_API isRunAsService();
