@@ -117,13 +117,22 @@ find_package(libuv REQUIRED PATHS third_party/prebuilt/libuv/${LT_THIRD_POSTFIX}
 find_package(SDL2 REQUIRED PATHS third_party/prebuilt/sdl/${LT_THIRD_POSTFIX})
 find_package(VPL REQUIRED PATHS third_party/prebuilt/onevpl/${LT_THIRD_POSTFIX})
 find_package(Opus REQUIRED PATHS third_party/prebuilt/opus/${LT_THIRD_POSTFIX})
+
 if (LT_WINDOWS)
     find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_THIRD_POSTFIX})
     add_subdirectory(third_party/wintoast)
-endif()
+endif(LT_WINDOWS)
 
+if (LT_LINUX)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLib REQUIRED IMPORTED_TARGET glib-2.0)
+pkg_check_modules(X11 REQUIRED IMPORTED_TARGET x11)
+pkg_check_modules(Va REQUIRED IMPORTED_TARGET libva)
+pkg_check_modules(Drm REQUIRED IMPORTED_TARGET libdrm)
+pkg_check_modules(Va-Drm REQUIRED IMPORTED_TARGET libva-drm)
+pkg_check_modules(GL REQUIRED IMPORTED_TARGET gl)
+pkg_check_modules(EGL REQUIRED IMPORTED_TARGET egl)
+endif(LT_LINUX)
 
 # 依赖于SDL
 add_subdirectory(third_party/imgui_builder)

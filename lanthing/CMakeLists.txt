@@ -240,7 +240,12 @@ if(LT_WINDOWS)
 elseif(LT_LINUX)
     set(PLATFORM_LIBS
         stdc++
-        X11
+        PkgConfig::X11
+        PkgConfig::Va
+        PkgConfig::Drm
+        PkgConfig::Va-Drm
+        PkgConfig::GL
+        PkgConfig::EGL
     )
 else()
     set(PLATFORM_LIBS)

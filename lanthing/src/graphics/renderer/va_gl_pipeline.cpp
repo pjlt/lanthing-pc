@@ -23,7 +23,14 @@
 namespace lt {
 
 VaGlPipeline::VaGlPipeline(const Params& params)
-    : sdl_window_{params.window} {}
+    : sdl_window_{params.window}
+    , video_width_{params.width}
+    , video_height_{params.height}
+    , align_{params.align} {}
+
+VaGlPipeline::~VaGlPipeline() {
+    // TODO:
+}
 
 bool VaGlPipeline::init() {
     if (!loadFuncs()) {
@@ -41,10 +48,13 @@ bool VaGlPipeline::init() {
     return true;
 }
 
-bool VaGlPipeline::bindTextures(const std::vector<void*>& textures) {}
+bool VaGlPipeline::bindTextures(const std::vector<void*>& textures) {
+    (void)textures;
+    return true;
+}
 
 VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
-    // frame是(uintptr_t)frame->data[3]
+    // frame是frame->data[3]
     VASurfaceID va_surface = static_cast<VASurfaceID>(frame);
     VADRMPRIMESurfaceDescriptor prime;
     VAStatus va_status = vaExportSurfaceHandle(
@@ -62,30 +72,30 @@ VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
     vaSyncSurface(va_display_, va_surface);
 
     EGLImage images[2] = {0};
-    for (int i = 0; i < 2; ++i) {
+    for (size_t i = 0; i < 2; ++i) {
         constexpr uint32_t formats[2] = {DRM_FORMAT_R8, DRM_FORMAT_GR88};
         if (prime.layers[i].drm_format != formats[i]) {
             LOG(ERR) << "prime.layers[i].drm_format: " << prime.layers[i].drm_format
                      << ", formats[i]: " << formats[i];
         }
         EGLint img_attr[] = {EGL_LINUX_DRM_FOURCC_EXT,
-                             formats[i],
+                             static_cast<EGLint>(formats[i]),
                              EGL_WIDTH,
-                             prime.width / (i + 1), // half size
+                             static_cast<EGLint>(prime.width / (i + 1)), // half size
                              EGL_HEIGHT,
-                             prime.height / (i + 1), // for chroma
+                             static_cast<EGLint>(prime.height / (i + 1)), // for chroma
                              EGL_DMA_BUF_PLANE0_FD_EXT,
-                             prime.objects[prime.layers[i].object_index[0]].fd,
+                             static_cast<EGLint>(prime.objects[prime.layers[i].object_index[0]].fd),
                              EGL_DMA_BUF_PLANE0_OFFSET_EXT,
-                             prime.layers[i].offset[0],
+                             static_cast<EGLint>(prime.layers[i].offset[0]),
                              EGL_DMA_BUF_PLANE0_PITCH_EXT,
-                             prime.layers[i].pitch[0],
+                             static_cast<EGLint>(prime.layers[i].pitch[0]),
                              EGL_NONE};
         images[i] =
             eglCreateImageKHR_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, img_attr);
         if (!images[i]) {
-            LOG(ERR) << "eglCreateImageKHR failed: " << i ? "chroma eglCreateImageKHR"
-                                                          : "luma eglCreateImageKHR";
+            LOG(ERR) << "eglCreateImageKHR failed: "
+                     << (i ? "chroma eglCreateImageKHR" : "luma eglCreateImageKHR");
             return RenderResult::Failed;
         }
         glActiveTexture(GL_TEXTURE0 + i);
@@ -116,17 +126,30 @@ VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
         glBindTexture(GL_TEXTURE_2D, 0);
         eglDestroyImageKHR_(egl_display_, images[i]);
     }
+    return RenderResult::Success2;
 }
 
-void VaGlPipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {}
+void VaGlPipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
+    (void)cursor_id;
+    (void)x;
+    (void)y;
+    (void)visible;
+}
 
-void VaGlPipeline::switchMouseMode(bool absolute) {}
+void VaGlPipeline::switchMouseMode(bool absolute) {
+    (void)absolute;
+}
 
 void VaGlPipeline::resetRenderTarget() {}
 
-bool VaGlPipeline::present() {}
+bool VaGlPipeline::present() {
+    return true;
+}
 
-bool VaGlPipeline::waitForPipeline(int64_t max_wait_ms) {}
+bool VaGlPipeline::waitForPipeline(int64_t max_wait_ms) {
+    (void)max_wait_ms;
+    return true;
+}
 
 void* VaGlPipeline::hwDevice() {
     return va_display_;
@@ -136,9 +159,13 @@ void* VaGlPipeline::hwContext() {
     return va_display_;
 }
 
-uint32_t VaGlPipeline::displayWidth() {}
+uint32_t VaGlPipeline::displayWidth() {
+    return window_width_;
+}
 
-uint32_t VaGlPipeline::displayHeight() {}
+uint32_t VaGlPipeline::displayHeight() {
+    return window_height_;
+}
 
 bool VaGlPipeline::loadFuncs() {
     eglCreateImageKHR_ =
@@ -171,6 +198,7 @@ bool VaGlPipeline::loadFuncs() {
         LOG(ERR) << "eglGetProcAddress(glBindVertexArray) failed";
         return false;
     }
+    return true;
 }
 
 bool VaGlPipeline::initVaDrm() {
@@ -204,6 +232,10 @@ bool VaGlPipeline::initEGL() {
         LOG(ERR) << "Only support X11, but we are using " << (int)info.subsystem;
         return false;
     }
+    int window_width, window_height;
+    SDL_GetWindowSize(sdl_window, &window_width, &window_height);
+    window_width_ = static_cast<uint32_t>(window_width);
+    window_height_ = static_cast<uint32_t>(window_height);
 
     // SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
     // SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
@@ -369,13 +401,15 @@ void main() {
     glGenTextures(2, textures_);
     for (int i = 0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, textures_[i]);
-        setup_texture();
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     glBindTexture(GL_TEXTURE_2D, 0);
-    resize_window(vp[2], vp[3], decoder_ctx);
 
-    float texcoord_x1 = (float)((double)decoder_ctx->width / (double)prime.width);
-    float texcoord_y1 = (float)((double)decoder_ctx->height / (double)prime.height);
+    float texcoord_x1 = (float)((double)video_width_ / (double)window_width_);
+    float texcoord_y1 = (float)((double)video_height_ / (double)window_height_);
     glUniform2f(glGetUniformLocation(prog, "uTexCoordScale"), texcoord_x1, texcoord_y1);
     return true;
 }
