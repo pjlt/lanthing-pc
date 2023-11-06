@@ -68,18 +68,18 @@ private:
     bool tls_init_context();
     bool tls_init_engine();
     int tls_reset_engine();
-    int tls_write(const char* data, uint32_t data_len, char* out, uint32_t* out_bytes,
+    int tls_write(const char* data, uint32_t data_len, char* out, decltype(Buffer::len)* out_bytes,
                   uint32_t maxout);
-    int tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out, uint32_t* out_bytes,
-                 uint32_t maxout);
+    int tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out,
+                 decltype(Buffer::len)* out_bytes, uint32_t maxout);
     Params make_uv_params(const Params& params);
     bool on_uv_read(const Buffer&);
     void on_uv_closed();
     void on_uv_reconnecting();
     bool on_uv_connected();
 
-    HandshakeState continue_handshake(char* in, uint32_t in_bytes, char* out, uint32_t* out_bytes,
-                                      uint32_t maxout);
+    HandshakeState continue_handshake(char* in, uint32_t in_bytes, char* out,
+                                      decltype(Buffer::len)* out_bytes, uint32_t maxout);
     static int mbed_ssl_send(void* ctx, const uint8_t* buf, size_t len);
     static int mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len);
 

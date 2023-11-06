@@ -160,7 +160,7 @@ int MbedtlsCTransport::tls_reset_engine() {
 }
 
 int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
-                                 uint32_t* out_bytes, uint32_t maxout) {
+                                 decltype(Buffer::len)* out_bytes, uint32_t maxout) {
     size_t wrote = 0;
     while (data_len > wrote) {
         int rc = mbedtls_ssl_write(&ssl_, (const unsigned char*)(data + wrote), data_len - wrote);
@@ -175,7 +175,7 @@ int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
 }
 
 int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out,
-                                uint32_t* out_bytes, uint32_t maxout) {
+                                decltype(Buffer::len)* out_bytes, uint32_t maxout) {
     if (ssl_in_len > 0 && ssl_in != NULL) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(ssl_in), ssl_in_len);
     }
@@ -344,10 +344,9 @@ bool MbedtlsCTransport::on_uv_connected() {
     return true;
 }
 
-MbedtlsCTransport::HandshakeState MbedtlsCTransport::continue_handshake(char* in, uint32_t in_bytes,
-                                                                        char* out,
-                                                                        uint32_t* out_bytes,
-                                                                        uint32_t maxout) {
+MbedtlsCTransport::HandshakeState
+MbedtlsCTransport::continue_handshake(char* in, uint32_t in_bytes, char* out,
+                                      decltype(Buffer::len)* out_bytes, uint32_t maxout) {
     if (in_bytes > 0) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(in), in_bytes);
     }
@@ -389,7 +388,7 @@ int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len) {
 bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count,
                              const std::function<void()>& callback) {
     int tls_rc = 0;
-    uint32_t out_size;
+    size_t out_size;
     for (uint32_t i = 0; i < buff_count; i++) {
         tls_rc = tls_write(buff[i].base, buff[i].len, nullptr, &out_size, 0);
         if (tls_rc < 0) {
