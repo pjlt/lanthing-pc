@@ -34,6 +34,7 @@
 #include <Shlobj.h>
 #include <TlHelp32.h>
 #elif LT_LINUX
+#include <X11/Xlib.h>
 #include <pwd.h>
 #include <unistd.h>
 #else
@@ -303,7 +304,18 @@ int32_t getScreenHeight() {
 }
 
 DisplayOutputDesc getDisplayOutputDesc() {
-    return {0, 0, 0};
+    Display* d = XOpenDisplay(nullptr);
+    if (d == nullptr) {
+        return {0, 0, 0};
+    }
+    Screen* s = DefaultScreenOfDisplay(d);
+    if (s == nullptr) {
+        return {0, 0, 0};
+    }
+    uint32_t width = s->width;
+    uint32_t height = s->height;
+    XCloseDisplay(d);
+    return {width, height, 60};
 }
 
 #endif // #elif defined(LT_LINUX)

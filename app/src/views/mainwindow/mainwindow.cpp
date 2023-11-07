@@ -158,7 +158,14 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
+#if LT_WINDOWS
     setServiceStatusInUIThread(lt::GUI::ServiceStatus::Down);
+#else  // LT_WINDOWS
+    QSizePolicy sp_retain = ui->labelControlledInfo->sizePolicy();
+    sp_retain.setRetainSizeWhenHidden(true);
+    ui->labelControlledInfo->setSizePolicy(sp_retain);
+    ui->labelControlledInfo->hide();
+#endif // LT_WINDOWS
 
     // 客户端表格
     addOrUpdateTrustedDevices();

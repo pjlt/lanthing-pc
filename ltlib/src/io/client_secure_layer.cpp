@@ -388,7 +388,7 @@ int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len) {
 bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count,
                              const std::function<void()>& callback) {
     int tls_rc = 0;
-    uint32_t out_size;
+    decltype(Buffer::len) out_size;
     for (uint32_t i = 0; i < buff_count; i++) {
         tls_rc = tls_write(buff[i].base, buff[i].len, nullptr, &out_size, 0);
         if (tls_rc < 0) {

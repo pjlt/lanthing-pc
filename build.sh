@@ -7,7 +7,7 @@ exit_if_fail() {
 }
 
 cmake_configure() {
-    cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type -DCMAKE_VERBOSE_MAKEFILE=ON
+    cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
 }
 
 cmake_build() {

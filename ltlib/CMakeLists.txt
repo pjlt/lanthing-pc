@@ -81,6 +81,14 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+if(LT_WINDOWS)
+set(PLATFORM_LIBS)
+elseif(LT_LINUX)
+set(PLATFORM_LIBS PkgConfig::X11)
+else()
+set(PLATFORM_LIBS)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ${PLAT_LIBS}
@@ -94,6 +102,7 @@ target_link_libraries(${PROJECT_NAME}
         MbedTLS::mbedcrypto
         MbedTLS::mbedx509
         ltproto
+        ${PLATFORM_LIBS}
 )
 
 target_compile_definitions(${PROJECT_NAME}
