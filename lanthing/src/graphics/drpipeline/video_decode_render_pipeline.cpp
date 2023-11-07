@@ -189,7 +189,13 @@ bool VDRPipeline::init() {
     decode_params.codec_type = codec_type_;
     decode_params.hw_device = video_renderer_->hwDevice();
     decode_params.hw_context = video_renderer_->hwContext();
+#if LT_WINDOWS
     decode_params.va_type = VaType::D3D11;
+#elif LT_LINUX
+    decode_params.va_type = VaType::VAAPI;
+#else
+#error unknown platform
+#endif
     decode_params.width = width_;
     decode_params.height = height_;
     video_decoder_ = VideoDecoder::create(decode_params);

@@ -97,8 +97,8 @@ WidgetsManager::WidgetsManager(const Params& params)
     auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(params.ctx);
     d3d11_dev->AddRef();
     d3d11_ctx->AddRef();
-#endif // LT_WINDOWS
     initImgui();
+#endif // LT_WINDOWS
 }
 
 void WidgetsManager::initImgui() {
@@ -124,8 +124,8 @@ void WidgetsManager::uninitImgui() {
 }
 
 WidgetsManager::~WidgetsManager() {
-    uninitImgui();
 #if defined(LT_WINDOWS)
+    uninitImgui();
     auto d3d11_dev = reinterpret_cast<ID3D11Device*>(dev_);
     auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(ctx_);
     d3d11_dev->Release();
@@ -134,6 +134,7 @@ WidgetsManager::~WidgetsManager() {
 }
 
 void WidgetsManager::render() {
+#if LT_WINDOWS
     imguiImplNewFrame();
     auto& io = ImGui::GetIO();
     if (io.DeltaTime <= 0) {
@@ -149,11 +150,14 @@ void WidgetsManager::render() {
     }
     ImGui::Render();
     imguiImplRender();
+#endif
 }
 
 void WidgetsManager::reset() {
+#if LT_WINDOWS
     uninitImgui();
     initImgui();
+#endif
 }
 
 void WidgetsManager::enableStatus() {

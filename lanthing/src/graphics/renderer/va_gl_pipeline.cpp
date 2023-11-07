@@ -321,7 +321,7 @@ bool VaGlPipeline::initOpenGL() {
     const char* kVertexShader = R"(
 #version 130
 const vec2 coords[4] = vec2[]( vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.) );
-uniform vec2 uTexCoordScale
+uniform vec2 uTexCoordScale;
 out vec2 vTexCoord;
 void main() {
     vec2 c = coords[gl_VertexID];
