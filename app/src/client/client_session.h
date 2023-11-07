@@ -75,7 +75,12 @@ private:
     Params params_;
     int64_t process_id_;
     void* handle_;
+#if LT_WINDOWS
     std::unique_ptr<ltlib::BlockingThread> thread_;
+#elif LT_LINUX
+    std::thread thread_;
+#else
+#endif
     bool stoped_ = true;
 };
 
