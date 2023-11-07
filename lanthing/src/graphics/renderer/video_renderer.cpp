@@ -49,7 +49,7 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     SDL_GetWindowWMInfo(sdl_window, &info);
 #if LT_WINDOWS
     D3D11Pipeline::Params d3d11_params{};
-    d3d11_params.hwnd = info.info.win.window;
+    d3d11_params.window = info.info.win.window;
     d3d11_params.luid = params.device;
     d3d11_params.widht = params.video_width;
     d3d11_params.height = params.video_height;

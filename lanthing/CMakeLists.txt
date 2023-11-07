@@ -246,6 +246,7 @@ elseif(LT_LINUX)
         PkgConfig::Va-Drm
         PkgConfig::GL
         PkgConfig::EGL
+        PkgConfig::GLib
     )
 else()
     set(PLATFORM_LIBS)
@@ -269,7 +270,6 @@ target_link_libraries(${PROJECT_NAME}
     transport_api
     transport
     #fonts
-    PkgConfig::GLib
     ${PLATFORM_LIBS}
 )
 
@@ -297,7 +297,9 @@ install(CODE [[
     endforeach()
 ]])
 
-#deploy_dlls(${PROJECT_NAME})
+if (LT_WINDOWS)
+deploy_dlls(${PROJECT_NAME})
+endif(LT_WINDOWS)
 
 # 设置VS调试路径
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

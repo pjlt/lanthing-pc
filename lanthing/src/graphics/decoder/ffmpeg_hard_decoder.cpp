@@ -41,13 +41,13 @@ WARNING_DISABLE(4244)
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/hwcontext.h>
+} // extern "C"
 #if LT_WINDOWS
 #include <libavutil/hwcontext_d3d11va.h>
 #elif LT_LINUX
 #include <libavutil/hwcontext_vaapi.h>
 #else
 #endif
-} // extern "C"
 
 #include <ltlib/logging.h>
 

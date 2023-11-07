@@ -177,8 +177,7 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
 namespace lt {
 
 D3D11Pipeline::D3D11Pipeline(const Params& params)
-    : hwnd_{params.hwnd}
-    , luid_{params.luid}
+    : luid_{params.luid}
     , video_width_{params.widht}
     , video_height_{params.height}
     , align_{params.align} {

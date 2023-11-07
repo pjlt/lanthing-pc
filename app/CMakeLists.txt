@@ -3,8 +3,8 @@ project(app)
 
 set(CMAKE_AUTORCC ON)
 
-#include (deploy_dlls)
-#include (deploy_qt6)
+include (deploy_dlls)
+include (deploy_qt6)
 
 list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
 
@@ -99,8 +99,10 @@ target_link_libraries(${PROJECT_NAME}
         ${PLAT_LIBS}
 )
 
-#deploy_dlls(${PROJECT_NAME})
-#deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
+if (LT_WINDOWS)
+deploy_dlls(${PROJECT_NAME})
+deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
+endif(LT_WINDOWS)
 
 install(TARGETS ${PROJECT_NAME})
 
