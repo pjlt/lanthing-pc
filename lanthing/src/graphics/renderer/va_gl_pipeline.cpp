@@ -26,7 +26,8 @@ VaGlPipeline::VaGlPipeline(const Params& params)
     : sdl_window_{params.window}
     , video_width_{params.width}
     , video_height_{params.height}
-    , align_{params.align} {}
+    , align_{params.align}
+    , card_{params.card} {}
 
 VaGlPipeline::~VaGlPipeline() {
     // TODO:
@@ -202,15 +203,15 @@ bool VaGlPipeline::loadFuncs() {
 }
 
 bool VaGlPipeline::initVaDrm() {
-    const char* drm_node = "/dev/dri/renderD128";
-    int drm_fd = ::open(drm_node, O_RDWR);
+    std::string drm_node = "/dev/dri/card" + std::to_string(card_);
+    int drm_fd = ::open(drm_node.c_str(), O_RDWR);
     if (drm_fd < 0) {
-        LOGF(ERR, "Open drm node '%s' failed", drm_node);
+        LOGF(ERR, "Open drm node '%s' failed", drm_node.c_str());
         return false;
     }
     VADisplay va_display = vaGetDisplayDRM(drm_fd);
     if (!va_display) {
-        LOGF(ERR, "vaGetDisplayDRM '%s' failed", drm_node);
+        LOGF(ERR, "vaGetDisplayDRM '%s' failed", drm_node.c_str());
         return false;
     }
     int major, minor;

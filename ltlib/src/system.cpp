@@ -39,7 +39,9 @@
 #else
 #endif // LT_WINDOWS
 
+#include <climits>
 #include <cstring>
+
 #include <filesystem>
 #include <functional>
 #include <string>
@@ -254,10 +256,23 @@ DisplayOutputDesc getDisplayOutputDesc() {
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
-    return "";
+    char result[PATH_MAX];
+    auto count = readlink("/proc/self/exe", result, PATH_MAX);
+    if (count <= 0) {
+        return "";
+    }
+    return std::string(result, result + count);
 }
 
 std::string getProgramPath() {
+    std::string fullpath = getProgramFullpath();
+    if (fullpath.empty()) {
+        return "";
+    }
+    auto pos = fullpath.rfind('/');
+    if (pos != std::string::npos) {
+        return fullpath.substr(0, pos);
+    }
     return "";
 }
 

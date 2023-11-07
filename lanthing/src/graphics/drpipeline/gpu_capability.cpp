@@ -133,7 +133,7 @@ bool GpuInfo::init() {
 }
 #else // LT_WINDOWS
 bool GpuInfo::init() {
-    return false;
+    return true;
 }
 #endif
 

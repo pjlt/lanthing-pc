@@ -78,7 +78,7 @@ private:
 #if LT_WINDOWS
     std::unique_ptr<ltlib::BlockingThread> thread_;
 #elif LT_LINUX
-    std::thread thread_;
+    std::unique_ptr<std::thread> thread_;
 #else
 #endif
     bool stoped_ = true;

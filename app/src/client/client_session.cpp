@@ -181,7 +181,14 @@ void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
 
 #else // LT_WINDOWS
 
-ClientSession::~ClientSession() {}
+ClientSession::~ClientSession() {
+    if (process_id_ != 0) {
+        kill(static_cast<pid_t>(process_id_), SIGTERM);
+    }
+    if (thread_ != nullptr) {
+        thread_->join();
+    }
+}
 
 bool ClientSession::start() {
     (void)to_string(lt::VideoCodecType::H264);
@@ -249,7 +256,7 @@ bool ClientSession::start() {
         //         promise.set_value();
         //         mainLoop(i_am_alive);
         //     });
-        thread_ = std::thread([&promise, this]() {
+        thread_ = std::make_unique<std::thread>([&promise, this]() {
             promise.set_value();
             mainLoop(nullptr);
         });

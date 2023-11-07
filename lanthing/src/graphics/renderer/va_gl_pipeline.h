@@ -47,6 +47,7 @@ class VaGlPipeline : public VideoRenderer {
 public:
     struct Params {
         SDL_Window* window;
+        uint32_t card;
         uint32_t width;
         uint32_t height;
         uint32_t align;
@@ -79,6 +80,7 @@ private:
     uint32_t video_width_;
     uint32_t video_height_;
     uint32_t align_;
+    uint32_t card_;
     uint32_t window_width_;
     uint32_t window_height_;
     VADisplay va_display_ = nullptr;

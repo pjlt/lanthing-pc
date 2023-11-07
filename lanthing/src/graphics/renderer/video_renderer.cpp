@@ -61,7 +61,11 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     return renderer;
 #elif LT_LINUX
     VaGlPipeline::Params va_gl_params{};
+    va_gl_params.card = static_cast<uint32_t>(params.device);
     va_gl_params.window = sdl_window;
+    va_gl_params.width = params.video_width;
+    va_gl_params.height = params.video_height;
+    va_gl_params.align = params.align;
     auto renderer = std::make_unique<VaGlPipeline>(va_gl_params);
     if (!renderer->init()) {
         return nullptr;

@@ -157,6 +157,8 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
+    VideoRenderer::Params render_params{};
+#if LT_WINDOWS
     if (!gpu_info_.init()) {
         return false;
     }
@@ -169,9 +171,12 @@ bool VDRPipeline::init() {
         return false;
     }
     uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
-    VideoRenderer::Params render_params{};
-    render_params.window = window_;
     render_params.device = target_adapter;
+#elif LT_LINUX
+    render_params.device = 0;
+#else
+#endif
+    render_params.window = window_;
     render_params.video_width = width_;
     render_params.video_height = height_;
     // FIXME: align由解码器提供
@@ -459,9 +464,9 @@ std::unique_ptr<VideoDecodeRenderPipeline> VideoDecodeRenderPipeline::create(con
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<VideoDecodeRenderPipeline> decoder{new VideoDecodeRenderPipeline};
-    decoder->impl_ = std::move(impl);
-    return decoder;
+    std::unique_ptr<VideoDecodeRenderPipeline> pipeline{new VideoDecodeRenderPipeline};
+    pipeline->impl_ = std::move(impl);
+    return pipeline;
 }
 
 VideoDecodeRenderPipeline::Action VideoDecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
