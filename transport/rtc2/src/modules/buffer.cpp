@@ -39,8 +39,7 @@ WARNING_DISABLE(6297)
 
 namespace rtc2 {
 
-// 放匿名空间里，似乎被检测到不会被外部编译单元引用，直接优化掉了
-// 放到rtc2下就没事
+// 在GCC下似乎不管用...
 void __bco_magic_func() {
     uint8_t u8;
     uint16_t u16;
@@ -68,36 +67,6 @@ void __bco_magic_func() {
     buf.write_little_endian_at(0, u32);
     buf.write_little_endian_at(0, u64);
 }
-
-namespace {
-
-template <typename T> inline void write_big_endian(uint8_t* buff, const T& value) {
-    for (size_t i = 0; i < sizeof(value); i++) {
-        buff[i] = static_cast<uint8_t>(value >> ((sizeof(value) - 1 - i) * 8));
-    }
-}
-
-template <typename T> inline void read_big_endian(const uint8_t* buff, T& value) {
-    value = 0;
-    for (size_t i = 0; i < sizeof(value); i++) {
-        value |= buff[i] << ((sizeof(value) - i - 1) * 8);
-    }
-}
-
-template <typename T> inline void write_little_endian(uint8_t* buff, const T& value) {
-    for (size_t i = 0; i < sizeof(value); i++) {
-        buff[i] = static_cast<uint8_t>(value >> (i * 8));
-    }
-}
-
-template <typename T> inline void read_little_endian(const uint8_t* buff, T& value) {
-    value = 0;
-    for (size_t i = 0; i < sizeof(value); i++) {
-        value |= buff[i] << (i * 8);
-    }
-}
-
-} // namespace
 
 namespace detail {
 
@@ -271,30 +240,15 @@ std::vector<std::span<const uint8_t>> BufferBase::spans_const(size_t start, size
 
 // 以下几个函数由使用者保证正确调用，不再做越界判断
 
-template <typename T> inline bool BufferBase::read_big_endian_at(size_t index, T& value) {
-    read_big_endian(&operator[](index), value);
-    return true;
-}
-
-template <typename T> bool BufferBase::write_big_endian_at(size_t index, T value) {
-    write_big_endian(&operator[](index), value);
-    return true;
-}
-
-template <typename T> bool BufferBase::read_little_endian_at(size_t index, T& value) {
-    read_little_endian(&operator[](index), value);
-    return true;
-}
-
-template <typename T> bool BufferBase::write_little_endian_at(size_t index, T value) {
-    write_little_endian(&operator[](index), value);
-    return true;
-}
-
 } // namespace detail
 
 Buffer::Buffer()
-    : base_(new detail::BufferBase) {}
+    : base_(new detail::BufferBase) {
+    auto num = base_.get();
+    if (num == nullptr) {
+        __bco_magic_func();
+    }
+}
 
 Buffer::Buffer(size_t size)
     : base_(new detail::BufferBase{size}) {}
@@ -375,22 +329,6 @@ std::vector<std::span<uint8_t>> Buffer::spans() {
 
 const std::vector<std::span<const uint8_t>> Buffer::spans() const {
     return base_->spans_const(start_, end_);
-}
-
-template <typename T> bool rtc2::Buffer::read_big_endian_at(size_t index, T& value) {
-    return base_->read_big_endian_at(index + start_, value);
-}
-
-template <typename T> bool rtc2::Buffer::write_big_endian_at(size_t index, T value) {
-    return base_->write_big_endian_at(index + start_, value);
-}
-
-template <typename T> bool rtc2::Buffer::read_little_endian_at(size_t index, T& value) {
-    return base_->read_little_endian_at(index + start_, value);
-}
-
-template <typename T> bool rtc2::Buffer::write_little_endian_at(size_t index, T value) {
-    return base_->write_little_endian_at(index + start_, value);
 }
 
 WARNING_ENABLE(6297)

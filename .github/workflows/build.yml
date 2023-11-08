@@ -41,10 +41,6 @@ jobs:
           sudo apt-get clean
           sudo apt-get update
           sudo apt-get -y install gcc-10 g++-10 pkg-config libglib2.0-dev libx11-dev libdrm-dev libva-dev libva-drm2 libgl-dev libgles-dev libgles1 libgles2 libegl-dev
-          alias gcc='gcc-10'
-          alias g++='g++-10'
-          export CC=`which gcc-10`
-          export CXX=`which gcc-10`
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
@@ -56,4 +52,9 @@ jobs:
       - name: Fetch prebuilt
         run: bash build.sh prebuilt fetch
       - name: Build lanthing-pc
-        run: bash build.sh build Release
+        run: |
+          alias gcc='gcc-10'
+          alias g++='g++-10'
+          export CC=`which gcc-10`
+          export CXX=`which gcc-10`
+          bash build.sh build Release

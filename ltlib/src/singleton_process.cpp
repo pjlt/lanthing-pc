@@ -32,9 +32,9 @@
 #include <Windows.h>
 #elif defined LT_LINUX
 #include <errno.h>
+#include <pwd.h>
 #include <sys/file.h>
 #include <unistd.h>
-#include <pwd.h>
 #endif
 
 #include <cstring>
@@ -80,7 +80,8 @@ bool makeSingletonProcess(const std::string& name) {
     }
     char str[64] = {0};
     snprintf(str, 64, "%d", getpid());
-    write(pid_file, str, strlen(str));
+    auto ret = write(pid_file, str, strlen(str));
+    (void)ret; //???
     return true;
 }
 

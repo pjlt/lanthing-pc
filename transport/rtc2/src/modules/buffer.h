@@ -39,6 +39,33 @@ namespace rtc2 {
 
 namespace detail {
 
+// GCC不内联链接不过，强迫用户在头文件实现
+template <typename T> inline void write_big_endian(uint8_t* buff, const T& value) {
+    for (size_t i = 0; i < sizeof(value); i++) {
+        buff[i] = static_cast<uint8_t>(value >> ((sizeof(value) - 1 - i) * 8));
+    }
+}
+
+template <typename T> inline void read_big_endian(const uint8_t* buff, T& value) {
+    value = 0;
+    for (size_t i = 0; i < sizeof(value); i++) {
+        value |= buff[i] << ((sizeof(value) - i - 1) * 8);
+    }
+}
+
+template <typename T> inline void write_little_endian(uint8_t* buff, const T& value) {
+    for (size_t i = 0; i < sizeof(value); i++) {
+        buff[i] = static_cast<uint8_t>(value >> (i * 8));
+    }
+}
+
+template <typename T> inline void read_little_endian(const uint8_t* buff, T& value) {
+    value = 0;
+    for (size_t i = 0; i < sizeof(value); i++) {
+        value |= buff[i] << (i * 8);
+    }
+}
+
 class BufferBase {
 
 public:
@@ -61,13 +88,25 @@ public:
     std::vector<std::span<uint8_t>> spans(size_t start, size_t end);
     std::vector<std::span<const uint8_t>> spans_const(size_t start, size_t end) const;
 
-    template <typename T> bool read_big_endian_at(size_t index, T& value);
+    template <typename T> inline bool read_big_endian_at(size_t index, T& value) {
+        read_big_endian(&operator[](index), value);
+        return true;
+    }
 
-    template <typename T> bool write_big_endian_at(size_t index, T value);
+    template <typename T> bool write_big_endian_at(size_t index, T value) {
+        write_big_endian(&operator[](index), value);
+        return true;
+    }
 
-    template <typename T> bool read_little_endian_at(size_t index, T& value);
+    template <typename T> bool read_little_endian_at(size_t index, T& value) {
+        read_little_endian(&operator[](index), value);
+        return true;
+    }
 
-    template <typename T> bool write_little_endian_at(size_t index, T value);
+    template <typename T> bool write_little_endian_at(size_t index, T value) {
+        write_little_endian(&operator[](index), value);
+        return true;
+    }
 
 private:
     std::list<std::vector<uint8_t>> buffer_;
@@ -94,13 +133,21 @@ public:
     std::vector<std::span<uint8_t>> spans();
     const std::vector<std::span<const uint8_t>> spans() const;
 
-    template <typename T> bool read_big_endian_at(size_t index, T& value);
+    template <typename T> bool read_big_endian_at(size_t index, T& value) {
+        return base_->read_big_endian_at(index + start_, value);
+    }
 
-    template <typename T> bool write_big_endian_at(size_t index, T value);
+    template <typename T> bool write_big_endian_at(size_t index, T value) {
+        return base_->write_big_endian_at(index + start_, value);
+    }
 
-    template <typename T> bool read_little_endian_at(size_t index, T& value);
+    template <typename T> bool read_little_endian_at(size_t index, T& value) {
+        return base_->read_little_endian_at(index + start_, value);
+    }
 
-    template <typename T> bool write_little_endian_at(size_t index, T value);
+    template <typename T> bool write_little_endian_at(size_t index, T value) {
+        return base_->write_little_endian_at(index + start_, value);
+    }
 
 private:
     Buffer(size_t start, size_t end, std::shared_ptr<detail::BufferBase> base);
