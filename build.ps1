@@ -36,11 +36,11 @@ function check_build_type() {
 }
 
 function rtc_fetch() {
-    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.5.1/rtc.zip"
-    New-Item -ItemType Directory -ErrorAction SilentlyContinue transport/rtc
+    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.5.2/rtc.win.zip"
+    New-Item -ItemType Directory -ErrorAction SilentlyContinue transport/rtc/win
     echo "Fetch $RtcUri"
-    Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.zip
-    Expand-Archive ./third_party/prebuilt/rtc.zip -DestinationPath ./transport/rtc
+    Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.win.zip
+    Expand-Archive ./third_party/prebuilt/rtc.win.zip -DestinationPath ./transport/rtc/win
 }
 
 class BuiltLib {
@@ -55,15 +55,15 @@ class BuiltLib {
 
 function prebuilt_fetch() {
     $libs = @(
-        [BuiltLib]::new("mbedtls", "https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-2/mbedtls.win.v3.2.1-2.zip"),
-        [BuiltLib]::new("sdl", "https://github.com/numbaa/sdl-build/releases/download/v2.28.4-2/sdl.win.v2.28.4-2.zip"),
+        [BuiltLib]::new("mbedtls", "https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-3/mbedtls.win.v3.2.1-3.zip"),
+        [BuiltLib]::new("sdl", "https://github.com/numbaa/sdl-build/releases/download/v2.28.4-5/sdl.win.v2.28.4-5.zip"),
         [BuiltLib]::new("vigemclient", "https://github.com/numbaa/vigemclient-build/releases/download/v1/vigemclient.zip"),
         [BuiltLib]::new("libuv", "https://github.com/numbaa/libuv-build/releases/download/v1.44.1-3/libuv.win.v1.44.1-3.zip"),
         [BuiltLib]::new("onevpl", "https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-2/onevpl.win.v2023.3.1-2.zip"),
         [BuiltLib]::new("opus", "https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.win.v1.4-2.zip"),
         [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-4/g3log.win.v2.3-4.zip"),
         [BuiltLib]::new("googletest", "https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.win.v1.13.0-2.zip"),
-        [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-4/ffmpeg.win.v5.1.3-4.zip"),
+        [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-6/ffmpeg.win.v5.1.3-6.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.win.v3.24.3-2.zip")
         [BuiltLib]::new("sqlite", "https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.win.v3.43.1-6.zip")
     )

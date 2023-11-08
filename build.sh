@@ -33,7 +33,7 @@ check_build_type() {
 }
 
 rtc_fetch() {
-    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.5.1/rtc.zip"
+    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.5.2/rtc.linux.tar.gz"
     mkdir -p ./transport/rtc/linux
     echo "Fetch $rtc_url"
     wget $rtc_url -O ./third_party/prebuilt/rtc.linux.tar.gz
@@ -44,13 +44,13 @@ rtc_fetch() {
 prebuilt_fetch() {
     libs=(
         "mbedtls https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-3/mbedtls.linux.v3.2.1-3.tar.gz"
-        "sdl https://github.com/numbaa/sdl-build/releases/download/v2.28.4-2/sdl.linux.v2.28.4-2.tar.gz"
+        "sdl https://github.com/numbaa/sdl-build/releases/download/v2.28.4-5/sdl.linux.v2.28.4-5.tar.gz"
         "libuv https://github.com/numbaa/libuv-build/releases/download/v1.44.1-3/libuv.linux.v1.44.1-3.tar.gz"
         "onevpl https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-2/onevpl.linux.v2023.3.1-2.tar.gz"
         "opus https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.linux.v1.4-2.tar.gz"
         "g3log https://github.com/numbaa/g3log-build/releases/download/v2.3-4/g3log.linux.v2.3-4.tar.gz"
         "googletest https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.linux.v1.13.0-2.tar.gz"
-        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-4/ffmpeg.linux.v5.1.3-4.tar.gz"
+        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-6/ffmpeg.linux.v5.1.3-6.tar.gz"
         "protobuf https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.linux.v3.24.3-2.tar.gz"
         "sqlite https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.linux.v3.43.1-6.tar.gz"
     )
