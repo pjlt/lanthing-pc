@@ -78,6 +78,7 @@ if (LT_WINDOWS)
     set(PLAT_LIBS wintoastlib)
 elseif(LT_LINUX)
     set(PLAT_LIBS
+        m
         stdc++
         X11
     )
