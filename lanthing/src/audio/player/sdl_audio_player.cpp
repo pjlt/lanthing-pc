@@ -42,17 +42,14 @@ SdlAudioPlayer::SdlAudioPlayer(const Params& params)
     : AudioPlayer{params} {}
 
 SdlAudioPlayer::~SdlAudioPlayer() {
-#if LT_WINDOWS
     if (device_id_ != std::numeric_limits<uint32_t>::max()) {
         SDL_PauseAudioDevice(device_id_, 1);
         SDL_CloseAudioDevice(device_id_);
         device_id_ = std::numeric_limits<uint32_t>::max();
     }
-#endif // LT_WINDOWS
 }
 
 bool SdlAudioPlayer::initPlatform() {
-#if LT_WINDOWS
     SDL_AudioSpec desired{};
     SDL_AudioSpec obtained{};
     desired.freq = framesPerSec();
@@ -67,23 +64,16 @@ bool SdlAudioPlayer::initPlatform() {
     }
     SDL_PauseAudioDevice(device_id, 0);
     device_id_ = device_id;
-#endif // LT_WINDOWS
-    // Linux下自己编译的SDL缺东西，暂时屏蔽
     return true;
 }
 
 bool SdlAudioPlayer::play(const void* data, uint32_t size) {
-#if LT_WINDOWS
     int ret = SDL_QueueAudio(device_id_, data, size);
     if (ret != 0) {
         // 这个错误太多了，注释掉
         // LOG(WARNING) << "SDL_QueueAudio faield:" << SDL_GetError();
         return false;
     }
-#endif // LT_WINDOWS
-    // Linux下自己编译的SDL缺东西，暂时屏蔽
-    (void)data;
-    (void)size;
     return true;
 }
 
