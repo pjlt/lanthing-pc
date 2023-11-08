@@ -1,13 +1,13 @@
 # Lanthing
 
-[![win-build](https://github.com/pjlt/lanthing-pc/actions/workflows/win-build.yml/badge.svg)](https://github.com/pjlt/lanthing-pc/actions/workflows/win-build.yml)
+[![build](https://github.com/pjlt/lanthing-pc/actions/workflows/build.yml/badge.svg)](https://github.com/pjlt/lanthing-pc/actions/workflows/build.yml)
 
 Lanthing是一款开源的串流/远程控制工具。除了主控端和被控端，它还包含完整的[服务端](https://github.com/pjlt/lanthing-svr)、[中继服务器](https://github.com/pjlt/relay)。
 
 当前支持下列系统：
 
 * Windows 10 或以上
-* Linux (alpha阶段，仅支持主控，当前只在ubuntu20.04+x11+vaapi+drm+egl+opengl3.3+amd平台测试过)
+* Linux (仅支持主控，alpha阶段，仅在少数平台测试过)
 
 安卓端在早期开发中。
 
