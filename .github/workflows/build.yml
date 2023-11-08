@@ -56,5 +56,5 @@ jobs:
           alias gcc='gcc-10'
           alias g++='g++-10'
           export CC=`which gcc-10`
-          export CXX=`which gcc-10`
+          export CXX=`which g++-10`
           bash build.sh build Release
