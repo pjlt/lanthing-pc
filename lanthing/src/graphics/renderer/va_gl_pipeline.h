@@ -74,6 +74,7 @@ private:
     bool initVaDrm();
     bool initEGL();
     bool initOpenGL();
+    void resizeWindow(int screen_width, int screen_height);
 
 private:
     SDL_Window* sdl_window_ = nullptr;
@@ -83,7 +84,9 @@ private:
     uint32_t card_;
     uint32_t window_width_;
     uint32_t window_height_;
+    GLuint shader_ = 0;
     VADisplay va_display_ = nullptr;
+    EGLContext egl_context_ = nullptr;
     EGLDisplay egl_display_ = nullptr;
     EGLSurface egl_surface_ = nullptr;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_ = nullptr;
