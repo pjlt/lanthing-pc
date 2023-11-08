@@ -85,6 +85,7 @@ private:
     uint32_t window_width_;
     uint32_t window_height_;
     GLuint shader_ = 0;
+    int drm_fd_ = -1;
     VADisplay va_display_ = nullptr;
     EGLContext egl_context_ = nullptr;
     EGLDisplay egl_display_ = nullptr;

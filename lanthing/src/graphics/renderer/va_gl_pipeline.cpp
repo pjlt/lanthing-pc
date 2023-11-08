@@ -20,6 +20,13 @@
 
 #include <ltlib/logging.h>
 
+// credit
+// https://gist.github.com/kajott/d1b29c613be30893c855621edd1f212e
+
+// TODO: 1. 回收资源 2.整理OpenGL渲染管线 3.vsync相关问题.
+
+#define _ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
+
 namespace {
 struct AutoGuard {
     AutoGuard(const std::function<void()>& func)
@@ -45,7 +52,22 @@ VaGlPipeline::VaGlPipeline(const Params& params)
     , card_{params.card} {}
 
 VaGlPipeline::~VaGlPipeline() {
-    // TODO:
+    if (egl_display_) {
+        eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        if (egl_context_) {
+            eglDestroyContext(egl_display_, egl_context_);
+        }
+        if (egl_surface_) {
+            eglDestroySurface(egl_display_, egl_surface_);
+        }
+        eglTerminate(egl_display_);
+    }
+    if (va_display_) {
+        vaTerminate(va_display_);
+    }
+    if (drm_fd_ >= 0) {
+        close(drm_fd_);
+    }
 }
 
 bool VaGlPipeline::init() {
@@ -76,7 +98,6 @@ bool VaGlPipeline::bindTextures(const std::vector<void*>& textures) {
 }
 
 VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
-    LOG(INFO) << "VaGlPipeline::render";
     EGLBoolean egl_ret = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
     if (egl_ret != EGL_TRUE) {
         LOG(ERR) << "eglMakeCurrent return " << egl_ret << " error: " << eglGetError();
@@ -173,7 +194,6 @@ VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
         glBindTexture(GL_TEXTURE_2D, 0);
         eglDestroyImageKHR_(egl_display_, images[i]);
     }
-    LOG(INFO) << "VaGlPipeline::render done";
     return RenderResult::Success2;
 }
 
@@ -251,12 +271,12 @@ bool VaGlPipeline::loadFuncs() {
 
 bool VaGlPipeline::initVaDrm() {
     std::string drm_node = "/dev/dri/card" + std::to_string(card_);
-    int drm_fd = ::open(drm_node.c_str(), O_RDWR);
-    if (drm_fd < 0) {
+    drm_fd_ = ::open(drm_node.c_str(), O_RDWR);
+    if (drm_fd_ < 0) {
         LOGF(ERR, "Open drm node '%s' failed", drm_node.c_str());
         return false;
     }
-    VADisplay va_display = vaGetDisplayDRM(drm_fd);
+    VADisplay va_display = vaGetDisplayDRM(drm_fd_);
     if (!va_display) {
         LOGF(ERR, "vaGetDisplayDRM '%s' failed", drm_node.c_str());
         return false;
@@ -381,7 +401,7 @@ out vec2 vTexCoord;
 void main() {
     vec2 c = coords[gl_VertexID];
     vTexCoord = c * uTexCoordScale;
-    gl_Position = vec4(c * vec2(2.,-2.) + vec2(-1.,1.), 0., 1.);
+    gl_Position = vec4(c * vec2(4.,-4.) + vec2(-1.,1.), 0., 1.);
 }
 )";
     const char* kFragmentShader = R"(
