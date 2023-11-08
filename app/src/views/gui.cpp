@@ -30,8 +30,10 @@
 
 #include "gui.h"
 
+#if defined(LT_WINDOWS)
 // TOO many windows headers inside
 #include <wintoastlib.h>
+#endif // LT_WINDOWS
 
 #include <QtWidgets/qmenu.h>
 #include <QtWidgets/qsystemtrayicon.h>
@@ -50,6 +52,7 @@
 
 namespace {
 
+#if defined(LT_WINDOWS)
 class ToastHandler : public WinToastLib::IWinToastHandler {
 public:
     ~ToastHandler() override {}
@@ -58,6 +61,7 @@ public:
     void toastDismissed(WinToastDismissalReason) const override {}
     void toastFailed() const override {}
 };
+#endif // LT_WINDOWS
 
 void ltQtOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
     if (context.file == nullptr || context.function == nullptr) {
@@ -185,6 +189,7 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     sys_tray_icon_->show();
     main_window_->show();
 
+#if defined(LT_WINDOWS)
     // wintoast
     WinToastLib::WinToast::instance()->setAppName(L"Lanthing");
     WinToastLib::WinToast::instance()->setAppUserModelId(L"Lanthing");
@@ -193,11 +198,14 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     if (!WinToastLib::WinToast::instance()->initialize()) {
         LOG(ERR) << "Initialize WinToastLib failed";
     }
+#endif // LT_WINDOWS
 }
 
 int GUIImpl::exec() {
     int ret = qapp_->exec();
+#if defined(LT_WINDOWS)
     WinToastLib::WinToast::instance()->clear();
+#endif // LT_WINDOWS
     return ret;
 }
 
@@ -230,11 +238,13 @@ void GUIImpl::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite>
     buffer.back() = '\0';
     std::wstring message = ltlib::utf8To16(buffer.data());
 
+#if defined(LT_WINDOWS)
     WinToastLib::WinToastTemplate templ =
         WinToastLib::WinToastTemplate(WinToastLib::WinToastTemplate::Text01);
     templ.setTextField(message, WinToastLib::WinToastTemplate::FirstLine);
     templ.setExpiration(1000 * 5);
     WinToastLib::WinToast::instance()->showToast(templ, new ToastHandler);
+#endif // LT_WINDOWS
 
     main_window_->onAccptedConnection(_msg);
 }

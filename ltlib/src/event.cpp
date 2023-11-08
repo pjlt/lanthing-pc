@@ -31,7 +31,7 @@
 #if defined(LT_WINDOWS)
 #include <Windows.h>
 #else
-#endif
+#endif // LT_WINDOWS
 #include <ltlib/event.h>
 #include <ltlib/strings.h>
 #include <assert.h>
@@ -122,7 +122,7 @@ void Event::close()
     }
 }
 
-#else
+#else // LT_WINDOWS
 
 // 在跨进程使用pthread的mutex和condition variable，需要使用共享内存，有点麻烦
 
@@ -132,13 +132,17 @@ Event::Event() noexcept
 
 Event::Event(const std::string& name) noexcept
 {
+    (void)name;
 }
 Event::Event(Event&& other) noexcept
 {
+    (void)other;
 }
 
-Event::Event& operator=(Event&& other) noexcept
+Event& Event::operator=(Event&& other) noexcept
 {
+    (void)other;
+    return *this;
 }
 
 Event::~Event()
@@ -147,18 +151,23 @@ Event::~Event()
 
 bool Event::notify()
 {
+    return false;
 }
 
-bool Event::wait()
+Event::WaitResult Event::wait()
 {
+    return WaitResult::Failed;
 }
 
-bool Event::waitFor(uint32_t ms)
+Event::WaitResult Event::waitFor(uint32_t ms)
 {
+    (void)ms;
+    return WaitResult::Failed;
 }
 
 void* Event::getHandle() const
 {
+    return nullptr;
 }
 
 #endif

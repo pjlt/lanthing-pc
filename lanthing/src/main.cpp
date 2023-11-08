@@ -46,7 +46,7 @@
 
 #include <client/client.h>
 #include <worker/worker.h>
-#if LT_RUN_AS_SERVICE
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 #include <service/daemon/daemon.h>
 #else
 #include <service/service.h>
@@ -112,10 +112,9 @@ void initLogAndMinidump(Role role) {
 
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
-    std::string appdata_dir = ltlib::getAppdataPath(true);
+    std::string appdata_dir = ltlib::getConfigPath(true);
     if (!appdata_dir.empty()) {
         log_dir = appdata_dir;
-        log_dir /= "lanthing";
         log_dir /= "log";
         log_dir /= prefix;
     }
@@ -190,17 +189,19 @@ int runAsClient(std::map<std::string, std::string> options) {
 }
 
 int runAsService(std::map<std::string, std::string> options) {
+    (void)options;
+#if defined(LT_WINDOWS)
     if (!ltlib::makeSingletonProcess("lanthing")) {
         printf("Another instance is running.\n");
         return -1;
     }
     initLogAndMinidump(Role::Service);
     lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath());
-#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+#if LT_RUN_AS_SERVICE
     lt::svc::LanthingWinService svc;
     ltlib::ServiceApp app{&svc};
     app.run();
-#else
+#else  // LT_RUN_AS_SERVICE
     lt::svc::Service svc;
     if (!svc.init()) {
         return -1;
@@ -209,13 +210,18 @@ int runAsService(std::map<std::string, std::string> options) {
         std::this_thread::sleep_for(std::chrono::seconds{10000});
     }
     svc.uninit();
-#endif
-
+#endif // LT_RUN_AS_SERVICE
     LOG(INFO) << "Normal exit";
     return 0;
+#else // LT_WINDOWS
+    printf("Unavailable 'runAsService' for current platform\n");
+    return -1;
+#endif
 }
 
 int runAsWorker(std::map<std::string, std::string> options) {
+    (void)options;
+#if defined(LT_WINDOWS)
     initLogAndMinidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
@@ -226,6 +232,10 @@ int runAsWorker(std::map<std::string, std::string> options) {
     else {
         return -1;
     }
+#else  // LT_WINDOWS
+    printf("Unavailable 'runAsWorker' for current platform\n");
+    return -1;
+#endif // LT_WINDOWS
 }
 
 } // namespace

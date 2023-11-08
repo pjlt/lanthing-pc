@@ -30,6 +30,7 @@
 
 #include "client.h"
 
+#include <filesystem>
 #include <sstream>
 
 #include <ltproto/client2app/client_status.pb.h>
@@ -50,6 +51,7 @@
 #include <ltproto/signaling/signaling_message_ack.pb.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/system.h>
 #include <ltlib/time_sync.h>
 #include <string_keys.h>
 
@@ -295,7 +297,14 @@ bool Client::initAppClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::Pipe;
     params.ioloop = ioloop_.get();
+#if LT_WINDOWS
     params.pipe_name = "\\\\?\\pipe\\lanthing_client_manager";
+#elif LT_LINUX
+    std::filesystem::path fs = ltlib::getConfigPath(false);
+    fs = fs / "pipe_lanthing_client_manager";
+    params.pipe_name = fs.string();
+#else
+#endif
     params.is_tls = false;
     params.on_connected = std::bind(&Client::onAppConnected, this);
     params.on_closed = std::bind(&Client::onAppDisconnected, this);
@@ -656,7 +665,7 @@ tp::Client* Client::createRtc2Client() {
     params.video_recv_ssrc = 541651314;
     // TODO: key and cert合理的创建时机
     params.key_and_cert = rtc2::KeyAndCert::create();
-    params.remote_digest;
+    // params.remote_digest;
     // FIXME: 修改rtc2接口
     auto client = rtc2::Client::create(params);
     return client.release();

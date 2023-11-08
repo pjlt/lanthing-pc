@@ -42,9 +42,10 @@
 
 namespace lt {
 
+#if defined(LT_WINDOWS)
+
 using Microsoft::WRL::ComPtr;
 
-#if defined(LT_WINDOWS)
 void createInboundFirewallRule(const std::string& _rule_name, const std::string& _path) {
     std::wstring rule_name = ltlib::utf8To16(_rule_name);
     std::wstring path = ltlib::utf8To16(_path);

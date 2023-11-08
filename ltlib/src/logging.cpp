@@ -139,6 +139,7 @@ tm localtime(const std::time_t& ts)
     return tm_snapshot;
 }
 
+/*
 std::string localtime_formatted_fractions(const g3::system_time_point& ts, std::string format_buffer)
 {
     // iterating through every "%f" instance in the format string
@@ -159,6 +160,7 @@ std::string localtime_formatted_fractions(const g3::system_time_point& ts, std::
     }
     return format_buffer;
 }
+*/
 
 std::string logDetailsToString(const g3::LogMessage& msg)
 {
@@ -240,8 +242,6 @@ void LogSink::fileWrite(g3::LogMessageMover message)
 
 std::string LogSink::changeLogFile()
 {
-    auto now = std::chrono::system_clock::now();
-
     std::string file_name = createLogFileName(_log_prefix_backup);
     auto log_file_with_path = pathSanityFix(_log_directory, file_name);
     auto new_outptr = createLogFile(log_file_with_path);

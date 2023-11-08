@@ -30,19 +30,18 @@
 
 #include "gpu_capability.h"
 
+#if defined(LT_WINDOWS)
 #define INITGUID
-
 #include <d3d11.h>
 #include <d3d11_1.h>
 #include <dwmapi.h>
 #include <dxgi1_5.h>
 #include <wrl/client.h>
+#endif // LT_WINDOWS
 
 #include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
-
-using namespace Microsoft::WRL;
 
 namespace lt {
 
@@ -52,6 +51,10 @@ std::string GpuInfo::Ability::to_str() const {
              driver.c_str(), video_memory_mb);
     return buf;
 }
+
+#if defined(LT_WINDOWS)
+
+using namespace Microsoft::WRL;
 
 bool GpuInfo::init() {
     HRESULT hr;
@@ -128,4 +131,10 @@ bool GpuInfo::init() {
     }
     return true;
 }
+#else // LT_WINDOWS
+bool GpuInfo::init() {
+    return true;
+}
+#endif
+
 } // namespace lt

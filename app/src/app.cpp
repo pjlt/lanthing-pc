@@ -47,9 +47,13 @@
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 
+#include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
+#if defined(LT_WINDOWS)
 #include <ltlib/win_service.h>
+#endif // LT_WINDOWS
+
 #include <ltproto/ltproto.h>
 
 /************************************************************************************
@@ -173,9 +177,11 @@ bool App::init() {
     if (!initTcpClient()) {
         return false;
     }
+#if LT_WINDOWS
     if (!initServiceManager()) {
         return false;
     }
+#endif // LT_WINDOWS
     if (!initClientManager()) {
         return false;
     }
@@ -225,13 +231,13 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
     }
-#pragma warning(disable : 4127)
+    WARNING_DISABLE(4127)
     if (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
         LOG(INFO) << "Self connect is not allowed";
         gui_.infoMessageBox("Self connect is not allowed");
         return;
     }
-#pragma warning(default : 4127)
+    WARNING_ENABLE(4127)
     postTask([peerDeviceID, accessToken, this]() {
         std::string cookie_name = "to_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);
@@ -392,9 +398,8 @@ void App::stopService() {
 }
 
 void App::loadHistoryIDs() {
-    std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
+    std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
     std::filesystem::path filepath{appdata_dir};
-    filepath /= "lanthing";
     filepath /= "historyids";
     std::fstream file{filepath.c_str(), std::ios::in | std::ios::out};
     if (!file.good()) {
@@ -421,9 +426,8 @@ void App::saveHistoryIDs() {
     for (const auto& id : history_ids_) {
         ss << id << ';';
     }
-    std::string appdata_dir = ltlib::getAppdataPath(/*is_win_service=*/false);
+    std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
     std::filesystem::path filepath{appdata_dir};
-    filepath /= "lanthing";
     filepath /= "historyids";
     std::fstream file{filepath.c_str(), std::ios::out};
     if (!file.good()) {

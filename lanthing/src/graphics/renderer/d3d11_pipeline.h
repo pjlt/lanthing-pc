@@ -67,7 +67,7 @@ class D3D11Pipeline : public VideoRenderer {
 
 public:
     struct Params {
-        HWND hwnd;
+        void* window;
         uint64_t luid;
         uint32_t widht;
         uint32_t height;

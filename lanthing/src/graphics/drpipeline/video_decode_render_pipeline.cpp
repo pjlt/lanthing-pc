@@ -98,7 +98,7 @@ private:
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
     PcSdl* sdl_;
-    HWND hwnd_;
+    void* window_;
 
     std::atomic<bool> request_i_frame_ = false;
     std::vector<VideoFrameInternal> encoded_frames_;
@@ -145,10 +145,7 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , send_message_to_host_{params.send_message_to_host}
     , sdl_{params.sdl}
     , statistics_{new VideoStatistics} {
-    SDL_SysWMinfo info{};
-    SDL_VERSION(&info.version);
-    SDL_GetWindowWMInfo(params.sdl->window(), &info);
-    hwnd_ = info.info.win.window;
+    window_ = params.sdl->window();
 }
 
 VDRPipeline::~VDRPipeline() {
@@ -160,6 +157,8 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
+    VideoRenderer::Params render_params{};
+#if LT_WINDOWS
     if (!gpu_info_.init()) {
         return false;
     }
@@ -172,9 +171,12 @@ bool VDRPipeline::init() {
         return false;
     }
     uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
-    VideoRenderer::Params render_params{};
-    render_params.window = hwnd_;
     render_params.device = target_adapter;
+#elif LT_LINUX
+    render_params.device = 0;
+#else
+#endif
+    render_params.window = window_;
     render_params.video_width = width_;
     render_params.video_height = height_;
     // FIXME: align由解码器提供
@@ -187,7 +189,13 @@ bool VDRPipeline::init() {
     decode_params.codec_type = codec_type_;
     decode_params.hw_device = video_renderer_->hwDevice();
     decode_params.hw_context = video_renderer_->hwContext();
+#if LT_WINDOWS
     decode_params.va_type = VaType::D3D11;
+#elif LT_LINUX
+    decode_params.va_type = VaType::VAAPI;
+#else
+#error unknown platform
+#endif
     decode_params.width = width_;
     decode_params.height = height_;
     video_decoder_ = VideoDecoder::create(decode_params);
@@ -200,7 +208,7 @@ bool VDRPipeline::init() {
     WidgetsManager::Params widgets_params{};
     widgets_params.dev = video_renderer_->hwDevice();
     widgets_params.ctx = video_renderer_->hwContext();
-    widgets_params.window = hwnd_;
+    widgets_params.window = window_;
     widgets_params.video_width = width_;
     widgets_params.video_height = height_;
     widgets_params.set_bitrate =
@@ -227,8 +235,9 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
     // stream.flush();
-    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", _frame.capture_timestamp_us,
-         _frame.start_encode_timestamp_us, _frame.end_encode_timestamp_us);
+    LOGF(DEBUG, "capture:%" PRId64 ", start_enc:% " PRId64 ", end_enc:%" PRId64,
+         _frame.capture_timestamp_us, _frame.start_encode_timestamp_us,
+         _frame.end_encode_timestamp_us);
     statistics_->addEncode();
     statistics_->updateVideoBW(_frame.size);
     statistics_->updateEncodeTime(_frame.end_encode_timestamp_us -
@@ -413,7 +422,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
                 case VideoRenderer::RenderResult::Reset:
                     widgets_->reset();
                     break;
-                case VideoRenderer::RenderResult::Success:
+                case VideoRenderer::RenderResult::Success2:
                 default:
                     break;
                 }
@@ -461,9 +470,9 @@ std::unique_ptr<VideoDecodeRenderPipeline> VideoDecodeRenderPipeline::create(con
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<VideoDecodeRenderPipeline> decoder{new VideoDecodeRenderPipeline};
-    decoder->impl_ = std::move(impl);
-    return decoder;
+    std::unique_ptr<VideoDecodeRenderPipeline> pipeline{new VideoDecodeRenderPipeline};
+    pipeline->impl_ = std::move(impl);
+    return pipeline;
 }
 
 VideoDecodeRenderPipeline::Action VideoDecodeRenderPipeline::submit(const lt::VideoFrame& frame) {

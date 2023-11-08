@@ -30,13 +30,14 @@
 
 #pragma once
 
-#if defined(LT_WINDOWS) || defined(_WIN32)
+#if defined(LT_WINDOWS)
 #include <WinSock2.h>
 #include <in6addr.h>
 #include <ws2ipdef.h>
-#else // if defined(LT_WINDOWS) || defined(_WIN32)
-#pragma warning unsupported platform
-#endif // if defined(LT_WINDOWS) || defined(_WIN32)
+#elif defined(LT_LINUX)
+#include <sys/socket.h>
+#include <netinet/ip.h>
+#endif // if defined(LT_WINDOWS)
 
 #include <string>
 

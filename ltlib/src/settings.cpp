@@ -32,6 +32,8 @@
 #include <Windows.h>
 #elif defined(LT_LINUX)
 #include <fcntl.h>
+#include <pwd.h>
+#include <unistd.h>
 #else
 #error unsupported platform
 #endif
@@ -387,13 +389,20 @@ void SettingsSqlite::deleteKey(const std::string& key) {
 //****************************************************************************
 
 std::unique_ptr<Settings> Settings::create(Storage type) {
-    std::string appdatapath = ltlib::getAppdataPath(ltlib::isRunAsService());
+    std::string filename = type == Storage::Toml ? "settings.toml" : "settings.db";
+#if LT_WINDOWS
+    std::string appdatapath = ltlib::getConfigPath(ltlib::isRunAsService());
     if (appdatapath.empty()) {
         return nullptr;
     }
     std::filesystem::path filepath = appdatapath;
-    std::string filename = type == Storage::Toml ? "settings.toml" : "settings.db";
-    filepath = filepath / "lanthing" / filename;
+    filepath = filepath / filename;
+#elif LT_LINUX
+    std::filesystem::path filepath = getpwuid(getuid())->pw_dir;
+    filepath = filepath / filename;
+#else
+    std::filesystem::path filepath;
+#endif
     return createWithPathForTest(type, filepath.string());
 }
 

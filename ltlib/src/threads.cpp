@@ -30,17 +30,23 @@
 
 #if defined(LT_WINDOWS)
 #include <Windows.h>
+#elif defined(LT_LINUX)
+#include <sys/prctl.h>
 #endif
 
 #include <sstream>
+#include <atomic>
 
 #include <ltlib/logging.h>
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
+#include <ltlib/pragma_warning.h>
 
 namespace {
 
+#if defined(LT_WINDOWS)
 using SetThreadDescriptionFunc = HRESULT(WINAPI*)(HANDLE hThread, PCWSTR lpThreadDescription);
+#endif // LT_WINDOWS
 
 // Credit: WebRTC
 void set_current_thread_name(const char* name) {
@@ -87,10 +93,10 @@ void set_current_thread_name(const char* name) {
 }
 
 void crash_me() {
-#pragma warning(disable : 6011)
+WARNING_DISABLE(6011)
     int* a = 0;
     *a = 123;
-#pragma warning(default : 6011)
+WARNING_ENABLE(6011)
 }
 
 } // namespace
@@ -328,9 +334,9 @@ void TaskThread::main_loop(std::promise<void>& promise) {
 
         if (old_tasks.empty() && delay_tasks.empty()) { // && proactor_tasks.empty())
             std::unique_lock lock{mutex_};
-            wakeup_.store(false, std::memory_order::memory_order_relaxed);
+            wakeup_.store(false, std::memory_order_relaxed);
             cv_.wait_for(lock, std::chrono::microseconds{sleep_for.value()}, [this]() {
-                return wakeup_.load(std::memory_order::memory_order_relaxed);
+                return wakeup_.load(std::memory_order_relaxed);
             });
             continue;
         }
@@ -410,7 +416,7 @@ void TaskThread::wake() {
 }
 
 bool TaskThread::is_running() {
-    return wakeup_.load(std::memory_order::memory_order_relaxed);
+    return wakeup_.load(std::memory_order_relaxed);
 }
 
 void TaskThread::invokeInternal(const Task& task) {

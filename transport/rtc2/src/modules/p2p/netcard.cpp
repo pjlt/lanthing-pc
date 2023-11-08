@@ -80,7 +80,7 @@ Address getNetcardAddress() {
 }
 
 #elif defined(LT_LINUX)
-std::vector<Address> getNetcardAddress() {}
+Address getNetcardAddress() { return {}; }
 #else
 #pragma error unsupported platform
 #endif

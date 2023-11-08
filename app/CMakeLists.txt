@@ -51,7 +51,7 @@ add_executable(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/app.rc
     ${APP_SRCS} 
     ${APP_UI_VIEWS} 
-    # VS安装QT扩展工具可以直接编辑
+    # VS瀹夎QT鎵╁睍宸ュ叿鍙互鐩存帴缂栬緫
     ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
 )
 
@@ -70,7 +70,21 @@ target_include_directories(${PROJECT_NAME}
 
 set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
+if (LT_WINDOWS)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+endif(LT_WINDOWS)
+
+if (LT_WINDOWS)
+    set(PLAT_LIBS wintoastlib)
+elseif(LT_LINUX)
+    set(PLAT_LIBS
+        m
+        stdc++
+        X11
+    )
+else()
+    set(PLAT_LIBS)
+endif()
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
@@ -79,22 +93,27 @@ target_link_libraries(${PROJECT_NAME}
         g3log
         protobuf::libprotobuf-lite
         breakpad
-        wintoastlib
         ltlib
         transport
         ltproto
         rtc
+        ${PLAT_LIBS}
 )
 
+if (LT_WINDOWS)
 deploy_dlls(${PROJECT_NAME})
 deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
+endif(LT_WINDOWS)
 
 install(TARGETS ${PROJECT_NAME})
-install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
-install(
-    FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
-)
 
-# 设置VS调试路径
+if (LT_WINDOWS)
+    install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
+    install(
+        FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
+    )
+endif()
+
+# 璁剧疆VS璋冭瘯璺緞
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

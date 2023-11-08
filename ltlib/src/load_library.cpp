@@ -39,6 +39,8 @@
 namespace ltlib
 {
 
+DynamicLibrary::DynamicLibrary() = default;
+
 #ifdef LT_WINDOWS
 std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
 {
@@ -54,8 +56,6 @@ std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
     dlib->handle_ = lib;
     return dlib;
 }
-
-DynamicLibrary::DynamicLibrary() = default;
 
 DynamicLibrary::~DynamicLibrary()
 {
@@ -75,6 +75,7 @@ void* DynamicLibrary::getFunc(const std::string& name)
 }
 
 #else // LT_WINDOWS
+
 std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
 {
     if (path.empty()) {
@@ -84,7 +85,7 @@ std::unique_ptr<DynamicLibrary> DynamicLibrary::load(const std::string& path)
     if (lib == nullptr) {
         return nullptr;
     }
-    auto dlib = std::make_unique<DynamicLibrary>();
+    std::unique_ptr<DynamicLibrary> dlib { new DynamicLibrary };
     dlib->handle_ = lib;
     return dlib;
 }

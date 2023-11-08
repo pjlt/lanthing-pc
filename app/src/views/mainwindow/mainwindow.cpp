@@ -32,7 +32,7 @@
 
 #include <cassert>
 
-#include "ui_MainWindow.h"
+#include "ui_mainwindow.h"
 
 #include <QMouseEvent>
 #include <QtCore/qtimer.h>
@@ -72,6 +72,8 @@ void dispatchToUiThread(std::function<void()> callback) {
     QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
 }
 
+// -Werror=unused-function
+/*
 QColor toColor(QString colorstr) {
 
     int r = colorstr.mid(1, 2).toInt(nullptr, 16);
@@ -80,14 +82,15 @@ QColor toColor(QString colorstr) {
     QColor color = QColor(r, g, b);
     return color;
 }
+*/
 
 } // namespace
 
 MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     : QMainWindow(parent)
     , params_(params)
-    , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)"))
-    , ui(new Ui_MainWindow) {
+    , ui(new Ui_MainWindow)
+    , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)")) {
 
     ui->setupUi(this);
 
@@ -155,7 +158,14 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
+#if LT_WINDOWS
     setServiceStatusInUIThread(lt::GUI::ServiceStatus::Down);
+#else  // LT_WINDOWS
+    QSizePolicy sp_retain = ui->labelControlledInfo->sizePolicy();
+    sp_retain.setRetainSizeWhenHidden(true);
+    ui->labelControlledInfo->setSizePolicy(sp_retain);
+    ui->labelControlledInfo->hide();
+#endif // LT_WINDOWS
 
     // 客户端表格
     addOrUpdateTrustedDevices();
@@ -730,7 +740,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // id
     QTableWidgetItem* id_item = new QTableWidgetItem;
     ui->tableWidget->setItem(row, 0, id_item);
-    id_item->setData(Qt::DisplayRole, device_id);
+    id_item->setData(Qt::DisplayRole, QVariant::fromValue(device_id));
     // gamepad
     QCheckBox* gamepad_item = new QCheckBox();
     gamepad_item->setChecked(gamepad);

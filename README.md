@@ -4,7 +4,12 @@
 
 Lanthing是一款开源的串流/远程控制工具。除了主控端和被控端，它还包含完整的[服务端](https://github.com/pjlt/lanthing-svr)、[中继服务器](https://github.com/pjlt/relay)。
 
-当前只支持Windows，不久的未来会覆盖更多端。
+当前支持下列系统：
+
+* Windows 10 或以上
+* Linux (alpha阶段，仅支持主控，当前只在ubuntu20.04+x11+vaapi+drm+egl+opengl3.3+amd平台测试过)
+
+安卓端在早期开发中。
 
 ## 特性
 
@@ -33,9 +38,19 @@ Lanthing的端到端加密具体是如何实现的：
 
 ### 编译环境
 
+Windows:
+
 * Windows 10 或以上
 * Git
 * Visual Studio 2022
+* CMake 3.21 或以上
+* Qt 6
+
+Linux:
+
+* Ubuntu 20.04 或以上
+* Git
+* GCC 10 或以上
 * CMake 3.21 或以上
 * Qt 6
 
@@ -45,8 +60,8 @@ Lanthing的端到端加密具体是如何实现的：
 git clone --recursive https://github.com/pjlt/lanthing-pc.git
 cd lanthing-pc
 cp options-default.cmake options-user.cmake  #可选，如果需要修改编译选项则执行此步，并修改相应选项；如果QT不在环境变量里，则必须修改LT_QT_CMAKE_PATH
-./build.ps1 prebuilt fetch
-./build.ps1 build Release
+./build.[ps1|sh] prebuilt fetch
+./build.[ps1|sh] build Release
 ```
 
 ## 使用

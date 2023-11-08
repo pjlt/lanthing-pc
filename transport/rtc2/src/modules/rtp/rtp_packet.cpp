@@ -10,6 +10,8 @@
 
 #include "rtp_packet.h"
 
+#include <cstring>
+
 #include <ltlib/logging.h>
 
 namespace {
@@ -247,13 +249,13 @@ void RtpPacket::set_payload(std::vector<uint8_t>&& payload) {
 // }
 
 bool RtpPacket::parse() {
-    const bool has_padding = (buffer_[0] & 0x20) != 0;
+    //const bool has_padding = (buffer_[0] & 0x20) != 0;
     const bool has_extension = (buffer_[0] & 0x10) != 0;
     // const uint8_t number_of_crcs = buffer_[0] & 0x0f;
-    uint8_t padding_size = 0;
-    if (has_padding) {
-        padding_size = buffer_.spans().back().back();
-    }
+    // uint8_t padding_size = 0;
+    // if (has_padding) {
+    //     padding_size = buffer_.spans().back().back();
+    // }
     // 主要是要获得extension_entries_
     if (has_extension) {
         uint16_t magic;

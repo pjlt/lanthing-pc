@@ -1,27 +1,36 @@
 cmake_minimum_required(VERSION 3.20)
 project(breakpad)
 
-set(BREAKPAD_SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../breakpad/src)
-set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/windows/handler)
+
 set(API_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/lt_minidump_generator.h
     ${CMAKE_CURRENT_SOURCE_DIR}/lt_minidump_generator.cpp
 )
-set(BREAKPAD_SOURCES
-    ${BREAKPAD_SRC_FOLDER}/client/windows/crash_generation/crash_generation_client.cc
-    ${BREAKPAD_SRC_FOLDER}/client/windows/handler/exception_handler.cc
-    ${BREAKPAD_SRC_FOLDER}/common/windows/guid_string.cc
-    ${BREAKPAD_SRC_FOLDER}/common/windows/string_utils.cc
-)
+
+if (LT_WINDOWS)
+    set(BREAKPAD_SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../breakpad/src)
+    set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/windows/handler)
+    set(BREAKPAD_SOURCES
+        ${BREAKPAD_SRC_FOLDER}/client/windows/crash_generation/crash_generation_client.cc
+        ${BREAKPAD_SRC_FOLDER}/client/windows/handler/exception_handler.cc
+        ${BREAKPAD_SRC_FOLDER}/common/windows/guid_string.cc
+        ${BREAKPAD_SRC_FOLDER}/common/windows/string_utils.cc
+    )
+    # 鎸夌収鍘熷鐩綍缁撴瀯灞曞紑
+    source_group(breakpad TREE ${BREAKPAD_SRC_FOLDER} FILES ${BREAKPAD_SOURCES})
+    source_group(breakpad_builder TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${API_SOURCES})
+else()
+    set(BREAKPAD_SOURCES)
+    set(BREAKPAD_SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../breakpad/src)
+    set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/linux/handler)
+endif()
 
 add_library(${PROJECT_NAME} SHARED
     ${BREAKPAD_SOURCES}
     ${API_SOURCES}
 )
 
-# 按照原始目录结构展开
-source_group(breakpad TREE ${BREAKPAD_SRC_FOLDER} FILES ${BREAKPAD_SOURCES})
-source_group(breakpad_builder TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${API_SOURCES})
+
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE

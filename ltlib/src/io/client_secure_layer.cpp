@@ -31,10 +31,13 @@
 #include "client_secure_layer.h"
 #include "client_transport_layer.h"
 
+#include <cstring>
+
 #include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 
 // 忘了在哪个开源项目抄了一部分，sorry。这种写法不是很好理解，有bug也不好修（刚修了一个，在tls_read之后没有重置input
 // buffer，在遇到大消息bug就表现出来了） 一直想重写，但是能run，就没动手??
@@ -133,7 +136,8 @@ bool MbedtlsCTransport::tls_init_engine() {
         uvtransport_.is_tcp() ? uvtransport_.host() : uvtransport_.pipe_name();
     // std::string hostname = "lanthing.net";
     mbedtls_ssl_set_hostname(&ssl_, hostname.c_str());
-    memset(&session_, 0, sizeof(session_));
+    // session_ = std::make_unique<mbedtls_ssl_session>();
+    // memset(session_.get(), 0, sizeof(mbedtls_ssl_session));
     bio_in_ = BIO::create();
     bio_out_ = BIO::create();
     mbedtls_ssl_set_bio(&ssl_, this, mbed_ssl_send, mbed_ssl_recv, nullptr);
@@ -141,9 +145,9 @@ bool MbedtlsCTransport::tls_init_engine() {
 }
 
 int MbedtlsCTransport::tls_reset_engine() {
-    if (mbedtls_ssl_get_session(&ssl_, session_.get()) != 0) {
-        mbedtls_ssl_session_free(session_.get());
-    }
+    // if (mbedtls_ssl_get_session(&ssl_, session_.get()) != 0) {
+    //     mbedtls_ssl_session_free(session_.get());
+    // }
     if (bio_in_) {
         BIO::destroy(bio_in_);
         bio_in_ = BIO::create();
@@ -156,7 +160,7 @@ int MbedtlsCTransport::tls_reset_engine() {
 }
 
 int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
-                                 uint32_t* out_bytes, uint32_t maxout) {
+                                 decltype(Buffer::len)* out_bytes, uint32_t maxout) {
     size_t wrote = 0;
     while (data_len > wrote) {
         int rc = mbedtls_ssl_write(&ssl_, (const unsigned char*)(data + wrote), data_len - wrote);
@@ -171,7 +175,7 @@ int MbedtlsCTransport::tls_write(const char* data, uint32_t data_len, char* out,
 }
 
 int MbedtlsCTransport::tls_read(const char* ssl_in, uint32_t ssl_in_len, char* out,
-                                uint32_t* out_bytes, uint32_t maxout) {
+                                decltype(Buffer::len)* out_bytes, uint32_t maxout) {
     if (ssl_in_len > 0 && ssl_in != NULL) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(ssl_in), ssl_in_len);
     }
@@ -340,17 +344,16 @@ bool MbedtlsCTransport::on_uv_connected() {
     return true;
 }
 
-MbedtlsCTransport::HandshakeState MbedtlsCTransport::continue_handshake(char* in, uint32_t in_bytes,
-                                                                        char* out,
-                                                                        uint32_t* out_bytes,
-                                                                        uint32_t maxout) {
+MbedtlsCTransport::HandshakeState
+MbedtlsCTransport::continue_handshake(char* in, uint32_t in_bytes, char* out,
+                                      decltype(Buffer::len)* out_bytes, uint32_t maxout) {
     if (in_bytes > 0) {
         bio_in_->put(reinterpret_cast<const uint8_t*>(in), in_bytes);
     }
-    if (ssl_.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HELLO_REQUEST && session_ != nullptr) {
-        mbedtls_ssl_set_session(&ssl_, session_.get());
-        mbedtls_ssl_session_free(session_.get());
-    }
+    // if (ssl_.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HELLO_REQUEST && session_ != nullptr) {
+    //     mbedtls_ssl_set_session(&ssl_, session_.get());
+    //     mbedtls_ssl_session_free(session_.get());
+    // }
     int state = mbedtls_ssl_handshake(&ssl_);
     char err[1024];
     mbedtls_strerror(state, err, 1024);
@@ -385,7 +388,7 @@ int MbedtlsCTransport::mbed_ssl_recv(void* ctx, uint8_t* buf, size_t len) {
 bool MbedtlsCTransport::send(Buffer buff[], uint32_t buff_count,
                              const std::function<void()>& callback) {
     int tls_rc = 0;
-    uint32_t out_size;
+    decltype(Buffer::len) out_size;
     for (uint32_t i = 0; i < buff_count; i++) {
         tls_rc = tls_write(buff[i].base, buff[i].len, nullptr, &out_size, 0);
         if (tls_rc < 0) {
@@ -425,8 +428,8 @@ void MbedtlsCTransport::reconnect() {
     uvtransport_.reconnect();
 }
 
-#pragma warning(disable : 6011)
-#pragma warning(disable : 6001)
+WARNING_DISABLE(6011)
+WARNING_DISABLE(6001)
 BIO* BIO::create() {
 
     BIO* bio = (BIO*)calloc(1, sizeof(BIO));
@@ -497,7 +500,7 @@ int BIO::read(uint8_t* buf, size_t len) {
     return (int)total;
 }
 
-#pragma warning(default : 6011)
-#pragma warning(default : 6001)
+WARNING_ENABLE(6011)
+WARNING_ENABLE(6001)
 
 } // namespace ltlib

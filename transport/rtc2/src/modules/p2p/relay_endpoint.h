@@ -35,7 +35,7 @@ namespace rtc2 {
 
 class RelayEndpoint : public Endpoint {
 public:
-    int32_t send(std::vector<std::span<const uint8_t>> spans) override { return 0; };
+    int32_t send(std::vector<std::span<const uint8_t>>) override { return 0; };
     EndpointType type() const override { return EndpointType::Relay; }
 
 private:

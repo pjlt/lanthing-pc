@@ -29,7 +29,17 @@
  */
 
 #include "client_transport_layer.h"
+
+#include <cstring>
+#include <errno.h>
+
 #include <ltlib/logging.h>
+
+#if defined(LT_WINDOWS)
+#define LAST_ERROR_NO WSAGetLastError()
+#else
+#define LAST_ERROR_NO errno
+#endif
 
 namespace {
 
@@ -252,7 +262,7 @@ void LibuvCTransport::on_connected(uv_connect_t* req, int status) {
                 that->local_port_ = ntohs(addr.sin_port);
                 char buffer[64] = {0};
                 if (inet_ntop(AF_INET, &addr, buffer, 64) == 0) {
-                    LOG(WARNING) << "inet_pton failed with " << WSAGetLastError();
+                    LOG(WARNING) << "inet_pton failed with " << LAST_ERROR_NO;
                 }
                 else {
                     that->local_ip_ = buffer;

@@ -22,7 +22,7 @@ target_link_libraries(${PROJECT_NAME}
 		ltproto
 )
 
-add_subdirectory(rtc)
+add_subdirectory(rtc/${LT_PLAT})
 add_subdirectory(rtc2)
 
 target_link_libraries(${PROJECT_NAME}

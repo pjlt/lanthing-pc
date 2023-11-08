@@ -89,7 +89,7 @@ class LtPacketInfoExtension {
 public:
     using value_type = LtPacketInfo;
 
-    static const RTPExtensionType id() { return RTPExtensionType::kRtpExtensionLtPacketInfo; }
+    static RTPExtensionType id() { return RTPExtensionType::kRtpExtensionLtPacketInfo; }
 
     static const char* uri() { return "lanthing-packet-info"; }
 
@@ -119,7 +119,7 @@ class LtFrameInfoExtension {
 public:
     using value_type = LtFrameInfo;
 
-    static const RTPExtensionType id() { return RTPExtensionType::kRtpExtensionLtFrameInfo; }
+    static RTPExtensionType id() { return RTPExtensionType::kRtpExtensionLtFrameInfo; }
 
     static const char* uri() { return "lanthing-frame-info"; }
 

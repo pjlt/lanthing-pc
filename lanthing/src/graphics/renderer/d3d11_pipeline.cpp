@@ -35,6 +35,8 @@
 #include <d3dcompiler.h>
 #include <dwmapi.h>
 
+#include <SDL_syswm.h>
+
 #include <ltlib/logging.h>
 
 using namespace Microsoft::WRL;
@@ -175,12 +177,15 @@ void mapTextureToFile(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_contex
 namespace lt {
 
 D3D11Pipeline::D3D11Pipeline(const Params& params)
-    : hwnd_{params.hwnd}
-    , luid_{params.luid}
+    : luid_{params.luid}
     , video_width_{params.widht}
     , video_height_{params.height}
     , align_{params.align} {
     DwmEnableMMCSS(TRUE);
+    SDL_SysWMinfo info{};
+    SDL_VERSION(&info.version);
+    SDL_GetWindowWMInfo(reinterpret_cast<SDL_Window*>(params.window), &info);
+    hwnd_ = info.info.win.window;
 }
 
 D3D11Pipeline::~D3D11Pipeline() {
@@ -226,7 +231,7 @@ VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
         cursor_result == RenderResult::Reset) {
         return RenderResult::Reset;
     }
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
@@ -292,7 +297,7 @@ VideoRenderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
         setupRSStage();
         return RenderResult::Reset;
     }
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
@@ -317,13 +322,13 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
                                                        video_shader_views_[index].uv.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     CursorInfo c = cursor_info_;
     if (absolute_mouse_ || !c.visible) {
-        return RenderResult::Success;
+        return RenderResult::Success2;
     }
     auto iter = cursors_.find(c.id);
     if (iter == cursors_.end()) {
@@ -365,7 +370,7 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     ID3D11ShaderResourceView* const shader_views[1] = {iter->second.view.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
-    return RenderResult::Success;
+    return RenderResult::Success2;
 }
 
 bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {

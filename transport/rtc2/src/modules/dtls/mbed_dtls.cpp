@@ -30,7 +30,11 @@
 
 #include "mbed_dtls.h"
 
+#include <cstring>
+
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
+
 #include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
@@ -54,6 +58,7 @@ bool is_handshake_continue(int state) {
     return state != MBEDTLS_SSL_HANDSHAKE_OVER && state != MBEDTLS_SSL_HELLO_REQUEST;
 }
 
+/*
 tm localtime(const std::time_t& ts) {
     struct tm tm_snapshot;
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
@@ -63,6 +68,7 @@ tm localtime(const std::time_t& ts) {
 #endif
     return tm_snapshot;
 }
+*/
 
 } // namespace
 
@@ -319,8 +325,9 @@ int MbedDtls::verify_cert(void* data, mbedtls_x509_crt* crt, int depth, uint32_t
     return 0;
 }
 
-#pragma warning(disable : 6011)
-#pragma warning(disable : 6001)
+WARNING_DISABLE(6011)
+WARNING_DISABLE(6001)
+
 MbedDtls::BIO* MbedDtls::BIO::create() {
     BIO* bio = (BIO*)calloc(1, sizeof(BIO));
     bio->available = 0;

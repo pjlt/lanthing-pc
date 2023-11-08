@@ -28,12 +28,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if LT_WINDOWS
 #include <Windows.h>
 
 #include <Shlobj.h>
 #include <TlHelp32.h>
+#elif LT_LINUX
+#include <X11/Xlib.h>
+#include <pwd.h>
+#include <unistd.h>
+#else
+#endif // LT_WINDOWS
 
+#include <climits>
 #include <cstring>
+
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -42,6 +52,8 @@
 #include <ltlib/system.h>
 
 namespace {
+
+#if defined(LT_WINDOWS)
 
 BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName) {
     if (!lpName)
@@ -104,9 +116,13 @@ bool executeAsUser(const std::function<bool(HANDLE)>& func) {
     return res;
 }
 
+#endif // LT_WINDOWS
+
 } // namespace
 
 namespace ltlib {
+
+#if defined(LT_WINDOWS)
 
 bool getProgramFilename(std::wstring& filename) {
     const int kMaxPath = UNICODE_STRING_MAX_CHARS;
@@ -143,7 +159,7 @@ std::string getProgramFullpath() {
     return utf16To8(path);
 }
 
-std::string getAppdataPath(bool is_service) {
+std::string getConfigPath(bool is_service) {
     static std::string appdata_path;
     if (!appdata_path.empty()) {
         return appdata_path;
@@ -165,6 +181,9 @@ std::string getAppdataPath(bool is_service) {
         CoTaskMemFree(pidl);
         GetShortPathNameW(szDocument, m_lpszDefaultDir, _MAX_PATH);
         appdata_path = utf16To8(std::wstring(m_lpszDefaultDir));
+        std::filesystem::path fs = appdata_path;
+        fs = fs / "lanthing";
+        appdata_path = fs.string();
         return true;
     };
 
@@ -234,5 +253,71 @@ DisplayOutputDesc getDisplayOutputDesc() {
     }
     return DisplayOutputDesc{width, height, frequency};
 }
+
+#elif defined(LT_LINUX)
+
+std::string getProgramFullpath() {
+    char result[PATH_MAX];
+    auto count = readlink("/proc/self/exe", result, PATH_MAX);
+    if (count <= 0) {
+        return "";
+    }
+    return std::string(result, result + count);
+}
+
+std::string getProgramPath() {
+    std::string fullpath = getProgramFullpath();
+    if (fullpath.empty()) {
+        return "";
+    }
+    auto pos = fullpath.rfind('/');
+    if (pos != std::string::npos) {
+        return fullpath.substr(0, pos);
+    }
+    return "";
+}
+
+std::string getConfigPath(bool is_service) {
+    (void)is_service;
+    static std::string config_path;
+    if (!config_path.empty()) {
+        return config_path;
+    }
+    std::filesystem::path fs = getpwuid(getuid())->pw_dir;
+    fs = fs / ".lanthing";
+    config_path = fs.string();
+    return config_path;
+}
+
+bool isRunasLocalSystem() {
+    return false;
+}
+bool isRunAsService() {
+    return false;
+}
+
+int32_t getScreenWidth() {
+    return -1;
+}
+int32_t getScreenHeight() {
+    return -1;
+}
+
+DisplayOutputDesc getDisplayOutputDesc() {
+    Display* d = XOpenDisplay(nullptr);
+    if (d == nullptr) {
+        return {0, 0, 0};
+    }
+    Screen* s = DefaultScreenOfDisplay(d);
+    if (s == nullptr) {
+        return {0, 0, 0};
+    }
+    uint32_t width = s->width;
+    uint32_t height = s->height;
+    XCloseDisplay(d);
+    return {width, height, 60};
+}
+
+#endif // #elif defined(LT_LINUX)
 
 } // namespace ltlib

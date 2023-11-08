@@ -31,6 +31,7 @@
 #pragma once
 
 #include <functional>
+#include <iomanip>
 
 #include <QValidator>
 #include <QtWidgets/QMainWindow>

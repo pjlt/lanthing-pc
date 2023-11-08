@@ -44,7 +44,7 @@ public:
         uint32_t align;
     };
 
-    enum class RenderResult { Success, Failed, Reset };
+    enum class RenderResult { Success2, Failed, Reset };
 
 public:
     static std::unique_ptr<VideoRenderer> create(const Params& params);

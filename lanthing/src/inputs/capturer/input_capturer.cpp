@@ -77,6 +77,7 @@ struct Rect {
     uint32_t height;
 };
 
+/*
 Rect scale_src_to_dst_surface(Rect src, Rect dst) {
     uint32_t dst_height = dst.width * src.height / src.width;
     uint32_t dst_width = dst.height * src.width / src.height;
@@ -88,6 +89,7 @@ Rect scale_src_to_dst_surface(Rect src, Rect dst) {
     }
     return dst;
 }
+*/
 
 } // namespace
 
@@ -114,14 +116,14 @@ private:
 
 private:
     PcSdl* sdl_;
+    uint32_t host_width_;
+    uint32_t host_height_;
     std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
         send_message_to_host_;
     std::function<void()> toggle_fullscreen_;
     std::function<void()> switch_mouse_mode_;
     // 0表示松开，非0表示按下。不用bool而用uint8_t是担心menset()之类函数不好处理bool数组
     std::array<uint8_t, 512> key_states_ = {0};
-    uint32_t host_width_;
-    uint32_t host_height_;
     std::array<std::optional<ControllerState>, 4> cstates_;
 };
 

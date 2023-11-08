@@ -32,8 +32,12 @@
 #include <Windows.h>
 #elif defined LT_LINUX
 #include <errno.h>
+#include <pwd.h>
 #include <sys/file.h>
+#include <unistd.h>
 #endif
+
+#include <cstring>
 
 #include <filesystem>
 #include <sstream>
@@ -68,15 +72,17 @@ bool makeSingletonProcess(const std::string& name) {
         return no_other_process.value();
     }
     std::stringstream ss;
-    ss << "/var/run/" << name << ".pid";
+    ss << getpwuid(getuid())->pw_dir << "/.lanthing/" << name << ".pid";
     int pid_file = open(ss.str().c_str(), O_CREAT | O_RDWR, 0666);
-    if (lockf(pidfile, F_TLOCK, 0) < 0) {
+    if (lockf(pid_file, F_TLOCK, 0) < 0) {
         no_other_process = false;
         return false;
     }
     char str[64] = {0};
     snprintf(str, 64, "%d", getpid());
-    write(pid_file, str, strlen(str));
+    auto ret = write(pid_file, str, strlen(str));
+    (void)ret; //???
+    return true;
 }
 
 #else

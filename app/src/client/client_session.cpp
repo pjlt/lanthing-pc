@@ -30,7 +30,13 @@
 
 #include "client_session.h"
 
+#if LT_WINDOWS
 #include <Windows.h>
+#elif LT_LINUX
+#include <sys/syscall.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif // LT_WINDOWS, LT_LINUX
 
 #include <sstream>
 
@@ -58,6 +64,8 @@ namespace lt {
 
 ClientSession::ClientSession(const Params& params)
     : params_(params) {}
+
+#if defined(LT_WINDOWS)
 
 ClientSession::~ClientSession() {
     TerminateProcess(handle_, 0);
@@ -170,6 +178,102 @@ void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
         }
     };
 }
+
+#else // LT_WINDOWS
+
+ClientSession::~ClientSession() {
+    if (process_id_ != 0) {
+        kill(static_cast<pid_t>(process_id_), SIGTERM);
+    }
+    if (thread_ != nullptr) {
+        thread_->join();
+    }
+}
+
+bool ClientSession::start() {
+    (void)to_string(lt::VideoCodecType::H264);
+    process_id_ = fork();
+    if (process_id_ == -1) {
+        LOG(ERR) << "Launch client fork() failed: " << errno;
+        return false;
+    }
+    else if (process_id_ == 0) {
+        // is child
+        std::string path = ltlib::getProgramPath() + "/lanthing";
+        std::vector<std::string> args;
+        std::vector<char*> argv;
+        args.push_back("-type");
+        args.push_back("client");
+        args.push_back("-cid");
+        args.push_back(params_.client_id);
+        args.push_back("-rid");
+        args.push_back(params_.room_id);
+        args.push_back("-token");
+        args.push_back(params_.auth_token);
+        args.push_back("-user");
+        args.push_back(params_.p2p_username);
+        args.push_back("-pwd");
+        args.push_back(params_.p2p_password);
+        args.push_back("-addr");
+        args.push_back(params_.signaling_addr);
+        args.push_back("-port");
+        args.push_back(std::to_string(params_.signaling_port));
+        args.push_back("-codec");
+        args.push_back(to_string(params_.video_codec_type));
+        args.push_back("-width");
+        args.push_back(std::to_string(params_.width));
+        args.push_back("-height");
+        args.push_back(std::to_string(params_.height));
+        args.push_back("-freq");
+        args.push_back(std::to_string(params_.refresh_rate));
+        args.push_back("-dinput");
+        args.push_back("0");
+        args.push_back("-gamepad");
+        args.push_back("0");
+        args.push_back("-chans");
+        args.push_back(std::to_string(params_.audio_channels));
+        args.push_back("-afreq");
+        args.push_back(std::to_string(params_.audio_freq));
+        for (auto& arg : args) {
+            argv.push_back(arg.data());
+        }
+        argv.push_back(nullptr);
+        if (execv(path.c_str(), reinterpret_cast<char* const*>(argv.data()))) {
+            // 还是同一个log文件吗？
+            LOG(ERR) << "Child process: execv return " << errno;
+            exit(-1);
+            return false;
+        }
+    }
+    else {
+        // is parent
+        LOG(INFO) << "Client handle " << process_id_;
+        std::promise<void> promise;
+        auto future = promise.get_future();
+        // 暂时不搞i_am_alive，后面试试pidfd_open
+        // thread_ = ltlib::BlockingThread::create(
+        //     "client_session", [&promise, this](const std::function<void()>& i_am_alive) {
+        //         promise.set_value();
+        //         mainLoop(i_am_alive);
+        //     });
+        thread_ = std::make_unique<std::thread>([&promise, this]() {
+            promise.set_value();
+            mainLoop(nullptr);
+        });
+        future.get();
+        stoped_ = false;
+        return true;
+    }
+    return false;
+}
+void ClientSession::mainLoop(const std::function<void()>& i_am_alive) {
+    (void)i_am_alive;
+    // constexpr uint32_t k500ms = 500;
+    // 纠结要不要用pidfd_open，不用的话要绕一大圈子搞i_am_alive
+    waitpid(static_cast<pid_t>(process_id_), nullptr, 0);
+    params_.on_exited();
+}
+#endif
 
 std::string ClientSession::clientID() const {
     return params_.client_id;
