@@ -239,6 +239,7 @@ if(LT_WINDOWS)
     )
 elseif(LT_LINUX)
     set(PLATFORM_LIBS
+        m
         stdc++
         PkgConfig::X11
         PkgConfig::Va
