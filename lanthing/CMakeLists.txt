@@ -248,6 +248,7 @@ elseif(LT_LINUX)
         PkgConfig::GL
         PkgConfig::EGL
         PkgConfig::GLib
+        PkgConfig::MFX
     )
 else()
     set(PLATFORM_LIBS)

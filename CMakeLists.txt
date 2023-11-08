@@ -133,6 +133,7 @@ pkg_check_modules(Va-Drm REQUIRED IMPORTED_TARGET libva-drm)
 pkg_check_modules(GL REQUIRED IMPORTED_TARGET gl)
 pkg_check_modules(GLES REQUIRED IMPORTED_TARGET glesv2)
 pkg_check_modules(EGL REQUIRED IMPORTED_TARGET egl)
+pkg_check_modules(MFX REQUIRED IMPORTED_TARGET libmfx)
 endif(LT_LINUX)
 
 # 依赖于SDL
