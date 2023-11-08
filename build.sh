@@ -65,7 +65,7 @@ prebuilt_fetch() {
         echo "Extra $lib_name.linux.tar.gz"
         tar -xzvf ./third_party/prebuilt/$lib_name.linux.tar.gz -C ./third_party/prebuilt/$lib_name/linux
     done
-    #rtc_fetch
+    rtc_fetch
 }
 
 prebuilt_clean() {
