@@ -29,26 +29,25 @@
  */
 
 #pragma once
-#include <ltlib/ltlib.h>
 #include <cstdint>
-#include <memory>
-#include <string>
-#include <functional>
-#include <future>
-#include <thread>
-#include <mutex>
+
 #include <atomic>
 #include <condition_variable>
+#include <functional>
+#include <future>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <queue>
+#include <string>
+#include <thread>
 
+#include <ltlib/ltlib.h>
 #include <ltlib/times.h>
 
-namespace ltlib
-{
+namespace ltlib {
 
-class LT_API ThreadWatcher
-{
+class LT_API ThreadWatcher {
 public:
     static constexpr int64_t kMaxBlockTimeMS = 5'000;
 
@@ -71,8 +70,7 @@ private:
     void checkLoop();
 
 private:
-    struct ThreadInfo
-    {
+    struct ThreadInfo {
         std::string name;
         std::thread::id thread_id;
         int64_t last_active_time;
@@ -83,16 +81,16 @@ private:
     bool stoped_ = false;
     std::map<std::string, ThreadInfo> threads_;
     std::function<void(const std::string&)> terminate_callback_;
-    std::atomic<bool> enable_crash_ { true };
+    std::atomic<bool> enable_crash_{true};
 };
 
-class LT_API BlockingThread
-{
+class LT_API BlockingThread {
 public:
     using EntryFunction = std::function<void(std::function<void()> /*i_am_alive*/)>;
 
 public:
-    static std::unique_ptr<BlockingThread> create(const std::string& prefix, const EntryFunction& user_func);
+    static std::unique_ptr<BlockingThread> create(const std::string& prefix,
+                                                  const EntryFunction& user_func);
     bool is_current_thread() const;
     ~BlockingThread();
 
@@ -116,19 +114,17 @@ private:
     int64_t last_report_time_;
 };
 
-enum class LT_API Priority : uint32_t
-{
+enum class LT_API Priority : uint32_t {
     Low,
     Medium,
     High,
 };
-inline bool operator<(const Priority& left, const Priority& right)
-{
-    return static_cast<std::underlying_type_t<Priority>>(left) < static_cast<std::underlying_type_t<Priority>>(right);
+inline bool operator<(const Priority& left, const Priority& right) {
+    return static_cast<std::underlying_type_t<Priority>>(left) <
+           static_cast<std::underlying_type_t<Priority>>(right);
 }
 
-class LT_API TaskThread
-{
+class LT_API TaskThread {
 public:
     using Task = std::function<void()>;
     using TimerID = int64_t;
@@ -143,17 +139,17 @@ public:
     void wake();
     bool is_running();
 
-    template <typename ReturnT, typename = std::enable_if<!std::is_void<ReturnT>::value>::type>
-    ReturnT invoke(std::function<ReturnT(void)> func)
-    {
+    template <typename ReturnT,
+              typename = typename std::enable_if<!std::is_void<ReturnT>::value>::type>
+    ReturnT invoke(std::function<ReturnT(void)> func) {
         ReturnT ret;
         invokeInternal([func, &ret]() { ret = func(); });
         return ret;
     }
 
-    template <typename ReturnT, typename = std::enable_if<std::is_void<ReturnT>::value>::type>
-    void invoke(std::function<ReturnT(void)> task)
-    {
+    template <typename ReturnT,
+              typename = typename std::enable_if<std::is_void<ReturnT>::value>::type>
+    void invoke(std::function<ReturnT(void)> task) {
         invokeInternal(task);
     }
 
@@ -180,7 +176,7 @@ private:
     std::map<Timestamp, Task> delay_tasks_;
     std::mutex mutex_;
     std::condition_variable cv_;
-    std::atomic<bool> wakeup_ { true };
+    std::atomic<bool> wakeup_{true};
     std::thread thread_;
     bool started_ = false;
     bool stoped_ = false;

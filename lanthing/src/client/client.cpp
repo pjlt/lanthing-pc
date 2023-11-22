@@ -881,6 +881,7 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     last_w_or_h_is_0_ = false;
     video_pipeline_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(),
                                    1.0f * msg->y() / msg->h(), msg->visible());
+    sdl_->setCursorInfo(msg->preset(), msg->visible());
 }
 
 } // namespace cli

@@ -62,6 +62,9 @@ VaGlPipeline::~VaGlPipeline() {
         }
         eglTerminate(egl_display_);
     }
+    if (shader_ != 0) {
+        glDeleteProgram(shader_);
+    }
     if (va_display_) {
         vaTerminate(va_display_);
     }
@@ -435,8 +438,8 @@ void main() {
         glDeleteShader(vs);
         return false;
     }
-    glShaderSource(vs, 1, &kVertexShader, NULL);
-    glShaderSource(fs, 1, &kFragmentShader, NULL);
+    glShaderSource(vs, 1, &kVertexShader, nullptr);
+    glShaderSource(fs, 1, &kFragmentShader, nullptr);
     while (glGetError()) {
     }
     std::array<char, 512> buffer{0};

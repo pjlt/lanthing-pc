@@ -50,6 +50,7 @@ constexpr int32_t kUserEventToggleFullscreen = 2;
 constexpr int32_t kUserEventStop = 3;
 constexpr int32_t kUserEventSetTitle = 4;
 constexpr int32_t kUserEventSwitchMouseMode = 5;
+constexpr int32_t kUserEventUpdateCursorInfo = 6;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -80,10 +81,14 @@ public:
 
     void switchMouseMode(bool absolute) override;
 
+    void setCursorInfo(int32_t cursor_id, bool visible) override;
+
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
     bool initSdlSubSystems();
     void quitSdlSubSystems();
+    void loadCursors();
+    void destroyCursors();
 
 private: // 事件处理
     enum class DispatchResult {
@@ -107,6 +112,7 @@ private: // 事件处理
     DispatchResult handleToggleFullscreen();
     DispatchResult handleSetTitle();
     DispatchResult handleSwitchMouseMode();
+    DispatchResult handleUpdateCursorInfo();
 
 private:
     SDL_Window* window_ = nullptr;
@@ -114,10 +120,13 @@ private:
     std::function<void()> on_exit_;
     bool windowed_fullscreen_;
     bool absolute_mouse_;
+    bool cursor_visible_ = false;
+    int32_t cursor_id_ = 0;
     std::mutex mutex_;
     std::unique_ptr<SdlInput> input_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::string title_ = "Lanthing";
+    std::map<int32_t, SDL_Cursor*> cursors_;
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
@@ -194,11 +203,24 @@ void PcSdlImpl::switchMouseMode(bool absolute) {
     SDL_PushEvent(&ev);
 }
 
+void PcSdlImpl::setCursorInfo(int32_t cursor_id, bool visible) {
+    {
+        std::lock_guard lk{mutex_};
+        cursor_id_ = cursor_id;
+        cursor_visible_ = visible;
+    }
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventUpdateCursorInfo;
+    SDL_PushEvent(&ev);
+}
+
 void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive) {
     if (!initSdlSubSystems()) {
         promise.set_value(false);
         return;
     }
+    loadCursors();
     int desktop_width = 1920;
     int desktop_height = 1080;
     SDL_DisplayMode dm{};
@@ -255,6 +277,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     }
 CLEANUP:
     // 回收资源，删除解码器等
+    destroyCursors();
     SDL_DestroyWindow(window_);
     quitSdlSubSystems();
     on_exit_();
@@ -283,6 +306,44 @@ void PcSdlImpl::quitSdlSubSystems() {
     SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
+void PcSdlImpl::loadCursors() {
+    // 顺序不一致，不能这么搞
+    // for (int32_t i = 0; i < 12; i++) {
+    //    cursors_[i] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    //}
+    using namespace ltproto::client2worker;
+    cursors_[CursorInfo_PresetCursor_Arrow] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW);
+    cursors_[CursorInfo_PresetCursor_Ibeam] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_IBEAM);
+    cursors_[CursorInfo_PresetCursor_Wait] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_WAIT);
+    cursors_[CursorInfo_PresetCursor_Cross] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_CROSSHAIR);
+    cursors_[CursorInfo_PresetCursor_SizeNwse] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENWSE);
+    cursors_[CursorInfo_PresetCursor_SizeNesw] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENESW);
+    cursors_[CursorInfo_PresetCursor_SizeWe] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZEWE);
+    cursors_[CursorInfo_PresetCursor_SizeNs] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENS);
+    cursors_[8] = nullptr;
+    cursors_[CursorInfo_PresetCursor_SizeAll] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZEALL);
+    cursors_[CursorInfo_PresetCursor_No] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_NO);
+    cursors_[CursorInfo_PresetCursor_Hand] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_HAND);
+}
+
+void PcSdlImpl::destroyCursors() {
+    for (auto& cursor : cursors_) {
+        SDL_FreeCursor(cursor.second);
+    }
+    cursors_.clear();
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::dispatchSdlEvent(const SDL_Event& ev) {
@@ -338,6 +399,8 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
         return handleSetTitle();
     case kUserEventSwitchMouseMode:
         return handleSwitchMouseMode();
+    case kUserEventUpdateCursorInfo:
+        return handleUpdateCursorInfo();
     case kUserEventStop:
         LOG(INFO) << "SDL loop received user stop";
         return DispatchResult::kStop;
@@ -455,8 +518,40 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSetTitle() {
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handleSwitchMouseMode() {
-    SDL_bool enable = absolute_mouse_ ? SDL_FALSE : SDL_TRUE;
+    bool absolute = false;
+    {
+        std::lock_guard lk{mutex_};
+        absolute = absolute_mouse_;
+    }
+    SDL_bool enable = absolute ? SDL_FALSE : SDL_TRUE;
     SDL_SetRelativeMouseMode(enable);
+    return DispatchResult::kContinue;
+}
+
+PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
+    int32_t cursor_id = 0;
+    bool visible = false;
+    bool absolute = true;
+    {
+        std::lock_guard<std::mutex> lk{mutex_};
+        cursor_id = cursor_id_;
+        visible = cursor_visible_;
+        absolute = absolute_mouse_;
+    }
+    if (cursor_id >= 12 || !absolute) {
+        return DispatchResult::kContinue;
+    }
+    auto iter = cursors_.find(cursor_id);
+    if (iter == cursors_.cend() || iter->second == nullptr) {
+        return DispatchResult::kContinue;
+    }
+    if (visible) {
+        SDL_ShowCursor(SDL_ENABLE);
+        SDL_SetCursor(iter->second);
+    }
+    else {
+        SDL_ShowCursor(SDL_DISABLE);
+    }
     return DispatchResult::kContinue;
 }
 

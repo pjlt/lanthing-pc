@@ -36,7 +36,6 @@
 #include <ltproto/ltproto.h>
 
 #include <ltproto/client2worker/audio_data.pb.h>
-#include <ltproto/client2worker/switch_mouse_mode.pb.h>
 #include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
 #include <ltproto/worker2service/start_working.pb.h>
@@ -208,8 +207,7 @@ bool Worker::init() {
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kStartWorking, std::bind(&Worker::onStartWorking, this, ph::_1)},
         {ltype::kStopWorking, std::bind(&Worker::onStopWorking, this, ph::_1)},
-        {ltype::kKeepAlive, std::bind(&Worker::onKeepAlive, this, ph::_1)},
-        {ltype::kSwitchMouseMode, std::bind(&Worker::onSwitchMouseMode, this, ph::_1)}};
+        {ltype::kKeepAlive, std::bind(&Worker::onKeepAlive, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!registerMessageHandler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -442,16 +440,6 @@ void Worker::onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>&) 
     last_time_received_from_service_ = ltlib::steady_now_ms();
     auto ack = std::make_shared<ltproto::common::KeepAliveAck>();
     sendPipeMessage(ltproto::id(ack), ack);
-}
-
-void Worker::onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
-    auto msg = std::static_pointer_cast<ltproto::client2worker::SwitchMouseMode>(_msg);
-    if (input_) {
-        input_->switchMouseMode(msg->absolute());
-    }
-    if (video_) {
-        video_->switchMouseMode(msg->absolute());
-    }
 }
 
 } // namespace worker
