@@ -50,6 +50,7 @@ constexpr int32_t kUserEventToggleFullscreen = 2;
 constexpr int32_t kUserEventStop = 3;
 constexpr int32_t kUserEventSetTitle = 4;
 constexpr int32_t kUserEventSwitchMouseMode = 5;
+constexpr int32_t kUserEventUpdateCursorInfo = 6;
 
 int sdl_event_watcher(void* userdata, SDL_Event* ev) {
     if (ev->type == SDL_WINDOWEVENT) {
@@ -80,10 +81,13 @@ public:
 
     void switchMouseMode(bool absolute) override;
 
+    void setCursorInfo(int32_t cursor_id, bool visible) override;
+
 private:
     void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
     bool initSdlSubSystems();
     void quitSdlSubSystems();
+    void loadCursors();
 
 private: // 事件处理
     enum class DispatchResult {
@@ -107,6 +111,7 @@ private: // 事件处理
     DispatchResult handleToggleFullscreen();
     DispatchResult handleSetTitle();
     DispatchResult handleSwitchMouseMode();
+    DispatchResult handleUpdateCursorInfo();
 
 private:
     SDL_Window* window_ = nullptr;
@@ -114,10 +119,13 @@ private:
     std::function<void()> on_exit_;
     bool windowed_fullscreen_;
     bool absolute_mouse_;
+    bool cursor_visible_ = false;
+    int32_t cursor_id_ = 0;
     std::mutex mutex_;
     std::unique_ptr<SdlInput> input_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::string title_ = "Lanthing";
+    std::map<int32_t, SDL_Cursor*> cursors_;
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
@@ -142,6 +150,7 @@ PcSdlImpl::PcSdlImpl(const Params& params)
 PcSdlImpl::~PcSdlImpl() {}
 
 bool PcSdlImpl::init() {
+    loadCursors();
     std::promise<bool> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
@@ -191,6 +200,18 @@ void PcSdlImpl::switchMouseMode(bool absolute) {
     SDL_Event ev{};
     ev.type = SDL_USEREVENT;
     ev.user.code = kUserEventSwitchMouseMode;
+    SDL_PushEvent(&ev);
+}
+
+void PcSdlImpl::setCursorInfo(int32_t cursor_id, bool visible) {
+    {
+        std::lock_guard lk{mutex_};
+        cursor_id_ = cursor_id;
+        cursor_visible_ = visible;
+    }
+    SDL_Event ev{};
+    ev.type = SDL_USEREVENT;
+    ev.user.code = kUserEventUpdateCursorInfo;
     SDL_PushEvent(&ev);
 }
 
@@ -285,6 +306,12 @@ void PcSdlImpl::quitSdlSubSystems() {
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
+void PcSdlImpl::loadCursors() {
+    for (int32_t i = 0; i < 12; i++) {
+        cursors_[i] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    }
+}
+
 PcSdlImpl::DispatchResult PcSdlImpl::dispatchSdlEvent(const SDL_Event& ev) {
     switch (ev.type) {
     case SDL_QUIT:
@@ -338,6 +365,8 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
         return handleSetTitle();
     case kUserEventSwitchMouseMode:
         return handleSwitchMouseMode();
+    case kUserEventUpdateCursorInfo:
+        return handleUpdateCursorInfo();
     case kUserEventStop:
         LOG(INFO) << "SDL loop received user stop";
         return DispatchResult::kStop;
@@ -455,8 +484,40 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSetTitle() {
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handleSwitchMouseMode() {
-    SDL_bool enable = absolute_mouse_ ? SDL_FALSE : SDL_TRUE;
+    bool absolute = false;
+    {
+        std::lock_guard lk{mutex_};
+        absolute = absolute_mouse_;
+    }
+    SDL_bool enable = absolute ? SDL_FALSE : SDL_TRUE;
     SDL_SetRelativeMouseMode(enable);
+    return DispatchResult::kContinue;
+}
+
+PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
+    int32_t cursor_id = 0;
+    bool visible = false;
+    bool absolute = true;
+    {
+        std::lock_guard<std::mutex> lk{mutex_};
+        cursor_id = cursor_id_;
+        visible = cursor_visible_;
+        absolute = absolute_mouse_;
+    }
+    if (cursor_id >= 12 || !absolute) {
+        return DispatchResult::kContinue;
+    }
+    auto iter = cursors_.find(cursor_id);
+    if (iter == cursors_.cend() || iter->second == nullptr) {
+        return DispatchResult::kContinue;
+    }
+    if (visible) {
+        SDL_ShowCursor(SDL_ENABLE);
+        SDL_SetCursor(iter->second);
+    }
+    else {
+        SDL_ShowCursor(SDL_DISABLE);
+    }
     return DispatchResult::kContinue;
 }
 

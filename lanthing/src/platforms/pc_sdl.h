@@ -71,6 +71,8 @@ public:
 
     virtual void switchMouseMode(bool absolute) = 0;
 
+    virtual void setCursorInfo(int32_t cursor_id, bool visible) = 0;
+
 protected:
     PcSdl() = default;
 };

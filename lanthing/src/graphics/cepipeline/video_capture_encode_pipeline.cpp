@@ -232,7 +232,7 @@ void VCEPipeline::captureAndSendCursor() {
     {
         std::lock_guard lk{mutex_};
         if (absolute_mouese_) {
-            return;
+            // return;
         }
     }
     auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
