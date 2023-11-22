@@ -88,6 +88,7 @@ private:
     bool initSdlSubSystems();
     void quitSdlSubSystems();
     void loadCursors();
+    void destroyCursors();
 
 private: // 事件处理
     enum class DispatchResult {
@@ -150,7 +151,6 @@ PcSdlImpl::PcSdlImpl(const Params& params)
 PcSdlImpl::~PcSdlImpl() {}
 
 bool PcSdlImpl::init() {
-    loadCursors();
     std::promise<bool> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
@@ -220,6 +220,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         promise.set_value(false);
         return;
     }
+    loadCursors();
     int desktop_width = 1920;
     int desktop_height = 1080;
     SDL_DisplayMode dm{};
@@ -276,6 +277,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     }
 CLEANUP:
     // 回收资源，删除解码器等
+    destroyCursors();
     SDL_DestroyWindow(window_);
     quitSdlSubSystems();
     on_exit_();
@@ -307,9 +309,41 @@ void PcSdlImpl::quitSdlSubSystems() {
 }
 
 void PcSdlImpl::loadCursors() {
-    for (int32_t i = 0; i < 12; i++) {
-        cursors_[i] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    // 顺序不一致，不能这么搞
+    // for (int32_t i = 0; i < 12; i++) {
+    //    cursors_[i] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    //}
+    using namespace ltproto::client2worker;
+    cursors_[CursorInfo_PresetCursor_Arrow] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW);
+    cursors_[CursorInfo_PresetCursor_Ibeam] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_IBEAM);
+    cursors_[CursorInfo_PresetCursor_Wait] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_WAIT);
+    cursors_[CursorInfo_PresetCursor_Cross] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_CROSSHAIR);
+    cursors_[CursorInfo_PresetCursor_SizeNwse] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENWSE);
+    cursors_[CursorInfo_PresetCursor_SizeNesw] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENESW);
+    cursors_[CursorInfo_PresetCursor_SizeWe] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZEWE);
+    cursors_[CursorInfo_PresetCursor_SizeNs] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENS);
+    cursors_[8] = nullptr;
+    cursors_[CursorInfo_PresetCursor_SizeAll] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZEALL);
+    cursors_[CursorInfo_PresetCursor_No] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_NO);
+    cursors_[CursorInfo_PresetCursor_Hand] =
+        SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_HAND);
+}
+
+void PcSdlImpl::destroyCursors() {
+    for (auto& cursor : cursors_) {
+        SDL_FreeCursor(cursor.second);
     }
+    cursors_.clear();
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::dispatchSdlEvent(const SDL_Event& ev) {

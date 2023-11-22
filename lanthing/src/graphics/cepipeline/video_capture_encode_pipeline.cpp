@@ -60,7 +60,6 @@ public:
     bool init();
     void start();
     void stop();
-    void switchMouseMode(bool absolute);
     VideoCodecType codec() const;
 
 private:
@@ -92,7 +91,6 @@ private:
     std::mutex mutex_;
     std::vector<std::function<void()>> tasks_;
     bool manual_bitrate_ = false;
-    bool absolute_mouese_ = true;
     std::map<HCURSOR, int32_t> cursors_;
     bool get_cursor_failed_ = false;
 };
@@ -154,11 +152,6 @@ void VCEPipeline::stop() {
         stoped_ = true;
         stop_promise_->get_future().get();
     }
-}
-
-void VCEPipeline::switchMouseMode(bool absolute) {
-    std::lock_guard lk{mutex_};
-    absolute_mouese_ = absolute;
 }
 
 VideoCodecType VCEPipeline::codec() const {
@@ -229,12 +222,6 @@ void VCEPipeline::consumeTasks() {
 }
 
 void VCEPipeline::captureAndSendCursor() {
-    {
-        std::lock_guard lk{mutex_};
-        if (absolute_mouese_) {
-            // return;
-        }
-    }
     auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
     msg->set_w(ltlib::getScreenWidth());
     msg->set_h(ltlib::getScreenHeight());
@@ -367,10 +354,6 @@ void VideoCaptureEncodePipeline::start() {
 
 void VideoCaptureEncodePipeline::stop() {
     impl_->stop();
-}
-
-void VideoCaptureEncodePipeline::switchMouseMode(bool absolute) {
-    impl_->switchMouseMode(absolute);
 }
 
 VideoCodecType VideoCaptureEncodePipeline::codec() const {

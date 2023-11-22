@@ -62,8 +62,6 @@ public:
     static std::unique_ptr<InputExecutor> create(const Params& params);
     virtual ~InputExecutor() = default;
 
-    void switchMouseMode(bool absolute);
-
 protected:
     virtual bool initKeyMouse() = 0;
     virtual void onMouseEvent(const std::shared_ptr<google::protobuf::MessageLite>&) = 0;
@@ -77,7 +75,7 @@ private:
     bool registerHandlers();
     void onControllerAddedRemoved(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg);
-    // void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor);
 
 private:
