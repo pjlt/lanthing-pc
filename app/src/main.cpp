@@ -66,7 +66,27 @@ void terminateCallback(const std::string& last_word) {
     LOG(INFO) << "Last words: " << last_word;
 }
 
-void initLogging() {
+void cleanupDumps(const std::filesystem::path& path) {
+    while (true) {
+        auto now = std::chrono::system_clock::now();
+        for (const auto& file : std::filesystem::directory_iterator{path}) {
+            std::string filename = file.path().string();
+            if (filename.size() < 5 || filename.substr(filename.size() - 4) != ".dmp") {
+                continue;
+            }
+            auto file_time =
+                std::chrono::clock_cast<std::chrono::system_clock>(file.last_write_time());
+            if (file_time.time_since_epoch() > (now - std::chrono::days{14}).time_since_epoch()) {
+                continue;
+            }
+            std::filesystem::remove(file.path());
+            LOG(INFO) << "Removing dump " << file.path().string();
+        }
+        std::this_thread::sleep_for(std::chrono::hours{12});
+    }
+}
+
+void initLoggingAndDumps() {
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
@@ -95,6 +115,9 @@ void initLogging() {
 
     LOG(INFO) << "Log system initialized";
 
+    std::thread cleanup_dumps([log_dir]() { cleanupDumps(log_dir); });
+    cleanup_dumps.detach();
+
     g_minidumpGenertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
     signal(SIGINT, sigint_handler);
     if (LT_CRASH_ON_THREAD_HANGS) {
@@ -115,7 +138,7 @@ int main(int argc, char** argv) {
     }
     auto now = time(nullptr);
     ::srand(now);
-    initLogging();
+    initLoggingAndDumps();
     std::unique_ptr<lt::App> app = lt::App::create();
     if (app == nullptr) {
         return -1;
