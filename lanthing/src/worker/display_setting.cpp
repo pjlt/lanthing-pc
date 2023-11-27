@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -39,16 +39,20 @@ namespace lt {
 
 namespace worker {
 
-DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display_setting) {
+DisplaySettingNegotiator::Result
+DisplaySettingNegotiator::negotiate(DisplaySetting client_display_setting) {
+    Result result{};
     DEVMODEW current_mode{};
     current_mode.dmSize = sizeof(DEVMODEW);
     if (EnumDisplaySettingsW(nullptr, ENUM_CURRENT_SETTINGS, &current_mode) == 0) {
         LOG(WARNING) << "Enumerate current display settings failed";
-        return {};
+        return result;
     }
-    (void)client_display_setting;
+    result.client = client_display_setting;
+    result.service = DisplaySetting(current_mode.dmPelsWidth, current_mode.dmPelsHeight,
+                                    current_mode.dmDisplayFrequency);
     // 因为不修改被控分辨率，暂时不协商了
-#if 0
+#if 1
     // 比较{width, height, refresh_rate ± 1}
     std::set<DisplaySetting, decltype(&DisplaySetting::compareFullLoose)> available_settings{
         &DisplaySetting::compareFullLoose};
@@ -62,7 +66,8 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
     }
     const auto iter = available_settings.find(client_display_setting);
     if (iter != available_settings.cend()) {
-        return *iter;
+        result.negotiated = *iter;
+        return result;
     }
 
     // 比较{width, height}
@@ -70,8 +75,8 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
         available_settings.begin(), available_settings.end(), &DisplaySetting::compareWidthHeight};
     auto iter2 = avaiable_settings2.find(client_display_setting);
     if (iter2 != avaiable_settings2.end()) {
-        DisplaySetting result = *iter2;
-        result.refrash_rate = 0; // 置0表示刷新率协商失败.
+        result.negotiated = *iter2;
+        result.negotiated.refrash_rate = 0; // 置0表示刷新率协商失败.
         return result;
     }
 
@@ -80,15 +85,12 @@ DisplaySetting DisplaySettingNegotiator::negotiate(DisplaySetting client_display
     if (iter3 != avaiable_settings2.end()) {
         iter3--;
         if (iter3 != avaiable_settings2.end()) {
-            DisplaySetting result = *iter3;
-            result.refrash_rate = 0;
+            result.negotiated = *iter3;
+            result.negotiated.refrash_rate = 0;
             return result;
         }
     }
 #endif
-    // 找不到，直接返回host当前的DisplaySetting
-    DisplaySetting result(current_mode.dmPelsWidth, current_mode.dmPelsHeight,
-                          current_mode.dmDisplayFrequency);
     return result;
 }
 

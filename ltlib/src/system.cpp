@@ -254,6 +254,40 @@ DisplayOutputDesc getDisplayOutputDesc() {
     return DisplayOutputDesc{width, height, frequency};
 }
 
+bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
+    DEVMODE dm{};
+    dm.dmSize = sizeof(DEVMODE);
+    if (!::EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
+        return false;
+    }
+    dm.dmFields = 0;
+    if (dm.dmPelsHeight != h) {
+        dm.dmFields |= DM_PELSHEIGHT;
+    }
+    if (dm.dmPelsWidth != w) {
+        dm.dmFields |= DM_PELSWIDTH;
+    }
+    if (dm.dmDisplayFrequency != f) {
+        dm.dmFields |= DM_DISPLAYFREQUENCY;
+    }
+    dm.dmPelsHeight = h;
+    dm.dmPelsWidth = w;
+    dm.dmDisplayFrequency = f;
+    auto ret = ::ChangeDisplaySettings(&dm, 0);
+    if (ret != DISP_CHANGE_SUCCESSFUL) {
+        dm.dmFields = DM_PELSHEIGHT | DM_PELSWIDTH;
+        ret = ::ChangeDisplaySettings(&dm, 0);
+        if (ret != DISP_CHANGE_SUCCESSFUL) {
+            dm.dmFields = DM_DISPLAYFREQUENCY;
+            ret = ::ChangeDisplaySettings(&dm, 0);
+            if (ret != DISP_CHANGE_SUCCESSFUL) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
@@ -316,6 +350,13 @@ DisplayOutputDesc getDisplayOutputDesc() {
     uint32_t height = s->height;
     XCloseDisplay(d);
     return {width, height, 60};
+}
+
+bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
+    (void)w;
+    (void)h;
+    (void)f;
+    return false;
 }
 
 #endif // #elif defined(LT_LINUX)

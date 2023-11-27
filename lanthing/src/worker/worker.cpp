@@ -30,16 +30,16 @@
 
 #include "worker.h"
 
-#include <ltlib/logging.h>
-
-#include <ltlib/times.h>
-#include <ltproto/ltproto.h>
-
 #include <ltproto/client2worker/audio_data.pb.h>
 #include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
+#include <ltproto/ltproto.h>
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
+
+#include <ltlib/logging.h>
+#include <ltlib/system.h>
+#include <ltlib/times.h>
 
 namespace {
 
@@ -159,6 +159,7 @@ Worker::Worker(const Params& params)
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
 
 Worker::~Worker() {
+    recoverDisplaySettings();
     {
         std::lock_guard lock{mutex_};
         pipe_client_.reset();
@@ -186,18 +187,26 @@ bool Worker::init() {
         return false;
     }
     DisplaySetting client_display_setting{client_width_, client_height_, client_refresh_rate_};
-    negotiated_display_setting_ = DisplaySettingNegotiator::negotiate(client_display_setting);
-    if (negotiated_display_setting_.width == 0 || negotiated_display_setting_.height == 0) {
+    auto result = DisplaySettingNegotiator::negotiate(client_display_setting);
+    if (result.negotiated.width == 0 || result.negotiated.height == 0) {
         LOG(WARNING) << "Negotiate display setting failed, fallback to default(width:1920, "
                         "height:1080, refresh_rate:60)";
-        negotiated_display_setting_.width = 1920;
-        negotiated_display_setting_.height = 1080;
+        result.negotiated.width = 1920;
+        result.negotiated.height = 1080;
+        result.negotiated.refrash_rate = 60;
     }
-    else {
-        LOGF(DEBUG, "Negotiate display setting(width:%u, height:%u, refresh_rate:%u)",
-             negotiated_display_setting_.width, negotiated_display_setting_.height,
-             negotiated_display_setting_.refrash_rate);
+    else if (result.negotiated.refrash_rate == 0) {
+        LOG(WARNING) << "Negotiate display.refresh_rate failed, fallback to 60hz";
+        result.negotiated.refrash_rate = 60;
     }
+    LOGF(INFO, "Final negotiate display setting(width:%u, height:%u, refresh_rate:%u)",
+         result.negotiated.width, result.negotiated.height, result.negotiated.refrash_rate);
+    if (result.negotiated != result.service) {
+        if (!saveAndChangeCurrentDisplaySettings(result)) {
+            return false;
+        }
+    }
+    negotiated_display_setting_ = result.negotiated;
     if (!negotiateParameters()) {
         return false;
     }
@@ -239,6 +248,55 @@ bool Worker::initPipeClient() {
     params.on_reconnecting = std::bind(&Worker::onPipeReconnecting, this);
     pipe_client_ = ltlib::Client::create(params);
     return pipe_client_ != nullptr;
+}
+
+bool Worker::saveAndChangeCurrentDisplaySettings(DisplaySettingNegotiator::Result result) {
+    settings_ = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
+    if (settings_ == nullptr) {
+        return false;
+    }
+    settings_->setInteger("old_screen_width", result.service.width);
+    settings_->setInteger("old_screen_height", result.service.height);
+    settings_->setInteger("old_screen_rate", result.service.refrash_rate);
+    if (ltlib::changeDisplaySettings(result.negotiated.width, result.negotiated.height,
+                                     result.negotiated.refrash_rate)) {
+        LOGF(INFO, "Change display settings to {w:%u, h:%u, f:%u} success", result.negotiated.width,
+             result.negotiated.height, result.negotiated.refrash_rate);
+        return true;
+    }
+    else {
+        LOGF(INFO, "Change display settings to {w:%u, h:%u, f:%u} failed", result.negotiated.width,
+             result.negotiated.height, result.negotiated.refrash_rate);
+        settings_ = nullptr;
+        return false;
+    }
+}
+
+void Worker::recoverDisplaySettings() {
+    if (settings_ == nullptr) {
+        return;
+    }
+    auto width = settings_->getInteger("old_screen_width");
+    auto height = settings_->getInteger("old_screen_height");
+    auto rate = settings_->getInteger("old_screen_rate");
+    if (!width.has_value() || !height.has_value() || !rate.has_value()) {
+        LOG(WARNING) << "Get display setting from settings.db failed, won't recover";
+        return;
+    }
+    settings_->deleteKey("old_screen_width");
+    settings_->deleteKey("old_screen_height");
+    settings_->deleteKey("old_screen_rate");
+    uint32_t w = static_cast<uint32_t>(width.value());
+    uint32_t h = static_cast<uint32_t>(height.value());
+    uint32_t r = static_cast<uint32_t>(rate.value());
+    if (ltlib::changeDisplaySettings(w, h, r)) {
+        LOGF(INFO, "Recover display settings to {w:%u, h:%u, f:%u} success", w, h, r);
+        return;
+    }
+    else {
+        LOGF(INFO, "Recover display settings to {w:%u, h:%u, f:%u} failed", w, h, r);
+        return;
+    }
 }
 
 bool Worker::negotiateParameters() {
