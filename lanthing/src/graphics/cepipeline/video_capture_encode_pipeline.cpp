@@ -159,6 +159,7 @@ VideoCodecType VCEPipeline::codec() const {
 }
 
 void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive) {
+    ltlib::setThreadDesktop();
     stop_promise_ = std::make_unique<std::promise<void>>();
     stoped_ = false;
     LOG(INFO) << "VideoCaptureEncodePipeline start";
@@ -249,7 +250,7 @@ void VCEPipeline::captureAndSendCursor() {
     else {
         error1 = GetLastError();
     }
-
+    ltlib::setThreadDesktop();
     if (GetCursorPos(&pos)) {
         get_cursor_failed_ = false;
         msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
@@ -273,10 +274,10 @@ void VCEPipeline::captureAndSendCursor() {
 
 void VCEPipeline::captureAndSendVideoFrame() {
     auto captured_frame = capturer_->capture();
-    capturer_->doneWithFrame();
     if (!captured_frame.has_value()) {
         return;
     }
+    capturer_->doneWithFrame();
     auto encoded_frame = encoder_->encode(captured_frame.value());
     if (encoded_frame == nullptr) {
         return;

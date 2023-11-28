@@ -270,7 +270,11 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
 
     // FIXME: implement it;
     inputs[0].mi.time = 0;
-    SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+    UINT ret = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+    if (ret == 0 && GetLastError() == 5) {
+        ltlib::setThreadDesktop();
+        SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+    }
 }
 
 } // namespace lt

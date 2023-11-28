@@ -288,6 +288,24 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
     return true;
 }
 
+void LT_API setThreadDesktop() {
+    wchar_t user[128] = {0};
+    DWORD size = 128;
+    GetUserNameW(user, &size);
+    if (std::wstring(L"SYSTEM") == user) {
+        HDESK hdesk = OpenInputDesktop(0, FALSE, GENERIC_ALL);
+        if (!hdesk) {
+            return;
+        }
+        if (!SetThreadDesktop(hdesk)) {
+            return;
+        }
+        if (hdesk) {
+            CloseDesktop(hdesk);
+        }
+    }
+}
+
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
@@ -358,6 +376,8 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
     (void)f;
     return false;
 }
+
+void LT_API setThreadDesktop() {}
 
 #endif // #elif defined(LT_LINUX)
 

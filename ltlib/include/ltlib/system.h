@@ -60,4 +60,6 @@ DisplayOutputDesc LT_API getDisplayOutputDesc();
 
 bool LT_API changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f);
 
+void LT_API setThreadDesktop();
+
 } // namespace ltlib
