@@ -90,15 +90,14 @@ void terminateCallback(const std::string& last_word) {
 
 void cleanupDumps(const std::filesystem::path& path) {
     while (true) {
-        auto now = std::chrono::system_clock::now();
+        auto now = std::filesystem::file_time_type::clock::now();
         for (const auto& file : std::filesystem::directory_iterator{path}) {
             std::string filename = file.path().string();
             if (filename.size() < 5 || filename.substr(filename.size() - 4) != ".dmp") {
                 continue;
             }
-            auto file_time =
-                std::chrono::clock_cast<std::chrono::system_clock>(file.last_write_time());
-            if (file_time.time_since_epoch() > (now - std::chrono::days{14}).time_since_epoch()) {
+            if (file.last_write_time().time_since_epoch() >
+                (now - std::chrono::days{14}).time_since_epoch()) {
                 continue;
             }
             std::filesystem::remove(file.path());
