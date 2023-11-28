@@ -88,6 +88,25 @@ void terminateCallback(const std::string& last_word) {
     LOG(INFO) << "Last words: " << last_word;
 }
 
+void cleanupDumps(const std::filesystem::path& path) {
+    while (true) {
+        auto now = std::filesystem::file_time_type::clock::now();
+        for (const auto& file : std::filesystem::directory_iterator{path}) {
+            std::string filename = file.path().string();
+            if (filename.size() < 5 || filename.substr(filename.size() - 4) != ".dmp") {
+                continue;
+            }
+            if (file.last_write_time().time_since_epoch() >
+                (now - std::chrono::days{14}).time_since_epoch()) {
+                continue;
+            }
+            std::filesystem::remove(file.path());
+            LOG(INFO) << "Removing dump " << file.path().string();
+        }
+        std::this_thread::sleep_for(std::chrono::hours{12});
+    }
+}
+
 void initLogAndMinidump(Role role) {
     std::string prefix;
     std::string rtc_prefix;
@@ -140,6 +159,9 @@ void initLogAndMinidump(Role role) {
 #endif
     }
     LOG(INFO) << "Log system initialized";
+
+    std::thread cleanup_dumps([log_dir]() { cleanupDumps(log_dir); });
+    cleanup_dumps.detach();
 
     // g3log必须再minidump前初始化
     g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());

@@ -37,6 +37,7 @@
 
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
+#include <ltlib/settings.h>
 #include <ltlib/threads.h>
 #include <transport/transport.h>
 
@@ -70,6 +71,8 @@ private:
     Worker(const Params& params);
     bool init();
     bool initPipeClient();
+    bool saveAndChangeCurrentDisplaySettings(DisplaySettingNegotiator::Result result);
+    void recoverDisplaySettings();
     bool negotiateParameters();
     void mainLoop(const std::function<void()>& i_am_alive);
     void stop();
@@ -115,6 +118,7 @@ private:
     std::unique_ptr<lt::VideoCaptureEncodePipeline> video_;
     std::unique_ptr<lt::InputExecutor> input_;
     std::unique_ptr<lt::AudioCapturer> audio_;
+    std::unique_ptr<ltlib::Settings> settings_;
 };
 
 } // namespace worker

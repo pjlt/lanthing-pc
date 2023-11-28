@@ -254,6 +254,58 @@ DisplayOutputDesc getDisplayOutputDesc() {
     return DisplayOutputDesc{width, height, frequency};
 }
 
+bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
+    DEVMODE dm{};
+    dm.dmSize = sizeof(DEVMODE);
+    if (!::EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
+        return false;
+    }
+    dm.dmFields = 0;
+    if (dm.dmPelsHeight != h) {
+        dm.dmFields |= DM_PELSHEIGHT;
+    }
+    if (dm.dmPelsWidth != w) {
+        dm.dmFields |= DM_PELSWIDTH;
+    }
+    if (dm.dmDisplayFrequency != f) {
+        dm.dmFields |= DM_DISPLAYFREQUENCY;
+    }
+    dm.dmPelsHeight = h;
+    dm.dmPelsWidth = w;
+    dm.dmDisplayFrequency = f;
+    auto ret = ::ChangeDisplaySettings(&dm, 0);
+    if (ret != DISP_CHANGE_SUCCESSFUL) {
+        dm.dmFields = DM_PELSHEIGHT | DM_PELSWIDTH;
+        ret = ::ChangeDisplaySettings(&dm, 0);
+        if (ret != DISP_CHANGE_SUCCESSFUL) {
+            dm.dmFields = DM_DISPLAYFREQUENCY;
+            ret = ::ChangeDisplaySettings(&dm, 0);
+            if (ret != DISP_CHANGE_SUCCESSFUL) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void LT_API setThreadDesktop() {
+    wchar_t user[128] = {0};
+    DWORD size = 128;
+    GetUserNameW(user, &size);
+    if (std::wstring(L"SYSTEM") == user) {
+        HDESK hdesk = OpenInputDesktop(0, FALSE, GENERIC_ALL);
+        if (!hdesk) {
+            return;
+        }
+        if (!SetThreadDesktop(hdesk)) {
+            return;
+        }
+        if (hdesk) {
+            CloseDesktop(hdesk);
+        }
+    }
+}
+
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
@@ -317,6 +369,15 @@ DisplayOutputDesc getDisplayOutputDesc() {
     XCloseDisplay(d);
     return {width, height, 60};
 }
+
+bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
+    (void)w;
+    (void)h;
+    (void)f;
+    return false;
+}
+
+void LT_API setThreadDesktop() {}
 
 #endif // #elif defined(LT_LINUX)
 

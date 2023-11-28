@@ -8,7 +8,9 @@
 #pragma warning(push, 0)
 
 #include "duplication_manager.h"
+
 #include <ltlib/logging.h>
+#include <ltlib/system.h>
 
 //
 // Constructor sets up references / variables
@@ -203,6 +205,7 @@ DUPL_RETURN DUPLICATIONMANAGER::GetMouse(_Inout_ PTR_INFO* PtrInfo,
     return DUPL_RETURN_SUCCESS;
 }
 
+#pragma warning(disable : 6101)
 //
 // Get next frame and write it into Data
 //
@@ -210,18 +213,25 @@ _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
     DUPL_RETURN DUPLICATIONMANAGER::GetFrame(_Out_ FRAME_DATA* Data, _Out_ bool* Timeout) {
     IDXGIResource* DesktopResource = nullptr;
     DXGI_OUTDUPL_FRAME_INFO FrameInfo;
-
     // Get new frame
     HRESULT hr = m_DeskDupl->AcquireNextFrame(50, &FrameInfo, &DesktopResource);
     if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
         *Timeout = true;
+        LOG(DEBUG) << "Dupl timeout";
         return DUPL_RETURN_SUCCESS;
     }
     *Timeout = false;
 
+    if (hr == DXGI_ERROR_ACCESS_LOST) {
+        (void)Data;
+        LOG(ERR) << "DXGI_ERROR_ACCESS_LOST";
+        return ResetDulp();
+    }
+
     if (FAILED(hr)) {
         // return ProcessFailure(m_Device, L"Failed to acquire next frame in DUPLICATIONMANAGER",
         //                       L"Error", hr, FrameInfoExpectedErrors);
+        LOGF(ERR, "Dupl failed %#x", hr);
         return DUPL_RETURN::DUPL_RETURN_ERROR_UNEXPECTED;
     }
 
@@ -276,6 +286,7 @@ _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
             // return ProcessFailure(nullptr, L"Failed to get frame move rects in
             // DUPLICATIONMANAGER",
             //                       L"Error", hr, FrameInfoExpectedErrors);
+            LOGF(ERR, "Dupl GetFrameMoveRects failed %#x", hr);
             return DUPL_RETURN::DUPL_RETURN_ERROR_UNEXPECTED;
         }
         Data->MoveCount = BufSize / sizeof(DXGI_OUTDUPL_MOVE_RECT);
@@ -291,6 +302,7 @@ _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
             // return ProcessFailure(nullptr, L"Failed to get frame dirty rects in
             // DUPLICATIONMANAGER",
             //                       L"Error", hr, FrameInfoExpectedErrors);
+            LOGF(ERR, "Dupl GetFrameDirtyRects failed %#x", hr);
             return DUPL_RETURN::DUPL_RETURN_ERROR_UNEXPECTED;
         }
         Data->DirtyCount = BufSize / sizeof(RECT);
@@ -303,6 +315,8 @@ _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
 
     return DUPL_RETURN_SUCCESS;
 }
+
+#pragma warning(default : 6101)
 
 //
 // Release frame
@@ -334,4 +348,36 @@ void DUPLICATIONMANAGER::GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr) {
 void DUPLICATIONMANAGER::WaitForVBlank() {
     assert(m_DxgiOutput);
     m_DxgiOutput->WaitForVBlank();
+}
+
+DUPL_RETURN DUPLICATIONMANAGER::ResetDulp() {
+    ltlib::setThreadDesktop();
+    if (m_DeskDupl) {
+        m_DeskDupl->Release();
+        m_DeskDupl = nullptr;
+    }
+    m_DxgiOutput->GetDesc(&m_OutputDesc);
+    IDXGIOutput1* DxgiOutput1 = nullptr;
+    HRESULT hr =
+        m_DxgiOutput->QueryInterface(__uuidof(DxgiOutput1), reinterpret_cast<void**>(&DxgiOutput1));
+    if (FAILED(hr)) {
+        LOGF(ERR, "Failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
+        return DUPL_RETURN_ERROR_UNEXPECTED;
+    }
+
+    hr = DxgiOutput1->DuplicateOutput(m_Device, &m_DeskDupl);
+    DxgiOutput1->Release();
+    DxgiOutput1 = nullptr;
+    if (FAILED(hr)) {
+        if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
+            LOG(ERR,
+                "There is already the maximum number of applications using the Desktop "
+                "Duplication API running, please close one of those applications and then "
+                "try again.",
+                "Error");
+        }
+        LOGF(ERR, "failed to call DuplicateOutput, hr:0x%08x", hr);
+        return DUPL_RETURN_ERROR_UNEXPECTED;
+    }
+    return DUPL_RETURN_ERROR_UNEXPECTED;
 }

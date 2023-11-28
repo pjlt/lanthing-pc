@@ -473,11 +473,11 @@ bool NvD3d11EncoderImpl::initBuffers() {
 }
 
 std::optional<NV_ENC_MAP_INPUT_RESOURCE> NvD3d11EncoderImpl::initInputFrame(void* frame) {
-    for (auto& res : resources_) {
-        if (res.reg.resourceToRegister == frame) {
-            return res.mapped;
-        }
-    }
+    // for (auto& res : resources_) {
+    //     if (res.reg.resourceToRegister == frame) {
+    //         return res.mapped;
+    //     }
+    // }
     EncodeResource res;
     res.reg.resourceToRegister = frame;
     NVENCSTATUS status = nvfuncs_.nvEncRegisterResource(nvencoder_, &res.reg);
@@ -491,26 +491,25 @@ std::optional<NV_ENC_MAP_INPUT_RESOURCE> NvD3d11EncoderImpl::initInputFrame(void
         LOG(ERR) << "nvEncMapInputResource failed with " << status;
         return {};
     }
-    resources_.push_back(res);
-    LOG(INFO) << "Register texture " << frame;
+    // resources_.push_back(res);
+    // LOG(INFO) << "Register texture " << frame;
     return res.mapped;
 }
 
 bool NvD3d11EncoderImpl::uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource) {
     (void)resource;
-    // NVENCSTATUS status = nvfuncs_.nvEncUnmapInputResource(nvencoder_, &resource);
-    // if (status != NV_ENC_SUCCESS) {
-    //     LOG(ERR) << "nvEncUnmapInputResource failed with " << status;
-    //     return false;
-    // }
-    //  if (register_res_.registeredResource) {
-    //      status = nvfuncs_.nvEncUnregisterResource(nvencoder_, register_res_.registeredResource);
-    //      if (status != NV_ENC_SUCCESS) {
-    //          LOG(ERR) << "nvEncUnregisterResource failed with " << status;
-    //          return false;
-    //      }
-    //      register_res_.resourceToRegister = nullptr;
-    //  }
+    NVENCSTATUS status = nvfuncs_.nvEncUnmapInputResource(nvencoder_, &resource);
+    if (status != NV_ENC_SUCCESS) {
+        LOG(ERR) << "nvEncUnmapInputResource failed with " << status;
+        return false;
+    }
+    if (resource.registeredResource) {
+        status = nvfuncs_.nvEncUnregisterResource(nvencoder_, resource.registeredResource);
+        if (status != NV_ENC_SUCCESS) {
+            LOG(ERR) << "nvEncUnregisterResource failed with " << status;
+            return false;
+        }
+    }
     return true;
 }
 
