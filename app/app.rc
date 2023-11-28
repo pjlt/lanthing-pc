@@ -1,3 +1,6 @@
+#define            LT_VERSION               0,1,7
+#define            LT_VERSION_STR           "0.1.7"
+
 #include "winres.h"
 
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
@@ -5,8 +8,8 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 IDB_PNG1                ICON                     "lanthing.ico"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,0,0
- PRODUCTVERSION 0,1,7,0
+ FILEVERSION 0,0,0
+ PRODUCTVERSION LT_VERSION
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -23,12 +26,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Project Lanthing"
             VALUE "FileDescription", "Lanthing UI"
-            VALUE "FileVersion", "0.0.0.0"
+            VALUE "FileVersion", "0.0.0"
             VALUE "InternalName", "app.exe"
             VALUE "LegalCopyright", "Copyright (C) 2023 Project Lanthing All Rights Reserved"
             VALUE "OriginalFilename", "app.exe"
             VALUE "ProductName", "Lanthing"
-            VALUE "ProductVersion", "0.1.7.0"
+            VALUE "ProductVersion", LT_VERSION_STR
         END
     END
     BLOCK "VarFileInfo"

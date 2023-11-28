@@ -209,6 +209,11 @@ if (LT_WINDOWS)
         ${LT_AUDIO_CAPTURER_SRCS}
         ${LT_INPUT_EXECUTOR_SRCS}
     )
+
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
+        @ONLY)
 endif()
 
 add_executable(${PROJECT_NAME}

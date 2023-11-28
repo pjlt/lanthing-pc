@@ -47,6 +47,13 @@ set(APP_UI_VIEWS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/views/mainwindow/mainwindow.ui
 )
 
+if (LT_WINDOWS)
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/app.rc.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/app.rc
+        @ONLY)
+endif()
+
 add_executable(${PROJECT_NAME} 
     ${CMAKE_CURRENT_SOURCE_DIR}/app.rc
     ${APP_SRCS} 
