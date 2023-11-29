@@ -75,8 +75,7 @@ std::unique_ptr<WorkerProcess> WorkerProcess::create(const Params& params) {
 }
 
 WorkerProcess::WorkerProcess(const Params& params)
-    : on_stoped_{params.on_stoped}
-    , path_{params.path}
+    : path_{params.path}
     , pipe_name_{params.pipe_name}
     , client_width_{params.client_width}
     , client_height_{params.client_height}
@@ -84,7 +83,21 @@ WorkerProcess::WorkerProcess(const Params& params)
     , client_codecs_{params.client_codecs}
     , run_as_win_service_{ltlib::isRunAsService()} {}
 
-WorkerProcess::~WorkerProcess() {}
+WorkerProcess::~WorkerProcess() {
+    stoped_ = true;
+    if (process_handle_) {
+        CloseHandle(process_handle_);
+        process_handle_ = nullptr;
+    }
+    if (thread_handle_) {
+        CloseHandle(thread_handle_);
+        thread_handle_ = nullptr;
+    }
+}
+
+void WorkerProcess::stop() {
+    stoped_ = true;
+}
 
 void WorkerProcess::start() {
     std::lock_guard lk{mutex_};
@@ -93,16 +106,12 @@ void WorkerProcess::start() {
         return;
     }
     stoped_ = false;
-    std::promise<void> promise;
-    auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
-        "worker_process", [this, &promise](const std::function<void()>& i_am_alive) {
-            mainLoop(promise, i_am_alive);
-        });
-    future.get();
+        "worker_process",
+        [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
 }
 
-void WorkerProcess::mainLoop(std::promise<void>& promise, const std::function<void()>& i_am_alive) {
+void WorkerProcess::mainLoop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
         if (!launchWorkerProcess()) {
@@ -110,7 +119,6 @@ void WorkerProcess::mainLoop(std::promise<void>& promise, const std::function<vo
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             continue;
         }
-        promise.set_value();
         waitForWorkerProcess(i_am_alive);
     }
 }
@@ -119,7 +127,15 @@ bool WorkerProcess::launchWorkerProcess() {
     std::stringstream ss;
     ss << path_ << " -type worker "
        << " -name " << pipe_name_ << " -width " << client_width_ << " -height " << client_height_
-       << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_codecs_);
+       << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_codecs_)
+       << " -action streaming";
+    if (first_launch_) {
+        first_launch_ = false;
+        ss << " -negotiate 1";
+    }
+    else {
+        ss << " -negotiate 0";
+    }
     std::wstring cmd = ltlib::utf8To16(ss.str());
     if (process_handle_) {
         CloseHandle(process_handle_);
@@ -196,14 +212,18 @@ void WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
         if (ret == WAIT_TIMEOUT) {
             continue;
         }
-        CloseHandle(process_handle_);
-        process_handle_ = nullptr;
-        CloseHandle(thread_handle_);
-        thread_handle_ = nullptr;
-        stoped_ = true;
+        // 就算是非法值也不要紧
+        if (process_handle_) {
+            CloseHandle(process_handle_);
+            process_handle_ = nullptr;
+        }
+        if (thread_handle_) {
+            CloseHandle(thread_handle_);
+            thread_handle_ = nullptr;
+        }
         LOG(INFO) << "Worker process exited";
+        return;
     }
-    on_stoped_();
 }
 
 } // namespace svc

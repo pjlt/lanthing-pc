@@ -31,26 +31,26 @@
 #include <Windows.h>
 
 #include <ltlib/logging.h>
-
 #include <ltlib/system.h>
 
 #include <worker/session_change_observer.h>
 
 namespace {
 
-bool get_desk_name(HDESK desktop, std::wstring& name) {
+bool getDeskName(HDESK desktop, std::wstring& name) {
     DWORD name_length = 0;
-    GetUserObjectInformationW(desktop, UOI_NAME, 0, 0, &name_length);
+    GetUserObjectInformationW(desktop, UOI_NAME, nullptr, 0, &name_length);
     if (!name_length) {
         LOG(WARNING) << "GetUserObjectInformationW failed: " << GetLastError();
         return false;
     }
-    std::vector<TCHAR> desk_name(name_length);
-    if (!GetUserObjectInformationW(desktop, UOI_NAME, desk_name.data(), name_length, 0)) {
+    std::vector<wchar_t> desk_name(name_length);
+    if (!GetUserObjectInformationW(desktop, UOI_NAME, desk_name.data(),
+                                   name_length * sizeof(wchar_t), &name_length)) {
         LOG(WARNING) << "GetUserObjectInformationW failed: " << GetLastError();
         return false;
     }
-    name.assign(desk_name.begin(), desk_name.end());
+    name.assign(&desk_name[0], name_length / sizeof(wchar_t));
     return true;
 }
 
@@ -69,7 +69,7 @@ std::unique_ptr<SessionChangeObserver> SessionChangeObserver::create() {
     DWORD current_thread_id = GetCurrentThreadId();
     HDESK desktop = GetThreadDesktop(current_thread_id);
     std::wstring prev_desk_name;
-    if (!get_desk_name(desktop, prev_desk_name))
+    if (!getDeskName(desktop, prev_desk_name))
         return nullptr;
     CloseDesktop(desktop);
     observer->startup_desk_name_ = prev_desk_name;

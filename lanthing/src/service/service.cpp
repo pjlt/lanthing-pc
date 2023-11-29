@@ -444,7 +444,7 @@ void Service::reportSessionClosed(WorkerSession::CloseReason close_reason,
     case WorkerSession::CloseReason::ClientClose:
         reason = ltproto::server::CloseConnection_Reason_ClientClose;
         break;
-    case WorkerSession::CloseReason::WorkerStoped:
+    case WorkerSession::CloseReason::WorkerFailed:
         reason = ltproto::server::CloseConnection_Reason_HostClose;
         break;
     case WorkerSession::CloseReason::Timeout:

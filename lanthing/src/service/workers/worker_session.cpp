@@ -263,10 +263,7 @@ bool WorkerSession::initTransport() {
         LOG(ERR) << "Create transport server failed";
         return false;
     }
-    else {
-        rtc_closed_ = false;
-        return true;
-    }
+    return true;
 }
 
 tp::Server* WorkerSession::createTcpServer() {
@@ -363,46 +360,48 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
                                         std::vector<lt::VideoCodecType> client_codecs) {
     WorkerProcess::Params params{};
     params.pipe_name = pipe_name_;
-    params.on_stoped = std::bind(&WorkerSession::onWorkerStoped, this);
     params.path = ltlib::getProgramFullpath();
     params.client_width = client_width;
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
     params.client_codecs = client_codecs;
     worker_process_ = WorkerProcess::create(params);
-    worker_process_stoped_ = false;
 }
 
 void WorkerSession::onClosed(CloseReason reason) {
     // NOTE: 运行在ioloop
+    bool rtc_closed = false;
     switch (reason) {
     case CloseReason::ClientClose:
-        rtc_closed_ = true;
+        LOG(INFO) << "Close worker session, reason: ClientClose";
         break;
-    case CloseReason::WorkerStoped:
-        worker_process_stoped_ = true;
+    case CloseReason::WorkerFailed:
+        LOG(INFO) << "Close worker session, reason: WorkerFailed";
         break;
     case CloseReason::Timeout:
-        rtc_closed_ = true;
+        LOG(INFO) << "Close worker session, reason: Timeout";
+        rtc_closed = true;
         sendSigClose();
         break;
     case CloseReason::UserKick:
+        LOG(INFO) << "Close worker session, reason: UserKick";
         sendSigClose();
         break;
     default:
         break;
     }
-    if (!rtc_closed_) {
+    if (!rtc_closed) {
         tp_server_->close();
-        rtc_closed_ = true;
     }
-    if (!worker_process_stoped_) {
+    if (reason != CloseReason::WorkerFailed) {
         auto msg = std::make_shared<ltproto::worker2service::StopWorking>();
         sendToWorker(ltproto::id(msg), msg);
+        if (worker_process_ != nullptr) {
+            worker_process_->stop();
+        }
     }
-    if (rtc_closed_ && worker_process_stoped_) {
-        on_closed_(client_device_id_, reason, session_name_, room_id_);
-    }
+    postDelayTask(
+        100, [this, reason]() { on_closed_(client_device_id_, reason, session_name_, room_id_); });
 }
 
 void WorkerSession::maybeOnCreateSessionCompleted() {
@@ -673,21 +672,32 @@ void WorkerSession::startWorking() {
 
 void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorkingAck>(_msg);
-    auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
-    if (msg->err_code() == ltproto::ErrorCode::Success) {
-        ack->set_err_code(ltproto::ErrorCode::Success);
-        for (uint32_t type : msg->msg_type()) {
-            worker_registered_msg_.insert(type);
+    if (!first_start_working_ack_received_) {
+        first_start_working_ack_received_ = true;
+        auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
+        if (msg->err_code() == ltproto::ErrorCode::Success) {
+            ack->set_err_code(ltproto::ErrorCode::Success);
+            for (uint32_t type : msg->msg_type()) {
+                worker_registered_msg_.insert(type);
+            }
         }
+        else {
+            // TODO: 失败了，关闭整个WorkerSession
+            ack->set_err_code(msg->err_code());
+        }
+        sendMessageToRemoteClient(ltproto::id(ack), ack, true);
+        tellAppAccpetedConnection();
+        postDelayTask(
+            1000, std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false, false));
     }
     else {
-        // TODO: 失败了，关闭整个WorkerSession
-        ack->set_err_code(msg->err_code());
+        if (msg->err_code() != ltproto::ErrorCode::Success) {
+            LOG(ERR) << "Received StartWorkingAck with error code "
+                     << static_cast<int>(msg->err_code()) << " : "
+                     << ltproto::ErrorCode_Name(msg->err_code());
+            onClosed(CloseReason::WorkerFailed);
+        }
     }
-    sendMessageToRemoteClient(ltproto::id(ack), ack, true);
-    tellAppAccpetedConnection();
-    postDelayTask(1000,
-                  std::bind(&WorkerSession::sendConnectionStatus, this, true, false, false, false));
 }
 
 void WorkerSession::sendToWorker(uint32_t type,
@@ -705,15 +715,16 @@ void WorkerSession::onKeepAliveAck() {
     sendMessageToRemoteClient(ltproto::id(ack), ack, true);
 }
 
-void WorkerSession::onWorkerStoped() {
-    // FIXME: worker退出不代表关闭，也可能是session改变
-    // NOTE: 这是运行在WorkerProcess线程
-    postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::WorkerStoped));
-}
-
 void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    negotiated_streaming_params_ = msg;
-    maybeOnCreateSessionCompleted();
+    if (negotiated_streaming_params_ == nullptr) {
+        // 第一次收到Worker进程的onWorkerStreamingParams
+        negotiated_streaming_params_ = msg;
+        maybeOnCreateSessionCompleted();
+    }
+    else {
+        auto start_working = std::make_shared<ltproto::worker2service::StartWorking>();
+        sendToWorker(ltproto::id(start_working), start_working);
+    }
 }
 
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {

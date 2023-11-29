@@ -24,6 +24,12 @@ set(LT_WORKER_SRCS
     # Worker
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_streaming.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_streaming.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
