@@ -1,3 +1,4 @@
+#include "worker_setting.h"
 /*
  * BSD 3-Clause License
  *
@@ -28,33 +29,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "worker.h"
 #include "worker_setting.h"
-#include "worker_streaming.h"
 
 #include <ltlib/logging.h>
+#include <ltlib/system.h>
 
 namespace lt {
 
 namespace worker {
 
-std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> options) {
-    auto iter = options.find("-action");
-    if (iter == options.cend()) {
-        LOG(ERR) << "Invalid worker parameters: no worker action";
+std::unique_ptr<WorkerSetting> WorkerSetting::create(std::map<std::string, std::string> options) {
+    if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
+        options.find("-freq") == options.end()) {
+        LOG(ERR) << "Create WorkerSetting failed: Parameters not found";
         return nullptr;
     }
-    else if (iter->second == "streaming") {
-        return WorkerStreaming::create(options);
+    int32_t width = std::atoi(options["-width"].c_str());
+    int32_t height = std::atoi(options["-height"].c_str());
+    int32_t freq = std::atoi(options["-freq"].c_str());
+    if (width <= 0 || height <= 0 || freq <= 0) {
+        LOG(ERR) << "Create WorkerSetting failed: Invalid parameters";
+        return false;
     }
-    else if (iter->second == "setting") {
-        return WorkerSetting::create(options);
+    if (ltlib::changeDisplaySettings(static_cast<uint32_t>(width), static_cast<uint32_t>(height),
+                                     static_cast<uint32_t>(freq))) {
+        LOGF(INFO, "Change display settings to {w:%u, h:%u, f:%u} success", width, height, freq);
     }
     else {
-        LOG(ERR) << "Unkonwn worker action: " << iter->second;
-        return nullptr;
+        LOGF(INFO, "Change display settings to {w:%u, h:%u, f:%u} failed", width, height, freq);
     }
+    return std::make_unique<WorkerSetting>();
 }
+WorkerSetting::~WorkerSetting() = default;
+
+void WorkerSetting::wait() {}
 
 } // namespace worker
 

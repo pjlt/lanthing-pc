@@ -1,3 +1,4 @@
+#include "worker_clipboard.h"
 /*
  * BSD 3-Clause License
  *
@@ -28,33 +29,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "worker.h"
-#include "worker_setting.h"
-#include "worker_streaming.h"
-
-#include <ltlib/logging.h>
-
 namespace lt {
 
 namespace worker {
 
-std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> options) {
-    auto iter = options.find("-action");
-    if (iter == options.cend()) {
-        LOG(ERR) << "Invalid worker parameters: no worker action";
-        return nullptr;
-    }
-    else if (iter->second == "streaming") {
-        return WorkerStreaming::create(options);
-    }
-    else if (iter->second == "setting") {
-        return WorkerSetting::create(options);
-    }
-    else {
-        LOG(ERR) << "Unkonwn worker action: " << iter->second;
-        return nullptr;
-    }
+std::unique_ptr<WorkerClipboard>
+WorkerClipboard::create(std::map<std::string, std::string> options) {
+    (void)options;
+    return nullptr;
 }
+
+WorkerClipboard::~WorkerClipboard() = default;
+
+void WorkerClipboard::wait() {}
 
 } // namespace worker
 

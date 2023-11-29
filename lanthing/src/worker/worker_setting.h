@@ -28,33 +28,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "worker.h"
-#include "worker_setting.h"
-#include "worker_streaming.h"
+#pragma once
 
-#include <ltlib/logging.h>
+#include <memory>
+
+#include <worker/worker.h>
 
 namespace lt {
 
 namespace worker {
 
-std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> options) {
-    auto iter = options.find("-action");
-    if (iter == options.cend()) {
-        LOG(ERR) << "Invalid worker parameters: no worker action";
-        return nullptr;
-    }
-    else if (iter->second == "streaming") {
-        return WorkerStreaming::create(options);
-    }
-    else if (iter->second == "setting") {
-        return WorkerSetting::create(options);
-    }
-    else {
-        LOG(ERR) << "Unkonwn worker action: " << iter->second;
-        return nullptr;
-    }
-}
+class WorkerSetting : public Worker {
+public:
+    static std::unique_ptr<WorkerSetting> create(std::map<std::string, std::string> options);
+    ~WorkerSetting() override;
+    void wait() override;
+};
 
 } // namespace worker
 
