@@ -95,6 +95,10 @@ WorkerProcess::~WorkerProcess() {
     }
 }
 
+void WorkerProcess::stop() {
+    stoped_ = true;
+}
+
 void WorkerProcess::start() {
     std::lock_guard lk{mutex_};
     if (thread_ != nullptr) {

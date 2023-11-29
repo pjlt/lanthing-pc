@@ -58,7 +58,7 @@ class WorkerSession : public std::enable_shared_from_this<WorkerSession> {
 public:
     enum class CloseReason {
         ClientClose,
-        WorkerStoped,
+        WorkerFailed,
         Timeout,
         UserKick,
     };
@@ -201,8 +201,6 @@ private:
         on_create_session_completed_;
     std::function<void(int64_t, CloseReason, const std::string&, const std::string&)> on_closed_;
     std::atomic<int64_t> last_recv_time_us_ = 0;
-    bool rtc_closed_ = true;
-    bool worker_process_stoped_ = true;
     std::optional<bool> join_signaling_room_success_;
     std::shared_ptr<google::protobuf::MessageLite> negotiated_streaming_params_;
     ltlib::TimeSync time_sync_;

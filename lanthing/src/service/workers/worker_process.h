@@ -63,6 +63,7 @@ public:
 public:
     static std::unique_ptr<WorkerProcess> create(const Params& params);
     ~WorkerProcess();
+    void stop();
 
 private:
     WorkerProcess(const Params& params);

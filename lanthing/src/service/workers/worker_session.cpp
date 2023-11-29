@@ -263,10 +263,7 @@ bool WorkerSession::initTransport() {
         LOG(ERR) << "Create transport server failed";
         return false;
     }
-    else {
-        rtc_closed_ = false;
-        return true;
-    }
+    return true;
 }
 
 tp::Server* WorkerSession::createTcpServer() {
@@ -369,39 +366,42 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_refresh_rate = client_refresh_rate;
     params.client_codecs = client_codecs;
     worker_process_ = WorkerProcess::create(params);
-    worker_process_stoped_ = false;
 }
 
 void WorkerSession::onClosed(CloseReason reason) {
     // NOTE: 运行在ioloop
+    bool rtc_closed = false;
     switch (reason) {
     case CloseReason::ClientClose:
-        rtc_closed_ = true;
+        LOG(INFO) << "Close worker session, reason: ClientClose";
         break;
-    case CloseReason::WorkerStoped:
-        worker_process_stoped_ = true;
+    case CloseReason::WorkerFailed:
+        LOG(INFO) << "Close worker session, reason: WorkerFailed";
         break;
     case CloseReason::Timeout:
-        rtc_closed_ = true;
+        LOG(INFO) << "Close worker session, reason: Timeout";
+        rtc_closed = true;
         sendSigClose();
         break;
     case CloseReason::UserKick:
+        LOG(INFO) << "Close worker session, reason: UserKick";
         sendSigClose();
         break;
     default:
         break;
     }
-    if (!rtc_closed_) {
+    if (!rtc_closed) {
         tp_server_->close();
-        rtc_closed_ = true;
     }
-    if (!worker_process_stoped_) {
+    if (reason != CloseReason::WorkerFailed) {
         auto msg = std::make_shared<ltproto::worker2service::StopWorking>();
         sendToWorker(ltproto::id(msg), msg);
+        if (worker_process_ != nullptr) {
+            worker_process_->stop();
+        }
     }
-    if (rtc_closed_ && worker_process_stoped_) {
-        on_closed_(client_device_id_, reason, session_name_, room_id_);
-    }
+    postDelayTask(
+        100, [this, reason]() { on_closed_(client_device_id_, reason, session_name_, room_id_); });
 }
 
 void WorkerSession::maybeOnCreateSessionCompleted() {
@@ -695,7 +695,7 @@ void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageL
             LOG(ERR) << "Received StartWorkingAck with error code "
                      << static_cast<int>(msg->err_code()) << " : "
                      << ltproto::ErrorCode_Name(msg->err_code());
-            onClosed(CloseReason::WorkerStoped);
+            onClosed(CloseReason::WorkerFailed);
         }
     }
 }
