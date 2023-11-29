@@ -89,7 +89,7 @@ private:
                                         const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void printStats();
     void checkCimeout();
-    // TODO: AUDIO��VIDEO INPUTһ���ĳ�ͨ�õĽӿ�
+    // TODO: AUDIO和VIDEO INPUT一样改成通用的接口
     void onCapturedAudioData(std::shared_ptr<google::protobuf::MessageLite> audio_data);
 
     // pipe message handlers

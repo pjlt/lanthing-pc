@@ -137,7 +137,6 @@ private:
     void sendToWorkerFromOtherThread(uint32_t type,
                                      std::shared_ptr<google::protobuf::MessageLite> msg);
     void onKeepAliveAck();
-    void onWorkerStoped();
     void onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // rtc server
@@ -216,6 +215,7 @@ private:
     std::deque<SpeedEntry> video_send_history_;
     int64_t video_send_bps_ = 0;
     bool force_relay_ = false;
+    bool first_start_working_ack_received_ = false;
 
     std::atomic<bool> enable_gamepad_;
     std::atomic<bool> enable_keyboard_;

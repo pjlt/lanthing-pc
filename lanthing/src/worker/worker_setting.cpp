@@ -49,14 +49,14 @@ std::unique_ptr<WorkerSetting> WorkerSetting::create(std::map<std::string, std::
     int32_t freq = std::atoi(options["-freq"].c_str());
     if (width <= 0 || height <= 0 || freq <= 0) {
         LOG(ERR) << "Create WorkerSetting failed: Invalid parameters";
-        return false;
+        return nullptr;
     }
     if (ltlib::changeDisplaySettings(static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                                      static_cast<uint32_t>(freq))) {
-        LOGF(INFO, "Change display settings to {w:%u, h:%u, f:%u} success", width, height, freq);
+        LOGF(INFO, "Change display settings to {w:%d, h:%d, f:%d} success", width, height, freq);
     }
     else {
-        LOGF(INFO, "Change display settings to {w:%u, h:%u, f:%u} failed", width, height, freq);
+        LOGF(INFO, "Change display settings to {w:%d, h:%d, f:%d} failed", width, height, freq);
     }
     return std::make_unique<WorkerSetting>();
 }

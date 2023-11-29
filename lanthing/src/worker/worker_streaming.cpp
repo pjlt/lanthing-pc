@@ -404,7 +404,7 @@ bool WorkerStreaming::sendPipeMessage(uint32_t type,
     return pipe_client_->send(type, msg);
 }
 
-// FIXME: ·µ»ØÖµ
+// FIXME: è¿”å›žå€¼
 bool WorkerStreaming::sendPipeMessageFromOtherThread(
     uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     postTask([type, msg, this]() { sendPipeMessage(type, msg); });
@@ -454,7 +454,7 @@ void WorkerStreaming::onPipeConnected() {
         LOG(INFO) << "Connected to service";
     }
     connected_to_service_ = true;
-    // Á¬ÉÏµÚÒ»Ê±¼ä£¬Ïòservice·¢ËÍÐ­ÉÌºÃµÄ´®Á÷²ÎÊý
+    // è¿žä¸Šç¬¬ä¸€æ—¶é—´ï¼Œå‘serviceå‘é€åå•†å¥½çš„ä¸²æµå‚æ•°
     auto params = std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_params_);
     sendPipeMessage(ltproto::id(params), params);
 }
@@ -486,7 +486,7 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
     for (const auto& handler : msg_handlers_) {
         ack->add_msg_type(handler.first);
     }
-
+    sendPipeMessage(ltproto::id(ack), ack);
     if (ack->err_code() != ltproto::ErrorCode::Success) {
         if (video_) {
             video_->stop();
@@ -495,8 +495,9 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
             audio_->stop();
         }
         input_ = nullptr;
+        LOG(ERR) << "Start working failed, exit worker";
+        postDelayTask(100, std::bind(&WorkerStreaming::stop, this));
     }
-    sendPipeMessage(ltproto::id(ack), ack);
 }
 
 void WorkerStreaming::onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>&) {
