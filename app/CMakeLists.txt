@@ -112,7 +112,7 @@ deploy_dlls(${PROJECT_NAME})
 deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 endif(LT_WINDOWS)
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} RUNTIME_DEPENDENCIES)
 
 if (LT_WINDOWS)
     install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")

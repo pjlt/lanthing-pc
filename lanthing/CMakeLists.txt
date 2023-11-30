@@ -286,7 +286,7 @@ target_link_libraries(${PROJECT_NAME}
     ${PLATFORM_LIBS}
 )
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} RUNTIME_DEPENDENCIES)
 if (LT_WINDOWS)
     install(
         FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>

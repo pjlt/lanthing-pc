@@ -65,6 +65,10 @@ prebuilt_fetch() {
         echo "Extra $lib_name.linux.tar.gz"
         tar -xzvf ./third_party/prebuilt/$lib_name.linux.tar.gz -C ./third_party/prebuilt/$lib_name/linux
     done
+    lib_url="https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+    echo "Fetch $lib_url"
+    wget $lib_url -O ./third_party/prebuilt/linuxdeployqt
+    chmod +x ./third_party/prebuilt/linuxdeployqt
     rtc_fetch
 }
 
