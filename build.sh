@@ -72,6 +72,25 @@ prebuilt_fetch() {
     rtc_fetch
 }
 
+make_appimage() {
+    mkdir -p install/$build_type/appdir/usr/bin
+    mkdir -p install/$build_type/appdir/usr/lib
+    mkdir -p install/$build_type/appdir/usr/share/applications
+    mkdir -p install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps
+    cp app/res/png_icons/pc2.png install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps/lanthing.png
+    cp lanthing.desktop install/$build_type/appdir/usr/share/applications/
+    cp install/$build_type/bin/app install/$build_type/appdir/usr/bin/
+    cp install/$build_type/bin/lanthing install/$build_type/appdir/usr/bin/
+    cp third_party/prebuilt/g3log/linux/lib/libg3log.so.2 install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/protobuf/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/ffmpeg/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/libuv/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/sdl/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp install/$build_type/bin/librtc* install/$build_type/appdir/usr/lib/
+    cp install/$build_type/bin/libbreakpad.so install/$build_type/appdir/usr/lib/
+    ./third_party/prebuilt/linuxdeployqt install/$build_type/appdir/usr/share/applications/lanthing.desktop -appimage -executable=install/$build_type/appdir/usr/bin/lanthing
+}
+
 prebuilt_clean() {
     rm -rf third_party/prebuilt
     rm -rf transport/rtc
@@ -82,6 +101,7 @@ print_usage() {
     echo "Usage:"
     echo "    build.sh prebuilt [ fetch | clean ]"
     echo "    build.sh build [ Debug | Release ]"
+    echo "    build.sh package [ Debug | Release ]"
     echo "    build.sh clean [ Debug | Release ]"
 }
 
@@ -103,6 +123,10 @@ elif [ "$1" = "build" ]; then
     check_build_type
     cmake_configure
     cmake_build
+elif [ "$1" = "package" ]; then
+    build_type=$2
+    check_build_type
+    make_appimage
 else
     print_usage
 fi
