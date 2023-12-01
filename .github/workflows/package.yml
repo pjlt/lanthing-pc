@@ -79,4 +79,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            lanthing-$VERSION-x86_64.AppImage
+            lanthing-${{ env.VERSION }}-x86_64.AppImage
