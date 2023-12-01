@@ -50,7 +50,7 @@ prebuilt_fetch() {
         "opus https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.linux.v1.4-2.tar.gz"
         "g3log https://github.com/numbaa/g3log-build/releases/download/v2.3-4/g3log.linux.v2.3-4.tar.gz"
         "googletest https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.linux.v1.13.0-2.tar.gz"
-        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-7/ffmpeg.linux.v5.1.3-7.tar.gz"
+        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-8/ffmpeg.linux.v5.1.3-8.tar.gz"
         "protobuf https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.linux.v3.24.3-2.tar.gz"
         "sqlite https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.linux.v3.43.1-6.tar.gz"
     )
@@ -65,7 +65,30 @@ prebuilt_fetch() {
         echo "Extra $lib_name.linux.tar.gz"
         tar -xzvf ./third_party/prebuilt/$lib_name.linux.tar.gz -C ./third_party/prebuilt/$lib_name/linux
     done
+    lib_url="https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+    echo "Fetch $lib_url"
+    wget $lib_url -O ./third_party/prebuilt/linuxdeployqt
+    chmod +x ./third_party/prebuilt/linuxdeployqt
     rtc_fetch
+}
+
+make_appimage() {
+    mkdir -p install/$build_type/appdir/usr/bin
+    mkdir -p install/$build_type/appdir/usr/lib
+    mkdir -p install/$build_type/appdir/usr/share/applications
+    mkdir -p install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps
+    cp app/res/png_icons/pc2.png install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps/lanthing.png
+    cp lanthing.desktop install/$build_type/appdir/usr/share/applications/
+    cp install/$build_type/bin/app install/$build_type/appdir/usr/bin/
+    cp install/$build_type/bin/lanthing install/$build_type/appdir/usr/bin/
+    cp third_party/prebuilt/g3log/linux/lib/libg3log.so.2 install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/protobuf/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/ffmpeg/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/libuv/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/sdl/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp install/$build_type/bin/librtc* install/$build_type/appdir/usr/lib/
+    cp install/$build_type/bin/libbreakpad.so install/$build_type/appdir/usr/lib/
+    ./third_party/prebuilt/linuxdeployqt install/$build_type/appdir/usr/share/applications/lanthing.desktop -appimage -executable=install/$build_type/appdir/usr/bin/lanthing
 }
 
 prebuilt_clean() {
@@ -78,6 +101,7 @@ print_usage() {
     echo "Usage:"
     echo "    build.sh prebuilt [ fetch | clean ]"
     echo "    build.sh build [ Debug | Release ]"
+    echo "    build.sh package [ Debug | Release ]"
     echo "    build.sh clean [ Debug | Release ]"
 }
 
@@ -99,6 +123,10 @@ elif [ "$1" = "build" ]; then
     check_build_type
     cmake_configure
     cmake_build
+elif [ "$1" = "package" ]; then
+    build_type=$2
+    check_build_type
+    make_appimage
 else
     print_usage
 fi

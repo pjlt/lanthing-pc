@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=lanthing
+Comment=Lanthing
+Exec=app
+Icon=lanthing
+Type=Application
+Terminal=false
+Categories=Game;
+Keywords=lanthing;stream;gamestream;streaming;

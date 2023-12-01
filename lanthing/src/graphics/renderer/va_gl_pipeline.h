@@ -95,7 +95,11 @@ private:
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_ = nullptr;
     PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
     PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;
+    PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_ = nullptr;
     GLuint textures_[2] = {0};
+    GLuint vao_ = 0;
+    GLuint vbo_ = 0;
+    GLuint ebo_ = 0;
 };
 
 } // namespace lt

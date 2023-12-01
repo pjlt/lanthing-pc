@@ -20,8 +20,7 @@
 
 #include <ltlib/logging.h>
 
-// credit
-// https://gist.github.com/kajott/d1b29c613be30893c855621edd1f212e
+// https://learnopengl.com
 
 // TODO: 1. 回收资源 2.整理OpenGL渲染管线 3.vsync相关问题.
 
@@ -62,6 +61,16 @@ VaGlPipeline::~VaGlPipeline() {
         }
         eglTerminate(egl_display_);
     }
+    if (vao_ != 0) {
+        glDeleteVertexArrays_(1, &vao_);
+    }
+    if (vbo_ != 0) {
+        glDeleteBuffers(1, &vbo_);
+    }
+    if (ebo_ != 0) {
+        glDeleteBuffers(1, &ebo_);
+    }
+
     if (shader_ != 0) {
         glDeleteProgram(shader_);
     }
@@ -134,10 +143,7 @@ VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
         return RenderResult::Failed;
     }
 
-    float texcoord_x1 = (float)((double)video_width_ / (double)window_width_);
-    float texcoord_y1 = (float)((double)video_height_ / (double)window_height_);
-    glUniform2f(glGetUniformLocation(shader_, "uTexCoordScale"), texcoord_x1, texcoord_y1);
-
+    glViewport(0, 0, static_cast<GLsizei>(window_width_), static_cast<GLsizei>(window_height_));
     EGLImage images[2] = {0};
     for (size_t i = 0; i < 2; ++i) {
         constexpr uint32_t formats[2] = {DRM_FORMAT_R8, DRM_FORMAT_GR88};
@@ -181,8 +187,10 @@ VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
     glClear(GL_COLOR_BUFFER_BIT);
     while (glGetError()) {
     }
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray_(vao_);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     GLenum err = glGetError();
+    glBindVertexArray_(0);
     if (err) {
         LOG(ERR) << "glDrawArrays failed: " << err;
         return RenderResult::Failed;
@@ -211,7 +219,13 @@ void VaGlPipeline::switchMouseMode(bool absolute) {
     (void)absolute;
 }
 
-void VaGlPipeline::resetRenderTarget() {}
+void VaGlPipeline::resetRenderTarget() {
+    SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
+    int window_width, window_height;
+    SDL_GetWindowSize(sdl_window, &window_width, &window_height);
+    window_width_ = static_cast<uint32_t>(window_width);
+    window_height_ = static_cast<uint32_t>(window_height);
+}
 
 bool VaGlPipeline::present() {
     return true;
@@ -261,6 +275,12 @@ bool VaGlPipeline::loadFuncs() {
         reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(eglGetProcAddress("glGenVertexArrays"));
     if (glGenVertexArrays_ == nullptr) {
         LOG(ERR) << "eglGetProcAddress(glGenVertexArrays) failed";
+        return false;
+    }
+    auto glDeleteVertexArrays_ =
+        reinterpret_cast<PFNGLDELETEVERTEXARRAYSPROC>(eglGetProcAddress("glDeleteVertexArrays"));
+    if (glDeleteVertexArrays_ == nullptr) {
+        LOG(ERR) << "eglGetProcAddress(glDeleteVertexArrays) failed";
         return false;
     }
     glBindVertexArray_ =
@@ -393,22 +413,18 @@ bool VaGlPipeline::initOpenGL() {
     LOGF(INFO, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
     LOGF(INFO, "OpenGL version:  %s\n", glGetString(GL_VERSION));
 
-    GLuint vao;
-    glGenVertexArrays_(1, &vao);
-    glBindVertexArray_(vao);
     const char* kVertexShader = R"(
-#version 130
-const vec2 coords[4] = vec2[]( vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.) );
-uniform vec2 uTexCoordScale;
+#version 330
+layout(location = 0) in vec2 pos;
+layout(location = 1) in vec2 tex;
 out vec2 vTexCoord;
 void main() {
-    vec2 c = coords[gl_VertexID];
-    vTexCoord = c * uTexCoordScale;
-    gl_Position = vec4(c * vec2(4.,-4.) + vec2(-1.,1.), 0., 1.);
+    vTexCoord = tex;
+    gl_Position = vec4(pos, 0.0, 1.0);
 }
 )";
     const char* kFragmentShader = R"(
-#version 130
+#version 330
 in vec2 vTexCoord;
 uniform sampler2D uTexY, uTexC;
 const mat4 yuv2rgb = mat4(
@@ -474,6 +490,8 @@ void main() {
         glDeleteShader(fs);
         return false;
     }
+    glDeleteShader(vs);
+    glDeleteShader(fs);
     glUseProgram(shader_);
     glUniform1i(glGetUniformLocation(shader_, "uTexY"), 0);
     glUniform1i(glGetUniformLocation(shader_, "uTexC"), 1);
@@ -486,21 +504,32 @@ void main() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     glBindTexture(GL_TEXTURE_2D, 0);
-    GLint vp[4];
-    glGetIntegerv(GL_VIEWPORT, vp);
-    resizeWindow(vp[2], vp[3]);
-    return true;
-}
 
-void VaGlPipeline::resizeWindow(int screen_width, int screen_height) {
-    int display_width = screen_width;
-    int display_height = (screen_width * video_height_ + video_width_ / 2) / video_width_;
-    if (display_height > screen_height) {
-        display_width = (screen_height * video_width_ + video_height_ / 2) / video_height_;
-        display_height = screen_height;
-    }
-    glViewport((screen_width - display_width) / 2, (screen_height - display_height) / 2,
-               display_width, display_height);
+    float u = (float)video_width_ / _ALIGN(video_width_, align_);
+    float v = (float)video_height_ / _ALIGN(video_height_, align_);
+    // clang-format off
+    float verts[] = {-1.0f, 1.0f, 0.0f, 0.0f,
+                      1.0f, 1.0f, u, 0.0f,
+                      1.0f, -1.0f, u, v,
+                      -1.0f, -1.0f, 0.0f, v};
+    static_assert(sizeof(verts) == 4*4*4);
+    const uint32_t indexes[] = {0, 1, 2, 0, 2, 3};
+    // clang-format on
+    glGenVertexArrays_(1, &vao_);
+    glGenBuffers(1, &vbo_);
+    glGenBuffers(1, &ebo_);
+
+    glBindVertexArray_(vao_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray_(0);
+    return true;
 }
 
 } // namespace lt
