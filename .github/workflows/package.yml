@@ -1,7 +1,7 @@
-name: win-package
+name: Package
 on: workflow_dispatch
 jobs:
-  build:
+  Windows:
     permissions:
       contents: write
     runs-on: windows-2022
@@ -37,3 +37,46 @@ jobs:
           files: |
             lanthing.${{ github.ref_name }}.zip
             pdb.${{ github.ref_name }}.zip
+  Linux:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        with:
+          submodules: true
+        uses: actions/checkout@v4
+      - name: Install deps
+        run: |
+          sudo apt-get clean
+          sudo apt-get update
+          sudo apt-get -y install gcc-10 g++-10 pkg-config libglib2.0-dev libx11-dev libdrm-dev libva-dev libva-drm2 libgl-dev libgles-dev libgles1 libgles2 libegl-dev libmfx-dev
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.3'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+      - name: Fetch prebuilt
+        run: bash build.sh prebuilt fetch
+      - name: Build lanthing-pc
+        run: |
+          alias gcc='gcc-10'
+          alias g++='g++-10'
+          export CC=`which gcc-10`
+          export CXX=`which g++-10`
+          bash build.sh build Release
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION=${VERSION/v/beta}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Set VERSION to $VERSION"
+      - name: Make AppImage
+        run: |
+          bash build.sh package Release
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            lanthing-$VERSION-x86_64.AppImage
