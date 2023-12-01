@@ -81,11 +81,14 @@ make_appimage() {
     cp lanthing.desktop install/$build_type/appdir/usr/share/applications/
     cp install/$build_type/bin/app install/$build_type/appdir/usr/bin/
     cp install/$build_type/bin/lanthing install/$build_type/appdir/usr/bin/
+    cp install/$build_type/bin/libltlib.so install/$build_type/appdir/usr/lib/
+    cp install/$build_type/bin/libltproto.so install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/g3log/linux/lib/libg3log.so.2 install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/protobuf/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/ffmpeg/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/libuv/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/sdl/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
+    cp third_party/prebuilt/mbedtls/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp install/$build_type/bin/librtc* install/$build_type/appdir/usr/lib/
     cp install/$build_type/bin/libbreakpad.so install/$build_type/appdir/usr/lib/
     ./third_party/prebuilt/linuxdeployqt install/$build_type/appdir/usr/share/applications/lanthing.desktop -appimage -executable=install/$build_type/appdir/usr/bin/lanthing
@@ -94,7 +97,6 @@ make_appimage() {
 prebuilt_clean() {
     rm -rf third_party/prebuilt
     rm -rf transport/rtc
-
 }
 
 print_usage() {
