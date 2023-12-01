@@ -143,6 +143,7 @@ VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
         return RenderResult::Failed;
     }
 
+    glViewport(0, 0, static_cast<GLsizei>(window_width_), static_cast<GLsizei>(window_height_));
     EGLImage images[2] = {0};
     for (size_t i = 0; i < 2; ++i) {
         constexpr uint32_t formats[2] = {DRM_FORMAT_R8, DRM_FORMAT_GR88};
@@ -218,7 +219,13 @@ void VaGlPipeline::switchMouseMode(bool absolute) {
     (void)absolute;
 }
 
-void VaGlPipeline::resetRenderTarget() {}
+void VaGlPipeline::resetRenderTarget() {
+    SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
+    int window_width, window_height;
+    SDL_GetWindowSize(sdl_window, &window_width, &window_height);
+    window_width_ = static_cast<uint32_t>(window_width);
+    window_height_ = static_cast<uint32_t>(window_height);
+}
 
 bool VaGlPipeline::present() {
     return true;
