@@ -38,6 +38,8 @@ jobs:
             lanthing.${{ github.ref_name }}.zip
             pdb.${{ github.ref_name }}.zip
   Linux:
+    permissions:
+      contents: write
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
