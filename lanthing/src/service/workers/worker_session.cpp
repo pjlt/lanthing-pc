@@ -371,6 +371,7 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
 void WorkerSession::onClosed(CloseReason reason) {
     // NOTE: 运行在ioloop
     bool rtc_closed = false;
+    client_connected_ = false;
     switch (reason) {
     case CloseReason::ClientClose:
         LOG(INFO) << "Close worker session, reason: ClientClose";
@@ -559,6 +560,9 @@ void WorkerSession::dispatchSignalingMessageRtc(
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
     LOG(DEBUG) << "Received signaling key:" << msg->rtc_message().key().c_str()
                << ", value:" << msg->rtc_message().value().c_str();
+    if (!client_connected_) {
+        return;
+    }
     tp_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
                                    msg->rtc_message().value().c_str());
 }
@@ -818,6 +822,9 @@ void WorkerSession::onTpStat(void* user_data, uint32_t bwe_bps, uint32_t nack) {
 
 void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     // NOTE: 这是在IOLoop线程
+    if (!client_connected_) {
+        return;
+    }
     auto encoded_frame = std::static_pointer_cast<ltproto::client2worker::VideoFrame>(_msg);
     LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame->capture_timestamp_us(),
          encoded_frame->start_encode_timestamp_us(), encoded_frame->end_encode_timestamp_us());
@@ -840,6 +847,9 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
 }
 
 void WorkerSession::onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!client_connected_) {
+        return;
+    }
     auto captured_audio = std::static_pointer_cast<ltproto::client2worker::AudioData>(_msg);
     lt::AudioData audio_data{};
     audio_data.data = reinterpret_cast<const uint8_t*>(captured_audio->data().c_str());
@@ -1014,6 +1024,9 @@ void WorkerSession::calcVideoSpeed(int64_t new_frame_bytes) {
 
 bool WorkerSession::sendMessageToRemoteClient(
     uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable) {
+    if (!client_connected_) {
+        return false;
+    }
     auto packet = ltproto::Packet::create({type, msg}, false);
     if (!packet.has_value()) {
         LOG(ERR) << "Create Peer2Peer packet failed, type:" << type;
