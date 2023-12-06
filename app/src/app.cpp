@@ -232,6 +232,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         return;
     }
     WARNING_DISABLE(4127)
+    WARNING_DISABLE(6239)
     if (!LT_ENABLE_SELF_CONNECT && peerDeviceID == device_id_) {
         LOG(INFO) << "Self connect is not allowed";
         gui_.infoMessageBox("Self connect is not allowed");
