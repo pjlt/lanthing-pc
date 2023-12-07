@@ -31,6 +31,7 @@
 #include "client_manager.h"
 
 #include <filesystem>
+#include <system_error>
 
 #include <ltproto/client2app/client_status.pb.h>
 #include <ltproto/ltproto.h>
@@ -90,6 +91,9 @@ bool ClientManager::init(ltlib::IOLoop* ioloop) {
     std::filesystem::path fs = ltlib::getConfigPath();
     fs = fs / "pipe_lanthing_client_manager";
     params.pipe_name = fs.string();
+    // 上次进程崩溃可能会导致残留管道文件
+    std::error_code ec;
+    std::filesystem::remove(fs, ec);
 #else
 #endif
     params.on_accepted = std::bind(&ClientManager::onPipeAccepted, this, std::placeholders::_1);
