@@ -242,6 +242,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
     }
     createWorkerProcess((uint32_t)client_width, (uint32_t)client_height,
                         (uint32_t)client_refresh_rate, client_codecs);
+    postDelayTask(10'000, std::bind(&WorkerSession::checkAcceptTimeout, this));
     return true;
 }
 
@@ -752,7 +753,7 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
         that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
         that->updateLastRecvTime();
         that->syncTime();
-        that->postTask(std::bind(&WorkerSession::checkTimeout, that));
+        that->postTask(std::bind(&WorkerSession::checkKeepAliveTimeout, that));
     });
 }
 
@@ -939,9 +940,9 @@ void WorkerSession::updateLastRecvTime() {
     last_recv_time_us_ = ltlib::steady_now_us();
 }
 
-void WorkerSession::checkTimeout() {
+void WorkerSession::checkKeepAliveTimeout() {
     // NOTE: 运行在IOLOOP
-    constexpr auto kTimeoutMS = 3000;
+    constexpr auto kTimeoutMS = 5000;
     constexpr auto kTimeoutUS = kTimeoutMS * 1000;
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
@@ -949,7 +950,13 @@ void WorkerSession::checkTimeout() {
         onClosed(CloseReason::Timeout);
     }
     else {
-        postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkTimeout, this));
+        postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkKeepAliveTimeout, this));
+    }
+}
+
+void WorkerSession::checkAcceptTimeout() {
+    if (last_recv_time_us_ == 0) {
+        onClosed(CloseReason::Timeout);
     }
 }
 
