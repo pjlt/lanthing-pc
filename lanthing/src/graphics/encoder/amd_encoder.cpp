@@ -149,6 +149,7 @@ private:
     amf::AMFFactory* factory_ = nullptr;
     amf::AMFContextPtr context_ = nullptr;
     amf::AMFComponentPtr encoder_ = nullptr;
+    AMF_RESULT last_submit_error_ = AMF_OK;
 };
 
 AmdEncoderImpl::AmdEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx)
@@ -255,9 +256,16 @@ AmdEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     }
     result = encoder_->SubmitInput(surface);
     if (result != AMF_OK) {
-        LOG(ERR) << "AMFComponent::SubmitInput failed with " << result;
-        return nullptr;
+        if (result == AMF_INVALID_RESOLUTION && last_submit_error_ == AMF_INVALID_RESOLUTION) {
+            return nullptr;
+        }
+        else {
+            LOG(ERR) << "AMFComponent::SubmitInput failed with " << result;
+            last_submit_error_ = result;
+            return nullptr;
+        }
     }
+    last_submit_error_ = AMF_OK;
     amf::AMFDataPtr outdata = nullptr;
     result = encoder_->QueryOutput(&outdata);
     if (result == AMF_EOF) {
