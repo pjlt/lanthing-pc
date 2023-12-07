@@ -560,9 +560,6 @@ void WorkerSession::dispatchSignalingMessageRtc(
     auto msg = std::static_pointer_cast<ltproto::signaling::SignalingMessage>(_msg);
     LOG(DEBUG) << "Received signaling key:" << msg->rtc_message().key().c_str()
                << ", value:" << msg->rtc_message().value().c_str();
-    if (!client_connected_) {
-        return;
-    }
     tp_server_->onSignalingMessage(msg->rtc_message().key().c_str(),
                                    msg->rtc_message().value().c_str());
 }
