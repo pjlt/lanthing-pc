@@ -29,13 +29,13 @@ jobs:
           echo ${{ github.sha }} > Release.txt
           $OP = "${{ github.workspace }}/install/RelWithDebInfo/bin"
           $PDB = "${{ github.workspace }}/install/RelWithDebInfo/pdb"
-          Compress-Archive -Path Release.txt,LICENSE,third-party-licenses.txt,$OP/platforms,$OP/styles,$OP/abseil_dll.dll,$OP/app.exe,$OP/avcodec-59.dll,$OP/avutil-57.dll,$OP/breakpad.dll,$OP/g3log.dll,$OP/lanthing.exe,$OP/libprotobuf-lite.dll,$OP/libvpl.dll,$OP/ltlib.dll,$OP/Qt6Core.dll,$OP/Qt6Gui.dll,$OP/Qt6Widgets.dll,$OP/rtc.dll,$OP/rtc2.dll,$OP/sdl2.dll,$OP/sqlite3.dll,$OP/uv.dll -DestinationPath lanthing.${{ github.ref_name }}.zip
+          Compress-Archive -Path Release.txt,LICENSE,third-party-licenses.txt,$OP/platforms,$OP/styles,$OP/abseil_dll.dll,$OP/app.exe,$OP/avcodec-59.dll,$OP/avutil-57.dll,$OP/breakpad.dll,$OP/g3log.dll,$OP/lanthing.exe,$OP/libprotobuf-lite.dll,$OP/libvpl.dll,$OP/ltlib.dll,$OP/Qt6Core.dll,$OP/Qt6Gui.dll,$OP/Qt6Widgets.dll,$OP/rtc.dll,$OP/rtc2.dll,$OP/sdl2.dll,$OP/sqlite3.dll,$OP/uv.dll -DestinationPath lanthing.win.${{ github.ref_name }}.zip
           Compress-Archive -Path Release.txt,$PDB -DestinationPath pdb.${{ github.ref_name }}.zip
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            lanthing.${{ github.ref_name }}.zip
+            lanthing.win.${{ github.ref_name }}.zip
             pdb.${{ github.ref_name }}.zip
   Linux:
     permissions:
@@ -77,8 +77,9 @@ jobs:
       - name: Make AppImage
         run: |
           bash build.sh package Release
+          cp lanthing-${{ env.VERSION }}-x86_64.AppImage lanthing.linux-${{ env.VERSION }}-x86_64.AppImage
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            lanthing-${{ env.VERSION }}-x86_64.AppImage
+            lanthing.linux-${{ env.VERSION }}-x86_64.AppImage
