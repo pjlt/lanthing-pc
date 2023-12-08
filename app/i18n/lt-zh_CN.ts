@@ -70,7 +70,7 @@
     <message>
         <location filename="../src/views/mainwindow/mainwindow.cpp" line="424"/>
         <source>The new version %s has been released, please download it&lt;br&gt;from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
-        <translation type="unfinished">新版本%s已经发布，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;下载。</translation>
+        <translation type="unfinished">新版本%s已经发布，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.cpp" line="432"/>
