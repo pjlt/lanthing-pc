@@ -77,6 +77,7 @@ private:
     std::vector<GUI::TrustedDevice> getTrustedDevices();
     void setForceRelay(bool force);
     void ignoreVersion(int64_t version);
+    void setPortRange(uint16_t min_port, uint16_t max_port);
 
     void createAndStartService();
     void stopService();
@@ -138,6 +139,8 @@ private:
     bool run_as_daemon_ = false;
     bool auto_refresh_access_token_ = false;
     bool force_relay_ = false;
+    uint16_t min_port_ = 0;
+    uint16_t max_port_ = 0;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;

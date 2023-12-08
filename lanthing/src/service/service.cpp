@@ -308,6 +308,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     // 2. 准备启动worker的参数
     std::string id_str = std::to_string(msg->client_device_id());
+    uint16_t min_port = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
+    uint16_t max_port = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
     worker_params.enable_gamepad =
@@ -317,6 +319,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     worker_params.enable_mouse =
         settings_->getBoolean("enable_mouse_for_" + id_str).value_or(false);
     worker_params.force_relay = settings_->getBoolean("force_relay").value_or(false);
+    worker_params.min_port = min_port;
+    worker_params.max_port = max_port;
     worker_params.ioloop = ioloop_.get();
     worker_params.post_task = std::bind(&Service::postTask, this, std::placeholders::_1);
     worker_params.post_delay_task =

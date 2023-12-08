@@ -682,7 +682,9 @@ color: rgb(190, 190, 190);
              <item>
               <widget class="QStackedWidget" name="stackedWidget">
                <property name="styleSheet">
-                <string notr="true">background: transparent; border:none;</string>
+                <string notr="true">#stackedWidget { background: transparent; border:none; }
+
+</string>
                </property>
                <property name="currentIndex">
                 <number>0</number>
@@ -1547,6 +1549,37 @@ QHeaderView::section:vertical
                 </layout>
                </widget>
                <widget class="QWidget" name="pageSettings">
+                <property name="styleSheet">
+                 <string notr="true">#pageSettings .QLineEdit {
+	background-color: rgb(33, 37, 43);
+	border-radius: 5px;
+	border: 2px solid rgb(33, 37, 43);
+	padding-left: 10px;
+	selection-color: rgb(255, 255, 255);
+	selection-background-color: rgb(255, 121, 198);
+}
+#pageSettings .QLineEdit:hover {
+	border: 2px solid rgb(64, 71, 88);
+}
+#pageSettings .QLineEdit:focus {
+	border: 2px solid rgb(91, 101, 124);
+}
+
+
+#pageSettings .QPushButton {
+	border: 2px solid rgb(52, 59, 72);
+	border-radius: 5px;	
+	background-color: rgb(52, 59, 72);
+}
+#pageSettings .QPushButton:hover {
+	background-color: rgb(57, 65, 80);
+	border: 2px solid rgb(61, 70, 86);
+}
+#pageSettings .QPushButton:pressed {	
+	background-color: rgb(35, 40, 49);
+	border: 2px solid rgb(43, 50, 61);
+}</string>
+                </property>
                 <layout class="QVBoxLayout" name="verticalLayout_10">
                  <property name="leftMargin">
                   <number>30</number>
@@ -1642,6 +1675,12 @@ QHeaderView::section:vertical
                      <layout class="QHBoxLayout" name="horizontalLayout_6">
                       <item>
                        <widget class="QLabel" name="labelRelay">
+                        <property name="maximumSize">
+                         <size>
+                          <width>75</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
                         <property name="text">
                          <string>Relay Server</string>
                         </property>
@@ -1656,42 +1695,14 @@ QHeaderView::section:vertical
                          </size>
                         </property>
                         <property name="styleSheet">
-                         <string notr="true">
-#leditRelay {
-	background-color: rgb(33, 37, 43);
-	border-radius: 5px;
-	border: 2px solid rgb(33, 37, 43);
-	padding-left: 10px;
-	selection-color: rgb(255, 255, 255);
-	selection-background-color: rgb(255, 121, 198);
-}
-#leditRelay:hover {
-	border: 2px solid rgb(64, 71, 88);
-}
-#leditRelay:focus {
-	border: 2px solid rgb(91, 101, 124);
-}
-</string>
+                         <string notr="true"/>
                         </property>
                        </widget>
                       </item>
                       <item>
                        <widget class="QPushButton" name="btnRelay">
                         <property name="styleSheet">
-                         <string notr="true">
-#btnRelay {
-	border: 2px solid rgb(52, 59, 72);
-	border-radius: 5px;	
-	background-color: rgb(52, 59, 72);
-}
-#btnRelay:hover {
-	background-color: rgb(57, 65, 80);
-	border: 2px solid rgb(61, 70, 86);
-}
-#btnRelay:pressed {	
-	background-color: rgb(35, 40, 49);
-	border: 2px solid rgb(43, 50, 61);
-}</string>
+                         <string notr="true"/>
                         </property>
                         <property name="text">
                          <string>Confirm</string>
@@ -1699,6 +1710,74 @@ QHeaderView::section:vertical
                        </widget>
                       </item>
                      </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="frame_3">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_10">
+                    <item>
+                     <widget class="QLabel" name="labelPortRange">
+                      <property name="maximumSize">
+                       <size>
+                        <width>75</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Port Range</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLineEdit" name="leditMinPort">
+                      <property name="maximumSize">
+                       <size>
+                        <width>80</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLineEdit" name="leditMaxPort">
+                      <property name="maximumSize">
+                       <size>
+                        <width>80</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="btnPortRange">
+                      <property name="text">
+                       <string>Confirm</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_4">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeType">
+                       <enum>QSizePolicy::Fixed</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>160</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
                     </item>
                    </layout>
                   </widget>
