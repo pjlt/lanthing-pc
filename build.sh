@@ -33,7 +33,7 @@ check_build_type() {
 }
 
 rtc_fetch() {
-    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.5.2/rtc.linux.tar.gz"
+    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.6.0/rtc.linux.tar.gz"
     mkdir -p ./transport/rtc/linux
     echo "Fetch $rtc_url"
     wget $rtc_url -O ./third_party/prebuilt/rtc.linux.tar.gz
