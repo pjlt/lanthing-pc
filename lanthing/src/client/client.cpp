@@ -622,12 +622,16 @@ tp::Client* Client::createRtcClient() {
         // LOG(DEBUG) << "Reflex: " << svr;
     }
     bool force_relay = settings_->getBoolean("force_relay").value_or(false);
+    uint16_t min_port = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
+    uint16_t max_port = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
     if (params.use_nbp2p) {
         params.nbp2p_params.disable_ipv6 = force_relay;
         params.nbp2p_params.disable_lan_udp = force_relay;
         params.nbp2p_params.disable_mapping = force_relay;
         params.nbp2p_params.disable_reflex = force_relay;
         params.nbp2p_params.disable_relay = false;
+        params.nbp2p_params.min_port = min_port;
+        params.nbp2p_params.max_port = max_port;
         params.nbp2p_params.username = p2p_username_.c_str();
         params.nbp2p_params.password = p2p_password_.c_str();
         params.nbp2p_params.reflex_servers = reflex_servers.data();

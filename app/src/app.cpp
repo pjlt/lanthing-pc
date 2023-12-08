@@ -161,6 +161,8 @@ bool App::init() {
     relay_server_ = settings_->getString("relay").value_or("");
     windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
     force_relay_ = settings_->getBoolean("force_relay").value_or(false);
+    min_port_ = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
+    max_port_ = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -218,6 +220,8 @@ int App::exec(int argc, char** argv) {
     params.get_trusted_devices = std::bind(&App::getTrustedDevices, this);
     params.force_relay = std::bind(&App::setForceRelay, this, std::placeholders::_1);
     params.ignore_version = std::bind(&App::ignoreVersion, this, std::placeholders::_1);
+    params.set_port_range =
+        std::bind(&App::setPortRange, this, std::placeholders::_1, std::placeholders::_2);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -261,6 +265,8 @@ GUI::Settings App::getSettings() const {
     settings.relay_server = relay_server_;
     settings.windowed_fullscreen = windowed_fullscreen_;
     settings.force_relay = force_relay_;
+    settings.min_port = min_port_;
+    settings.max_port = max_port_;
     return settings;
 }
 
@@ -366,6 +372,13 @@ void App::setForceRelay(bool force) {
 
 void App::ignoreVersion(int64_t version) {
     settings_->setBoolean("ignore_version_" + std::to_string(version), true);
+}
+
+void App::setPortRange(uint16_t min_port, uint16_t max_port) {
+    min_port_ = min_port;
+    max_port_ = max_port;
+    settings_->setInteger("min_port", min_port);
+    settings_->setInteger("max_port", max_port);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

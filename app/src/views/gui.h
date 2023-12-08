@@ -66,6 +66,8 @@ public:
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
         bool force_relay;
+        uint16_t min_port;
+        uint16_t max_port;
     };
 
     struct TrustedDevice {
@@ -91,6 +93,7 @@ public:
         std::function<std::vector<TrustedDevice>()> get_trusted_devices;
         std::function<void(bool)> force_relay;
         std::function<void(int64_t)> ignore_version;
+        std::function<void(uint16_t, uint16_t)> set_port_range;
     };
 
 public:

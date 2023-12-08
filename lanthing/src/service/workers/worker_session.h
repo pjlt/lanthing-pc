@@ -80,6 +80,8 @@ public:
         bool enable_keyboard;
         bool enable_mouse;
         bool force_relay;
+        uint16_t min_port;
+        uint16_t max_port;
     };
 
 public:
@@ -214,6 +216,8 @@ private:
     std::deque<SpeedEntry> video_send_history_;
     int64_t video_send_bps_ = 0;
     bool force_relay_ = false;
+    uint16_t min_port_ = 0;
+    uint16_t max_port_ = 0;
     bool first_start_working_ack_received_ = false;
 
     std::atomic<bool> enable_gamepad_;

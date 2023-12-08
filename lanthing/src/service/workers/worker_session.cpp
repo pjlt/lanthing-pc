@@ -114,7 +114,9 @@ WorkerSession::WorkerSession(const Params& params)
     , enable_gamepad_(params.enable_gamepad)
     , enable_keyboard_(params.enable_keyboard)
     , enable_mouse_(params.enable_mouse)
-    , force_relay_(params.force_relay) {
+    , force_relay_(params.force_relay)
+    , min_port_(params.min_port)
+    , max_port_(params.max_port) {
     constexpr int kRandLength = 4;
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
@@ -306,6 +308,8 @@ tp::Server* WorkerSession::createRtcServer() {
         params.nbp2p_params.disable_lan_udp = force_relay_;
         params.nbp2p_params.disable_mapping = force_relay_;
         params.nbp2p_params.disable_reflex = force_relay_;
+        params.nbp2p_params.min_port = min_port_;
+        params.nbp2p_params.max_port = max_port_;
         params.nbp2p_params.disable_relay = false;
         params.nbp2p_params.username = p2p_username_.c_str();
         params.nbp2p_params.password = p2p_password_.c_str();

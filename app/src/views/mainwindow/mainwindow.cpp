@@ -155,6 +155,13 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->radioRealFullscreen->setChecked(false);
         ui->radioWindowedFullscreen->setChecked(false);
     }
+    ui->btnPortRange->setEnabled(false);
+    ui->leditMinPort->setValidator(new QIntValidator(1025, 65536, this));
+    ui->leditMaxPort->setValidator(new QIntValidator(1025, 65536, this));
+    if (settings.min_port != 0 && settings.max_port != 0) {
+        ui->leditMinPort->setText(QString::number(settings.min_port));
+        ui->leditMaxPort->setText(QString::number(settings.max_port));
+    }
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
@@ -509,6 +516,61 @@ void MainWindow::setupOtherCallbacks() {
     });
     connect(ui->checkboxForceRelay, &QCheckBox::stateChanged,
             [this](int) { params_.force_relay(ui->checkboxForceRelay->isChecked()); });
+    connect(ui->leditMinPort, &QLineEdit::textChanged, [this](const QString& _text) {
+        if (_text.trimmed().isEmpty() && ui->leditMaxPort->text().trimmed().isEmpty()) {
+            ui->btnPortRange->setEnabled(true);
+            return;
+        }
+        if (_text.trimmed().isEmpty() || ui->leditMaxPort->text().trimmed().isEmpty()) {
+            ui->btnPortRange->setEnabled(false);
+            return;
+        }
+        int min_port = _text.trimmed().toInt();
+        int max_port = ui->leditMaxPort->text().trimmed().toInt();
+        if (min_port >= max_port) {
+            ui->btnPortRange->setEnabled(false);
+        }
+        else {
+            ui->btnPortRange->setEnabled(true);
+        }
+    });
+    connect(ui->leditMaxPort, &QLineEdit::textChanged, [this](const QString& _text) {
+        if (_text.trimmed().isEmpty() && ui->leditMinPort->text().trimmed().isEmpty()) {
+            ui->btnPortRange->setEnabled(true);
+            return;
+        }
+        if (_text.trimmed().isEmpty() || ui->leditMinPort->text().trimmed().isEmpty()) {
+            ui->btnPortRange->setEnabled(false);
+            return;
+        }
+        int max_port = _text.trimmed().toInt();
+        int min_port = ui->leditMinPort->text().trimmed().toInt();
+        if (min_port >= max_port) {
+            ui->btnPortRange->setEnabled(false);
+        }
+        else {
+            ui->btnPortRange->setEnabled(true);
+        }
+    });
+    connect(ui->btnPortRange, &QPushButton::clicked, [this]() {
+        if (ui->leditMinPort->text().trimmed().isEmpty() &&
+            ui->leditMaxPort->text().trimmed().isEmpty()) {
+            params_.set_port_range(0, 0);
+            ui->btnPortRange->setEnabled(false);
+            return;
+        }
+        if (ui->leditMinPort->text().trimmed().isEmpty() ||
+            ui->leditMaxPort->text().trimmed().isEmpty()) {
+            return;
+        }
+        int min_port = ui->leditMinPort->text().trimmed().toInt();
+        int max_port = ui->leditMaxPort->text().trimmed().toInt();
+        if (min_port < max_port && min_port > 1024 && min_port < 65536 && max_port > 1025 &&
+            max_port <= 65536) {
+            params_.set_port_range(min_port, max_port);
+            ui->btnPortRange->setEnabled(false);
+        }
+    });
 }
 
 void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {
@@ -681,7 +743,7 @@ void MainWindow::onConnectBtnClicked() {
 void MainWindow::onShowTokenPressed() {
     if (token_showing_) {
         token_showing_ = false;
-        ui->labelMyAccessToken->setText("••••••");
+        ui->labelMyAccessToken->setText("******");
     }
     else {
         token_showing_ = true;
@@ -721,7 +783,7 @@ void MainWindow::onTimeoutHideToken() {
     int64_t now_ms = ltlib::steady_now_ms();
     if (token_last_show_time_ms_ + 5'000 <= now_ms) {
         token_showing_ = false;
-        ui->labelMyAccessToken->setText("••••••");
+        ui->labelMyAccessToken->setText("******");
     }
     else {
         QTimer::singleShot(token_last_show_time_ms_ + 5'100 - now_ms,
