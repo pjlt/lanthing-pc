@@ -414,7 +414,7 @@ bool WorkerStreaming::sendPipeMessageFromOtherThread(
 void WorkerStreaming::printStats() {}
 
 void WorkerStreaming::checkCimeout() {
-    constexpr int64_t kTimeout = 5'000;
+    constexpr int64_t kTimeout = 10'000;
     auto now = ltlib::steady_now_ms();
     if (now - last_time_received_from_service_ > kTimeout) {
         LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_

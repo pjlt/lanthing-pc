@@ -395,9 +395,25 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s) {
 void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     dispatchToUiThread([this, _msg]() {
         auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
-        int64_t version = msg->major() * 1'000'000 + msg->minor() * 1'000 + msg->patch();
         std::ostringstream oss;
+        int64_t version = msg->major() * 1'000'000 + msg->minor() * 1'000 + msg->patch();
         oss << "v" << msg->major() << "." << msg->minor() << "." << msg->patch();
+        if (msg->force()) {
+            // 强制更新
+            QString message = tr("The new version %s has been released, this is a force update "
+                                 "version, please download it from <a "
+                                 "href='%s'>Github</a>.");
+            std::vector<char> buffer(512);
+            snprintf(buffer.data(), buffer.size(), message.toStdString().c_str(), oss.str().c_str(),
+                     msg->url().c_str());
+            QMessageBox msgbox;
+            msgbox.setTextFormat(Qt::TextFormat::RichText);
+            msgbox.setWindowTitle(tr("New Version"));
+            msgbox.setText(buffer.data());
+            msgbox.setStandardButtons(QMessageBox::Ok);
+            msgbox.exec();
+            ::exit(0);
+        }
         QString message = tr("The new version %s has been released, please download it<br>from <a "
                              "href='%s'>Github</a>.");
         std::vector<char> buffer(512);

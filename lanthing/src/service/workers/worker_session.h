@@ -165,7 +165,8 @@ private:
     void bypassToClient(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void updateLastRecvTime();
-    void checkTimeout();
+    void checkKeepAliveTimeout();
+    void checkAcceptTimeout();
     void syncTime();
     void tellAppAccpetedConnection();
     void sendConnectionStatus(bool repeat, bool gp_hit, bool kb_hit, bool mouse_hit);

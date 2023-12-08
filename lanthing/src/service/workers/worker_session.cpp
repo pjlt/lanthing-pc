@@ -242,6 +242,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
     }
     createWorkerProcess((uint32_t)client_width, (uint32_t)client_height,
                         (uint32_t)client_refresh_rate, client_codecs);
+    postDelayTask(10'000, std::bind(&WorkerSession::checkAcceptTimeout, this));
     return true;
 }
 
@@ -371,6 +372,7 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
 void WorkerSession::onClosed(CloseReason reason) {
     // NOTE: 运行在ioloop
     bool rtc_closed = false;
+    client_connected_ = false;
     switch (reason) {
     case CloseReason::ClientClose:
         LOG(INFO) << "Close worker session, reason: ClientClose";
@@ -751,7 +753,7 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
         that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
         that->updateLastRecvTime();
         that->syncTime();
-        that->postTask(std::bind(&WorkerSession::checkTimeout, that));
+        that->postTask(std::bind(&WorkerSession::checkKeepAliveTimeout, that));
     });
 }
 
@@ -818,6 +820,9 @@ void WorkerSession::onTpStat(void* user_data, uint32_t bwe_bps, uint32_t nack) {
 
 void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     // NOTE: 这是在IOLoop线程
+    if (!client_connected_) {
+        return;
+    }
     auto encoded_frame = std::static_pointer_cast<ltproto::client2worker::VideoFrame>(_msg);
     LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame->capture_timestamp_us(),
          encoded_frame->start_encode_timestamp_us(), encoded_frame->end_encode_timestamp_us());
@@ -840,6 +845,9 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
 }
 
 void WorkerSession::onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!client_connected_) {
+        return;
+    }
     auto captured_audio = std::static_pointer_cast<ltproto::client2worker::AudioData>(_msg);
     lt::AudioData audio_data{};
     audio_data.data = reinterpret_cast<const uint8_t*>(captured_audio->data().c_str());
@@ -932,9 +940,9 @@ void WorkerSession::updateLastRecvTime() {
     last_recv_time_us_ = ltlib::steady_now_us();
 }
 
-void WorkerSession::checkTimeout() {
+void WorkerSession::checkKeepAliveTimeout() {
     // NOTE: 运行在IOLOOP
-    constexpr auto kTimeoutMS = 3000;
+    constexpr auto kTimeoutMS = 5000;
     constexpr auto kTimeoutUS = kTimeoutMS * 1000;
     auto now = ltlib::steady_now_us();
     if (now - last_recv_time_us_ > kTimeoutUS) {
@@ -942,7 +950,13 @@ void WorkerSession::checkTimeout() {
         onClosed(CloseReason::Timeout);
     }
     else {
-        postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkTimeout, this));
+        postDelayTask(kTimeoutMS, std::bind(&WorkerSession::checkKeepAliveTimeout, this));
+    }
+}
+
+void WorkerSession::checkAcceptTimeout() {
+    if (last_recv_time_us_ == 0) {
+        onClosed(CloseReason::Timeout);
     }
 }
 
@@ -1014,6 +1028,9 @@ void WorkerSession::calcVideoSpeed(int64_t new_frame_bytes) {
 
 bool WorkerSession::sendMessageToRemoteClient(
     uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable) {
+    if (!client_connected_) {
+        return false;
+    }
     auto packet = ltproto::Packet::create({type, msg}, false);
     if (!packet.has_value()) {
         LOG(ERR) << "Create Peer2Peer packet failed, type:" << type;
