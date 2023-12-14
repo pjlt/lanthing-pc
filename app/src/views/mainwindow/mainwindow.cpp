@@ -129,6 +129,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
             ui->cbDeviceID->addItem(pc_icon, QString::fromStdString(id));
         }
     }
+    ui->cbDeviceID->setValidator(new QIntValidator(100'000'000, 999'999'999, this));
 
     // 验证码
     QAction* lock_position = new QAction();
@@ -730,13 +731,17 @@ void MainWindow::swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* ne
 
 void MainWindow::onConnectBtnClicked() {
     auto dev_id = ui->cbDeviceID->currentText();
-    auto token = ui->leditAccessToken->text().toStdString();
+    auto token = ui->leditAccessToken->text().trimmed().toStdString();
     int64_t deviceID = dev_id.toLongLong();
-    if (deviceID != 0) {
-        params_.connect(deviceID, token);
+    if (deviceID < 100'000'000 || deviceID > 999'999'999 || token.empty()) {
+        LOG(ERR) << "DeviceID(" << dev_id.toStdString().c_str() << ") invalid!";
+        QMessageBox msgbox;
+        msgbox.setText(tr("DeviceID or AccessToken invalid"));
+        msgbox.setIcon(QMessageBox::Icon::Information);
+        msgbox.exec();
     }
     else {
-        LOG(FATAL) << "Parse deviceID(" << dev_id.toStdString().c_str() << ") to int64_t failed!";
+        params_.connect(deviceID, token);
     }
 }
 
