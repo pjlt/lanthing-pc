@@ -162,7 +162,7 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
     HRESULT hr = S_OK;
     while (true) {
         i_am_alive();
-        DWORD waitResult = WaitForMultipleObjects(2, events, FALSE, 500);
+        DWORD waitResult = WaitForMultipleObjects(2, events, FALSE, 5000);
         switch (waitResult) {
         case WAIT_OBJECT_0 + 0:
             LOG(INFO) << "Audio capture loop received shutdown event";
@@ -170,8 +170,8 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
         case WAIT_OBJECT_0 + 1:
             break;
         case WAIT_TIMEOUT:
-            LOG(WARNING) << "Capture event timed out after 0.5 seconds";
-            return;
+            LOG(WARNING) << "Capture event timed out after 5 seconds";
+            break;
         default:
             LOG(WARNING) << "Unknown wait termination on audio capture";
             return;
