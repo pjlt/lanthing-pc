@@ -101,7 +101,7 @@ void Service::uninit() {
 
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-#include <ISRG-Root.cert>
+#include <trusted-root.cert>
 bool Service::initTcpClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
@@ -426,6 +426,9 @@ void Service::loginDevice() {
     std::optional<bool> allow_control = settings_->getBoolean("allow_control");
     auto msg = std::make_shared<ltproto::server::LoginDevice>();
     msg->set_device_id(device_id_);
+    msg->set_version_major(LT_VERSION_MAJOR);
+    msg->set_version_minor(LT_VERSION_MINOR);
+    msg->set_version_patch(LT_VERSION_PATCH);
     if (allow_control.has_value()) {
         msg->set_allow_control(allow_control.value());
     }

@@ -31,7 +31,7 @@ Lanthing的端到端加密具体是如何实现的：
 1. 不管是P2P还是中继，截取到流量的中间人不可能解密
 2. 服务器拿到的只是一个哈希值，并且流量不从这里走，没有解密这一说法
 
-上面提到的**安全通道**，Github Releases页面下载的lanthing，使用的是开发者在香港服务器搭的[lanthing-svr](https://github.com/pjlt/lanthing-svr)，走的TLS1.2。你也可以选择自建这个服务器。
+上面提到的**安全通道**，Github Releases页面下载的lanthing，使用的是作者自己搭的[lanthing-svr](https://github.com/pjlt/lanthing-svr)，走的TLS1.2。你也可以选择自建这个服务器。
 
 ## 编译
 
@@ -43,7 +43,7 @@ Windows:
 * Git
 * Visual Studio 2022
 * CMake 3.21 或以上
-* Qt 6
+* Qt 6 (msvc)
 
 Linux:
 

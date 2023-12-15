@@ -139,8 +139,6 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
 
-    LOG(INFO) << "Signaling " << params.signaling_addr.c_str() << ":" << signaling_port;
-
     if (options.find("-reflexs") != options.end()) {
         std::string reflexs_str = options["-reflexs"];
         std::stringstream ss{reflexs_str};
@@ -273,7 +271,7 @@ bool Client::initSettings() {
 
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-#include <ISRG-Root.cert>
+#include <trusted-root.cert>
 bool Client::initSignalingClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
