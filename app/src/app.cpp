@@ -505,7 +505,7 @@ void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
 
 #define MACRO_TO_STRING_HELPER(str) #str
 #define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
-#include <ISRG-Root.cert>
+#include <trusted-root.cert>
 bool App::initTcpClient() {
     ltlib::Client::Params params{};
     params.stype = ltlib::StreamType::TCP;
