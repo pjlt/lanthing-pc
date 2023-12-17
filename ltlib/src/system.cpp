@@ -33,6 +33,7 @@
 
 #include <Shlobj.h>
 #include <TlHelp32.h>
+#include <shellapi.h>
 #elif LT_LINUX
 #include <X11/Xlib.h>
 #include <pwd.h>
@@ -114,6 +115,28 @@ bool executeAsUser(const std::function<bool(HANDLE)>& func) {
         CloseHandle(hToken);
     }
     return res;
+}
+
+bool processNotElevated() {
+    bool isElevated = false;
+    HANDLE token = NULL;
+
+    BOOL ret = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token);
+    if (ret == FALSE) {
+        return false;
+    }
+
+    TOKEN_ELEVATION elevationInfo;
+    DWORD retSize = 0;
+    if (!GetTokenInformation(token, TokenElevation, &elevationInfo, sizeof(elevationInfo),
+                             &retSize)) {
+        CloseHandle(token);
+        return false;
+    }
+
+    isElevated = elevationInfo.TokenIsElevated;
+    CloseHandle(token);
+    return !isElevated;
 }
 
 #endif // LT_WINDOWS
@@ -287,7 +310,7 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
     return true;
 }
 
-void LT_API setThreadDesktop() {
+void setThreadDesktop() {
     wchar_t user[128] = {0};
     DWORD size = 128;
     GetUserNameW(user, &size);
@@ -303,6 +326,27 @@ void LT_API setThreadDesktop() {
             CloseDesktop(hdesk);
         }
     }
+}
+
+bool selfElevateAndNeedExit() {
+    // 明确是非管理员启动、且成功执行ShellExecuteEx才返回true
+    if (processNotElevated()) {
+        std::string fullpath = getProgramFullpath();
+        if (fullpath.empty()) {
+            return false;
+        }
+        SHELLEXECUTEINFO sei{};
+        sei.cbSize = sizeof(SHELLEXECUTEINFO);
+        sei.lpVerb = "runas";
+        sei.lpFile = fullpath.c_str();
+        sei.hwnd = NULL;
+        sei.nShow = SW_NORMAL;
+        if (!ShellExecuteExA(&sei)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 #elif defined(LT_LINUX)
@@ -376,7 +420,11 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
     return false;
 }
 
-void LT_API setThreadDesktop() {}
+void setThreadDesktop() {}
+
+bool selfElevateAndNeedExit() {
+    return false;
+}
 
 #endif // #elif defined(LT_LINUX)
 
