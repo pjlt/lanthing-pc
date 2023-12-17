@@ -218,6 +218,12 @@ void LibuvCTransport::reconnect() {
     if (conn != nullptr) {
         uv_close(conn, &LibuvCTransport::delay_reconnect);
     }
+    else {
+        auto timer = new uv_timer_t;
+        uv_timer_init(uvloop(), timer);
+        timer->data = this;
+        uv_timer_start(timer, &LibuvCTransport::do_reconnect, intervals_.next(), 0);
+    }
     on_reconnecting_();
 }
 
