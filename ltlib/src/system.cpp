@@ -164,7 +164,6 @@ std::string getConfigPath(bool is_service) {
     if (!appdata_path.empty()) {
         return appdata_path;
     }
-    std::wstring wappdata_path;
 
     auto get_path = [&](HANDLE) -> bool {
         wchar_t m_lpszDefaultDir[MAX_PATH] = {0};
