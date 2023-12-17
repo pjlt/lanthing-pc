@@ -40,6 +40,7 @@
 
 #include <ltlib/logging.h>
 #include <ltlib/singleton_process.h>
+#include <ltlib/strings.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -89,10 +90,11 @@ void initLoggingAndDumps() {
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
+    std::wstring w_appdata_dir = ltlib::utf8To16(appdata_dir);
     std::string kPrefix = "app";
     std::filesystem::path log_dir;
-    if (!appdata_dir.empty()) {
-        log_dir = appdata_dir;
+    if (!w_appdata_dir.empty()) {
+        log_dir = w_appdata_dir;
         log_dir /= "log";
         log_dir /= kPrefix;
     }

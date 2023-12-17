@@ -41,6 +41,7 @@
 #include <ltlib/event.h>
 #include <ltlib/logging.h>
 #include <ltlib/singleton_process.h>
+#include <ltlib/strings.h>
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
@@ -132,8 +133,9 @@ void initLogAndMinidump(Role role) {
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(true);
-    if (!appdata_dir.empty()) {
-        log_dir = appdata_dir;
+    std::wstring w_appdata_dir = ltlib::utf8To16(appdata_dir);
+    if (!w_appdata_dir.empty()) {
+        log_dir = w_appdata_dir;
         log_dir /= "log";
         log_dir /= prefix;
     }
