@@ -422,7 +422,7 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
 
 void setThreadDesktop() {}
 
-void selfElevation() {}
+void selfElevateAndNeedExit() {}
 
 #endif // #elif defined(LT_LINUX)
 
