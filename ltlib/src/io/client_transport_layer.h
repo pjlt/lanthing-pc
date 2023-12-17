@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,20 +32,20 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+
 #include <uv.h>
-#include <ltlib/reconnect_interval.h>
+
 #include <ltlib/io/ioloop.h>
 #include <ltlib/io/types.h>
+#include <ltlib/reconnect_interval.h>
+
 #include "buffer.h"
 
-namespace ltlib
-{
+namespace ltlib {
 
-class CTransport
-{
+class CTransport {
 public:
-    struct Params
-    {
+    struct Params {
         StreamType stype;
         IOLoop* ioloop;
         std::string pipe_name;
@@ -59,14 +59,14 @@ public:
     };
 
 public:
-    virtual ~CTransport() { }
+    virtual ~CTransport() {}
     virtual bool init() = 0;
-    virtual bool send(Buffer buff[], uint32_t buff_count, const std::function<void()>& callback) = 0;
+    virtual bool send(Buffer buff[], uint32_t buff_count,
+                      const std::function<void()>& callback) = 0;
     virtual void reconnect() = 0;
 };
 
-class LibuvCTransport : public CTransport
-{
+class LibuvCTransport : public CTransport {
 public:
     LibuvCTransport(const Params& params);
     ~LibuvCTransport() override;
