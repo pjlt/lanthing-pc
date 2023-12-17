@@ -133,6 +133,9 @@ void initLoggingAndDumps() {
 } // namespace
 
 int main(int argc, char** argv) {
+    if (ltlib::selfElevateAndNeedExit()) {
+        return 0;
+    }
     if (!ltlib::makeSingletonProcess("lanthing_app")) {
         printf("Another instance is running.\n");
         return 0;
