@@ -93,7 +93,7 @@ void initLoggingAndDumps() {
     std::wstring w_appdata_dir = ltlib::utf8To16(appdata_dir);
     std::string kPrefix = "app";
     std::filesystem::path log_dir;
-    if (!appdata_dir.empty()) {
+    if (!w_appdata_dir.empty()) {
         log_dir = w_appdata_dir;
         log_dir /= "log";
         log_dir /= kPrefix;
