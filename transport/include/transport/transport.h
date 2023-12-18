@@ -63,12 +63,20 @@ constexpr uint32_t operator&(VideoCodecType codec, uint32_t value) {
     return value & codec;
 }
 
+constexpr uint32_t operator&(VideoCodecType left, VideoCodecType right) {
+    return static_cast<uint32_t>(left) & static_cast<uint32_t>(right);
+}
+
 constexpr uint32_t operator|(uint32_t value, VideoCodecType codec) {
     return value | static_cast<uint32_t>(codec);
 }
 
 constexpr uint32_t operator|(VideoCodecType codec, uint32_t value) {
     return value | codec;
+}
+
+constexpr uint32_t operator|(VideoCodecType left, VideoCodecType right) {
+    return static_cast<uint32_t>(left) | static_cast<uint32_t>(right);
 }
 
 constexpr const char* toString(VideoCodecType type) {

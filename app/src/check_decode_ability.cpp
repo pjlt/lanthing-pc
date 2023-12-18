@@ -43,6 +43,8 @@
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 
+#include <transport/transport.h>
+
 namespace {
 std::string toHex(const int i) {
     char buffer[50];
@@ -103,7 +105,8 @@ WARNING_ENABLE(6335)
 #elif defined(LT_LINUX)
 
 uint32_t checkDecodeAbility() {
-    return 0;
+    // TODO: 实现它
+    return VideoCodecType::H264_420 | VideoCodecType::H265_420;
 }
 #else // LT_WINDOWS | LT_LINUX
 #error Unsupported platform

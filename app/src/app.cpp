@@ -180,6 +180,13 @@ bool App::init() {
     if (!initTcpClient()) {
         return false;
     }
+    hard_decode_abilities_ = checkDecodeAbility();
+    if (hard_decode_abilities_ == 0) {
+        LOG(WARNING) << "This machine has no hard decode ability!";
+    }
+    else {
+        LOG(INFO) << "Hard decode ability: " << hard_decode_abilities_;
+    }
 #if LT_WINDOWS
     if (!initServiceManager()) {
         return false;
@@ -189,13 +196,6 @@ bool App::init() {
         return false;
     }
     loadHistoryIDs();
-    hard_decode_abilities_ = checkDecodeAbility();
-    if (hard_decode_abilities_ == 0) {
-        LOG(WARNING) << "This machine has no hard decode ability!";
-    }
-    else {
-        LOG(INFO) << "Hard decode ability: " << hard_decode_abilities_;
-    }
     stoped_ = false;
     return true;
 }
