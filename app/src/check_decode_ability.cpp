@@ -46,13 +46,6 @@
 #include <transport/transport.h>
 
 namespace {
-std::string toHex(const int i) {
-    char buffer[50];
-    snprintf(buffer, sizeof(buffer), "%x", i);
-
-    return std::string(buffer);
-}
-
 class SimpleGuard {
 public:
     SimpleGuard(const std::function<void()>& cleanup)
@@ -80,7 +73,7 @@ uint32_t checkDecodeAbility() {
     si.wShowWindow = SW_HIDE;
     if (!CreateProcessW(const_cast<LPWSTR>(wprogram.c_str()), const_cast<LPWSTR>(wcmd.c_str()),
                         nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
-        LOG(ERR) << "Check decode ability CreateProcessW failed with " << toHex(GetLastError());
+        LOGF(ERR, "Check decode ability CreateProcessW failed with %#x", GetLastError());
         return 0;
     }
     SimpleGuard g1{[&pi]() {
@@ -89,13 +82,12 @@ uint32_t checkDecodeAbility() {
     }};
     DWORD ret = WaitForSingleObject(pi.hProcess, 3000);
     if (ret != WAIT_OBJECT_0) {
-        LOG(ERR) << "Check decode ability WaitForSingleObject failed with "
-                 << toHex(GetLastError());
+        LOGF(ERR, "Check decode ability WaitForSingleObject failed with %#x", GetLastError());
         return 0;
     }
     DWORD exit_code = 0;
     if (!GetExitCodeProcess(pi.hProcess, &exit_code)) {
-        LOG(ERR) << "Check decode ability GetExitCodeProcess failed with " << toHex(GetLastError());
+        LOGF(ERR, "Check decode ability GetExitCodeProcess failed with %#x", GetLastError());
         return 0;
     }
     return static_cast<uint32_t>(exit_code);
@@ -105,6 +97,7 @@ WARNING_ENABLE(6335)
 #elif defined(LT_LINUX)
 
 uint32_t checkDecodeAbility() {
+    SimpleGuard lg a{[]() {}};
     // TODO: 实现它
     return VideoCodecType::H264_420 | VideoCodecType::H265_420;
 }
