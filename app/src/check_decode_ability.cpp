@@ -39,6 +39,7 @@
 #endif // LT_WINDOWS, LT_LINUX
 
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 
@@ -65,6 +66,7 @@ namespace lt {
 
 #if defined(LT_WINDOWS)
 
+WARNING_DISABLE(6335)
 uint32_t checkDecodeAbility() {
     std::string program = ltlib::getProgramPath() + "\\lanthing.exe -action check_decode";
     std::wstring wprogram = ltlib::utf8To16(program);
@@ -96,6 +98,7 @@ uint32_t checkDecodeAbility() {
     }
     return static_cast<uint32_t>(exit_code);
 }
+WARNING_ENABLE(6335)
 
 #elif defined(LT_LINUX)
 

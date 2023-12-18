@@ -30,6 +30,7 @@
 
 #pragma once
 #include <cstdint>
+#include <cstring>
 
 #if defined(LT_WINDOWS)
 #if defined(BUILDING_LT_EXE)
@@ -54,11 +55,11 @@ enum class VideoCodecType : uint32_t {
     H265 = H265_420,
 };
 
-uint32_t operator&(uint32_t value, VideoCodecType codec) {
+constexpr uint32_t operator&(uint32_t value, VideoCodecType codec) {
     return value & static_cast<uint32_t>(codec);
 }
 
-uint32_t operator&(VideoCodecType codec, uint32_t value) {
+constexpr uint32_t operator&(VideoCodecType codec, uint32_t value) {
     return value & codec;
 }
 
@@ -75,7 +76,28 @@ constexpr const char* toString(VideoCodecType type) {
     case VideoCodecType::AV1:
         return "AV1";
     default:
-        return "Unknown";
+        return "?";
+    }
+}
+
+inline VideoCodecType videoCodecType(const char* type) {
+    if (std::strncmp(type, "AVC", 3) == 0) {
+        return VideoCodecType::H264_420;
+    }
+    else if (std::strncmp(type, "HEVC", 4) == 0) {
+        return VideoCodecType::H265_420;
+    }
+    else if (std::strncmp(type, "AVC444", 6) == 0) {
+        return VideoCodecType::H264_444;
+    }
+    else if (std::strncmp(type, "HEVC444", 7) == 0) {
+        return VideoCodecType::H265_444;
+    }
+    else if (std::strncmp(type, "AV1", 3) == 0) {
+        return VideoCodecType::AV1;
+    }
+    else {
+        return VideoCodecType::Unknown;
     }
 }
 

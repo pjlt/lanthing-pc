@@ -45,14 +45,14 @@ std::string to_string(std::vector<lt::VideoCodecType> codecs) {
     std::string str;
     for (size_t i = 0; i < codecs.size(); i++) {
         switch (codecs[i]) {
-        case lt::VideoCodecType::H264:
-            str += "avc";
+        case lt::VideoCodecType::H264_420:
+            str += lt::toString(lt::VideoCodecType::H264_420);
             break;
-        case lt::VideoCodecType::H265:
-            str += "hevc";
+        case lt::VideoCodecType::H265_420:
+            str += lt::toString(lt::VideoCodecType::H265_420);
             break;
         default:
-            str += "unknown";
+            str += lt::toString(lt::VideoCodecType::Unknown);
             break;
         }
         if (i != codecs.size() - 1) {

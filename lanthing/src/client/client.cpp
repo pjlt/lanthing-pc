@@ -61,21 +61,35 @@
 
 namespace {
 
+/*
 lt::VideoCodecType to_ltrtc(std::string codec_str) {
-    static const std::string kAVC = "avc";
-    static const std::string kHEVC = "hevc";
-    std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(),
-                   [](char c) -> char { return (char)std::tolower(c); });
-    if (codec_str == kAVC) {
-        return lt::VideoCodecType::H264;
-    }
-    else if (codec_str == kHEVC) {
-        return lt::VideoCodecType::H265;
-    }
-    else {
-        return lt::VideoCodecType::Unknown;
-    }
+constexpr const char* kAVC_420 = toString(lt::VideoCodecType::H264_420);
+constexpr const char* kHEVC_420 = toString(lt::VideoCodecType::H265_420);
+constexpr const char* kAVC_444 = toString(lt::VideoCodecType::H264_444);
+constexpr const char* kHEVC_444 = toString(lt::VideoCodecType::H265_444);
+constexpr const char* kAV1 = toString(lt::VideoCodecType::AV1);
+std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(),
+               [](char c) -> char { return (char)std::toupper(c); });
+if (codec_str == kAVC_420) {
+    return lt::VideoCodecType::H264_420;
 }
+else if (codec_str == kHEVC_420) {
+    return lt::VideoCodecType::H265_420;
+}
+else if (codec_str == kAVC_444) {
+    return lt::VideoCodecType::H264_444;
+}
+else if (codec_str == kHEVC_444) {
+    return lt::VideoCodecType::H265_444;
+}
+else if (codec_str == kAV1) {
+    return lt::VideoCodecType::AV1;
+}
+else {
+    return lt::VideoCodecType::Unknown;
+}
+}
+*/
 
 lt::AudioCodecType atype() {
     switch (LT_TRANSPORT_TYPE) {
@@ -88,19 +102,6 @@ lt::AudioCodecType atype() {
     default:
         LOG(FATAL) << "Unknown transport type";
         return lt::AudioCodecType::OPUS;
-    }
-}
-
-std::string toString(lt::VideoCodecType codec) {
-    switch (codec) {
-
-    case lt::VideoCodecType::H264:
-        return "AVC";
-    case lt::VideoCodecType::H265:
-        return "HEVC";
-    case lt::VideoCodecType::Unknown:
-    default:
-        return "?";
     }
 }
 
@@ -197,7 +198,8 @@ Client::Client(const Params& params)
     , p2p_password_{params.pwd}
     , signaling_params_{params.client_id, params.room_id, params.signaling_addr,
                         params.signaling_port}
-    , video_params_{to_ltrtc(params.codec), params.width, params.height, params.screen_refresh_rate,
+    , video_params_{videoCodecType(params.codec.c_str()), params.width, params.height,
+                    params.screen_refresh_rate,
                     std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3)}
     , audio_params_{atype(), params.audio_freq, params.audio_channels}
