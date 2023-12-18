@@ -97,7 +97,7 @@ WARNING_ENABLE(6335)
 #elif defined(LT_LINUX)
 
 uint32_t checkDecodeAbility() {
-    SimpleGuard lg a{[]() {}};
+    SimpleGuard a{[]() {}};
     // TODO: 实现它
     return VideoCodecType::H264_420 | VideoCodecType::H265_420;
 }
