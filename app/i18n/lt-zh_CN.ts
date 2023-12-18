@@ -554,77 +554,82 @@
         <translation>渲染失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="57"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="56"/>
+        <source>No decode ability</source>
+        <translation>显卡没有检测到硬解能力</translation>
+    </message>
+    <message>
+        <location filename="../src/views/friendly_error_code.cpp" line="58"/>
         <source>Controlled side initialize video capture or video encoder failed</source>
         <translation>被控端初始化画面捕捉器失败，或是初始化编码器失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="59"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="60"/>
         <source>Controlled side initialize audio capture or audio encoder failed</source>
         <translation>被控端初始化音频捕捉器失败，或是初始化音频编码器失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="61"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="62"/>
         <source>Controlled side initialize input executor failed</source>
         <translation>被控端初始化输入执行器失败（用于执行主控端发送的鼠标、键盘等输入信号）</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="62"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="63"/>
         <source>Target is serving another client</source>
         <translation>目标正在为其它客户端服务</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="63"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="64"/>
         <source>Peer user rejected you request</source>
         <translation>对方拒绝你的连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="66"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="67"/>
         <source>Request for allocating Device ID failed, server has no available ID, pleaese contact the server owner to fix it</source>
         <translation>向服务器申请设备码失败，服务器没有剩余设备码可供分配，请联系服务器管理员修复这个问题</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="69"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="70"/>
         <source>Login device failed, invalid device ID</source>
         <translation>登录设备失败，原因是设备码不正确</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="71"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="72"/>
         <source>Login device failed, server has invalid status, probably a bug</source>
         <translation>登录设备失败，服务器内部产生没有考虑到的状态，很可能是bug导致的</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="75"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="76"/>
         <source>Request connection failed, server has invalid status, probably a bug</source>
         <translation>请求连接失败，服务器内部产生没有考虑到的状态，很可能是bug导致的</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="77"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="78"/>
         <source>Request connection failed, server can not create order, probably controlled side is serving another clinet, or controlled side&apos;s &apos;lanthing.exe&apos; is hanging. If it&apos;s the second situation, try to kill all &apos;lanthing.exe&apos; and &apos;app.exe&apos; processes, then retry</source>
         <translation>请求连接失败，服务器未能为这次连接创建订单，可能是被控端正在服务其它客户端，也可能是被控端的&apos;lanthing.exe&apos;进程卡住了。如果是后者，请尝试杀掉所有的&apos;lanthing.exe&apos;和&apos;app.exe&apos;进程，再启动试试</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="83"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="84"/>
         <source>Request connection failed, peer not online</source>
         <translation>请求连接失败，对方不在线</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="84"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="85"/>
         <source>Request connection timeout</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="92"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="93"/>
         <source>Controlled module disconnected from server</source>
         <translation>被控模块与服务器断开连接</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="94"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="95"/>
         <source>Connect timeout</source>
         <translation>连接超时</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="96"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="97"/>
         <source>KeepAlive timeout, maybe your network is poor</source>
         <translation>超过5秒没有收到对方心跳包，也许你们之间的网络很差</translation>
     </message>
@@ -633,7 +638,7 @@
         <translation type="vanished">请求连接失败，服务器未能为这次连接创建订单，可能是被控端正在服务其它客户端，也可能是被控端的&apos;lanthing.exe&apos;进程卡住了。如果是后者，请尝试杀掉所有的&apos;lanthing.exe&apos;和&apos;app.exe&apos;进程，再启动试试</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="87"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="88"/>
         <source>Signaling server error, join room failed, probably a bug</source>
         <translation>信令服务器错误，加入房间失败，可能是bug导致的</translation>
     </message>
@@ -642,7 +647,7 @@
         <translation type="vanished">信令服务器错误，加入房间失败，可能是bug导致的</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="89"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="90"/>
         <source>Send signaling message failed, peer not online</source>
         <translation>发送信令消息失败，对方未连接信令服务器</translation>
     </message>

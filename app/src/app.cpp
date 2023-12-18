@@ -239,6 +239,10 @@ int App::exec(int argc, char** argv) {
 
 // 跑在UI线程
 void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
+    if (hard_decode_abilities_ == 0) {
+        gui_.errorCode(ltproto::ErrorCode::NoDecodeAbility);
+        return;
+    }
     if (peerDeviceID <= 0) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
