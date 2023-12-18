@@ -63,6 +63,14 @@ constexpr uint32_t operator&(VideoCodecType codec, uint32_t value) {
     return value & codec;
 }
 
+constexpr uint32_t operator|(uint32_t value, VideoCodecType codec) {
+    return value | static_cast<uint32_t>(codec);
+}
+
+constexpr uint32_t operator|(VideoCodecType codec, uint32_t value) {
+    return value | codec;
+}
+
 constexpr const char* toString(VideoCodecType type) {
     switch (type) {
     case VideoCodecType::H264_420:

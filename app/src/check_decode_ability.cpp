@@ -68,9 +68,9 @@ namespace lt {
 
 WARNING_DISABLE(6335)
 uint32_t checkDecodeAbility() {
-    std::string program = ltlib::getProgramPath() + "\\lanthing.exe -action check_decode";
+    std::string program = ltlib::getProgramPath() + "\\lanthing.exe";
     std::wstring wprogram = ltlib::utf8To16(program);
-    std::wstring wcmd = ltlib::utf8To16("-action check_decode");
+    std::wstring wcmd = ltlib::utf8To16("-type worker -action check_decode");
     PROCESS_INFORMATION pi = {0};
     STARTUPINFO si = {0};
     si.dwFlags = STARTF_USESHOWWINDOW;

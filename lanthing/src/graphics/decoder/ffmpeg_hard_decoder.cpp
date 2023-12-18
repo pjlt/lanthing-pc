@@ -68,9 +68,11 @@ AVHWDeviceType toAVHWDeviceType(lt::VaType type) {
 
 AVCodecID toAVCodecID(lt::VideoCodecType type) {
     switch (type) {
-    case lt::VideoCodecType::H264:
+    case lt::VideoCodecType::H264_420:
+    case lt::VideoCodecType::H264_444:
         return AVCodecID::AV_CODEC_ID_H264;
-    case lt::VideoCodecType::H265:
+    case lt::VideoCodecType::H265_420:
+    case lt::VideoCodecType::H265_444:
         return AVCodecID::AV_CODEC_ID_HEVC;
     default:
         return AVCodecID::AV_CODEC_ID_NONE;
@@ -237,7 +239,6 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     AVCodecContext* codec_ctx = nullptr;
     AVBufferRef* avbuffref_hw_frames_ctx = nullptr;
     AVHWFramesContext* hw_frames_ctx = nullptr;
-    int align = codecType() == lt::VideoCodecType::H264 ? 16 : 128;
     int ret = 0;
 
     // 1
@@ -268,8 +269,8 @@ bool FFmpegHardDecoder::init2(const void* _config, const void* _codec) {
     hw_frames_ctx = reinterpret_cast<AVHWFramesContext*>(avbuffref_hw_frames_ctx->data);
     hw_frames_ctx->format = hwPixFormat();
     hw_frames_ctx->sw_format = AVPixelFormat::AV_PIX_FMT_NV12;
-    hw_frames_ctx->width = FFALIGN(width(), align);
-    hw_frames_ctx->height = FFALIGN(height(), align);
+    hw_frames_ctx->width = FFALIGN(width(), align(codecType()));
+    hw_frames_ctx->height = FFALIGN(height(), align(codecType()));
     hw_frames_ctx->initial_pool_size = 10;
     configAVHWFramesContext(hw_frames_ctx);
     ret = av_hwframe_ctx_init(avbuffref_hw_frames_ctx);

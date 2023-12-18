@@ -30,6 +30,10 @@
 
 #include "worker_check_decode.h"
 
+#include <future>
+
+#include <graphics/drpipeline/video_decode_render_pipeline.h>
+
 namespace lt {
 
 namespace worker {
@@ -37,9 +41,34 @@ namespace worker {
 std::unique_ptr<WorkerCheckDecode>
 WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     (void)options;
-    // ֻ���H264_420��H265_420
-    //
-    return nullptr;
+    std::promise<void> promise;
+    auto empty_func = []() {};
+    auto on_sdl_exit = [&promise]() { promise.set_value(); };
+    PcSdl::Params sdl_params{};
+    sdl_params.on_exit = on_sdl_exit;
+    sdl_params.on_reset = empty_func;
+    sdl_params.hide_window = true;
+    auto sdl = PcSdl::create(sdl_params);
+    if (sdl == nullptr) {
+        return nullptr;
+    }
+    // 只检测H264_420和H265_420
+    uint32_t codecs = 0;
+    for (auto codec : {VideoCodecType::H265_420, VideoCodecType::H264_420}) {
+        auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
+        VideoDecodeRenderPipeline::Params params{codec, 1920, 1080, 60, empty_func2};
+        params.sdl = sdl.get();
+        params.for_test = true;
+        auto pipeline = VideoDecodeRenderPipeline::create(params);
+        if (pipeline != nullptr) {
+            // ffmepg解码的时候似乎不区分420 444???
+            codecs = codecs | codec;
+        }
+    }
+    sdl->stop();
+    std::unique_ptr<WorkerCheckDecode> w{new WorkerCheckDecode{codecs}};
+    promise.get_future().get();
+    return w;
 }
 
 WorkerCheckDecode::WorkerCheckDecode(uint32_t codecs)

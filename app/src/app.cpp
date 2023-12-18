@@ -191,7 +191,10 @@ bool App::init() {
     loadHistoryIDs();
     hard_decode_abilities_ = checkDecodeAbility();
     if (hard_decode_abilities_ == 0) {
-        LOG(WARNING) << "This machine has no hard decode alibity!";
+        LOG(WARNING) << "This machine has no hard decode ability!";
+    }
+    else {
+        LOG(INFO) << "Hard decode ability: " << hard_decode_abilities_;
     }
     stoped_ = false;
     return true;
@@ -763,6 +766,7 @@ void App::onServiceStatus(ServiceManager::ServiceStatus status) {
 
 bool App::initClientManager() {
     ClientManager::Params params{};
+    params.decode_abilities = hard_decode_abilities_;
     params.ioloop = ioloop_.get();
     params.on_launch_client_success =
         std::bind(&App::onLaunchClientSuccess, this, std::placeholders::_1);

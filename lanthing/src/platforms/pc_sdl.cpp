@@ -116,6 +116,7 @@ private: // 事件处理
 
 private:
     SDL_Window* window_ = nullptr;
+    const bool hide_window_;
     std::function<void()> on_reset_;
     std::function<void()> on_exit_;
     bool windowed_fullscreen_;
@@ -143,7 +144,8 @@ std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
 }
 
 PcSdlImpl::PcSdlImpl(const Params& params)
-    : on_reset_(params.on_reset)
+    : hide_window_{params.hide_window}
+    , on_reset_(params.on_reset)
     , on_exit_(params.on_exit)
     , windowed_fullscreen_{params.windowed_fullscreen}
     , absolute_mouse_{params.absolute_mouse} {}
@@ -229,12 +231,16 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         desktop_height = dm.h;
         desktop_width = dm.w;
     }
+    uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+    if (hide_window_) {
+        window_flags = window_flags | SDL_WINDOW_HIDDEN;
+    }
     window_ = SDL_CreateWindow("Lanthing",
                                desktop_width / 6,      // x
                                desktop_height / 6,     // y
                                desktop_width * 2 / 3,  // width,
                                desktop_height * 2 / 3, // height,
-                               SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+                               window_flags);
 
     if (window_ == nullptr) {
         // 出错了，退出整个client（
@@ -341,7 +347,9 @@ void PcSdlImpl::loadCursors() {
 
 void PcSdlImpl::destroyCursors() {
     for (auto& cursor : cursors_) {
-        SDL_FreeCursor(cursor.second);
+        if (cursor.second) {
+            SDL_FreeCursor(cursor.second);
+        }
     }
     cursors_.clear();
 }

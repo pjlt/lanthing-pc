@@ -50,6 +50,7 @@ public:
                    send_message);
         bool validate() const;
 
+        bool for_test = false;
         lt::VideoCodecType codec_type;
         uint32_t width;
         uint32_t height;
