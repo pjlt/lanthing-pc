@@ -28,36 +28,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "worker.h"
 #include "worker_check_decode.h"
-#include "worker_setting.h"
-#include "worker_streaming.h"
-
-#include <ltlib/logging.h>
 
 namespace lt {
 
 namespace worker {
 
-std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> options) {
-    auto iter = options.find("-action");
-    if (iter == options.cend()) {
-        LOG(ERR) << "Invalid worker parameters: no worker action";
-        return nullptr;
-    }
-    else if (iter->second == "streaming") {
-        return WorkerStreaming::create(options);
-    }
-    else if (iter->second == "setting") {
-        return WorkerSetting::create(options);
-    }
-    else if (iter->second == "check_decode") {
-        return WorkerCheckDecode::create(options);
-    }
-    else {
-        LOG(ERR) << "Unkonwn worker action: " << iter->second;
-        return nullptr;
-    }
+std::unique_ptr<WorkerCheckDecode>
+WorkerCheckDecode::create(std::map<std::string, std::string> options) {
+    (void)options;
+    // ÷ªºÏ≤‚H264_420∫ÕH265_420
+    //
+    return nullptr;
+}
+
+WorkerCheckDecode::WorkerCheckDecode(uint32_t codecs)
+    : codecs_{codecs} {}
+
+WorkerCheckDecode::~WorkerCheckDecode() = default;
+
+uint32_t WorkerCheckDecode::wait() {
+    return codecs_;
 }
 
 } // namespace worker

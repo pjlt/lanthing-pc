@@ -155,8 +155,9 @@ WorkerStreaming::~WorkerStreaming() {
     }
 }
 
-void WorkerStreaming::wait() {
+uint32_t WorkerStreaming::wait() {
     session_observer_->waitForChange();
+    return 0;
 }
 
 bool WorkerStreaming::init() {

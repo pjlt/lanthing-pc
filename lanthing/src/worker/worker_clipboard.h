@@ -40,7 +40,7 @@ class WorkerClipboard : public Worker {
 public:
     static std::unique_ptr<WorkerClipboard> create(std::map<std::string, std::string> options);
     ~WorkerClipboard() override;
-    void wait() override;
+    uint32_t wait() override;
 };
 
 } // namespace worker

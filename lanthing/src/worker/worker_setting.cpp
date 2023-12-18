@@ -1,4 +1,3 @@
-#include "worker_setting.h"
 /*
  * BSD 3-Clause License
  *
@@ -62,7 +61,9 @@ std::unique_ptr<WorkerSetting> WorkerSetting::create(std::map<std::string, std::
 }
 WorkerSetting::~WorkerSetting() = default;
 
-void WorkerSetting::wait() {}
+uint32_t WorkerSetting::wait() {
+    return 0;
+}
 
 } // namespace worker
 

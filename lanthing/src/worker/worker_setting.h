@@ -42,7 +42,7 @@ class WorkerSetting : public Worker {
 public:
     static std::unique_ptr<WorkerSetting> create(std::map<std::string, std::string> options);
     ~WorkerSetting() override;
-    void wait() override;
+    uint32_t wait() override;
 };
 
 } // namespace worker

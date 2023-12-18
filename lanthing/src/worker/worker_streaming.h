@@ -67,7 +67,7 @@ public:
 public:
     static std::unique_ptr<WorkerStreaming> create(std::map<std::string, std::string> options);
     ~WorkerStreaming() override;
-    void wait() override;
+    uint32_t wait() override;
 
 private:
     WorkerStreaming(const Params& params);

@@ -208,7 +208,7 @@ int runAsClient(std::map<std::string, std::string> options) {
         return 0;
     }
     else {
-        return -1;
+        return 1;
     }
 }
 
@@ -228,7 +228,7 @@ int runAsService(std::map<std::string, std::string> options) {
 #else  // LT_RUN_AS_SERVICE
     lt::svc::Service svc;
     if (!svc.init()) {
-        return -1;
+        return 1;
     }
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds{10000});
@@ -239,7 +239,7 @@ int runAsService(std::map<std::string, std::string> options) {
     return 0;
 #else // LT_WINDOWS
     printf("Unavailable 'runAsService' for current platform\n");
-    return -1;
+    return 1;
 #endif
 }
 
