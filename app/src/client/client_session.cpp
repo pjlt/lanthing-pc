@@ -74,8 +74,6 @@ ClientSession::~ClientSession() {
 
 bool ClientSession::start() {
     // clang-format off
-    // TODO: 改成跨平台的方式
-    // TODO: 参数通过管道传输
     std::stringstream ss;
     ss << ltlib::getProgramPath() << "\\"
        << "lanthing.exe "

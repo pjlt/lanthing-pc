@@ -44,17 +44,23 @@
 
 namespace {
 
-constexpr ltproto::common::VideoCodecType kCodecPriority[] = {
-    ltproto::common::VideoCodecType::HEVC,
-    ltproto::common::VideoCodecType::AVC,
+constexpr lt::VideoCodecType kCodecPriority[] = {
+    lt::VideoCodecType::H265_420, lt::VideoCodecType::H264_420, lt::VideoCodecType::H265_444,
+    lt::VideoCodecType::H264_444, lt::VideoCodecType::AV1,
 };
 
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
     case ltproto::common::AVC:
-        return lt::VideoCodecType::H264;
+        return lt::VideoCodecType::H264_420;
     case ltproto::common::HEVC:
-        return lt::VideoCodecType::H265;
+        return lt::VideoCodecType::H265_420;
+    case ltproto::common::AVC_444:
+        return lt::VideoCodecType::H264_444;
+    case ltproto::common::HEVC_444:
+        return lt::VideoCodecType::H265_444;
+    case ltproto::common::AV1:
+        return lt::VideoCodecType::AV1;
     default:
         return lt::VideoCodecType::Unknown;
     }
@@ -65,7 +71,8 @@ lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
 namespace lt {
 
 ClientManager::ClientManager(const Params& params)
-    : post_task_{params.post_task}
+    : decode_abilities_{params.decode_abilities}
+    , post_task_{params.post_task}
     , post_delay_task_{params.post_delay_task}
     , send_message_{params.send_message}
     , on_launch_client_success_{params.on_launch_client_success}
@@ -139,9 +146,6 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     req->set_device_id(peerDeviceID);
     req->set_access_token(accessToken);
     req->set_cookie(cookie);
-    // HardDecodability abilities = lt::check_hard_decodability();
-    bool h264_decodable = true;
-    bool h265_decodable = true;
     ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc();
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);
@@ -152,14 +156,29 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     for (auto codec : kCodecPriority) {
         using CodecType = ltproto::common::VideoCodecType;
         switch (codec) {
-        case ltproto::common::AVC:
-            if (h264_decodable) {
+        case VideoCodecType::H264_420:
+            if (decode_abilities_ & VideoCodecType::H264_420) {
                 params->add_video_codecs(CodecType::AVC);
             }
             break;
-        case ltproto::common::HEVC:
-            if (h265_decodable) {
+        case VideoCodecType::H265_420:
+            if (decode_abilities_ & VideoCodecType::H265_420) {
                 params->add_video_codecs(CodecType::HEVC);
+            }
+            break;
+        case VideoCodecType::H264_444:
+            if (decode_abilities_ & VideoCodecType::H264_444) {
+                params->add_video_codecs(CodecType::AVC_444);
+            }
+            break;
+        case VideoCodecType::H265_444:
+            if (decode_abilities_ & VideoCodecType::H265_444) {
+                params->add_video_codecs(CodecType::HEVC_444);
+            }
+            break;
+        case VideoCodecType::AV1:
+            if (decode_abilities_ & VideoCodecType::AV1) {
+                params->add_video_codecs(CodecType::AV1);
             }
             break;
         default:

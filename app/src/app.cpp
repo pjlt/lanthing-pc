@@ -35,8 +35,8 @@
 #include <iostream>
 #include <thread>
 
-#include <ltlib/logging.h>
 #include <ltproto/common/keep_alive.pb.h>
+#include <ltproto/ltproto.h>
 #include <ltproto/server/allocate_device_id.pb.h>
 #include <ltproto/server/allocate_device_id_ack.pb.h>
 #include <ltproto/server/close_connection.pb.h>
@@ -47,6 +47,7 @@
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 
+#include <ltlib/logging.h>
 #include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
@@ -54,7 +55,7 @@
 #include <ltlib/win_service.h>
 #endif // LT_WINDOWS
 
-#include <ltproto/ltproto.h>
+#include "check_decode_ability.h"
 
 /************************************************************************************
                           +-----------------------+
@@ -188,6 +189,10 @@ bool App::init() {
         return false;
     }
     loadHistoryIDs();
+    hard_decode_abilities_ = checkDecodeAbility();
+    if (hard_decode_abilities_ == 0) {
+        LOG(WARNING) << "This machine has no hard decode alibity!";
+    }
     stoped_ = false;
     return true;
 }

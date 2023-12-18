@@ -44,4 +44,3 @@ include/
 
 third_party/out/
 Modern_GUI_PyDracula_PySide6_or_PyQt6-master
-app.rc
