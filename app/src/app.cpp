@@ -35,8 +35,8 @@
 #include <iostream>
 #include <thread>
 
-#include <ltlib/logging.h>
 #include <ltproto/common/keep_alive.pb.h>
+#include <ltproto/ltproto.h>
 #include <ltproto/server/allocate_device_id.pb.h>
 #include <ltproto/server/allocate_device_id_ack.pb.h>
 #include <ltproto/server/close_connection.pb.h>
@@ -47,6 +47,7 @@
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 
+#include <ltlib/logging.h>
 #include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
@@ -54,7 +55,7 @@
 #include <ltlib/win_service.h>
 #endif // LT_WINDOWS
 
-#include <ltproto/ltproto.h>
+#include "check_decode_ability.h"
 
 /************************************************************************************
                           +-----------------------+
@@ -179,6 +180,13 @@ bool App::init() {
     if (!initTcpClient()) {
         return false;
     }
+    hard_decode_abilities_ = checkDecodeAbility();
+    if (hard_decode_abilities_ == 0) {
+        LOG(WARNING) << "This machine has no hard decode ability!";
+    }
+    else {
+        LOG(INFO) << "Hard decode ability: " << hard_decode_abilities_;
+    }
 #if LT_WINDOWS
     if (!initServiceManager()) {
         return false;
@@ -231,6 +239,10 @@ int App::exec(int argc, char** argv) {
 
 // 跑在UI线程
 void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
+    if (hard_decode_abilities_ == 0) {
+        gui_.errorCode(ltproto::ErrorCode::NoDecodeAbility);
+        return;
+    }
     if (peerDeviceID <= 0) {
         LOG(ERR) << "peerDeviceID invalid " << peerDeviceID;
         return;
@@ -758,6 +770,7 @@ void App::onServiceStatus(ServiceManager::ServiceStatus status) {
 
 bool App::initClientManager() {
     ClientManager::Params params{};
+    params.decode_abilities = hard_decode_abilities_;
     params.ioloop = ioloop_.get();
     params.on_launch_client_success =
         std::bind(&App::onLaunchClientSuccess, this, std::placeholders::_1);

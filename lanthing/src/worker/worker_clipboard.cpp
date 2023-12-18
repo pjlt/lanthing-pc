@@ -1,4 +1,3 @@
-#include "worker_clipboard.h"
 /*
  * BSD 3-Clause License
  *
@@ -29,6 +28,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "worker_clipboard.h"
+
 namespace lt {
 
 namespace worker {
@@ -41,7 +42,9 @@ WorkerClipboard::create(std::map<std::string, std::string> options) {
 
 WorkerClipboard::~WorkerClipboard() = default;
 
-void WorkerClipboard::wait() {}
+uint32_t WorkerClipboard::wait() {
+    return 0;
+}
 
 } // namespace worker
 

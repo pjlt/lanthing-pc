@@ -53,6 +53,7 @@ public:
         std::function<void()> on_exit;
         bool windowed_fullscreen = true;
         bool absolute_mouse = true;
+        bool hide_window = false;
     };
 
 public:

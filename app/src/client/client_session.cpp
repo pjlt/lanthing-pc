@@ -45,21 +45,6 @@
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 
-namespace {
-
-std::string to_string(lt::VideoCodecType codec) {
-    switch (codec) {
-    case lt::VideoCodecType::H264:
-        return "avc";
-    case lt::VideoCodecType::H265:
-        return "hevc";
-    default:
-        return "unknown";
-    }
-}
-
-} // namespace
-
 namespace lt {
 
 ClientSession::ClientSession(const Params& params)
@@ -74,8 +59,6 @@ ClientSession::~ClientSession() {
 
 bool ClientSession::start() {
     // clang-format off
-    // TODO: 改成跨平台的方式
-    // TODO: 参数通过管道传输
     std::stringstream ss;
     ss << ltlib::getProgramPath() << "\\"
        << "lanthing.exe "
@@ -87,7 +70,7 @@ bool ClientSession::start() {
        << " -pwd " << params_.p2p_password
        << " -addr " << params_.signaling_addr
        << " -port " << params_.signaling_port
-       << " -codec " << to_string(params_.video_codec_type)
+       << " -codec " << toString(params_.video_codec_type)
        << " -width " << params_.width
        << " -height " << params_.height
        << " -freq " << params_.refresh_rate
@@ -191,7 +174,6 @@ ClientSession::~ClientSession() {
 }
 
 bool ClientSession::start() {
-    (void)to_string(lt::VideoCodecType::H264);
     process_id_ = fork();
     if (process_id_ == -1) {
         LOG(ERR) << "Launch client fork() failed: " << errno;
@@ -219,7 +201,7 @@ bool ClientSession::start() {
         args.push_back("-port");
         args.push_back(std::to_string(params_.signaling_port));
         args.push_back("-codec");
-        args.push_back(to_string(params_.video_codec_type));
+        args.push_back(toString(params_.video_codec_type));
         args.push_back("-width");
         args.push_back(std::to_string(params_.width));
         args.push_back("-height");

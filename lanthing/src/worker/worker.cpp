@@ -29,6 +29,7 @@
  */
 
 #include "worker.h"
+#include "worker_check_decode.h"
 #include "worker_setting.h"
 #include "worker_streaming.h"
 
@@ -45,10 +46,16 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
         return nullptr;
     }
     else if (iter->second == "streaming") {
+        LOG(INFO) << "Launch worker for streaming";
         return WorkerStreaming::create(options);
     }
     else if (iter->second == "setting") {
+        LOG(INFO) << "Launch worker for setting";
         return WorkerSetting::create(options);
+    }
+    else if (iter->second == "check_decode") {
+        LOG(INFO) << "Launch worker for check_decode";
+        return WorkerCheckDecode::create(options);
     }
     else {
         LOG(ERR) << "Unkonwn worker action: " << iter->second;

@@ -172,6 +172,7 @@ void initLogAndMinidump(Role role) {
     if (LT_CRASH_ON_THREAD_HANGS) {
         ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
         ltlib::ThreadWatcher::instance()->registerTerminateCallback(terminateCallback);
+        ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
     }
     else {
         ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
@@ -208,7 +209,7 @@ int runAsClient(std::map<std::string, std::string> options) {
         return 0;
     }
     else {
-        return -1;
+        return 1;
     }
 }
 
@@ -228,7 +229,7 @@ int runAsService(std::map<std::string, std::string> options) {
 #else  // LT_RUN_AS_SERVICE
     lt::svc::Service svc;
     if (!svc.init()) {
-        return -1;
+        return 1;
     }
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds{10000});
@@ -239,7 +240,7 @@ int runAsService(std::map<std::string, std::string> options) {
     return 0;
 #else // LT_WINDOWS
     printf("Unavailable 'runAsService' for current platform\n");
-    return -1;
+    return 1;
 #endif
 }
 
@@ -249,12 +250,12 @@ int runAsWorker(std::map<std::string, std::string> options) {
     initLogAndMinidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
-        worker->wait();
-        LOG(INFO) << "Normal exit";
-        return 0;
+        uint32_t ret = worker->wait();
+        LOG(INFO) << "Normal exit " << ret;
+        return ret;
     }
     else {
-        return -1;
+        return 255;
     }
 #else  // LT_WINDOWS
     printf("Unavailable 'runAsWorker' for current platform\n");

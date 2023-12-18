@@ -30,23 +30,10 @@
 
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <string>
-
-#include <ltlib/io/client.h>
-#include <ltlib/io/ioloop.h>
-#include <ltlib/settings.h>
-#include <ltlib/threads.h>
-#include <transport/transport.h>
-
-#include "display_setting.h"
-#include "message_handler.h"
-#include "session_change_observer.h"
-#include <audio/capturer/audio_capturer.h>
-#include <graphics/cepipeline/video_capture_encode_pipeline.h>
-#include <inputs/executor/input_executor.h>
 
 namespace lt {
 
@@ -56,7 +43,7 @@ class Worker {
 public:
     static std::unique_ptr<Worker> create(std::map<std::string, std::string> options);
     virtual ~Worker() {}
-    virtual void wait() = 0;
+    virtual uint32_t wait() = 0;
 };
 
 } // namespace worker

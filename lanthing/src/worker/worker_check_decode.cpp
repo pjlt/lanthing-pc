@@ -28,60 +28,58 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <cstdint>
-#include <functional>
-#include <memory>
+#include "worker_check_decode.h"
 
-#include <google/protobuf/message_lite.h>
+#include <future>
 
-#include <platforms/pc_sdl.h>
-#include <transport/transport.h>
+#include <graphics/drpipeline/video_decode_render_pipeline.h>
 
 namespace lt {
 
-class VDRPipeline;
-class VideoDecodeRenderPipeline {
-public:
-    struct Params {
-        Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-               uint32_t _screen_refresh_rate,
-               std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
-                   send_message);
-        bool validate() const;
+namespace worker {
 
-        bool for_test = false;
-        lt::VideoCodecType codec_type;
-        uint32_t width;
-        uint32_t height;
-        uint32_t screen_refresh_rate;
-        PcSdl* sdl = nullptr;
-        std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
-            send_message_to_host;
-    };
+std::unique_ptr<WorkerCheckDecode>
+WorkerCheckDecode::create(std::map<std::string, std::string> options) {
+    (void)options;
+    std::promise<void> promise;
+    auto empty_func = []() {};
+    auto on_sdl_exit = [&promise]() { promise.set_value(); };
+    PcSdl::Params sdl_params{};
+    sdl_params.on_exit = on_sdl_exit;
+    sdl_params.on_reset = empty_func;
+    sdl_params.hide_window = true;
+    auto sdl = PcSdl::create(sdl_params);
+    if (sdl == nullptr) {
+        return nullptr;
+    }
+    // 只检测H264_420和H265_420
+    uint32_t codecs = 0;
+    for (auto codec : {VideoCodecType::H265_420, VideoCodecType::H264_420}) {
+        auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
+        VideoDecodeRenderPipeline::Params params{codec, 1920, 1080, 60, empty_func2};
+        params.sdl = sdl.get();
+        params.for_test = true;
+        auto pipeline = VideoDecodeRenderPipeline::create(params);
+        if (pipeline != nullptr) {
+            // ffmepg解码的时候似乎不区分420 444???
+            codecs = codecs | codec;
+        }
+    }
+    sdl->stop();
+    std::unique_ptr<WorkerCheckDecode> w{new WorkerCheckDecode{codecs}};
+    promise.get_future().get();
+    return w;
+}
 
-    enum class Action {
-        REQUEST_KEY_FRAME = 1,
-        NONE = 2,
-    };
+WorkerCheckDecode::WorkerCheckDecode(uint32_t codecs)
+    : codecs_{codecs} {}
 
-public:
-    static std::unique_ptr<VideoDecodeRenderPipeline> create(const Params& params);
-    Action submit(const lt::VideoFrame& frame);
-    void resetRenderTarget();
-    void setTimeDiff(int64_t diff_us);
-    void setRTT(int64_t rtt_us);
-    void setBWE(uint32_t bps);
-    void setNack(uint32_t nack);
-    void setLossRate(float rate);
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
-    void switchMouseMode(bool absolute);
+WorkerCheckDecode::~WorkerCheckDecode() = default;
 
-private:
-    VideoDecodeRenderPipeline() = default;
+uint32_t WorkerCheckDecode::wait() {
+    return codecs_;
+}
 
-private:
-    std::shared_ptr<VDRPipeline> impl_;
-};
+} // namespace worker
 
 } // namespace lt

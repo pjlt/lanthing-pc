@@ -43,36 +43,37 @@
 
 namespace {
 
-lt::VideoCodecType to_ltrtc(ltproto::common::VideoCodecType codec_type) {
-    switch (codec_type) {
+lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
+    switch (codec) {
     case ltproto::common::AVC:
-        return lt::VideoCodecType::H264;
+        return lt::VideoCodecType::H264_420;
     case ltproto::common::HEVC:
-        return lt::VideoCodecType::H265;
+        return lt::VideoCodecType::H265_420;
+    case ltproto::common::AVC_444:
+        return lt::VideoCodecType::H264_444;
+    case ltproto::common::HEVC_444:
+        return lt::VideoCodecType::H265_444;
+    case ltproto::common::AV1:
+        return lt::VideoCodecType::AV1;
     default:
         return lt::VideoCodecType::Unknown;
     }
 }
 
-ltproto::common::VideoCodecType to_protobuf(lt::VideoCodecType codec_type) {
+ltproto::common::VideoCodecType toProtobuf(lt::VideoCodecType codec_type) {
     switch (codec_type) {
-    case lt::VideoCodecType::H264:
+    case lt::VideoCodecType::H264_420:
         return ltproto::common::VideoCodecType::AVC;
-    case lt::VideoCodecType::H265:
+    case lt::VideoCodecType::H265_420:
         return ltproto::common::VideoCodecType::HEVC;
+    case lt::VideoCodecType::H264_444:
+        return ltproto::common::VideoCodecType::AVC_444;
+    case lt::VideoCodecType::H265_444:
+        return ltproto::common::VideoCodecType::HEVC_444;
+    case lt::VideoCodecType::AV1:
+        return ltproto::common::VideoCodecType::AV1;
     default:
         return ltproto::common::VideoCodecType::UnknownVCT;
-    }
-}
-
-std::string to_string(lt::VideoCodecType type) {
-    switch (type) {
-    case lt::VideoCodecType::H264:
-        return "AVC";
-    case lt::VideoCodecType::H265:
-        return "HEVC";
-    default:
-        return "Unknown Codec";
     }
 }
 
@@ -117,13 +118,11 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
         return nullptr;
     }
     params.refresh_rate = static_cast<uint32_t>(freq);
-    std::string codec;
-    while (std::getline(ss, codec, ',')) {
-        if (codec == "avc") {
-            params.codecs.push_back(lt::VideoCodecType::H264);
-        }
-        else if (codec == "hevc") {
-            params.codecs.push_back(lt::VideoCodecType::H265);
+    std::string codec_str;
+    while (std::getline(ss, codec_str, ',')) {
+        VideoCodecType codec = videoCodecType(codec_str.c_str());
+        if (codec != VideoCodecType::Unknown) {
+            params.codecs.push_back(codec);
         }
     }
     if (params.codecs.empty()) {
@@ -156,8 +155,9 @@ WorkerStreaming::~WorkerStreaming() {
     }
 }
 
-void WorkerStreaming::wait() {
+uint32_t WorkerStreaming::wait() {
     session_observer_->waitForChange();
+    return 0;
 }
 
 bool WorkerStreaming::init() {
@@ -342,8 +342,8 @@ bool WorkerStreaming::negotiateStreamParameters() {
     negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
     negotiated_params->set_video_width(negotiated_display_setting_.width);
     negotiated_params->set_video_height(negotiated_display_setting_.height);
-    negotiated_params->add_video_codecs(to_protobuf(video->codec()));
-    LOG(INFO) << "Negotiated video codec:" << to_string(video->codec());
+    negotiated_params->add_video_codecs(toProtobuf(video->codec()));
+    LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
 
     negotiated_params_ = negotiated_params;
     video_ = std::move(video);

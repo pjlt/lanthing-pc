@@ -30,6 +30,8 @@ set(LT_WORKER_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h

@@ -169,7 +169,7 @@ std::unique_ptr<lt::VideoEncoder> doCreateEncoder(const lt::VideoEncoder::InitPa
             return encoder;
         }
         else {
-            LOGF(INFO, "Create NvidiaEncoder(w:%u,h:%u,c:%d) failed", params.width, params.height,
+            LOGF(INFO, "Create NvidiaEncoder(w:%u,h:%u,c:%u) failed", params.width, params.height,
                  params.codec_type);
             return nullptr;
         }
@@ -183,7 +183,7 @@ std::unique_ptr<lt::VideoEncoder> doCreateEncoder(const lt::VideoEncoder::InitPa
             return encoder;
         }
         else {
-            LOGF(INFO, "Create IntelEncoder(w:%u,h:%u,c:%d) failed", params.width, params.height,
+            LOGF(INFO, "Create IntelEncoder(w:%u,h:%u,c:%u) failed", params.width, params.height,
                  params.codec_type);
             return nullptr;
         }
@@ -197,7 +197,7 @@ std::unique_ptr<lt::VideoEncoder> doCreateEncoder(const lt::VideoEncoder::InitPa
             return encoder;
         }
         else {
-            LOGF(INFO, "Create AmdEncoder(w:%u,h:%u,c:%d) failed", params.width, params.height,
+            LOGF(INFO, "Create AmdEncoder(w:%u,h:%u,c:%u) failed", params.width, params.height,
                  params.codec_type);
             return nullptr;
         }

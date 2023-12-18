@@ -91,6 +91,7 @@ private:
     bool isAbsoluteMouse();
 
 private:
+    const bool for_test_;
     const uint32_t width_;
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
@@ -138,7 +139,8 @@ private:
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
-    : width_{params.width}
+    : for_test_{params.for_test}
+    , width_{params.width}
     , height_{params.height}
     , screen_refresh_rate_{params.screen_refresh_rate}
     , codec_type_{params.codec_type}
@@ -179,8 +181,7 @@ bool VDRPipeline::init() {
     render_params.window = window_;
     render_params.video_width = width_;
     render_params.video_height = height_;
-    // FIXME: align由解码器提供
-    render_params.align = codec_type_ == lt::VideoCodecType::H264 ? 16 : 128;
+    render_params.align = VideoDecoder::align(codec_type_);
     video_renderer_ = VideoRenderer::create(render_params);
     if (video_renderer_ == nullptr) {
         return false;
@@ -201,6 +202,9 @@ bool VDRPipeline::init() {
     video_decoder_ = VideoDecoder::create(decode_params);
     if (video_decoder_ == nullptr) {
         return false;
+    }
+    if (for_test_) {
+        return true;
     }
     if (!video_renderer_->bindTextures(video_decoder_->textures())) {
         return false;

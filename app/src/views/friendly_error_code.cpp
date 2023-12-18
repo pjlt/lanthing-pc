@@ -53,6 +53,7 @@ QString errorCode2FriendlyMessage(int32_t code) {
         // 10000~ *******************************************
         {ltproto::ErrorCode::DecodeFailed, QObject::tr("Decode failed")},
         {ltproto::ErrorCode::RenderFailed, QObject::tr("Render failed")},
+        {ltproto::ErrorCode::NoDecodeAbility, QObject::tr("No decode ability")},
         {ltproto::ErrorCode::WrokerInitVideoFailed,
          QObject::tr("Controlled side initialize video capture or video encoder failed")},
         {ltproto::ErrorCode::WorkerInitAudioFailed,

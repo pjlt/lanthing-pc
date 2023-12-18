@@ -30,6 +30,7 @@
 
 #pragma once
 #include <cstdint>
+#include <cstring>
 
 #if defined(LT_WINDOWS)
 #if defined(BUILDING_LT_EXE)
@@ -43,7 +44,78 @@
 
 namespace lt {
 
-enum class VideoCodecType { Unknown, H264, H265 };
+enum class VideoCodecType : uint32_t {
+    Unknown = 0,
+    H264_420 = 0b0000'0001,
+    H265_420 = 0b0000'0010,
+    H264_444 = 0b0000'0100,
+    H265_444 = 0b0000'1000,
+    AV1 = 0b0001'0000,
+    H264 = H264_420,
+    H265 = H265_420,
+};
+
+constexpr uint32_t operator&(uint32_t value, VideoCodecType codec) {
+    return value & static_cast<uint32_t>(codec);
+}
+
+constexpr uint32_t operator&(VideoCodecType codec, uint32_t value) {
+    return value & codec;
+}
+
+constexpr uint32_t operator&(VideoCodecType left, VideoCodecType right) {
+    return static_cast<uint32_t>(left) & static_cast<uint32_t>(right);
+}
+
+constexpr uint32_t operator|(uint32_t value, VideoCodecType codec) {
+    return value | static_cast<uint32_t>(codec);
+}
+
+constexpr uint32_t operator|(VideoCodecType codec, uint32_t value) {
+    return value | codec;
+}
+
+constexpr uint32_t operator|(VideoCodecType left, VideoCodecType right) {
+    return static_cast<uint32_t>(left) | static_cast<uint32_t>(right);
+}
+
+constexpr const char* toString(VideoCodecType type) {
+    switch (type) {
+    case VideoCodecType::H264_420:
+        return "AVC";
+    case VideoCodecType::H265_420:
+        return "HEVC";
+    case VideoCodecType::H264_444:
+        return "AVC444";
+    case VideoCodecType::H265_444:
+        return "HEVC444";
+    case VideoCodecType::AV1:
+        return "AV1";
+    default:
+        return "?";
+    }
+}
+
+inline VideoCodecType videoCodecType(const char* type) {
+    if (std::strncmp(type, "AVC", 3) == 0) {
+        return VideoCodecType::H264_420;
+    }
+    else if (std::strncmp(type, "HEVC", 4) == 0) {
+        return VideoCodecType::H265_420;
+    }
+    else if (std::strncmp(type, "AVC444", 6) == 0) {
+        return VideoCodecType::H264_444;
+    }
+    else if (std::strncmp(type, "HEVC444", 7) == 0) {
+        return VideoCodecType::H265_444;
+    }
+    else if (std::strncmp(type, "AV1", 3) == 0) {
+        return VideoCodecType::AV1;
+    }
+    else {
+        return VideoCodecType::Unknown;
+    }
+}
 
 enum class AudioCodecType { Unknown, PCM, OPUS };
 
