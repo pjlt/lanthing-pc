@@ -115,6 +115,9 @@ private:
     void processHotKeys();
 
 private:
+    bool doHandleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev);
+
+private:
     PcSdl* sdl_;
     uint32_t host_width_;
     uint32_t host_height_;
@@ -178,7 +181,7 @@ void InputCapturerImpl::onPlatformInputEvent(const InputEvent& e) {
         handleControllerButton(std::get<ControllerButtonEvent>(e.ev));
         break;
     default:
-        LOG(FATAL) << "Unknown InputEventType:" << static_cast<int32_t>(e.type);
+        LOG(ERR) << "Unknown InputEventType:" << static_cast<int32_t>(e.type);
         break;
     }
 }
@@ -218,7 +221,7 @@ void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
                                  : ltproto::client2worker::MouseEvent_KeyFlag_X2Up;
         break;
     default:
-        LOG(FATAL) << "Unknown Mouse Button: " << static_cast<int32_t>(ev.button);
+        LOG(ERR) << "Unknown Mouse Button: " << static_cast<int32_t>(ev.button);
         return;
     }
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
@@ -246,22 +249,31 @@ void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
 }
 
 void InputCapturerImpl::handleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
+    doHandleControllerAddedRemoved(ev);
+}
+
+bool InputCapturerImpl::doHandleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
     if (ev.index >= cstates_.size()) {
-        return;
+        return false;
     }
     auto msg = std::make_shared<ltproto::client2worker::ControllerAddedRemoved>();
     msg->set_index(ev.index);
     msg->set_is_added(ev.is_added);
-    if (ev.is_added) {
-        cstates_[ev.index] = ControllerState{};
-    }
-    else {
+    if (!ev.is_added) {
         cstates_[ev.index] = std::nullopt;
     }
-    sendMessageToHost(ltproto::id(msg), msg, true);
+    else if (!cstates_[ev.index].has_value()) {
+        cstates_[ev.index] = ControllerState{};
+        sendMessageToHost(ltproto::id(msg), msg, true);
+    }
+    return true;
 }
 
 void InputCapturerImpl::handleControllerButton(const ControllerButtonEvent& ev) {
+    ControllerAddedRemovedEvent ev2{ev.index, true};
+    if (!doHandleControllerAddedRemoved(ev2)) {
+        return;
+    }
     if (ev.index >= cstates_.size()) {
         return;
     }
@@ -373,6 +385,10 @@ void InputCapturerImpl::handleControllerButton(const ControllerButtonEvent& ev) 
 }
 
 void InputCapturerImpl::handleControllerAxis(const ControllerAxisEvent& ev) {
+    ControllerAddedRemovedEvent ev2{ev.index, true};
+    if (!doHandleControllerAddedRemoved(ev2)) {
+        return;
+    }
     if (ev.index >= cstates_.size()) {
         return;
     }
