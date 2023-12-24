@@ -351,7 +351,9 @@ void DUPLICATIONMANAGER::WaitForVBlank() {
 }
 
 DUPL_RETURN DUPLICATIONMANAGER::ResetDulp() {
-    ltlib::setThreadDesktop();
+    if (!ltlib::setThreadDesktop()) {
+        return DUPL_RETURN_ERROR_UNEXPECTED;
+    }
     if (m_DeskDupl) {
         m_DeskDupl->Release();
         m_DeskDupl = nullptr;

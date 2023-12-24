@@ -159,7 +159,10 @@ VideoCodecType VCEPipeline::codec() const {
 }
 
 void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive) {
-    ltlib::setThreadDesktop();
+    if (!ltlib::setThreadDesktop()) {
+        LOG(ERR) << "VCEPipeline::mainLoop setThreadDesktop failed";
+        // FIXME: 退出机制
+    }
     stop_promise_ = std::make_unique<std::promise<void>>();
     stoped_ = false;
     LOG(INFO) << "VideoCaptureEncodePipeline start";

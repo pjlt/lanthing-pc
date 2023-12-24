@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include <ltlib/logging.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 
@@ -310,21 +311,31 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
     return true;
 }
 
-void setThreadDesktop() {
+bool setThreadDesktop() {
     wchar_t user[128] = {0};
     DWORD size = 128;
     GetUserNameW(user, &size);
     if (std::wstring(L"SYSTEM") == user) {
         HDESK hdesk = OpenInputDesktop(0, FALSE, GENERIC_ALL);
         if (!hdesk) {
-            return;
+            LOGF(ERR, "OpenInputDesktop failed with %#x", GetLastError());
+            return false;
         }
         if (!SetThreadDesktop(hdesk)) {
-            return;
+            LOGF(ERR, "SetThreadDesktop failed with %#x", GetLastError());
+            return false;
         }
         if (hdesk) {
-            CloseDesktop(hdesk);
+            if (!CloseDesktop(hdesk)) {
+                LOGF(WARNING, "CloseDesktop failed with %#x", GetLastError());
+            }
         }
+        return true;
+    }
+    else {
+        LOG(ERR) << "UserName is " << ltlib::utf16To8(std::wstring(user))
+                 << " != SYSTEM, won't SetThreadDesktop";
+        return false;
     }
 }
 
@@ -420,7 +431,9 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
     return false;
 }
 
-void setThreadDesktop() {}
+bool setThreadDesktop() {
+    return false;
+}
 
 bool selfElevateAndNeedExit() {
     return false;

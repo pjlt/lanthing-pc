@@ -36,6 +36,7 @@
 #include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
+#include <ltlib/system.h>
 #include <ltlib/times.h>
 
 #if 0
@@ -66,6 +67,10 @@ DxgiVideoCapturer::~DxgiVideoCapturer() {}
 
 bool DxgiVideoCapturer::init() {
     if (!initD3D11()) {
+        return false;
+    }
+    if (ltlib::setThreadDesktop()) {
+        LOG(ERR) << "DxgiVideoCapturer::init setThreadDesktop failed";
         return false;
     }
     if (!impl_->InitDupl(d3d11_dev_.Get(), 0)) {
