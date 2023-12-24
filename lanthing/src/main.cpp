@@ -255,6 +255,8 @@ int runAsWorker(std::map<std::string, std::string> options) {
         return ret;
     }
     else {
+        LOG(INFO) << "Exit with failure";
+        // worker唯一指定错误码
         return 255;
     }
 #else  // LT_WINDOWS

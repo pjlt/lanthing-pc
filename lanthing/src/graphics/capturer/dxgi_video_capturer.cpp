@@ -69,7 +69,7 @@ bool DxgiVideoCapturer::init() {
     if (!initD3D11()) {
         return false;
     }
-    if (ltlib::setThreadDesktop()) {
+    if (!ltlib::setThreadDesktop()) {
         LOG(ERR) << "DxgiVideoCapturer::init setThreadDesktop failed";
         return false;
     }

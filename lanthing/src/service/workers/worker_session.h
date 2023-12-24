@@ -140,6 +140,7 @@ private:
                                      std::shared_ptr<google::protobuf::MessageLite> msg);
     void onKeepAliveAck();
     void onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onWorkerFailedFromOtherThread();
 
     // rtc server
     static void onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable);

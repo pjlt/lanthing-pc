@@ -58,6 +58,7 @@ public:
         uint32_t client_height;
         uint32_t client_refresh_rate;
         std::vector<lt::VideoCodecType> client_codecs;
+        std::function<void()> on_failed;
     };
 
 public:
@@ -70,7 +71,7 @@ private:
     void start();
     void mainLoop(const std::function<void()>& i_am_alive);
     bool launchWorkerProcess();
-    void waitForWorkerProcess(const std::function<void()>& i_am_alive);
+    bool waitForWorkerProcess(const std::function<void()>& i_am_alive);
 
 private:
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> on_message_;
@@ -80,6 +81,7 @@ private:
     uint32_t client_height_;
     uint32_t client_refresh_rate_;
     std::vector<lt::VideoCodecType> client_codecs_;
+    std::function<void()> on_failed_;
     bool run_as_win_service_;
     std::mutex mutex_;
     std::unique_ptr<ltlib::BlockingThread> thread_;

@@ -59,7 +59,7 @@ private:
     uv_timer_t alive_handle_{};
     std::mutex mutex_;
     std::condition_variable cv_;
-    bool stoped_ = false;
+    bool stoped_ = true;
     std::vector<std::function<void()>> tasks_;
     std::thread::id tid_;
 };
@@ -110,6 +110,7 @@ bool IOLoopImpl::init() {
     }
     uv_async_init(&uvloop_, &task_handle_, &IOLoopImpl::consume_tasks);
     task_handle_.data = this;
+    uv_async_init(&uvloop_, &close_handle_, [](uv_async_t* handle) { uv_stop(handle->loop); });
     return true;
 }
 
@@ -128,7 +129,6 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive) {
         },
         k700ms, k700ms);
 
-    uv_async_init(&uvloop_, &close_handle_, [](uv_async_t* handle) { uv_stop(handle->loop); });
     stoped_ = false;
     tid_ = std::this_thread::get_id();
     uv_run(&uvloop_, UV_RUN_DEFAULT);
@@ -148,6 +148,8 @@ void IOLoopImpl::stop() {
     cv_.wait(lock, [this]() { return stoped_; });
     uv_close((uv_handle_t*)&close_handle_, [](uv_handle_t*) {});
     uv_close((uv_handle_t*)&task_handle_, [](uv_handle_t*) {});
+    // FIXME: 有栈溢出bug，没有dump生成，但是进程返回3221226505，现在让它内存泄漏，不处理
+    return;
     // 3. 遍历所有未关闭的handle，关闭它们
     uv_walk(
         &uvloop_,

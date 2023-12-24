@@ -81,6 +81,7 @@ WorkerProcess::WorkerProcess(const Params& params)
     , client_height_{params.client_height}
     , client_refresh_rate_{params.client_refresh_rate}
     , client_codecs_{params.client_codecs}
+    , on_failed_{params.on_failed}
     , run_as_win_service_{ltlib::isRunAsService()} {}
 
 WorkerProcess::~WorkerProcess() {
@@ -119,7 +120,9 @@ void WorkerProcess::mainLoop(const std::function<void()>& i_am_alive) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             continue;
         }
-        waitForWorkerProcess(i_am_alive);
+        if (!waitForWorkerProcess(i_am_alive)) {
+            return;
+        }
     }
 }
 
@@ -205,12 +208,20 @@ bool WorkerProcess::launchWorkerProcess() {
 }
 
 #pragma warning(disable : 6387)
-void WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive) {
+bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
         DWORD ret = WaitForSingleObject(process_handle_, 100);
         if (ret == WAIT_TIMEOUT) {
             continue;
+        }
+        LOG(INFO) << "Worker process exited";
+        DWORD exit_code = 0;
+        if (!GetExitCodeProcess(process_handle_, &exit_code)) {
+            LOGF(ERR, "GetExitCodeProcess failed with %#x", GetLastError());
+        }
+        else {
+            LOG(INFO) << "Worker exit with " << exit_code;
         }
         // 就算是非法值也不要紧
         if (process_handle_) {
@@ -221,9 +232,16 @@ void WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
             CloseHandle(thread_handle_);
             thread_handle_ = nullptr;
         }
-        LOG(INFO) << "Worker process exited";
-        return;
+        // 当前255是唯一指定错误码
+        if (exit_code == 255) {
+            on_failed_();
+            return false;
+        }
+        else {
+            return true;
+        }
     }
+    return false;
 }
 
 } // namespace svc
