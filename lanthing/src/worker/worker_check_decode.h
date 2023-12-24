@@ -40,7 +40,7 @@ class WorkerCheckDecode : public Worker {
 public:
     static std::unique_ptr<WorkerCheckDecode> create(std::map<std::string, std::string> options);
     ~WorkerCheckDecode() override;
-    uint32_t wait() override;
+    int wait() override;
 
 private:
     WorkerCheckDecode(uint32_t codecs);

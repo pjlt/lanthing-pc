@@ -69,10 +69,11 @@ bool DxgiVideoCapturer::init() {
     if (!initD3D11()) {
         return false;
     }
-    if (!ltlib::setThreadDesktop()) {
-        LOG(ERR) << "DxgiVideoCapturer::init setThreadDesktop failed";
-        return false;
-    }
+    return true;
+}
+
+bool DxgiVideoCapturer::start() {
+    // xxx
     if (!impl_->InitDupl(d3d11_dev_.Get(), 0)) {
         LOG(ERR) << "Failed to init DUPLICATIONMANAGER";
         return false;

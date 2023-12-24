@@ -232,12 +232,17 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
             CloseHandle(thread_handle_);
             thread_handle_ = nullptr;
         }
-        // 当前255是唯一指定错误码
-        if (exit_code == 255) {
+        if (exit_code == 0) {
+            // 正常退出
+            return false;
+        }
+        else if (exit_code <= 255) {
+            // 我们定义的错误
             on_failed_();
             return false;
         }
         else {
+            // Windows的错误，可能崩溃了
             return true;
         }
     }

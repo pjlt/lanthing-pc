@@ -53,7 +53,7 @@ public:
 
 public:
     static std::unique_ptr<VideoCaptureEncodePipeline> create(const Params& params);
-    void start();
+    bool start();
     void stop();
     VideoCodecType codec() const;
 

@@ -61,7 +61,7 @@ std::unique_ptr<WorkerSetting> WorkerSetting::create(std::map<std::string, std::
 }
 WorkerSetting::~WorkerSetting() = default;
 
-uint32_t WorkerSetting::wait() {
+int WorkerSetting::wait() {
     return 0;
 }
 

@@ -58,12 +58,12 @@ public:
     VCEPipeline(const VideoCaptureEncodePipeline::Params& params);
     ~VCEPipeline();
     bool init();
-    void start();
+    bool start();
     void stop();
     VideoCodecType codec() const;
 
 private:
-    void mainLoop(const std::function<void()>& i_am_alive);
+    void mainLoop(const std::function<void()>& i_am_alive, std::promise<bool>& start_promise);
     void loadSystemCursor();
     bool registerHandlers();
     void consumeTasks();
@@ -140,10 +140,13 @@ bool VCEPipeline::init() {
     return true;
 }
 
-void VCEPipeline::start() {
+bool VCEPipeline::start() {
+    std::promise<bool> start_promise;
     thread_ = ltlib::BlockingThread::create(
-        "video_capture_encode",
-        [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
+        "video_capture_encode", [this, &start_promise](const std::function<void()>& i_am_alive) {
+            mainLoop(i_am_alive, start_promise);
+        });
+    return start_promise.get_future().get();
 }
 
 void VCEPipeline::stop() {
@@ -158,11 +161,19 @@ VideoCodecType VCEPipeline::codec() const {
     return codec_type_;
 }
 
-void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive) {
+void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
+                           std::promise<bool>& start_promise) {
     if (!ltlib::setThreadDesktop()) {
         LOG(ERR) << "VCEPipeline::mainLoop setThreadDesktop failed";
-        // FIXME: 退出机制
+        start_promise.set_value(false);
+        return;
     }
+    if (!capturer_->start()) {
+        LOG(ERR) << "Start video capturer failed";
+        start_promise.set_value(false);
+        return;
+    }
+    start_promise.set_value(true);
     stop_promise_ = std::make_unique<std::promise<void>>();
     stoped_ = false;
     LOG(INFO) << "VideoCaptureEncodePipeline start";
@@ -352,8 +363,8 @@ VideoCaptureEncodePipeline::create(const Params& params) {
     return pipeline;
 }
 
-void VideoCaptureEncodePipeline::start() {
-    impl_->start();
+bool VideoCaptureEncodePipeline::start() {
+    return impl_->start();
 }
 
 void VideoCaptureEncodePipeline::stop() {

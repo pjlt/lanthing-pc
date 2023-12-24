@@ -155,9 +155,8 @@ WorkerStreaming::~WorkerStreaming() {
     }
 }
 
-uint32_t WorkerStreaming::wait() {
-    session_observer_->waitForChange();
-    return 0;
+int WorkerStreaming::wait() {
+    return session_observer_->waitForChange();
 }
 
 bool WorkerStreaming::init() {
@@ -357,8 +356,8 @@ void WorkerStreaming::mainLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "Worker exit main loop";
 }
 
-void WorkerStreaming::stop() {
-    session_observer_->stop();
+void WorkerStreaming::stop(int exit_code) {
+    session_observer_->stop(exit_code);
 }
 
 void WorkerStreaming::postTask(const std::function<void()>& task) {
@@ -419,7 +418,7 @@ void WorkerStreaming::checkCimeout() {
     if (now - last_time_received_from_service_ > kTimeout) {
         LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_
                      << "ms, worker exit.";
-        stop();
+        stop(2);
     }
     else {
         postDelayTask(500, [this]() { checkCimeout(); });
@@ -463,7 +462,10 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
     auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorking>(_msg);
     auto ack = std::make_shared<ltproto::worker2service::StartWorkingAck>();
     do {
-        video_->start();
+        if (!video_->start()) {
+            ack->set_err_code(ltproto::ErrorCode::WrokerInitVideoFailed);
+            break;
+        }
         audio_->start();
 
         InputExecutor::Params input_params{};
@@ -496,13 +498,13 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         }
         input_ = nullptr;
         LOG(ERR) << "Start working failed, exit worker";
-        postDelayTask(100, std::bind(&WorkerStreaming::stop, this));
+        postDelayTask(100, std::bind(&WorkerStreaming::stop, this, 3));
     }
 }
 
 void WorkerStreaming::onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>&) {
     LOG(INFO) << "Received StopWorking";
-    stop();
+    stop(0);
 }
 
 void WorkerStreaming::onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>&) {
