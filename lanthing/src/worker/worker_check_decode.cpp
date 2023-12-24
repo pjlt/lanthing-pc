@@ -76,8 +76,8 @@ WorkerCheckDecode::WorkerCheckDecode(uint32_t codecs)
 
 WorkerCheckDecode::~WorkerCheckDecode() = default;
 
-uint32_t WorkerCheckDecode::wait() {
-    return codecs_;
+int WorkerCheckDecode::wait() {
+    return static_cast<int>(codecs_);
 }
 
 } // namespace worker

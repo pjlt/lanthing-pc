@@ -53,6 +53,7 @@ public:
     static std::unique_ptr<VideoCapturer> create(const Backend& backend);
     virtual ~VideoCapturer();
     virtual std::optional<Frame> capture() = 0;
+    virtual bool start() = 0;
     virtual void doneWithFrame() = 0;
     virtual Backend backend() const = 0;
     virtual int64_t luid() { return -1; }

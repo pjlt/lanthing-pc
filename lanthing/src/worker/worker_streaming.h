@@ -67,7 +67,7 @@ public:
 public:
     static std::unique_ptr<WorkerStreaming> create(std::map<std::string, std::string> options);
     ~WorkerStreaming() override;
-    uint32_t wait() override;
+    int wait() override;
 
 private:
     WorkerStreaming(const Params& params);
@@ -78,7 +78,7 @@ private:
     bool negotiateAllParameters();
     bool negotiateStreamParameters();
     void mainLoop(const std::function<void()>& i_am_alive);
-    void stop();
+    void stop(int exit_code);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
     bool registerMessageHandler(uint32_t type, const MessageHandler& msg);

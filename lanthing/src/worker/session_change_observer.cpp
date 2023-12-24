@@ -76,11 +76,13 @@ std::unique_ptr<SessionChangeObserver> SessionChangeObserver::create() {
     return observer;
 }
 
-void SessionChangeObserver::waitForChange() {
+int SessionChangeObserver::waitForChange() {
     waitingLoop();
+    return exit_code_;
 }
 
-void SessionChangeObserver::stop() {
+void SessionChangeObserver::stop(int exit_code) {
+    exit_code_ = exit_code;
     stoped_ = true;
 }
 

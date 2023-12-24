@@ -36,6 +36,7 @@
 #include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
+#include <ltlib/system.h>
 #include <ltlib/times.h>
 
 #if 0
@@ -68,6 +69,11 @@ bool DxgiVideoCapturer::init() {
     if (!initD3D11()) {
         return false;
     }
+    return true;
+}
+
+bool DxgiVideoCapturer::start() {
+    // xxx
     if (!impl_->InitDupl(d3d11_dev_.Get(), 0)) {
         LOG(ERR) << "Failed to init DUPLICATIONMANAGER";
         return false;

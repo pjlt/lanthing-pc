@@ -370,6 +370,7 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
     params.client_codecs = client_codecs;
+    params.on_failed = std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this);
     worker_process_ = WorkerProcess::create(params);
 }
 
@@ -396,7 +397,7 @@ void WorkerSession::onClosed(CloseReason reason) {
     default:
         break;
     }
-    if (!rtc_closed) {
+    if (!rtc_closed && tp_server_ != nullptr) {
         tp_server_->close();
     }
     if (reason != CloseReason::WorkerFailed) {
@@ -731,6 +732,10 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
         auto start_working = std::make_shared<ltproto::worker2service::StartWorking>();
         sendToWorker(ltproto::id(start_working), start_working);
     }
+}
+
+void WorkerSession::onWorkerFailedFromOtherThread() {
+    postTask([this]() { onClosed(CloseReason::WorkerFailed); });
 }
 
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {

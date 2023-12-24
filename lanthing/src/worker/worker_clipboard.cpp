@@ -42,7 +42,7 @@ WorkerClipboard::create(std::map<std::string, std::string> options) {
 
 WorkerClipboard::~WorkerClipboard() = default;
 
-uint32_t WorkerClipboard::wait() {
+int WorkerClipboard::wait() {
     return 0;
 }
 

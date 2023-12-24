@@ -250,11 +250,13 @@ int runAsWorker(std::map<std::string, std::string> options) {
     initLogAndMinidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {
-        uint32_t ret = worker->wait();
+        int ret = worker->wait();
         LOG(INFO) << "Normal exit " << ret;
         return ret;
     }
     else {
+        LOG(INFO) << "Exit with failure";
+        // worker初始化失败的错误码
         return 255;
     }
 #else  // LT_WINDOWS

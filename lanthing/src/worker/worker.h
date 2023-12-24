@@ -43,7 +43,7 @@ class Worker {
 public:
     static std::unique_ptr<Worker> create(std::map<std::string, std::string> options);
     virtual ~Worker() {}
-    virtual uint32_t wait() = 0;
+    virtual int wait() = 0;
 };
 
 } // namespace worker

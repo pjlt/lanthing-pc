@@ -32,6 +32,7 @@
 #include <wrl/client.h>
 
 #include <atomic>
+#include <future>
 #include <optional>
 
 #include <graphics/capturer/dxgi/duplication_manager.h>
@@ -44,6 +45,7 @@ public:
     DxgiVideoCapturer();
     ~DxgiVideoCapturer() override;
     bool init() override;
+    bool start() override;
     std::optional<VideoCapturer::Frame> capture() override;
     void doneWithFrame() override;
     void waitForVBlank() override;
