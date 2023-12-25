@@ -29,36 +29,37 @@
  */
 
 #pragma once
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <memory>
-#include <vector>
+#include <Windows.h>
 
-#include <ViGEm/Client.h>
+#include <cstdint>
+
+#include <array>
+#include <memory>
+#include <optional>
+
+#include <google/protobuf/message_lite.h>
 
 namespace lt {
 
-class Gamepad {
+class TouchExecutor {
 public:
-    static std::unique_ptr<Gamepad>
-    create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response);
-    ~Gamepad();
-    bool plugin(uint32_t index);
-    void plugout(uint32_t index);
-    bool submit(uint32_t index, const XUSB_REPORT& report);
+    static std::unique_ptr<TouchExecutor> create();
+    ~TouchExecutor();
+
+    bool submit(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
-    Gamepad(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response);
-    bool connect();
-    using UCHAR = unsigned char;
-    static void onGamepadResponse(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHAR large_motor,
-                                  UCHAR small_motor, UCHAR led_number, void* user_data);
+    TouchExecutor();
+    bool init();
+    bool init2();
+    bool reset();
+    void resetPointState();
 
 private:
-    std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response_;
-    PVIGEM_CLIENT gamepad_driver_ = nullptr;
-    std::vector<PVIGEM_TARGET> gamepad_target_;
+    std::optional<bool> init_success_;
+    std::vector<POINTER_TYPE_INFO> points_;
+    uint32_t using_points_ = 0;
+    HSYNTHETICPOINTERDEVICE touch_dev_ = nullptr;
 };
 
 } // namespace lt

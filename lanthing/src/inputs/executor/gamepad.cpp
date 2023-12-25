@@ -38,7 +38,7 @@ namespace lt {
 
 std::unique_ptr<Gamepad>
 Gamepad::create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response) {
-    auto gp = std::make_unique<Gamepad>(gamepad_response);
+    std::unique_ptr<Gamepad> gp{new Gamepad{gamepad_response}};
     if (gp->connect()) {
         return gp;
     }
@@ -85,7 +85,7 @@ bool Gamepad::plugin(uint32_t index) {
     }
 #pragma warning(disable : 28023)
     ret = vigem_target_x360_register_notification(gamepad_driver_, gamepad,
-                                                  &Gamepad::on_gamepad_response, this);
+                                                  &Gamepad::onGamepadResponse, this);
 #pragma warning(default : 28023)
     if (!VIGEM_SUCCESS(ret)) {
         vigem_target_x360_unregister_notification(gamepad);
@@ -139,8 +139,8 @@ bool Gamepad::connect() {
     return true;
 }
 
-void Gamepad::on_gamepad_response(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHAR large_motor,
-                                  UCHAR small_motor, UCHAR led_number, void* user_data) {
+void Gamepad::onGamepadResponse(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHAR large_motor,
+                                UCHAR small_motor, UCHAR led_number, void* user_data) {
     (void)led_number;
     (void)client;
     auto that = reinterpret_cast<Gamepad*>(user_data);
