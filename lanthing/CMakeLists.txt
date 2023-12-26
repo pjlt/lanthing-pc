@@ -155,6 +155,8 @@ set(LT_INPUT_EXECUTOR_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_touch_input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_touch_input.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.cpp
 )

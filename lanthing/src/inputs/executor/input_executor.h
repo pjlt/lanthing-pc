@@ -43,6 +43,7 @@
 namespace lt {
 
 class Gamepad;
+class TouchExecutor;
 class InputExecutor {
 public:
     enum class Type : uint8_t {
@@ -60,6 +61,7 @@ public:
 
 public:
     static std::unique_ptr<InputExecutor> create(const Params& params);
+    void update();
     virtual ~InputExecutor() = default;
 
 protected:
@@ -77,6 +79,7 @@ private:
     void onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor);
+    void onTouchEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
@@ -85,6 +88,7 @@ private:
     std::mutex mutex_;
     bool is_absolute_mouse_ = true;
     std::shared_ptr<Gamepad> gamepad_;
+    std::shared_ptr<TouchExecutor> touch_;
 };
 
 } // namespace lt

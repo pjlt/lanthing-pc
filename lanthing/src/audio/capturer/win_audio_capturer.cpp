@@ -170,7 +170,7 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
         case WAIT_OBJECT_0 + 1:
             break;
         case WAIT_TIMEOUT:
-            LOG(WARNING) << "Capture event timed out after 5 seconds";
+            LOG(WARNING) << "Capture event timed out after 2 seconds";
             break;
         default:
             LOG(WARNING) << "Unknown wait termination on audio capture";

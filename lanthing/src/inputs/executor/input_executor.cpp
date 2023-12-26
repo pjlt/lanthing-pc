@@ -37,14 +37,16 @@
 #include <ViGEm/Common.h>
 #include <ltlib/logging.h>
 
-#include <inputs/executor/gamepad.h>
 #include <ltproto/client2worker/controller_added_removed.pb.h>
 #include <ltproto/client2worker/controller_response.pb.h>
 #include <ltproto/client2worker/controller_status.pb.h>
 #include <ltproto/client2worker/switch_mouse_mode.pb.h>
+#include <ltproto/client2worker/touch_event.pb.h>
 #include <ltproto/ltproto.h>
 
-#include "win_send_input.h"
+#include <inputs/executor/gamepad.h>
+#include <inputs/executor/win_send_input.h>
+#include <inputs/executor/win_touch_input.h>
 
 namespace lt {
 
@@ -67,6 +69,12 @@ std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     return input;
 }
 
+void InputExecutor::update() {
+    if (touch_) {
+        touch_->update();
+    }
+}
+
 bool InputExecutor::init() {
     if (!registerHandlers()) {
         return false;
@@ -77,6 +85,7 @@ bool InputExecutor::init() {
     gamepad_ =
         Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this, std::placeholders::_1,
                                   std::placeholders::_2, std::placeholders::_3));
+    touch_ = TouchExecutor::create();
     return true;
 }
 
@@ -89,7 +98,8 @@ bool InputExecutor::registerHandlers() {
         {ltype::kControllerAddedRemoved,
          std::bind(&InputExecutor::onControllerAddedRemoved, this, ph::_1)},
         {ltype::kControllerStatus, std::bind(&InputExecutor::onControllerStatus, this, ph::_1)},
-        {ltype::kSwitchMouseMode, std::bind(&InputExecutor::onSwitchMouseMode, this, ph::_1)}};
+        {ltype::kSwitchMouseMode, std::bind(&InputExecutor::onSwitchMouseMode, this, ph::_1)},
+        {ltype::kTouchEvent, std::bind(&InputExecutor::onTouchEvent, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler_(handler.first, handler.second)) {
             return false;
@@ -154,6 +164,12 @@ void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint
     controller->set_large_motor(large_motor);
     controller->set_small_moror(small_motor);
     sendMessage(ltproto::id(controller), controller);
+}
+
+void InputExecutor::onTouchEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+    if (touch_ != nullptr) {
+        touch_->submit(msg);
+    }
 }
 
 } // namespace lt

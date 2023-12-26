@@ -900,6 +900,14 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
         }
         break;
     }
+    case ltype::kTouchEvent:
+    {
+        postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, false, true));
+        if (!enable_mouse_) {
+            return;
+        }
+        break;
+    }
     case ltype::kKeyboardEvent:
         postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true, false));
         if (!enable_keyboard_) {

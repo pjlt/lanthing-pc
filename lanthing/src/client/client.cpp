@@ -338,6 +338,7 @@ void Client::onPlatformRenderTargetReset() {
 }
 
 void Client::onPlatformExit() {
+    LOG(INFO) << "onPlatformExit";
     postTask([this]() {
         auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
         msg->set_level(ltproto::signaling::SignalingMessage_Level_Core);
