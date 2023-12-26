@@ -69,6 +69,12 @@ std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     return input;
 }
 
+void InputExecutor::update() {
+    if (touch_) {
+        touch_->update();
+    }
+}
+
 bool InputExecutor::init() {
     if (!registerHandlers()) {
         return false;

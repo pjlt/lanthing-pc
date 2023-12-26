@@ -425,6 +425,13 @@ void WorkerStreaming::checkCimeout() {
     }
 }
 
+void WorkerStreaming::updateInput() {
+    if (input_) {
+        input_->update();
+    }
+    postDelayTask(100, std::bind(&WorkerStreaming::updateInput, this));
+}
+
 void WorkerStreaming::onCapturedAudioData(
     std::shared_ptr<google::protobuf::MessageLite> audio_data) {
     postTask([this, audio_data]() { sendPipeMessage(ltproto::type::kAudioData, audio_data); });
@@ -484,6 +491,7 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
             break;
         }
         ack->set_err_code(ltproto::ErrorCode::Success);
+        postDelayTask(100, std::bind(&WorkerStreaming::updateInput, this));
     } while (false);
     for (const auto& handler : msg_handlers_) {
         ack->add_msg_type(handler.first);

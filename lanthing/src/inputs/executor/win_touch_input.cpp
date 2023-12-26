@@ -256,4 +256,11 @@ bool TouchExecutor::submit(const std::shared_ptr<google::protobuf::MessageLite>&
     return success;
 }
 
+void TouchExecutor::update() {
+    if (touch_dev_ == nullptr) {
+        return;
+    }
+    injectSyntheticPointerInput(touch_dev_, points_, using_points_);
+}
+
 } // namespace lt

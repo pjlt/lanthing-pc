@@ -47,6 +47,7 @@ public:
     ~TouchExecutor();
 
     bool submit(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void update();
 
 private:
     TouchExecutor();

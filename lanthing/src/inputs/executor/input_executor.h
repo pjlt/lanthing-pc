@@ -61,6 +61,7 @@ public:
 
 public:
     static std::unique_ptr<InputExecutor> create(const Params& params);
+    void update();
     virtual ~InputExecutor() = default;
 
 protected:
