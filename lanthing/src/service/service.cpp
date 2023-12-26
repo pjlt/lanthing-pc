@@ -299,6 +299,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     constexpr size_t kSessionNameLen = 8;
     const std::string session_name = ltlib::randomStr(kSessionNameLen);
     if (!worker_sessions_.empty()) {
+        ack->set_err_code(ltproto::ErrorCode::ServingAnotherClient);
+        tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Only support one client";
         return;
     }
