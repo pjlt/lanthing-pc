@@ -123,7 +123,11 @@ std::unique_ptr<TouchExecutor> TouchExecutor::create() {
     return touch;
 }
 
-TouchExecutor::~TouchExecutor() {}
+TouchExecutor::~TouchExecutor() {
+    if (touch_dev_ != nullptr) {
+        DestroySyntheticPointerDevice(touch_dev_);
+    }
+}
 
 TouchExecutor::TouchExecutor() {
     resetPointState();
