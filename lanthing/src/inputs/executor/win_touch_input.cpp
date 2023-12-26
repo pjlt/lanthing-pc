@@ -76,10 +76,9 @@ bool injectSyntheticPointerInput(HSYNTHETICPOINTERDEVICE device,
     return true;
 }
 
-void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POINTER_INFO& point) {
+void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POINTER_INFO& point,
+             int32_t w, int32_t h, int32_t ox, int32_t oy) {
     using namespace ltproto::client2worker;
-    // int32_t width = ltlib::getScreenWidth();
-    // int32_t height = ltlib::getScreenHeight();
     switch (msg->touch_flag()) {
     case TouchEvent_TouchFlag_TouchUp:
         point.pointerFlags &= ~(POINTER_FLAG_INCONTACT | POINTER_FLAG_INRANGE);
@@ -87,13 +86,13 @@ void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POI
         break;
     case TouchEvent_TouchFlag_TouchDown:
         point.pointerFlags |= POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_DOWN;
-        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * 65535.0f);
-        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * 65535.0f);
+        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * w - ox);
+        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * h - oy);
         break;
     case TouchEvent_TouchFlag_TouchMove:
         point.pointerFlags |= POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_UPDATE;
-        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * 65535.0f);
-        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * 65535.0f);
+        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * w - ox);
+        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * h - oy);
         break;
     case TouchEvent_TouchFlag_TouchCancel:
         if (point.pointerFlags & POINTER_FLAG_INCONTACT) {
@@ -131,7 +130,10 @@ TouchExecutor::TouchExecutor() {
 }
 
 bool TouchExecutor::init() {
-    // 默认还是不要启用触屏模式，后面有什么要提前初始化的，就放到这
+    width_ = ltlib::getScreenWidth();
+    height_ = ltlib::getScreenHeight();
+    offset_x_ = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    offset_y_ = GetSystemMetrics(SM_YVIRTUALSCREEN);
     return true;
 }
 
@@ -210,7 +212,7 @@ bool TouchExecutor::submit(const std::shared_ptr<google::protobuf::MessageLite>&
         LOG(WARNING) << "Too many touch points, up to " << points_.size() << " supported";
         return false;
     }
-    convert(msg, points_[i].touchInfo.pointerInfo);
+    convert(msg, points_[i].touchInfo.pointerInfo, width_, height_, offset_x_, offset_y_);
     points_[i].touchInfo.touchMask = TOUCH_MASK_NONE;
     if (points_[i].touchInfo.pointerInfo.pointerFlags & POINTER_FLAG_INCONTACT) {
         if (msg->pressure() != 0) {
@@ -223,8 +225,15 @@ bool TouchExecutor::submit(const std::shared_ptr<google::protobuf::MessageLite>&
         if (msg->left() != 0 || msg->top() != 0 || msg->right() != 0 || msg->bottom() != 0) {
             points_[i].touchInfo.rcContact =
                 RECT{msg->left(), msg->top(), msg->right(), msg->bottom()};
-            points_[i].touchInfo.touchMask |= TOUCH_MASK_CONTACTAREA;
         }
+        else {
+            points_[i].touchInfo.rcContact =
+                RECT{points_[i].touchInfo.pointerInfo.ptPixelLocation.x - 1,
+                     points_[i].touchInfo.pointerInfo.ptPixelLocation.y - 1,
+                     points_[i].touchInfo.pointerInfo.ptPixelLocation.x + 1,
+                     points_[i].touchInfo.pointerInfo.ptPixelLocation.y + 1};
+        }
+        points_[i].touchInfo.touchMask |= TOUCH_MASK_CONTACTAREA;
     }
     else {
         points_[i].touchInfo.pressure = 0;

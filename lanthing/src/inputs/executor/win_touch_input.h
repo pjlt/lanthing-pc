@@ -60,6 +60,10 @@ private:
     std::vector<POINTER_TYPE_INFO> points_;
     uint32_t using_points_ = 0;
     HSYNTHETICPOINTERDEVICE touch_dev_ = nullptr;
+    int32_t width_ = 0;
+    int32_t height_ = 0;
+    int32_t offset_x_ = 0;
+    int32_t offset_y_ = 0;
 };
 
 } // namespace lt
