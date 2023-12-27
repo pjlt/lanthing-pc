@@ -8,7 +8,7 @@ Lanthing是一款开源的串流/远程控制工具。除了主控端和被控�
 
 * Windows 10 或以上
 * Linux (仅支持主控，beta阶段，仅在少数平台测试过)
-* ~~Android (仅支持主控，alpha阶段)~~ 重写中
+* Android (仅支持主控，alpha阶段，在交流群内测中)
 
 ## 特性
 
