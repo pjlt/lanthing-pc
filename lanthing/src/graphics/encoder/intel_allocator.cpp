@@ -31,6 +31,7 @@
 #include "intel_allocator.h"
 
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 
 namespace lt {
 
@@ -310,9 +311,9 @@ mfxStatus MfxDecoderFrameAllocator::alloc_external_frame(mfxFrameAllocRequest* r
         if (FAILED(hr)) {
             return MFX_ERR_MEMORY_ALLOC;
         }
-#pragma warning(disable : 6011)
+        WARNING_DISABLE(6011)
         external_frames_.mids[i] = frame.Get();
-#pragma warning(default : 6011)
+        WARNING_ENABLE(6011)
         external_frames_.frames.push_back(frame);
     }
     response->NumFrameActual = request->NumFrameSuggested;

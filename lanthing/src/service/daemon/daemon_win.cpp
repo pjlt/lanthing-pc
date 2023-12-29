@@ -29,6 +29,7 @@
  */
 
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 
 #include "daemon_win.h"
 #include <service/service.h>
@@ -71,10 +72,10 @@ void LanthingWinService::run() {
     BYTE sd[SECURITY_DESCRIPTOR_MIN_LENGTH];
     psd = (PSECURITY_DESCRIPTOR)sd;
     InitializeSecurityDescriptor(psd, SECURITY_DESCRIPTOR_REVISION);
-#pragma warning(disable : 6248)
+    WARNING_DISABLE(6248)
     // ???
     SetSecurityDescriptorDacl(psd, TRUE, (PACL)NULL, FALSE);
-#pragma warning(default : 6248)
+    WARNING_ENABLE(6248)
     SECURITY_ATTRIBUTES sa = {sizeof(sa), psd, FALSE};
     g_stop_service_handle = ::CreateEventW(&sa, FALSE, FALSE, event_name.c_str());
 
