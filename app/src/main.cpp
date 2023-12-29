@@ -114,7 +114,8 @@ void initLoggingAndDumps() {
     g3::log_levels::disable(DEBUG);
     g3::initializeLogging(g_logWorker.get());
 
-    LOG(INFO) << "Log system initialized";
+    LOGF(INFO, "LanthingApp Version: v%d.%d.%d, Build time: %s %s", LT_VERSION_MAJOR,
+         LT_VERSION_MINOR, LT_VERSION_PATCH, __DATE__, __TIME__);
 
     std::thread cleanup_dumps([log_dir]() { cleanupDumps(log_dir); });
     cleanup_dumps.detach();

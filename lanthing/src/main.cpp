@@ -160,7 +160,8 @@ void initLogAndMinidump(Role role) {
         rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
 #endif
     }
-    LOG(INFO) << "Log system initialized";
+    LOGF(INFO, "Lanthing Version: v%d.%d.%d, Build time: %s %s", LT_VERSION_MAJOR, LT_VERSION_MINOR,
+         LT_VERSION_PATCH, __DATE__, __TIME__);
 
     std::thread cleanup_dumps([log_dir]() { cleanupDumps(log_dir); });
     cleanup_dumps.detach();
