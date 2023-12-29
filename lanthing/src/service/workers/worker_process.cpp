@@ -32,13 +32,12 @@
 
 #include <Windows.h>
 
-#include <ltlib/logging.h>
-
 #include <ltproto/worker2service/stop_working.pb.h>
 
+#include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
-
 namespace {
 
 std::string to_string(std::vector<lt::VideoCodecType> codecs) {
@@ -207,7 +206,7 @@ bool WorkerProcess::launchWorkerProcess() {
     return ret;
 }
 
-#pragma warning(disable : 6387)
+WARNING_DISABLE(6387)
 bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
