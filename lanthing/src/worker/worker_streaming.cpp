@@ -48,7 +48,8 @@ constexpr int kExitNeedRestart = 256;
 constexpr int kExitOK = 0;
 constexpr int kExitTimeout = 2;
 constexpr int kExitStartWorkingFailed = 3;
-constexpr int kExitClientChangeStreamingParamsFailed = kExitNeedRestart + 4;
+constexpr int kExitClientChangeStreamingParamsFailed = 4;
+constexpr int kExitRestartResolutionChanged = kExitNeedRestart + 1;
 
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
@@ -547,7 +548,7 @@ void WorkerStreaming::onChangeStreamingParamsAck(
         stop(kExitClientChangeStreamingParamsFailed);
     }
     else {
-        stop(kExitOK);
+        stop(kExitRestartResolutionChanged);
     }
 }
 
