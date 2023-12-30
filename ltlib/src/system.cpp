@@ -57,6 +57,19 @@ namespace {
 
 #if defined(LT_WINDOWS)
 
+struct AutoGuard {
+    AutoGuard(const std::function<void()>& func)
+        : func_{func} {}
+    ~AutoGuard() {
+        if (func_) {
+            func_();
+        }
+    }
+
+private:
+    std::function<void()> func_;
+};
+
 BOOL GetTokenByName(HANDLE& hToken, const LPWSTR lpName) {
     if (!lpName)
         return FALSE;
@@ -312,31 +325,49 @@ bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
 }
 
 bool setThreadDesktop() {
-    wchar_t user[128] = {0};
-    DWORD size = 128;
-    GetUserNameW(user, &size);
-    if (std::wstring(L"SYSTEM") == user) {
-        HDESK hdesk = OpenInputDesktop(0, FALSE, GENERIC_ALL);
-        if (!hdesk) {
-            LOGF(ERR, "OpenInputDesktop failed with %#x", GetLastError());
-            return false;
-        }
-        if (!SetThreadDesktop(hdesk)) {
+    wchar_t w_current_name[512] = {0};
+    wchar_t w_input_name[512] = {0};
+    HDESK current_desktop = GetThreadDesktop(GetCurrentThreadId());
+    if (current_desktop == nullptr) {
+        LOGF(ERR, "GetThreadDesktop(GetCurrentThreadId()) failed with %#x", GetLastError());
+        return false;
+    }
+    AutoGuard g1{[&]() { CloseDesktop(current_desktop); }};
+    HDESK input_desktop = OpenInputDesktop(0, FALSE, GENERIC_ALL);
+    if (input_desktop == nullptr) {
+        LOGF(ERR, "OpenInputDesktop failed with %#x", GetLastError());
+        return false;
+    }
+    AutoGuard g2{[&]() { CloseDesktop(input_desktop); }};
+    DWORD size = 0;
+    BOOL success = GetUserObjectInformationW(current_desktop, UOI_NAME, w_current_name,
+                                             sizeof(w_current_name), &size);
+    if (success == FALSE) {
+        LOGF(ERR, "GetUserObjectInformationW(current_desktop) failed with %#x", GetLastError());
+        return false;
+    }
+    success = GetUserObjectInformationW(input_desktop, UOI_NAME, w_input_name, sizeof(w_input_name),
+                                        &size);
+    if (success == FALSE) {
+        LOGF(ERR, "GetUserObjectInformationW(current_desktop) failed with %#x", GetLastError());
+        return false;
+    }
+    std::wstring current_name = w_current_name;
+    std::wstring input_name = w_input_name;
+    if (current_name != input_name) {
+        success = SetThreadDesktop(input_desktop);
+        if (success == FALSE) {
             LOGF(ERR, "SetThreadDesktop failed with %#x", GetLastError());
             return false;
         }
-        if (hdesk) {
-            if (!CloseDesktop(hdesk)) {
-                LOGF(WARNING, "CloseDesktop failed with %#x", GetLastError());
-            }
+        else {
+            LOG(INFO) << "SetThreadDesktop success";
         }
-        return true;
     }
     else {
-        LOG(ERR) << "UserName is " << ltlib::utf16To8(std::wstring(user))
-                 << " != SYSTEM, won't SetThreadDesktop";
-        return false;
+        LOG(INFO) << "No need for SetThreadDesktop";
     }
+    return true;
 }
 
 bool selfElevateAndNeedExit() {
