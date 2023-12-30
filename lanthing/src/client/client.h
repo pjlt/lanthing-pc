@@ -191,7 +191,6 @@ private:
     bool last_w_or_h_is_0_ = false;
     int64_t last_received_keepalive_;
     bool connected_to_app_ = false;
-    std::atomic<bool> video_valid_{false};
 };
 
 } // namespace cli
