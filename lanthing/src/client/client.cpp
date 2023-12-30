@@ -35,6 +35,8 @@
 
 #include <ltproto/client2app/client_status.pb.h>
 #include <ltproto/client2service/time_sync.pb.h>
+#include <ltproto/client2worker/change_streaming_params.pb.h>
+#include <ltproto/client2worker/change_streaming_params_ack.pb.h>
 #include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/client2worker/send_side_stat.pb.h>
@@ -389,10 +391,19 @@ void Client::toggleFullscreen() {
 void Client::switchMouseMode() {
     absolute_mouse_ = !absolute_mouse_;
     sdl_->switchMouseMode(absolute_mouse_);
-    video_pipeline_->switchMouseMode(absolute_mouse_);
-    auto msg = std::make_shared<ltproto::client2worker::SwitchMouseMode>();
-    msg->set_absolute(absolute_mouse_);
-    sendMessageToHost(ltproto::id(msg), msg, true);
+    bool switched = false;
+    {
+        std::lock_guard lock{dr_mutex_};
+        if (video_pipeline_) {
+            video_pipeline_->switchMouseMode(absolute_mouse_);
+            switched = true;
+        }
+    }
+    if (switched) {
+        auto msg = std::make_shared<ltproto::client2worker::SwitchMouseMode>();
+        msg->set_absolute(absolute_mouse_);
+        sendMessageToHost(ltproto::id(msg), msg, true);
+    }
 }
 
 void Client::checkWorkerTimeout() {
@@ -677,6 +688,7 @@ tp::Client* Client::createRtc2Client() {
 }
 
 void Client::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool is_reliable) {
+    // 跑在数据通道线程
     auto that = reinterpret_cast<Client*>(user_data);
     (void)is_reliable;
     auto type = reinterpret_cast<const uint32_t*>(data);
@@ -693,12 +705,16 @@ void Client::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool 
 }
 
 void Client::onTpVideoFrame(void* user_data, const lt::VideoFrame& frame) {
+    // 跑在video线程
     auto that = reinterpret_cast<Client*>(user_data);
-    std::lock_guard lock{that->dr_mutex_};
-    if (that->video_pipeline_ == nullptr) {
-        return;
+    VideoDecodeRenderPipeline::Action action = VideoDecodeRenderPipeline::Action::NONE;
+    {
+        std::lock_guard lock{that->dr_mutex_};
+        if (that->video_pipeline_ == nullptr) {
+            return;
+        }
+        action = that->video_pipeline_->submit(frame);
     }
-    VideoDecodeRenderPipeline::Action action = that->video_pipeline_->submit(frame);
     switch (action) {
     case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
     {
@@ -714,6 +730,7 @@ void Client::onTpVideoFrame(void* user_data, const lt::VideoFrame& frame) {
 }
 
 void Client::onTpAudioData(void* user_data, const lt::AudioData& audio_data) {
+    // 跑在audio线程
     auto that = reinterpret_cast<Client*>(user_data);
     // FIXME: transport在audio_player_实例化前，不应回调audio数据
     if (that->audio_player_) {
@@ -722,6 +739,7 @@ void Client::onTpAudioData(void* user_data, const lt::AudioData& audio_data) {
 }
 
 void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
+    // 跑在数据通道线程
     auto that = reinterpret_cast<Client*>(user_data);
     (void)link_type;
     that->video_pipeline_ = VideoDecodeRenderPipeline::create(that->video_params_);
@@ -806,6 +824,9 @@ void Client::dispatchRemoteMessage(uint32_t type,
     case ltproto::type::kCursorInfo:
         onCursorInfo(msg);
         break;
+    case ltproto::type::kChangeStreamingParams:
+        onChangeStreamingParams(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
         break;
@@ -858,17 +879,23 @@ void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         rtt_ = result->rtt;
         time_diff_ = result->time_diff;
         LOG(DEBUG) << "rtt:" << rtt_ << ", time_diff:" << time_diff_;
-        if (video_pipeline_) {
-            video_pipeline_->setTimeDiff(time_diff_);
-            video_pipeline_->setRTT(rtt_);
+        {
+            std::lock_guard lock{dr_mutex_};
+            if (video_pipeline_) {
+                video_pipeline_->setTimeDiff(time_diff_);
+                video_pipeline_->setRTT(rtt_);
+            }
         }
     }
 }
 
 void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::SendSideStat>(_msg);
-    video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));
-    video_pipeline_->setBWE(static_cast<uint32_t>(msg->bwe()));
+    std::lock_guard lock{dr_mutex_};
+    if (video_pipeline_) {
+        video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));
+        video_pipeline_->setBWE(static_cast<uint32_t>(msg->bwe()));
+    }
 }
 
 void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -884,9 +911,37 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         return;
     }
     last_w_or_h_is_0_ = false;
-    video_pipeline_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(),
-                                   1.0f * msg->y() / msg->h(), msg->visible());
+    {
+        std::lock_guard lock{dr_mutex_};
+        video_pipeline_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(),
+                                       1.0f * msg->y() / msg->h(), msg->visible());
+    }
+
     sdl_->setCursorInfo(msg->preset(), msg->visible());
+}
+
+void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::client2worker::ChangeStreamingParams>(_msg);
+    auto width = static_cast<uint32_t>(msg->params().video_width());
+    auto height = static_cast<uint32_t>(msg->params().video_height());
+    LOGF(INFO, "Received ChangeStreamingParams(w:%u, h:%u), old is (w:%u, h:%u)", width, height,
+         video_params_.width, video_params_.height);
+    bool success = true;
+    if (video_params_.width != width || video_params_.height != height) {
+        video_params_.width = width;
+        video_params_.height = height;
+        std::lock_guard lock{dr_mutex_};
+        video_pipeline_.reset(); // 手动reset再create，保证不同时存在两份VideoDecodeRenderPipeline
+        video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+        if (video_pipeline_ == nullptr) {
+            success = false;
+            LOG(ERR) << "Recreate VideoDecodeRenderPipeline failed";
+        }
+    }
+    auto ack = std::make_shared<ltproto::client2worker::ChangeStreamingParamsAck>();
+    ack->set_err_code(success ? ltproto::ErrorCode::Success
+                              : ltproto::ErrorCode::InitDecodeRenderPipelineFailed);
+    sendMessageToHost(ltproto::id(ack), ack, true);
 }
 
 } // namespace cli

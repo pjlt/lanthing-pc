@@ -31,6 +31,7 @@
 #include "worker_streaming.h"
 
 #include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/change_streaming_params_ack.pb.h>
 #include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
 #include <ltproto/ltproto.h>
@@ -42,6 +43,12 @@
 #include <ltlib/times.h>
 
 namespace {
+
+constexpr int kExitNeedRestart = 256;
+constexpr int kExitOK = 0;
+constexpr int kExitTimeout = 2;
+constexpr int kExitStartWorkingFailed = 3;
+constexpr int kExitClientChangeStreamingParamsFailed = kExitNeedRestart + 4;
 
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
@@ -193,7 +200,9 @@ bool WorkerStreaming::init() {
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kStartWorking, std::bind(&WorkerStreaming::onStartWorking, this, ph::_1)},
         {ltype::kStopWorking, std::bind(&WorkerStreaming::onStopWorking, this, ph::_1)},
-        {ltype::kKeepAlive, std::bind(&WorkerStreaming::onKeepAlive, this, ph::_1)}};
+        {ltype::kKeepAlive, std::bind(&WorkerStreaming::onKeepAlive, this, ph::_1)},
+        {ltype::kChangeStreamingParamsAck,
+         std::bind(&WorkerStreaming::onChangeStreamingParamsAck, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!registerMessageHandler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -418,7 +427,7 @@ void WorkerStreaming::checkCimeout() {
     if (now - last_time_received_from_service_ > kTimeout) {
         LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_
                      << "ms, worker exit.";
-        stop(2);
+        stop(kExitTimeout);
     }
     else {
         postDelayTask(500, [this]() { checkCimeout(); });
@@ -506,19 +515,40 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         }
         input_ = nullptr;
         LOG(ERR) << "Start working failed, exit worker";
-        postDelayTask(100, std::bind(&WorkerStreaming::stop, this, 3));
+        postDelayTask(100, std::bind(&WorkerStreaming::stop, this, kExitStartWorkingFailed));
     }
 }
 
 void WorkerStreaming::onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>&) {
     LOG(INFO) << "Received StopWorking";
-    stop(0);
+    stop(kExitOK);
 }
 
 void WorkerStreaming::onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>&) {
     last_time_received_from_service_ = ltlib::steady_now_ms();
     auto ack = std::make_shared<ltproto::common::KeepAliveAck>();
     sendPipeMessage(ltproto::id(ack), ack);
+}
+
+void WorkerStreaming::onChangeStreamingParamsAck(
+    const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
+    auto msg = std::static_pointer_cast<ltproto::client2worker::ChangeStreamingParamsAck>(_msg);
+    // 无论如何都不应该再改用户主动改过的分辨率
+    if (settings_) {
+        settings_->deleteKey("old_screen_width");
+        settings_->deleteKey("old_screen_height");
+        settings_->deleteKey("old_screen_rate");
+        settings_ = nullptr;
+    }
+    if (msg->err_code() != ltproto::ErrorCode::Success) {
+        LOG(ERR) << "Received ChangeStreamingParamsAck with error code "
+                 << static_cast<int32_t>(msg->err_code()) << " : "
+                 << ltproto::ErrorCode_Name(msg->err_code());
+        stop(kExitClientChangeStreamingParamsFailed);
+    }
+    else {
+        stop(kExitOK);
+    }
 }
 
 } // namespace worker

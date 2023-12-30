@@ -99,6 +99,11 @@ void WorkerProcess::stop() {
     stoped_ = true;
 }
 
+void WorkerProcess::changeResolution(uint32_t width, uint32_t height) {
+    client_width_ = width;
+    client_height_ = height;
+}
+
 void WorkerProcess::start() {
     std::lock_guard lk{mutex_};
     if (thread_ != nullptr) {
@@ -242,6 +247,7 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
         }
         else {
             // Windows的错误，可能崩溃了
+            // 也有可能是我自已定义的'重启'错误码
             return true;
         }
     }

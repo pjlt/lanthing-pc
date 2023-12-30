@@ -36,6 +36,7 @@
 
 #include <ltproto/client2service/time_sync.pb.h>
 #include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/change_streaming_params.pb.h>
 #include <ltproto/client2worker/mouse_event.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/client2worker/send_side_stat.pb.h>
@@ -662,6 +663,9 @@ void WorkerSession::onPipeMessage(uint32_t fd, uint32_t type,
     case ltype::kAudioData:
         onCapturedAudio(msg);
         break;
+    case ltype::kChangeStreamingParams:
+        onChangeStreamingParams(msg);
+        [[fallthrough]];
     case ltype::kCursorInfo:
         bypassToClient(type, msg);
         break;
@@ -739,6 +743,7 @@ void WorkerSession::onWorkerFailedFromOtherThread() {
 }
 
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {
+    // 跑在数据通道线程
     auto that = reinterpret_cast<WorkerSession*>(user_data);
     (void)reliable;
     auto type = reinterpret_cast<const uint32_t*>(data);
@@ -756,6 +761,7 @@ void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size
 }
 
 void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
+    // 跑在数据通道线程
     auto that = reinterpret_cast<WorkerSession*>(user_data);
     that->postTask([that, link_type]() {
         LOG(INFO) << "Accepted client";
@@ -1062,6 +1068,18 @@ bool WorkerSession::sendMessageToRemoteClient(
 void WorkerSession::bypassToClient(uint32_t type,
                                    std::shared_ptr<google::protobuf::MessageLite> msg) {
     sendMessageToRemoteClient(type, msg, true);
+}
+
+void WorkerSession::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::client2worker::ChangeStreamingParams>(_msg);
+    auto width = static_cast<uint32_t>(msg->params().video_width());
+    auto height = static_cast<uint32_t>(msg->params().video_height());
+    if (worker_process_) {
+        worker_process_->changeResolution(width, height);
+    }
+    else {
+        LOG(ERR) << "Received ChangeStreamingParams but worker_process_ == nullptr";
+    }
 }
 
 } // namespace svc
