@@ -154,6 +154,7 @@ private:
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::unique_ptr<ltlib::Settings> settings_;

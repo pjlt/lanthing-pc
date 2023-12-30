@@ -65,6 +65,7 @@ public:
     static std::unique_ptr<WorkerProcess> create(const Params& params);
     ~WorkerProcess();
     void stop();
+    void changeResolution(uint32_t width, uint32_t height);
 
 private:
     WorkerProcess(const Params& params);

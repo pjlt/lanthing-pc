@@ -39,6 +39,7 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <ltproto/client2worker/change_streaming_params.pb.h>
 #include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/ltproto.h>
@@ -69,6 +70,8 @@ private:
     void consumeTasks();
     void captureAndSendCursor();
     void captureAndSendVideoFrame();
+    auto resolutionChanged() -> std::optional<ltlib::DisplayOutputDesc>;
+    void sendChangeStreamingParams(ltlib::DisplayOutputDesc desc);
 
     // 从service收到的消息
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -151,7 +154,7 @@ bool VCEPipeline::start() {
 
 void VCEPipeline::stop() {
     // 即便stoped_是原子也不应该这么做，但这个程序似乎不会出现一个线程正在析构VideoCapture，另一个线程主动调stop()
-    if (!stoped_) {
+    if (!stoped_ && stop_promise_ != nullptr) {
         stoped_ = true;
         stop_promise_->get_future().get();
     }
@@ -181,9 +184,14 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
         i_am_alive();
         // vblank后应该第一时间抓屏还是消费任务？
         consumeTasks();
+        auto resolution = resolutionChanged();
+        if (resolution.has_value()) {
+            sendChangeStreamingParams(resolution.value());
+            stoped_ = true;
+            break;
+        }
         capturer_->waitForVBlank();
         captureAndSendVideoFrame();
-        // 光标逻辑是否要放到其它线程捕获？先在同一线程做，后面做优化再来测，用数据说话
         captureAndSendCursor();
     }
     stop_promise_->set_value();
@@ -298,6 +306,27 @@ void VCEPipeline::captureAndSendVideoFrame() {
     }
     // TODO: 计算编码完成距离上一次vblank时间
     send_message_(ltproto::id(encoded_frame), encoded_frame);
+}
+
+std::optional<ltlib::DisplayOutputDesc> VCEPipeline::resolutionChanged() {
+    ltlib::DisplayOutputDesc desc = ltlib::getDisplayOutputDesc();
+    if (desc.height != static_cast<int32_t>(height_) ||
+        desc.width != static_cast<int32_t>(width_)) {
+        LOGF(INFO, "The resolution has changed from {w:%u, h:%u} to {w:%d, h:%d}", width_, height_,
+             desc.width, desc.height);
+        return desc;
+    }
+    return std::nullopt;
+}
+
+// 当前只关注分辨率
+void VCEPipeline::sendChangeStreamingParams(ltlib::DisplayOutputDesc desc) {
+    auto msg = std::make_shared<ltproto::client2worker::ChangeStreamingParams>();
+    auto params = msg->mutable_params();
+    params->set_video_width(desc.width);
+    params->set_video_height(desc.height);
+    params->set_screen_refresh_rate(desc.frequency);
+    send_message_(ltproto::id(msg), msg);
 }
 
 void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _msg) {
