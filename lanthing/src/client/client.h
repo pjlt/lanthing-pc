@@ -36,6 +36,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <shared_mutex>
 #include <string>
 
 #include <ltlib/io/client.h>
@@ -170,7 +171,7 @@ private:
     std::unique_ptr<VideoDecodeRenderPipeline> video_pipeline_;
     std::unique_ptr<InputCapturer> input_capturer_;
     std::unique_ptr<AudioPlayer> audio_player_;
-    std::mutex ioloop_mutex_;
+    std::shared_mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::Client> app_client_;

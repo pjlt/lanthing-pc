@@ -34,6 +34,7 @@
 #include <cstdint>
 
 #include <random>
+#include <shared_mutex>
 
 #include <QApplication>
 #include <google/protobuf/message_lite.h>
@@ -126,7 +127,7 @@ private:
 
 private:
     GUI gui_;
-    std::mutex ioloop_mutex_;
+    std::shared_mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::Settings> settings_;

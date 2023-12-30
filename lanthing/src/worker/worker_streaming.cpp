@@ -371,17 +371,19 @@ void WorkerStreaming::stop(int exit_code) {
 }
 
 void WorkerStreaming::postTask(const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
+    mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->post(task);
     }
+    mutex_.unlock_shared();
 }
 
 void WorkerStreaming::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
+    mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
+    mutex_.unlock_shared();
 }
 
 bool WorkerStreaming::registerMessageHandler(uint32_t type, const MessageHandler& handler) {

@@ -57,62 +57,6 @@
 
 #include "check_decode_ability.h"
 
-/************************************************************************************
-                          +-----------------------+
-                          |                       |
-                          |                       |
-                          |        Server         |
-                          |                       |
-                      +-> |                       | <--+
-                      |   |                       |    |
-                      |   +-----------------------+    |
-                      |                                |
-                      |                                |
-             TCP/TLS  |                                |  TCP/TLS
-                      |                                |
-                      |                                |
-                      |                                |
-                      |                                |
-+-------------------------------+           +---------------------------------+
-|                     |         |           |          |                      |
-|               +-----+--+      |           |      +---+-----+                |
-|               |  App   |      |           |      | Service |                |
-|               |        |      |           |      |         |                |
-|               +--+-----+      |           |      +----+----+                |
-|                  |            |           |           |                     |
-|           Launch | IPC        |           |    Launch | IPC                 |
-|                  |            |           |           |                     |
-|                  v            |           |           v                     |
-|                               |           |                                 |
-|               +--------+      |           |      +---------+                |
-|  Computer A   |Client  |      |           |      | Worker  |   Computer B   |
-|               |        |      |           |      |         |                |
-|               +--------+      |           |      +---------+                |
-|                               |           |                                 |
-+-------------------------------+           +---------------------------------+
-
-*************************************************************************************
-
-↓ Every square is a process. The outer rectangle is a computer ↓
-+--------------------------------------------------------+
-|                                                        |
-|                  +-------+                             |
-|                  | App   |                             |
-|             +----+       +<-+                          |
-|      Launch |    +-------+  | IPC                      |
-|        &    |               |                          |
-|       IPC   v               v                          |
-|                                                        |
-|       +-------+         +-------+         +-------+    |
-|       |Client |         |Service| Launch  |Worker |    |
-|       |       |         |       +-------> |       |    |
-|       +-------+         +-------+   IPC   +-------+    |
-|                                                        |
-|                                                        |
-+--------------------------------------------------------+
-
-************************************************************************************/
-
 using namespace ltlib::time;
 
 namespace {
@@ -502,17 +446,19 @@ void App::onConnectFailed(int64_t device_id, int32_t error_code) {
 }
 
 void App::postTask(const std::function<void()>& task) {
-    std::lock_guard lock{ioloop_mutex_};
+    ioloop_mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->post(task);
     }
+    ioloop_mutex_.unlock_shared();
 }
 
 void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    std::lock_guard lock{ioloop_mutex_};
+    ioloop_mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
+    ioloop_mutex_.unlock_shared();
 }
 
 #define MACRO_TO_STRING_HELPER(str) #str

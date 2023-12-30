@@ -187,17 +187,19 @@ void Service::letUserConfirm(int64_t device_id) {
 }
 
 void Service::postTask(const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
+    mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->post(task);
     }
+    mutex_.unlock_shared();
 }
 
 void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    std::lock_guard lock{mutex_};
+    mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
+    mutex_.unlock_shared();
 }
 
 void Service::checkRunAsService() {

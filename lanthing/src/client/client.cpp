@@ -361,17 +361,19 @@ void Client::stopWait() {
 }
 
 void Client::postTask(const std::function<void()>& task) {
-    std::lock_guard lock{ioloop_mutex_};
+    ioloop_mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->post(task);
     }
+    ioloop_mutex_.unlock_shared();
 }
 
 void Client::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    std::lock_guard lock{ioloop_mutex_};
+    ioloop_mutex_.lock_shared();
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
+    ioloop_mutex_.unlock_shared();
 }
 
 void Client::syncTime() {

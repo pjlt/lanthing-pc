@@ -31,6 +31,8 @@
 #pragma once
 #include "workers/worker_session.h"
 
+#include <shared_mutex>
+
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/settings.h>
@@ -103,7 +105,7 @@ private:
     std::unique_ptr<ltlib::Client> tcp_client_;
     std::unique_ptr<ltlib::Client> app_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     std::map<std::string, std::shared_ptr<WorkerSession>> worker_sessions_;
     std::unique_ptr<ltlib::Settings> settings_;
     int64_t device_id_ = 0;
