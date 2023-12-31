@@ -175,16 +175,6 @@ int WorkerStreaming::wait() {
 }
 
 bool WorkerStreaming::init() {
-    monitors_ = ltlib::enumMonitors();
-    if (monitors_.size() == 0) {
-        LOG(ERR) << "There is no monitor";
-        return false;
-    }
-    if (monitors_.size() - 1 < monitor_index_) {
-        LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
-                     << monitors_.size() << " monitors. Fallback to first monitor";
-        monitor_index_ = 0;
-    }
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
         LOG(ERR) << "Create session observer failed";
@@ -333,6 +323,21 @@ bool WorkerStreaming::negotiateAllParameters() {
 }
 
 bool WorkerStreaming::negotiateStreamParameters() {
+    monitors_ = ltlib::enumMonitors();
+    if (monitors_.size() == 0) {
+        LOG(ERR) << "There is no monitor";
+        return false;
+    }
+    if (monitors_.size() - 1 < monitor_index_) {
+        LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
+                     << monitors_.size() << " monitors. Fallback to first monitor";
+        monitor_index_ = 0;
+    }
+    for (auto& m : monitors_) {
+        LOGF(INFO, "l:%d, r:%d, t:%d, b:%d, w:%d, h:%d", m.left, m.right, m.top, m.bottom,
+             (m.right - m.left), (m.bottom - m.top));
+    }
+
     auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
     lt::AudioCapturer::Params audio_params{};
