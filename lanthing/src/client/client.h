@@ -84,6 +84,7 @@ public:
         uint32_t screen_refresh_rate;
         uint32_t audio_freq;
         uint32_t audio_channels;
+        uint32_t rotation;
         bool enable_driver_input;
         bool enable_gamepad;
         std::vector<std::string> reflex_servers;

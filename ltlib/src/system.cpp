@@ -274,20 +274,38 @@ int32_t getScreenHeight() {
 }
 
 DisplayOutputDesc getDisplayOutputDesc() {
-    uint32_t width, height, frequency;
+    uint32_t width, height, frequency, rotation;
     DEVMODE dm;
     dm.dmSize = sizeof(DEVMODE);
     if (::EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
         width = dm.dmPelsWidth;
         height = dm.dmPelsHeight;
         frequency = dm.dmDisplayFrequency ? dm.dmDisplayFrequency : 60;
+        switch (dm.dmDisplayOrientation) {
+        case DMDO_DEFAULT:
+            rotation = 0;
+            break;
+        case DMDO_90:
+            rotation = 90;
+            break;
+        case DMDO_180:
+            rotation = 180;
+            break;
+        case DMDO_270:
+            rotation = 270;
+            break;
+        default:
+            rotation = 0;
+            break;
+        }
     }
     else {
         width = getScreenWidth();
         height = getScreenHeight();
         frequency = 60;
+        rotation = 0;
     }
-    return DisplayOutputDesc{width, height, frequency};
+    return DisplayOutputDesc{width, height, frequency, rotation};
 }
 
 bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
@@ -398,19 +416,41 @@ std::vector<Monitor> enumMonitors() {
         (void)hdcMonitor;
         (void)lprcMonitor;
         auto monitors = reinterpret_cast<std::vector<Monitor>*>(dwData);
-        MONITORINFOEX info{};
-        info.cbSize = sizeof(MONITORINFOEX);
-        GetMonitorInfo(hMonitor, &info); // 这个地方不要手动加A或W
+        MONITORINFOEXA info{};
+        info.cbSize = sizeof(MONITORINFOEXA);
+        GetMonitorInfoA(hMonitor, &info);
         if (info.dwFlags == DISPLAY_DEVICE_MIRRORING_DRIVER) {
             return TRUE;
         }
+        DEVMODE mode{};
+        int32_t rotation = 0;
+        if (EnumDisplaySettingsA(info.szDevice, ENUM_CURRENT_SETTINGS, &mode)) {
+            switch (mode.dmDisplayOrientation) {
+            case DMDO_DEFAULT:
+                rotation = 0;
+                break;
+            case DMDO_90:
+                rotation = 90;
+                break;
+            case DMDO_180:
+                rotation = 180;
+                break;
+            case DMDO_270:
+                rotation = 270;
+                break;
+            default:
+                rotation = 0;
+                break;
+            }
+        }
         if (info.dwFlags == MONITORINFOF_PRIMARY) {
-            monitors->operator[](0) = Monitor{info.rcMonitor.left, info.rcMonitor.top,
-                                              info.rcMonitor.right, info.rcMonitor.bottom};
+            monitors->operator[](0) =
+                Monitor{info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right,
+                        info.rcMonitor.bottom, rotation};
         }
         else {
             monitors->push_back(Monitor{info.rcMonitor.left, info.rcMonitor.top,
-                                        info.rcMonitor.right, info.rcMonitor.bottom});
+                                        info.rcMonitor.right, info.rcMonitor.bottom, rotation});
         }
         return TRUE;
     };

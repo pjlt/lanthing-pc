@@ -95,6 +95,7 @@ private:
     const uint32_t width_;
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
+    const uint32_t rotation_;
     const lt::VideoCodecType codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
@@ -143,6 +144,7 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , width_{params.width}
     , height_{params.height}
     , screen_refresh_rate_{params.screen_refresh_rate}
+    , rotation_{params.rotation}
     , codec_type_{params.codec_type}
     , send_message_to_host_{params.send_message_to_host}
     , sdl_{params.sdl}
@@ -159,6 +161,7 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
+    LOGF(INFO, "w:%u, h:%u, r:%u", width_, height_, rotation_);
     VideoRenderer::Params render_params{};
 #if LT_WINDOWS
     if (!gpu_info_.init()) {
@@ -446,13 +449,14 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
 
 VideoDecodeRenderPipeline::Params::Params(
     lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-    uint32_t _screen_refresh_rate,
+    uint32_t _screen_refresh_rate, uint32_t _rotation,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message)
     : codec_type(_codec_type)
     , width(_width)
     , height(_height)
     , screen_refresh_rate(_screen_refresh_rate)
+    , rotation(_rotation)
     , send_message_to_host(send_message) {}
 
 bool VideoDecodeRenderPipeline::Params::validate() const {

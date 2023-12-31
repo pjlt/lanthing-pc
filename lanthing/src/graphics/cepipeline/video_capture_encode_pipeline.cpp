@@ -338,6 +338,7 @@ void VCEPipeline::sendChangeStreamingParams(ltlib::DisplayOutputDesc desc) {
     params->set_video_width(desc.width);
     params->set_video_height(desc.height);
     params->set_screen_refresh_rate(desc.frequency);
+    params->set_rotation(desc.rotation);
     send_message_(ltproto::id(msg), msg);
 }
 

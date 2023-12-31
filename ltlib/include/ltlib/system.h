@@ -50,13 +50,15 @@ int32_t LT_API getScreenHeight();
 
 struct LT_API DisplayOutputDesc {
     DisplayOutputDesc() = delete;
-    DisplayOutputDesc(uint32_t w, uint32_t h, uint32_t f)
+    DisplayOutputDesc(uint32_t w, uint32_t h, uint32_t f, uint32_t r)
         : width(w)
         , height(h)
-        , frequency(f) {}
+        , frequency(f)
+        , rotation(r) {}
     int32_t width;
     int32_t height;
     int32_t frequency;
+    int32_t rotation;
 };
 DisplayOutputDesc LT_API getDisplayOutputDesc();
 
@@ -71,6 +73,7 @@ struct LT_API Monitor {
     int32_t top;
     int32_t right;
     int32_t bottom;
+    int32_t rotation;
 };
 
 std::vector<Monitor> LT_API enumMonitors();

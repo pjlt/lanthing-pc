@@ -135,7 +135,8 @@ bool WorkerProcess::launchWorkerProcess() {
     ss << path_ << " -type worker "
        << " -name " << pipe_name_ << " -width " << client_width_ << " -height " << client_height_
        << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_codecs_)
-       << " -action streaming";
+       << " -action streaming "
+       << " -mindex 1";
     if (first_launch_) {
         first_launch_ = false;
         ss << " -negotiate 1";

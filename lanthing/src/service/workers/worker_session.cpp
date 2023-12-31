@@ -730,6 +730,10 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
     if (negotiated_streaming_params_ == nullptr) {
         // 第一次收到Worker进程的onWorkerStreamingParams
         negotiated_streaming_params_ = msg;
+        if (worker_process_) {
+            auto msg2 = std::static_pointer_cast<ltproto::common::StreamingParams>(msg);
+            worker_process_->changeResolution(msg2->video_width(), msg2->video_height());
+        }
         maybeOnCreateSessionCompleted();
     }
     else {

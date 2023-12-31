@@ -31,6 +31,7 @@
 #include "worker_streaming.h"
 
 #include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/change_streaming_params.pb.h>
 #include <ltproto/client2worker/change_streaming_params_ack.pb.h>
 #include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
@@ -175,6 +176,20 @@ int WorkerStreaming::wait() {
 }
 
 bool WorkerStreaming::init() {
+    monitors_ = ltlib::enumMonitors();
+    if (monitors_.size() == 0) {
+        LOG(ERR) << "There is no monitor";
+        return false;
+    }
+    if (monitors_.size() - 1 < monitor_index_) {
+        LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
+                     << monitors_.size() << " monitors. Fallback to first monitor";
+        monitor_index_ = 0;
+    }
+    for (auto& m : monitors_) {
+        LOGF(INFO, "l:%d, r:%d, t:%d, b:%d, w:%d, h:%d, o:%d", m.left, m.right, m.top, m.bottom,
+             (m.right - m.left), (m.bottom - m.top), m.rotation);
+    }
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
         LOG(ERR) << "Create session observer failed";
@@ -189,6 +204,7 @@ bool WorkerStreaming::init() {
         LOG(ERR) << "Init pipe client failed";
         return false;
     }
+#if 0 // 引入多屏支持后，协商变得很麻烦
     if (need_negotiate_) {
         if (!negotiateAllParameters()) {
             return false;
@@ -202,6 +218,16 @@ bool WorkerStreaming::init() {
             return false;
         }
     }
+#else
+    negotiated_display_setting_.width =
+        static_cast<uint32_t>(monitors_[monitor_index_].right - monitors_[monitor_index_].left);
+    negotiated_display_setting_.height =
+        static_cast<uint32_t>(monitors_[monitor_index_].bottom - monitors_[monitor_index_].top);
+    negotiated_display_setting_.refrash_rate = 60; // 假的
+    if (!negotiateStreamParameters()) {
+        return false;
+    }
+#endif
 
     namespace ltype = ltproto::type;
     namespace ph = std::placeholders;
@@ -323,20 +349,6 @@ bool WorkerStreaming::negotiateAllParameters() {
 }
 
 bool WorkerStreaming::negotiateStreamParameters() {
-    monitors_ = ltlib::enumMonitors();
-    if (monitors_.size() == 0) {
-        LOG(ERR) << "There is no monitor";
-        return false;
-    }
-    if (monitors_.size() - 1 < monitor_index_) {
-        LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
-                     << monitors_.size() << " monitors. Fallback to first monitor";
-        monitor_index_ = 0;
-    }
-    for (auto& m : monitors_) {
-        LOGF(INFO, "l:%d, r:%d, t:%d, b:%d, w:%d, h:%d", m.left, m.right, m.top, m.bottom,
-             (m.right - m.left), (m.bottom - m.top));
-    }
 
     auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
@@ -376,6 +388,7 @@ bool WorkerStreaming::negotiateStreamParameters() {
     negotiated_params->set_video_width(negotiated_display_setting_.width);
     negotiated_params->set_video_height(negotiated_display_setting_.height);
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));
+    negotiated_params->set_rotation(monitors_[monitor_index_].rotation);
     LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
 
     negotiated_params_ = negotiated_params;
@@ -583,7 +596,18 @@ void WorkerStreaming::onChangeStreamingParamsAck(
 }
 
 void WorkerStreaming::onSwitchMonitor(const std::shared_ptr<google::protobuf::MessageLite>&) {
-    //
+    if (monitors_.size() <= 1) {
+        return;
+    }
+    video_->stop();
+    auto next_index = (monitor_index_ + 1) % monitors_.size();
+    auto msg = std::make_shared<ltproto::client2worker::ChangeStreamingParams>();
+    msg->mutable_params()->set_video_width(monitors_[next_index].right -
+                                           monitors_[next_index].left);
+    msg->mutable_params()->set_video_height(monitors_[next_index].bottom -
+                                            monitors_[next_index].top);
+    msg->mutable_params()->set_rotation(monitors_[next_index].rotation);
+    sendPipeMessage(ltproto::id(msg), msg);
 }
 
 } // namespace worker

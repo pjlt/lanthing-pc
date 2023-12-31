@@ -230,6 +230,7 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
     params.enable_gamepad = ack->streaming_params().enable_gamepad();
     params.audio_channels = ack->streaming_params().audio_channels();
     params.audio_freq = ack->streaming_params().audio_sample_rate();
+    params.rotation = ack->streaming_params().rotation();
     for (int i = 0; i < ack->reflex_servers_size(); i++) {
         params.reflex_servers.push_back(ack->reflex_servers(i));
     }
