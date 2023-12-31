@@ -30,7 +30,9 @@
 
 #pragma once
 #include <ltlib/ltlib.h>
+
 #include <string>
+#include <vector>
 
 namespace ltlib {
 
@@ -63,5 +65,14 @@ bool LT_API changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f);
 bool LT_API setThreadDesktop();
 
 bool LT_API selfElevateAndNeedExit();
+
+struct LT_API Monitor {
+    int32_t left;
+    int32_t top;
+    int32_t right;
+    int32_t bottom;
+};
+
+std::vector<Monitor> LT_API enumMonitors();
 
 } // namespace ltlib

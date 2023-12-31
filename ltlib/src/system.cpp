@@ -391,6 +391,39 @@ bool selfElevateAndNeedExit() {
     return false;
 }
 
+std::vector<Monitor> enumMonitors() {
+    std::vector<Monitor> monitors;
+    monitors.push_back(Monitor{});
+    auto func = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
+        auto monitors = reinterpret_cast<std::vector<Monitor>*>(dwData);
+        MONITORINFOEX info{};
+        info.cbSize = sizeof(MONITORINFOEX);
+        GetMonitorInfo(hMonitor, &info); // 这个地方不要手动加A或W
+        if (info.dwFlags == DISPLAY_DEVICE_MIRRORING_DRIVER) {
+            return TRUE;
+        }
+        if (info.dwFlags == MONITORINFOF_PRIMARY) {
+            monitors->operator[](0) = Monitor{info.rcMonitor.left, info.rcMonitor.top,
+                                              info.rcMonitor.right, info.rcMonitor.bottom};
+        }
+        else {
+            monitors->push_back(Monitor{info.rcMonitor.left, info.rcMonitor.top,
+                                        info.rcMonitor.right, info.rcMonitor.bottom});
+        }
+        return TRUE;
+    };
+    if (!EnumDisplayMonitors(nullptr, nullptr, func, reinterpret_cast<LPARAM>(&monitors))) {
+        LOGF(ERR, "EnumDisplayMonitors failed with %#x", GetLastError()); // MSDN没说GetLastError
+        return {};
+    }
+    if (monitors[0].left == 0 && monitors[0].top == 0 && monitors[0].right == 0 &&
+        monitors[0].bottom == 0) {
+        LOG(ERR, "EnumDisplayMonitors failed, primary monitor is zero");
+        return {};
+    }
+    return monitors;
+}
+
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
@@ -468,6 +501,10 @@ bool setThreadDesktop() {
 
 bool selfElevateAndNeedExit() {
     return false;
+}
+
+std::vector<Monitor> enumMonitors() {
+    return {};
 }
 
 #endif // #elif defined(LT_LINUX)

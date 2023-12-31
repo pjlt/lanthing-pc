@@ -95,7 +95,8 @@ std::unique_ptr<WorkerStreaming>
 WorkerStreaming::create(std::map<std::string, std::string> options) {
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
-        options.find("-name") == options.end() || options.find("-negotiate") == options.end()) {
+        options.find("-name") == options.end() || options.find("-negotiate") == options.end() ||
+        options.find("-mindex") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
@@ -103,6 +104,7 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     int32_t width = std::atoi(options["-width"].c_str());
     int32_t height = std::atoi(options["-height"].c_str());
     int32_t freq = std::atoi(options["-freq"].c_str());
+    int32_t monitor_index = std::atoi(options["-mindex"].c_str());
     std::stringstream ss(options["-codecs"]);
 
     params.need_negotiate = std::atoi(options["-negotiate"].c_str()) != 0;
@@ -112,20 +114,24 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
         return nullptr;
     }
     if (width <= 0) {
-        LOG(ERR) << "Parameter invalid: width";
+        LOG(ERR) << "Parameter invalid: width " << width;
         return nullptr;
     }
     params.width = static_cast<uint32_t>(width);
     if (height <= 0) {
-        LOG(ERR) << "Parameter invalid: height";
+        LOG(ERR) << "Parameter invalid: height " << height;
         return nullptr;
     }
     params.height = static_cast<uint32_t>(height);
     if (freq <= 0) {
-        LOG(ERR) << "Parameter invalid: freq";
+        LOG(ERR) << "Parameter invalid: freq " << freq;
         return nullptr;
     }
     params.refresh_rate = static_cast<uint32_t>(freq);
+    if (monitor_index < 0 || monitor_index >= 10) {
+        LOG(ERR) << "Parameter invalid: mindex " << monitor_index;
+    }
+    params.monitor_index = monitor_index;
     std::string codec_str;
     while (std::getline(ss, codec_str, ',')) {
         VideoCodecType codec = videoCodecType(codec_str.c_str());
@@ -150,6 +156,7 @@ WorkerStreaming::WorkerStreaming(const Params& params)
     , client_width_{params.width}
     , client_height_{params.height}
     , client_refresh_rate_{params.refresh_rate}
+    , monitor_index_{params.monitor_index}
     , client_codec_types_{params.codecs}
     , pipe_name_{params.name}
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
@@ -168,6 +175,16 @@ int WorkerStreaming::wait() {
 }
 
 bool WorkerStreaming::init() {
+    monitors_ = ltlib::enumMonitors();
+    if (monitors_.size() == 0) {
+        LOG(ERR) << "There is no monitor";
+        return false;
+    }
+    if (monitors_.size() - 1 < monitor_index_) {
+        LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
+                     << monitors_.size() << " monitors. Fallback to first monitor";
+        monitor_index_ = 0;
+    }
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
         LOG(ERR) << "Create session observer failed";
@@ -203,7 +220,8 @@ bool WorkerStreaming::init() {
         {ltype::kStopWorking, std::bind(&WorkerStreaming::onStopWorking, this, ph::_1)},
         {ltype::kKeepAlive, std::bind(&WorkerStreaming::onKeepAlive, this, ph::_1)},
         {ltype::kChangeStreamingParamsAck,
-         std::bind(&WorkerStreaming::onChangeStreamingParamsAck, this, ph::_1)}};
+         std::bind(&WorkerStreaming::onChangeStreamingParamsAck, this, ph::_1)},
+        {ltype::kSwitchMonitor, std::bind(&WorkerStreaming::onSwitchMonitor, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!registerMessageHandler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -552,6 +570,10 @@ void WorkerStreaming::onChangeStreamingParamsAck(
     else {
         stop(kExitRestartResolutionChanged);
     }
+}
+
+void WorkerStreaming::onSwitchMonitor(const std::shared_ptr<google::protobuf::MessageLite>&) {
+    //
 }
 
 } // namespace worker
