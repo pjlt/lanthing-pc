@@ -34,6 +34,7 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <ltlib/system.h>
 #include <message_handler.h>
 #include <transport/transport.h>
 
@@ -46,6 +47,7 @@ public:
         std::vector<VideoCodecType> codecs;
         uint32_t width;
         uint32_t height;
+        ltlib::Monitor monitor;
         std::function<bool(uint32_t, const MessageHandler&)> register_message_handler;
         std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
             send_message;
@@ -56,6 +58,7 @@ public:
     bool start();
     void stop();
     VideoCodecType codec() const;
+    bool defaultOutput();
 
 private:
     VideoCaptureEncodePipeline() = default;

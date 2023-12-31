@@ -354,6 +354,7 @@ bool WorkerStreaming::negotiateStreamParameters() {
     video_params.codecs = client_codec_types_;
     video_params.width = negotiated_display_setting_.width;
     video_params.height = negotiated_display_setting_.height;
+    video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
     video_params.register_message_handler =
@@ -503,6 +504,9 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
             ack->set_err_code(ltproto::ErrorCode::WrokerInitVideoFailed);
             break;
         }
+        if (video_->defaultOutput()) {
+            monitor_index_ = 0;
+        }
         audio_->start();
 
         InputExecutor::Params input_params{};
@@ -510,6 +514,7 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
                              static_cast<uint8_t>(InputExecutor::Type::WIN32_DRIVER);
         input_params.screen_width = negotiated_display_setting_.width;
         input_params.screen_height = negotiated_display_setting_.height;
+        input_params.monitor = monitors_[monitor_index_];
         input_params.register_message_handler =
             std::bind(&WorkerStreaming::registerMessageHandler, this, std::placeholders::_1,
                       std::placeholders::_2);

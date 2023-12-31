@@ -195,9 +195,11 @@ void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::Mes
     SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }
 
-Win32SendInput::Win32SendInput(uint32_t screen_width, uint32_t screen_height)
+Win32SendInput::Win32SendInput(uint32_t screen_width, uint32_t screen_height,
+                               ltlib::Monitor monitor)
     : screen_width_(screen_width)
-    , screen_height_(screen_height) {}
+    , screen_height_(screen_height)
+    , monitor_(monitor) {}
 
 bool Win32SendInput::initKeyMouse() {
     return true;

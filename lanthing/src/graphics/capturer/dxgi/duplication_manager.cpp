@@ -7,11 +7,15 @@
 
 #include "duplication_manager.h"
 
+#include <wrl/client.h>
+
 #include <ltlib/logging.h>
 #include <ltlib/pragma_warning.h>
 #include <ltlib/system.h>
 
 WARNING_DISABLE(6101)
+
+using namespace Microsoft::WRL;
 
 //
 // Constructor sets up references / variables
@@ -59,8 +63,8 @@ DUPLICATIONMANAGER::~DUPLICATIONMANAGER() {
 //
 // Initialize duplication interfaces
 //
-bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
-    m_OutputNumber = Output;
+bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, ltlib::Monitor monitor) {
+    m_OutputNumber = std::numeric_limits<decltype(m_OutputNumber)>::max();
 
     // Take a reference on the device
     m_Device = Device;
@@ -86,15 +90,45 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, UINT Output) {
     }
 
     // Get output
-    hr = DxgiAdapter->EnumOutputs(Output, &m_DxgiOutput);
-    DxgiAdapter->Release();
-    DxgiAdapter = nullptr;
-    if (FAILED(hr)) {
-        LOGF(ERR, "failed to get specified output in DUPLICATIONMANAGER, hr: 0x%08x", hr);
-        return false;
+    for (UINT i = 0;; i++) {
+        ComPtr<IDXGIOutput> dxgi_output;
+        DXGI_OUTPUT_DESC desc{};
+        hr = DxgiAdapter->EnumOutputs(i, dxgi_output.GetAddressOf());
+        if (hr == DXGI_ERROR_NOT_FOUND) {
+            break;
+        }
+        if (FAILED(hr)) {
+            LOGF(ERR, "IDXGIOutput::EnumOutputs(%u) failed with %#x", i, hr);
+            return false;
+        }
+        dxgi_output->GetDesc(&desc);
+        if (desc.DesktopCoordinates.left == monitor.left &&
+            desc.DesktopCoordinates.top == monitor.top &&
+            desc.DesktopCoordinates.right == monitor.right &&
+            desc.DesktopCoordinates.bottom == monitor.bottom) {
+            LOG(INFO) << "Found match output " << i;
+            m_OutputNumber = i;
+            m_OutputDesc = desc;
+            m_DxgiOutput = dxgi_output.Get();
+            m_DxgiOutput->AddRef();
+            DxgiAdapter->Release();
+            DxgiAdapter = nullptr;
+            default_output_ = false;
+            break;
+        }
     }
-
-    m_DxgiOutput->GetDesc(&m_OutputDesc);
+    if (m_OutputNumber == std::numeric_limits<decltype(m_OutputNumber)>::max()) {
+        LOG(WARNING) << "No match output, use default one";
+        hr = DxgiAdapter->EnumOutputs(0, &m_DxgiOutput);
+        DxgiAdapter->Release();
+        DxgiAdapter = nullptr;
+        if (FAILED(hr)) {
+            LOGF(ERR, "IDXGIOutput::EnumOutputs(%d) failed with %#x", 0, hr);
+            return false;
+        }
+        m_DxgiOutput->GetDesc(&m_OutputDesc);
+        default_output_ = true;
+    }
 
     // QI for Output 1
     IDXGIOutput1* DxgiOutput1 = nullptr;
@@ -347,6 +381,10 @@ void DUPLICATIONMANAGER::GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr) {
 void DUPLICATIONMANAGER::WaitForVBlank() {
     assert(m_DxgiOutput);
     m_DxgiOutput->WaitForVBlank();
+}
+
+bool DUPLICATIONMANAGER::DefaultOutput() {
+    return default_output_;
 }
 
 DUPL_RETURN DUPLICATIONMANAGER::ResetDulp() {

@@ -37,7 +37,7 @@ namespace lt {
 
 class Win32SendInput : public InputExecutor {
 public:
-    Win32SendInput(uint32_t screen_width, uint32_t screen_height);
+    Win32SendInput(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor);
 
 private:
     bool initKeyMouse() override;
@@ -47,6 +47,7 @@ private:
 private:
     uint32_t screen_width_;
     uint32_t screen_height_;
+    ltlib::Monitor monitor_;
 };
 
 } // namespace lt

@@ -62,6 +62,7 @@ public:
     bool start();
     void stop();
     VideoCodecType codec() const;
+    bool defaultOutput();
 
 private:
     void mainLoop(const std::function<void()>& i_am_alive, std::promise<bool>& start_promise);
@@ -80,6 +81,7 @@ private:
 private:
     uint32_t width_;
     uint32_t height_;
+    ltlib::Monitor monitor_;
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
         send_message_;
@@ -101,6 +103,7 @@ private:
 VCEPipeline::VCEPipeline(const VideoCaptureEncodePipeline::Params& params)
     : width_{params.width}
     , height_{params.height}
+    , monitor_{params.monitor}
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
     , client_supported_codecs_{params.codecs} {}
@@ -114,7 +117,7 @@ bool VCEPipeline::init() {
     if (!registerHandlers()) {
         return false;
     }
-    auto capturer = VideoCapturer::create(VideoCapturer::Backend::Dxgi);
+    auto capturer = VideoCapturer::create(VideoCapturer::Backend::Dxgi, monitor_);
     if (capturer == nullptr) {
         return false;
     }
@@ -162,6 +165,15 @@ void VCEPipeline::stop() {
 
 VideoCodecType VCEPipeline::codec() const {
     return codec_type_;
+}
+
+bool VCEPipeline::defaultOutput() {
+    if (capturer_) {
+        return capturer_->defaultOutput();
+    }
+    else {
+        return true;
+    }
 }
 
 void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
@@ -402,6 +414,10 @@ void VideoCaptureEncodePipeline::stop() {
 
 VideoCodecType VideoCaptureEncodePipeline::codec() const {
     return impl_->codec();
+}
+
+bool VideoCaptureEncodePipeline::defaultOutput() {
+    return impl_->defaultOutput();
 }
 
 } // namespace lt

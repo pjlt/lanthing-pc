@@ -395,6 +395,8 @@ std::vector<Monitor> enumMonitors() {
     std::vector<Monitor> monitors;
     monitors.push_back(Monitor{});
     auto func = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
+        (void)hdcMonitor;
+        (void)lprcMonitor;
         auto monitors = reinterpret_cast<std::vector<Monitor>*>(dwData);
         MONITORINFOEX info{};
         info.cbSize = sizeof(MONITORINFOEX);
@@ -418,7 +420,7 @@ std::vector<Monitor> enumMonitors() {
     }
     if (monitors[0].left == 0 && monitors[0].top == 0 && monitors[0].right == 0 &&
         monitors[0].bottom == 0) {
-        LOG(ERR, "EnumDisplayMonitors failed, primary monitor is zero");
+        LOGF(ERR, "EnumDisplayMonitors failed, primary monitor is zero");
         return {};
     }
     return monitors;

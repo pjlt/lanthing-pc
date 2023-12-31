@@ -60,8 +60,9 @@ using namespace Microsoft::WRL;
 
 namespace lt {
 
-DxgiVideoCapturer::DxgiVideoCapturer()
-    : impl_{std::make_unique<DUPLICATIONMANAGER>()} {}
+DxgiVideoCapturer::DxgiVideoCapturer(ltlib::Monitor monitor)
+    : impl_{std::make_unique<DUPLICATIONMANAGER>()}
+    , monitor_{monitor} {}
 
 DxgiVideoCapturer::~DxgiVideoCapturer() {}
 
@@ -74,7 +75,7 @@ bool DxgiVideoCapturer::init() {
 
 bool DxgiVideoCapturer::start() {
     // xxx
-    if (!impl_->InitDupl(d3d11_dev_.Get(), 0)) {
+    if (!impl_->InitDupl(d3d11_dev_.Get(), monitor_)) {
         LOG(ERR) << "Failed to init DUPLICATIONMANAGER";
         return false;
     }
@@ -171,6 +172,10 @@ void* DxgiVideoCapturer::deviceContext() {
 
 uint32_t DxgiVideoCapturer::vendorID() {
     return vendor_id_;
+}
+
+bool DxgiVideoCapturer::defaultOutput() {
+    return impl_->DefaultOutput();
 }
 
 } // namespace lt
