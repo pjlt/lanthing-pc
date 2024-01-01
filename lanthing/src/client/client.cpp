@@ -213,7 +213,8 @@ Client::Client(const Params& params)
                     params.screen_refresh_rate,
                     params.rotation,
                     std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3)}
+                              std::placeholders::_2, std::placeholders::_3),
+                    std::bind(&Client::onUserSwitchStretch, this)}
     , audio_params_{atype(), params.audio_freq, params.audio_channels}
     , reflex_servers_{params.reflex_servers} {}
 
@@ -956,6 +957,19 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
     ack->set_err_code(success ? ltproto::ErrorCode::Success
                               : ltproto::ErrorCode::InitDecodeRenderPipelineFailed);
     sendMessageToHost(ltproto::id(ack), ack, true);
+}
+
+void Client::onUserSwitchStretch() {
+    // 跑在渲染线程
+    LOG(INFO) << "Switching stretch from " << std::boolalpha << is_stretch_.load() << " to "
+              << !is_stretch_.load();
+    // is_stretch_这个状态只在'Client'里更新，其它地方都是副本
+    is_stretch_ = !is_stretch_;
+    postTask([this]() {
+        // 统一用IOLoop去做，减小bug发生概率
+        video_pipeline_->switchStretchMode(is_stretch_);
+        input_capturer_->switchStretchMode(is_stretch_);
+    });
 }
 
 } // namespace cli

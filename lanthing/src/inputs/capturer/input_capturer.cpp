@@ -99,6 +99,7 @@ class InputCapturerImpl {
 public:
     InputCapturerImpl(const InputCapturer::Params& params);
     void init();
+    void switchStretchMode(bool stretch);
 
 private:
     void sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
@@ -128,6 +129,7 @@ private:
     // 0表示松开，非0表示按下。不用bool而用uint8_t是担心menset()之类函数不好处理bool数组
     std::array<uint8_t, 512> key_states_ = {0};
     std::array<std::optional<ControllerState>, 4> cstates_;
+    std::atomic<bool> is_stretch_;
 };
 
 std::unique_ptr<InputCapturer> InputCapturer::create(const Params& params) {
@@ -138,17 +140,26 @@ std::unique_ptr<InputCapturer> InputCapturer::create(const Params& params) {
     return input;
 }
 
+void InputCapturer::switchStretchMode(bool stretch) {
+    impl_->switchStretchMode(stretch);
+}
+
 InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     : sdl_{params.sdl}
     , host_width_{params.host_width}
     , host_height_{params.host_height}
     , send_message_to_host_{params.send_message}
     , toggle_fullscreen_{params.toggle_fullscreen}
-    , switch_mouse_mode_{params.switch_mouse_mode} {}
+    , switch_mouse_mode_{params.switch_mouse_mode}
+    , is_stretch_{params.stretch} {}
 
 void InputCapturerImpl::init() {
     sdl_->setInputHandler(
         std::bind(&InputCapturerImpl::onPlatformInputEvent, this, std::placeholders::_1));
+}
+
+void InputCapturerImpl::switchStretchMode(bool stretch) {
+    is_stretch_ = stretch;
 }
 
 void InputCapturerImpl::sendMessageToHost(uint32_t type,

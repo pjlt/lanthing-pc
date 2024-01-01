@@ -46,6 +46,7 @@ public:
         PcSdl* sdl;
         uint32_t host_width;
         uint32_t host_height;
+        bool stretch;
         std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
             send_message;
         std::function<void()> toggle_fullscreen;
@@ -54,6 +55,7 @@ public:
 
 public:
     static std::unique_ptr<InputCapturer> create(const Params& params);
+    void switchStretchMode(bool stretch);
 
 private:
     InputCapturer() = default;

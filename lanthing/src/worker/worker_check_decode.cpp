@@ -56,7 +56,7 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     uint32_t codecs = 0;
     for (auto codec : {VideoCodecType::H265_420, VideoCodecType::H264_420}) {
         auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
-        VideoDecodeRenderPipeline::Params params{codec, 1920, 1080, 60, 0, empty_func2};
+        VideoDecodeRenderPipeline::Params params{codec, 1920, 1080, 60, 0, empty_func2, empty_func};
         params.sdl = sdl.get();
         params.for_test = true;
         auto pipeline = VideoDecodeRenderPipeline::create(params);

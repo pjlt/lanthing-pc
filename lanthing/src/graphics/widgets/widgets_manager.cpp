@@ -65,6 +65,7 @@ WidgetsManager::WidgetsManager(const Params& params)
     , video_height_{params.video_height}
     , set_bitrate_{params.set_bitrate}
     , switch_monitor_{params.switch_monitor}
+    , stretch_{params.stretch}
     , status_{std::make_shared<StatusWidget>(video_width_, video_height_)}
     , statistics_{std::make_shared<StatisticsWidget>(video_width_, video_height_)} {
 #if LT_WINDOWS
@@ -91,6 +92,7 @@ WidgetsManager::WidgetsManager(const Params& params)
     };
     control_params.set_bitrate = set_bitrate_;
     control_params.switch_monitor = switch_monitor_;
+    control_params.stretch = stretch_;
     control_params.show_stat = [this](bool show) { show_statistics_ = show; };
     control_bar_ = std::make_shared<ControlBarWidget>(control_params);
 

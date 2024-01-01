@@ -42,7 +42,8 @@ ControlBarWidget::ControlBarWidget(const Params& params)
     , set_bitrate_{params.set_bitrate}
     , exit_{params.exit}
     , on_show_stat_{params.show_stat}
-    , switch_monitor_{params.switch_monitor} {
+    , switch_monitor_{params.switch_monitor}
+    , stretch_{params.stretch} {
     // fullscreen_text_ = u8"全屏";
     // stat_text_ = u8"显示统计";
     fullscreen_text_ = "Fullscreen";
@@ -60,7 +61,7 @@ void ControlBarWidget::render() {
         ImGui::SetNextWindowSize(ImVec2{24.f, 24.f});
     }
     else {
-        ImGui::SetNextWindowSize(ImVec2{320.f, 175.f});
+        ImGui::SetNextWindowSize(ImVec2{320.f, 220.f});
     }
 
     ImGui::Begin("Tool", nullptr,
@@ -117,6 +118,9 @@ void ControlBarWidget::render() {
         }
         if (ImGui::Button("Switch Screen")) {
             switch_monitor_();
+        }
+        if (ImGui::Button("Stretch/Origin")) {
+            stretch_();
         }
         // if (ImGui::Button(u8"退出")) {
         if (ImGui::Button("Quit")) {

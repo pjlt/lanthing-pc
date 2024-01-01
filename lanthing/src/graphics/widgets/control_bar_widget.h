@@ -45,6 +45,7 @@ public:
         std::function<void()> exit;
         std::function<void(bool)> show_stat;
         std::function<void()> switch_monitor;
+        std::function<void()> stretch;
     };
 
 public:
@@ -60,6 +61,7 @@ private:
     std::function<void()> exit_;
     std::function<void(bool)> on_show_stat_;
     std::function<void()> switch_monitor_;
+    std::function<void()> stretch_;
     bool collapse_ = true;
     std::string fullscreen_text_;
     bool fullscreen_ = false;
