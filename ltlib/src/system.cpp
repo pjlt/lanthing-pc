@@ -533,16 +533,16 @@ DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
     (void)name;
     Display* d = XOpenDisplay(nullptr);
     if (d == nullptr) {
-        return {0, 0, 0};
+        return {0, 0, 0, 0};
     }
     Screen* s = DefaultScreenOfDisplay(d);
     if (s == nullptr) {
-        return {0, 0, 0};
+        return {0, 0, 0, 0};
     }
     uint32_t width = s->width;
     uint32_t height = s->height;
     XCloseDisplay(d);
-    return {width, height, 60};
+    return {width, height, 60, 0};
 }
 
 bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
