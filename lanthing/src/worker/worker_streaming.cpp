@@ -612,11 +612,18 @@ void WorkerStreaming::onSwitchMonitor(const std::shared_ptr<google::protobuf::Me
     }
     video_->stop();
     auto next_index = (monitor_index_ + 1) % monitors_.size();
+    auto w = monitors_[next_index].right - monitors_[next_index].left;
+    auto h = monitors_[next_index].bottom - monitors_[next_index].top;
     auto msg = std::make_shared<ltproto::client2worker::ChangeStreamingParams>();
-    msg->mutable_params()->set_video_width(monitors_[next_index].right -
-                                           monitors_[next_index].left);
-    msg->mutable_params()->set_video_height(monitors_[next_index].bottom -
-                                            monitors_[next_index].top);
+    if (monitors_[next_index].rotation == 90 || monitors_[next_index].rotation == 270) {
+        msg->mutable_params()->set_video_width(h);
+        msg->mutable_params()->set_video_height(w);
+    }
+    else {
+        msg->mutable_params()->set_video_width(w);
+        msg->mutable_params()->set_video_height(h);
+    }
+
     msg->mutable_params()->set_rotation(monitors_[next_index].rotation);
     msg->mutable_params()->set_monitor_index(static_cast<int32_t>(next_index));
     sendPipeMessage(ltproto::id(msg), msg);

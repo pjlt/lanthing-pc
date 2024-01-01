@@ -937,8 +937,8 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
     auto width = static_cast<uint32_t>(msg->params().video_width());
     auto height = static_cast<uint32_t>(msg->params().video_height());
     auto rotation = static_cast<uint32_t>(msg->params().rotation());
-    LOGF(INFO, "Received ChangeStreamingParams(w:%u, h:%u), old is (w:%u, h:%u)", width, height,
-         video_params_.width, video_params_.height);
+    LOGF(INFO, "Received ChangeStreamingParams(w:%u, h:%u, r:%u), old is (w:%u, h:%u, r:%u)", width,
+         height, rotation, video_params_.width, video_params_.height, video_params_.rotation);
     bool success = true;
     if (video_params_.width != width || video_params_.height != height) {
         video_params_.width = width;

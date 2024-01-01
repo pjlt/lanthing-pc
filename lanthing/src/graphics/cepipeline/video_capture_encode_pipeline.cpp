@@ -207,6 +207,7 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
         captureAndSendCursor();
     }
     stop_promise_->set_value();
+    LOG(INFO) << "VideoCaptureEncodePipeline stoped";
 }
 
 void VCEPipeline::loadSystemCursor() { // 释放?
