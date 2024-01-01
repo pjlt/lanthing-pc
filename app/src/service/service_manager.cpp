@@ -135,7 +135,7 @@ void ServiceManager::onServiceStatus(std::shared_ptr<google::protobuf::MessageLi
         on_service_status_(ServiceStatus::Up);
     }
     else {
-        on_service_status_(ServiceStatus::Up);
+        on_service_status_(ServiceStatus::Down);
     }
 }
 

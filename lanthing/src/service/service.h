@@ -113,7 +113,7 @@ private:
     uint32_t app_not_connected_count_ = 0;
     std::optional<WorkerSession::Params> cached_worker_params_;
     bool keepalive_inited_ = false;
-    bool server_connected_ = false;
+    bool server_logged_ = false;
 };
 
 } // namespace svc

@@ -248,7 +248,7 @@ void Service::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::M
 
 void Service::onServerDisconnected() {
     // 怎么办？
-    server_connected_ = false;
+    server_logged_ = false;
     LOG(ERR) << "Disconnected from server";
 
     auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
@@ -257,7 +257,7 @@ void Service::onServerDisconnected() {
 }
 
 void Service::onServerReconnecting() {
-    server_connected_ = false;
+    server_logged_ = false;
     LOG(INFO) << "Reconnecting to lanthing server...";
 
     auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
@@ -267,7 +267,6 @@ void Service::onServerReconnecting() {
 
 void Service::onServerConnected() {
     LOG(INFO) << "Connected to server";
-    server_connected_ = true;
     loginDevice();
     if (!keepalive_inited_) {
         keepalive_inited_ = true;
@@ -367,6 +366,7 @@ void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> ms
 
     // 只有LoginDevice成功后才能告知app，service正常
     if (ack->err_code() == ltproto::ErrorCode::Success) {
+        server_logged_ = true;
         auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
         status->set_status(ltproto::ErrorCode::Success);
         sendMessageToApp(ltproto::id(status), status);
@@ -505,7 +505,7 @@ void Service::onAppConnected() {
 
     // 告知app，service是否已连上server
     auto status = std::make_shared<ltproto::service2app::ServiceStatus>();
-    if (server_connected_) {
+    if (server_logged_) {
         status->set_status(ltproto::ErrorCode::Success);
     }
     else {
