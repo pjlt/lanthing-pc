@@ -732,7 +732,8 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
         negotiated_streaming_params_ = msg;
         if (worker_process_) {
             auto msg2 = std::static_pointer_cast<ltproto::common::StreamingParams>(msg);
-            worker_process_->changeResolution(msg2->video_width(), msg2->video_height());
+            worker_process_->changeResolution(msg2->video_width(), msg2->video_height(),
+                                              msg2->monitor_index());
         }
         maybeOnCreateSessionCompleted();
     }
@@ -1078,8 +1079,9 @@ void WorkerSession::onChangeStreamingParams(std::shared_ptr<google::protobuf::Me
     auto msg = std::static_pointer_cast<ltproto::client2worker::ChangeStreamingParams>(_msg);
     auto width = static_cast<uint32_t>(msg->params().video_width());
     auto height = static_cast<uint32_t>(msg->params().video_height());
+    auto mindex = static_cast<uint32_t>(msg->params().monitor_index());
     if (worker_process_) {
-        worker_process_->changeResolution(width, height);
+        worker_process_->changeResolution(width, height, mindex);
     }
     else {
         LOG(ERR) << "Received ChangeStreamingParams but worker_process_ == nullptr";

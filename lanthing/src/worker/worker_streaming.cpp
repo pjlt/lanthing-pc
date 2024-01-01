@@ -397,6 +397,7 @@ bool WorkerStreaming::negotiateStreamParameters() {
     negotiated_params->set_video_height(video_params.height);
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));
     negotiated_params->set_rotation(monitors_[monitor_index_].rotation);
+    negotiated_params->set_monitor_index(static_cast<int32_t>(monitor_index_));
     LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
 
     negotiated_params_ = negotiated_params;
@@ -617,6 +618,7 @@ void WorkerStreaming::onSwitchMonitor(const std::shared_ptr<google::protobuf::Me
     msg->mutable_params()->set_video_height(monitors_[next_index].bottom -
                                             monitors_[next_index].top);
     msg->mutable_params()->set_rotation(monitors_[next_index].rotation);
+    msg->mutable_params()->set_monitor_index(static_cast<int32_t>(next_index));
     sendPipeMessage(ltproto::id(msg), msg);
 }
 

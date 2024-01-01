@@ -41,6 +41,7 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#include <ltproto/client2worker/switch_monitor.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
 
@@ -87,6 +88,7 @@ private:
     bool waitForRender(std::chrono::microseconds ms);
     void onStat();
     void onUserSetBitrate(uint32_t bps);
+    void onUserSwitchMonitor();
     std::tuple<int32_t, float, float> getCursorInfo();
     bool isAbsoluteMouse();
 
@@ -221,6 +223,7 @@ bool VDRPipeline::init() {
     widgets_params.video_height = height_;
     widgets_params.set_bitrate =
         std::bind(&VDRPipeline::onUserSetBitrate, this, std::placeholders::_1);
+    widgets_params.switch_monitor = std::bind(&VDRPipeline::onUserSwitchMonitor, this);
     widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
         return false;
@@ -392,6 +395,11 @@ void VDRPipeline::onUserSetBitrate(uint32_t bps) {
         msg->set_trigger(ltproto::worker2service::ReconfigureVideoEncoder_Trigger_TurnOffAuto);
         msg->set_bitrate_bps(bps);
     }
+    send_message_to_host_(ltproto::id(msg), msg, true);
+}
+
+void VDRPipeline::onUserSwitchMonitor() {
+    auto msg = std::make_shared<ltproto::client2worker::SwitchMonitor>();
     send_message_to_host_(ltproto::id(msg), msg, true);
 }
 
