@@ -60,7 +60,7 @@ struct LT_API DisplayOutputDesc {
     int32_t frequency;
     int32_t rotation;
 };
-DisplayOutputDesc LT_API getDisplayOutputDesc();
+DisplayOutputDesc LT_API getDisplayOutputDesc(const std::string& name);
 
 bool LT_API changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f);
 
@@ -74,6 +74,7 @@ struct LT_API Monitor {
     int32_t right;
     int32_t bottom;
     int32_t rotation;
+    std::string name;
 };
 
 std::vector<Monitor> LT_API enumMonitors();

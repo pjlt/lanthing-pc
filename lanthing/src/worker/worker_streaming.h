@@ -120,7 +120,7 @@ private:
     std::shared_mutex mutex_;
     std::unique_ptr<SessionChangeObserver> session_observer_;
     std::map<uint32_t, MessageHandler> msg_handlers_;
-    DisplaySetting negotiated_display_setting_;
+    // DisplaySetting negotiated_display_setting_;
     lt::VideoCodecType negotiated_video_codec_type_ = lt::VideoCodecType::Unknown;
     std::shared_ptr<google::protobuf::MessageLite> negotiated_params_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;

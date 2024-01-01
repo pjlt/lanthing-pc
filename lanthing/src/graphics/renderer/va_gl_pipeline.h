@@ -50,6 +50,7 @@ public:
         uint32_t card;
         uint32_t width;
         uint32_t height;
+        uint32_t rotation;
         uint32_t align;
     };
 

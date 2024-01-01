@@ -184,6 +184,7 @@ bool VDRPipeline::init() {
     render_params.window = window_;
     render_params.video_width = width_;
     render_params.video_height = height_;
+    render_params.rotation = rotation_;
     render_params.align = VideoDecoder::align(codec_type_);
     video_renderer_ = VideoRenderer::create(render_params);
     if (video_renderer_ == nullptr) {

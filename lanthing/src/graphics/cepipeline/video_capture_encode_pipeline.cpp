@@ -321,7 +321,7 @@ void VCEPipeline::captureAndSendVideoFrame() {
 }
 
 std::optional<ltlib::DisplayOutputDesc> VCEPipeline::resolutionChanged() {
-    ltlib::DisplayOutputDesc desc = ltlib::getDisplayOutputDesc();
+    ltlib::DisplayOutputDesc desc = ltlib::getDisplayOutputDesc(monitor_.name);
     if (desc.height != static_cast<int32_t>(height_) ||
         desc.width != static_cast<int32_t>(width_)) {
         LOGF(INFO, "The resolution has changed from {w:%u, h:%u} to {w:%d, h:%d}", width_, height_,

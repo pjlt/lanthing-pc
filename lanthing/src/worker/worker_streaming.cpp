@@ -219,11 +219,6 @@ bool WorkerStreaming::init() {
         }
     }
 #else
-    negotiated_display_setting_.width =
-        static_cast<uint32_t>(monitors_[monitor_index_].right - monitors_[monitor_index_].left);
-    negotiated_display_setting_.height =
-        static_cast<uint32_t>(monitors_[monitor_index_].bottom - monitors_[monitor_index_].top);
-    negotiated_display_setting_.refrash_rate = 60; // 假的
     if (!negotiateStreamParameters()) {
         return false;
     }
@@ -341,7 +336,7 @@ bool WorkerStreaming::negotiateAllParameters() {
             return false;
         }
     }
-    negotiated_display_setting_ = result.negotiated;
+    // negotiated_display_setting_ = result.negotiated;
     if (!negotiateStreamParameters()) {
         return false;
     }
@@ -369,8 +364,18 @@ bool WorkerStreaming::negotiateStreamParameters() {
 
     lt::VideoCaptureEncodePipeline::Params video_params{};
     video_params.codecs = client_codec_types_;
-    video_params.width = negotiated_display_setting_.width;
-    video_params.height = negotiated_display_setting_.height;
+    // video_params.width = negotiated_display_setting_.width;
+    // video_params.height = negotiated_display_setting_.height;
+    auto w = monitors_[monitor_index_].right - monitors_[monitor_index_].left;
+    auto h = monitors_[monitor_index_].bottom - monitors_[monitor_index_].top;
+    if (monitors_[monitor_index_].rotation == 90 || monitors_[monitor_index_].rotation == 270) {
+        video_params.width = h;
+        video_params.height = w;
+    }
+    else {
+        video_params.width = w;
+        video_params.height = h;
+    }
     video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
@@ -384,9 +389,12 @@ bool WorkerStreaming::negotiateStreamParameters() {
     }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
-    negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
-    negotiated_params->set_video_width(negotiated_display_setting_.width);
-    negotiated_params->set_video_height(negotiated_display_setting_.height);
+    // negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
+    // negotiated_params->set_video_width(negotiated_display_setting_.width);
+    // negotiated_params->set_video_height(negotiated_display_setting_.height);
+    negotiated_params->set_screen_refresh_rate(60); // 假的
+    negotiated_params->set_video_width(video_params.width);
+    negotiated_params->set_video_height(video_params.height);
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));
     negotiated_params->set_rotation(monitors_[monitor_index_].rotation);
     LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
@@ -530,9 +538,11 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         InputExecutor::Params input_params{};
         input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
                              static_cast<uint8_t>(InputExecutor::Type::WIN32_DRIVER);
-        input_params.screen_width = negotiated_display_setting_.width;
-        input_params.screen_height = negotiated_display_setting_.height;
         input_params.monitor = monitors_[monitor_index_];
+        input_params.screen_width =
+            static_cast<uint32_t>(input_params.monitor.right - input_params.monitor.left);
+        input_params.screen_height =
+            static_cast<uint32_t>(input_params.monitor.bottom - input_params.monitor.top);
         input_params.register_message_handler =
             std::bind(&WorkerStreaming::registerMessageHandler, this, std::placeholders::_1,
                       std::placeholders::_2);

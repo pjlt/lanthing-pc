@@ -146,7 +146,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     req->set_device_id(peerDeviceID);
     req->set_access_token(accessToken);
     req->set_cookie(cookie);
-    ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc();
+    ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc("");
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);
     params->set_enable_gamepad(false);

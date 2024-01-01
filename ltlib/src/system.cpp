@@ -273,33 +273,42 @@ int32_t getScreenHeight() {
     return y;
 }
 
-DisplayOutputDesc getDisplayOutputDesc() {
+DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
     uint32_t width, height, frequency, rotation;
-    DEVMODE dm;
+    DEVMODE dm{};
     dm.dmSize = sizeof(DEVMODE);
-    if (::EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
-        width = dm.dmPelsWidth;
-        height = dm.dmPelsHeight;
+    if (::EnumDisplaySettingsA(name.empty() ? nullptr : name.c_str(), ENUM_CURRENT_SETTINGS, &dm)) {
         frequency = dm.dmDisplayFrequency ? dm.dmDisplayFrequency : 60;
         switch (dm.dmDisplayOrientation) {
         case DMDO_DEFAULT:
             rotation = 0;
+            width = dm.dmPelsWidth;
+            height = dm.dmPelsHeight;
             break;
         case DMDO_90:
             rotation = 90;
+            width = dm.dmPelsHeight;
+            height = dm.dmPelsWidth;
             break;
         case DMDO_180:
             rotation = 180;
+            width = dm.dmPelsWidth;
+            height = dm.dmPelsHeight;
             break;
         case DMDO_270:
             rotation = 270;
+            width = dm.dmPelsHeight;
+            height = dm.dmPelsWidth;
             break;
         default:
             rotation = 0;
+            width = dm.dmPelsWidth;
+            height = dm.dmPelsHeight;
             break;
         }
     }
     else {
+        // 哪个屏幕?
         width = getScreenWidth();
         height = getScreenHeight();
         frequency = 60;
@@ -443,14 +452,18 @@ std::vector<Monitor> enumMonitors() {
                 break;
             }
         }
+        char buff[CCHDEVICENAME + 1] = {0};
+        memcpy(buff, info.szDevice, CCHDEVICENAME);
+        std::string name = buff;
         if (info.dwFlags == MONITORINFOF_PRIMARY) {
             monitors->operator[](0) =
-                Monitor{info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right,
-                        info.rcMonitor.bottom, rotation};
+                Monitor{info.rcMonitor.left,   info.rcMonitor.top, info.rcMonitor.right,
+                        info.rcMonitor.bottom, rotation,           name};
         }
         else {
             monitors->push_back(Monitor{info.rcMonitor.left, info.rcMonitor.top,
-                                        info.rcMonitor.right, info.rcMonitor.bottom, rotation});
+                                        info.rcMonitor.right, info.rcMonitor.bottom, rotation,
+                                        name});
         }
         return TRUE;
     };
@@ -515,7 +528,9 @@ int32_t getScreenHeight() {
     return -1;
 }
 
-DisplayOutputDesc getDisplayOutputDesc() {
+DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
+    // 选择屏幕?
+    (void)name;
     Display* d = XOpenDisplay(nullptr);
     if (d == nullptr) {
         return {0, 0, 0};

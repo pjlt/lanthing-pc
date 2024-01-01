@@ -53,6 +53,7 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     d3d11_params.luid = params.device;
     d3d11_params.widht = params.video_width;
     d3d11_params.height = params.video_height;
+    d3d11_params.rotation = params.rotation;
     d3d11_params.align = params.align;
     auto renderer = std::make_unique<D3D11Pipeline>(d3d11_params);
     if (!renderer->init()) {
@@ -65,6 +66,7 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     va_gl_params.window = sdl_window;
     va_gl_params.width = params.video_width;
     va_gl_params.height = params.video_height;
+    va_gl_params.rotation = params.rotation;
     va_gl_params.align = params.align;
     auto renderer = std::make_unique<VaGlPipeline>(va_gl_params);
     if (!renderer->init()) {

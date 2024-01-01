@@ -181,6 +181,7 @@ D3D11Pipeline::D3D11Pipeline(const Params& params)
     , luid_{params.luid}
     , video_width_{params.widht}
     , video_height_{params.height}
+    , rotation_{params.rotation}
     , align_{params.align} {
     DwmEnableMMCSS(TRUE);
 }
@@ -572,6 +573,40 @@ bool D3D11Pipeline::setupIAAndVSStage() {
                       {1.0f, 1.0f, u, 0.0f},
                       {1.0f, -1.0f, u, v},
                       {-1.0f, -1.0f, 0.0f, v}};
+    switch (rotation_) {
+    case 270:
+    {
+
+        Vertex v270[] = {{-1.0f, 1.0f, u, 0.0f},
+                         {1.0f, 1.0f, u, v},
+                         {1.0f, -1.0f, 0.0f, v},
+                         {-1.0f, -1.0f, 0.0f, 0.0f}};
+        memcpy(verts, v270, sizeof(v270));
+        break;
+    }
+    case 180:
+    {
+
+        Vertex v180[] = {{-1.0f, 1.0f, u, v},
+                         {1.0f, 1.0f, 0.0f, v},
+                         {1.0f, -1.0f, 0.0f, 0.0f},
+                         {-1.0f, -1.0f, u, 0.0f}};
+        memcpy(verts, v180, sizeof(v180));
+        break;
+    }
+    case 90:
+    {
+
+        Vertex v90[] = {{-1.0f, 1.0f, 0.0f, v},
+                        {1.0f, 1.0f, 0.0f, 0.0f},
+                        {1.0f, -1.0f, u, 0.0f},
+                        {-1.0f, -1.0f, u, v}};
+        memcpy(verts, v90, sizeof(v90));
+        break;
+    }
+    default:
+        break;
+    }
     D3D11_BUFFER_DESC vb_desc = {};
     vb_desc.ByteWidth = sizeof(verts);
     vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -585,7 +620,7 @@ bool D3D11Pipeline::setupIAAndVSStage() {
 
     hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, video_vertex_buffer_.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
+        LOGF(ERR, "Failed to create vertext buffer, hr:0x%08x", hr);
         return false;
     }
 
