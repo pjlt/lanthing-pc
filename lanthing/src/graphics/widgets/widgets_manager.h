@@ -59,6 +59,7 @@ public:
         // std::function<void(bool)> toggle_fullscreen;
         // std::function<void()> exit;
         std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
+        std::function<void()> switch_monitor;
     };
 
 public:
@@ -94,6 +95,7 @@ private:
     uint32_t video_height_;
     // bool show_control_bar_ = true;
     std::function<void(uint32_t bps)> set_bitrate_;
+    std::function<void()> switch_monitor_;
     std::shared_ptr<StatusWidget> status_;
     std::shared_ptr<StatisticsWidget> statistics_;
     std::shared_ptr<ControlBarWidget> control_bar_;

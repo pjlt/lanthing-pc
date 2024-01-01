@@ -45,7 +45,7 @@ class VideoDecodeRenderPipeline {
 public:
     struct Params {
         Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-               uint32_t _screen_refresh_rate,
+               uint32_t _screen_refresh_rate, uint32_t _rotation,
                std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
                    send_message);
         bool validate() const;
@@ -55,6 +55,7 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t screen_refresh_rate;
+        uint32_t rotation;
         PcSdl* sdl = nullptr;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;

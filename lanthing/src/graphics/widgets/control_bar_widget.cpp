@@ -41,7 +41,8 @@ ControlBarWidget::ControlBarWidget(const Params& params)
     , toggle_fullscreen_{params.toggle_fullscreen}
     , set_bitrate_{params.set_bitrate}
     , exit_{params.exit}
-    , on_show_stat_{params.show_stat} {
+    , on_show_stat_{params.show_stat}
+    , switch_monitor_{params.switch_monitor} {
     // fullscreen_text_ = u8"全屏";
     // stat_text_ = u8"显示统计";
     fullscreen_text_ = "Fullscreen";
@@ -113,6 +114,9 @@ void ControlBarWidget::render() {
                 set_bitrate_(static_cast<uint32_t>(manual_bitrate_) * 1024 * 1024);
             }
             ImGui::PopItemWidth();
+        }
+        if (ImGui::Button("Switch Screen")) {
+            switch_monitor_();
         }
         // if (ImGui::Button(u8"退出")) {
         if (ImGui::Button("Quit")) {

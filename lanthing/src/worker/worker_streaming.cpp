@@ -31,6 +31,7 @@
 #include "worker_streaming.h"
 
 #include <ltproto/client2worker/audio_data.pb.h>
+#include <ltproto/client2worker/change_streaming_params.pb.h>
 #include <ltproto/client2worker/change_streaming_params_ack.pb.h>
 #include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
@@ -95,7 +96,8 @@ std::unique_ptr<WorkerStreaming>
 WorkerStreaming::create(std::map<std::string, std::string> options) {
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
-        options.find("-name") == options.end() || options.find("-negotiate") == options.end()) {
+        options.find("-name") == options.end() || options.find("-negotiate") == options.end() ||
+        options.find("-mindex") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
@@ -103,6 +105,7 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     int32_t width = std::atoi(options["-width"].c_str());
     int32_t height = std::atoi(options["-height"].c_str());
     int32_t freq = std::atoi(options["-freq"].c_str());
+    int32_t monitor_index = std::atoi(options["-mindex"].c_str());
     std::stringstream ss(options["-codecs"]);
 
     params.need_negotiate = std::atoi(options["-negotiate"].c_str()) != 0;
@@ -112,20 +115,24 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
         return nullptr;
     }
     if (width <= 0) {
-        LOG(ERR) << "Parameter invalid: width";
+        LOG(ERR) << "Parameter invalid: width " << width;
         return nullptr;
     }
     params.width = static_cast<uint32_t>(width);
     if (height <= 0) {
-        LOG(ERR) << "Parameter invalid: height";
+        LOG(ERR) << "Parameter invalid: height " << height;
         return nullptr;
     }
     params.height = static_cast<uint32_t>(height);
     if (freq <= 0) {
-        LOG(ERR) << "Parameter invalid: freq";
+        LOG(ERR) << "Parameter invalid: freq " << freq;
         return nullptr;
     }
     params.refresh_rate = static_cast<uint32_t>(freq);
+    if (monitor_index < 0 || monitor_index >= 10) {
+        LOG(ERR) << "Parameter invalid: mindex " << monitor_index;
+    }
+    params.monitor_index = monitor_index;
     std::string codec_str;
     while (std::getline(ss, codec_str, ',')) {
         VideoCodecType codec = videoCodecType(codec_str.c_str());
@@ -150,6 +157,7 @@ WorkerStreaming::WorkerStreaming(const Params& params)
     , client_width_{params.width}
     , client_height_{params.height}
     , client_refresh_rate_{params.refresh_rate}
+    , monitor_index_{params.monitor_index}
     , client_codec_types_{params.codecs}
     , pipe_name_{params.name}
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
@@ -168,6 +176,20 @@ int WorkerStreaming::wait() {
 }
 
 bool WorkerStreaming::init() {
+    monitors_ = ltlib::enumMonitors();
+    if (monitors_.size() == 0) {
+        LOG(ERR) << "There is no monitor";
+        return false;
+    }
+    if (monitors_.size() - 1 < monitor_index_) {
+        LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
+                     << monitors_.size() << " monitors. Fallback to first monitor";
+        monitor_index_ = 0;
+    }
+    for (auto& m : monitors_) {
+        LOGF(INFO, "l:%d, r:%d, t:%d, b:%d, w:%d, h:%d, o:%d", m.left, m.right, m.top, m.bottom,
+             (m.right - m.left), (m.bottom - m.top), m.rotation);
+    }
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
         LOG(ERR) << "Create session observer failed";
@@ -182,6 +204,7 @@ bool WorkerStreaming::init() {
         LOG(ERR) << "Init pipe client failed";
         return false;
     }
+#if 0 // 引入多屏支持后，协商变得很麻烦
     if (need_negotiate_) {
         if (!negotiateAllParameters()) {
             return false;
@@ -195,6 +218,11 @@ bool WorkerStreaming::init() {
             return false;
         }
     }
+#else
+    if (!negotiateStreamParameters()) {
+        return false;
+    }
+#endif
 
     namespace ltype = ltproto::type;
     namespace ph = std::placeholders;
@@ -203,7 +231,8 @@ bool WorkerStreaming::init() {
         {ltype::kStopWorking, std::bind(&WorkerStreaming::onStopWorking, this, ph::_1)},
         {ltype::kKeepAlive, std::bind(&WorkerStreaming::onKeepAlive, this, ph::_1)},
         {ltype::kChangeStreamingParamsAck,
-         std::bind(&WorkerStreaming::onChangeStreamingParamsAck, this, ph::_1)}};
+         std::bind(&WorkerStreaming::onChangeStreamingParamsAck, this, ph::_1)},
+        {ltype::kSwitchMonitor, std::bind(&WorkerStreaming::onSwitchMonitor, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!registerMessageHandler(handler.first, handler.second)) {
             LOG(FATAL) << "Register message handler(" << handler.first << ") failed";
@@ -307,7 +336,7 @@ bool WorkerStreaming::negotiateAllParameters() {
             return false;
         }
     }
-    negotiated_display_setting_ = result.negotiated;
+    // negotiated_display_setting_ = result.negotiated;
     if (!negotiateStreamParameters()) {
         return false;
     }
@@ -315,6 +344,7 @@ bool WorkerStreaming::negotiateAllParameters() {
 }
 
 bool WorkerStreaming::negotiateStreamParameters() {
+
     auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
     lt::AudioCapturer::Params audio_params{};
@@ -334,8 +364,19 @@ bool WorkerStreaming::negotiateStreamParameters() {
 
     lt::VideoCaptureEncodePipeline::Params video_params{};
     video_params.codecs = client_codec_types_;
-    video_params.width = negotiated_display_setting_.width;
-    video_params.height = negotiated_display_setting_.height;
+    // video_params.width = negotiated_display_setting_.width;
+    // video_params.height = negotiated_display_setting_.height;
+    auto w = monitors_[monitor_index_].right - monitors_[monitor_index_].left;
+    auto h = monitors_[monitor_index_].bottom - monitors_[monitor_index_].top;
+    if (monitors_[monitor_index_].rotation == 90 || monitors_[monitor_index_].rotation == 270) {
+        video_params.width = h;
+        video_params.height = w;
+    }
+    else {
+        video_params.width = w;
+        video_params.height = h;
+    }
+    video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
     video_params.register_message_handler =
@@ -348,10 +389,15 @@ bool WorkerStreaming::negotiateStreamParameters() {
     }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
-    negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
-    negotiated_params->set_video_width(negotiated_display_setting_.width);
-    negotiated_params->set_video_height(negotiated_display_setting_.height);
+    // negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
+    // negotiated_params->set_video_width(negotiated_display_setting_.width);
+    // negotiated_params->set_video_height(negotiated_display_setting_.height);
+    negotiated_params->set_screen_refresh_rate(60); // 假的
+    negotiated_params->set_video_width(video_params.width);
+    negotiated_params->set_video_height(video_params.height);
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));
+    negotiated_params->set_rotation(monitors_[monitor_index_].rotation);
+    negotiated_params->set_monitor_index(static_cast<int32_t>(monitor_index_));
     LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
 
     negotiated_params_ = negotiated_params;
@@ -485,13 +531,19 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
             ack->set_err_code(ltproto::ErrorCode::WrokerInitVideoFailed);
             break;
         }
+        if (video_->defaultOutput()) {
+            monitor_index_ = 0;
+        }
         audio_->start();
 
         InputExecutor::Params input_params{};
         input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
                              static_cast<uint8_t>(InputExecutor::Type::WIN32_DRIVER);
-        input_params.screen_width = negotiated_display_setting_.width;
-        input_params.screen_height = negotiated_display_setting_.height;
+        input_params.monitor = monitors_[monitor_index_];
+        input_params.screen_width =
+            static_cast<uint32_t>(input_params.monitor.right - input_params.monitor.left);
+        input_params.screen_height =
+            static_cast<uint32_t>(input_params.monitor.bottom - input_params.monitor.top);
         input_params.register_message_handler =
             std::bind(&WorkerStreaming::registerMessageHandler, this, std::placeholders::_1,
                       std::placeholders::_2);
@@ -552,6 +604,29 @@ void WorkerStreaming::onChangeStreamingParamsAck(
     else {
         stop(kExitRestartResolutionChanged);
     }
+}
+
+void WorkerStreaming::onSwitchMonitor(const std::shared_ptr<google::protobuf::MessageLite>&) {
+    if (monitors_.size() <= 1) {
+        return;
+    }
+    video_->stop();
+    auto next_index = (monitor_index_ + 1) % monitors_.size();
+    auto w = monitors_[next_index].right - monitors_[next_index].left;
+    auto h = monitors_[next_index].bottom - monitors_[next_index].top;
+    auto msg = std::make_shared<ltproto::client2worker::ChangeStreamingParams>();
+    if (monitors_[next_index].rotation == 90 || monitors_[next_index].rotation == 270) {
+        msg->mutable_params()->set_video_width(h);
+        msg->mutable_params()->set_video_height(w);
+    }
+    else {
+        msg->mutable_params()->set_video_width(w);
+        msg->mutable_params()->set_video_height(h);
+    }
+
+    msg->mutable_params()->set_rotation(monitors_[next_index].rotation);
+    msg->mutable_params()->set_monitor_index(static_cast<int32_t>(next_index));
+    sendPipeMessage(ltproto::id(msg), msg);
 }
 
 } // namespace worker

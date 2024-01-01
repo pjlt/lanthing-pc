@@ -39,7 +39,9 @@
 #include <ltlib/io/client.h>
 #include <ltlib/io/ioloop.h>
 #include <ltlib/settings.h>
+#include <ltlib/system.h>
 #include <ltlib/threads.h>
+
 #include <transport/transport.h>
 
 #include <audio/capturer/audio_capturer.h>
@@ -61,6 +63,7 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t refresh_rate;
+        uint32_t monitor_index;
         bool need_negotiate;
         std::vector<lt::VideoCodecType> codecs;
     };
@@ -103,19 +106,21 @@ private:
     void onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onChangeStreamingParamsAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
+    void onSwitchMonitor(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
     const bool need_negotiate_;
     const uint32_t client_width_;
     const uint32_t client_height_;
     const uint32_t client_refresh_rate_;
+    uint32_t monitor_index_;
     const std::vector<lt::VideoCodecType> client_codec_types_;
     const std::string pipe_name_;
     bool connected_to_service_ = false;
     std::shared_mutex mutex_;
     std::unique_ptr<SessionChangeObserver> session_observer_;
     std::map<uint32_t, MessageHandler> msg_handlers_;
-    DisplaySetting negotiated_display_setting_;
+    // DisplaySetting negotiated_display_setting_;
     lt::VideoCodecType negotiated_video_codec_type_ = lt::VideoCodecType::Unknown;
     std::shared_ptr<google::protobuf::MessageLite> negotiated_params_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
@@ -126,6 +131,7 @@ private:
     std::unique_ptr<lt::InputExecutor> input_;
     std::unique_ptr<lt::AudioCapturer> audio_;
     std::unique_ptr<ltlib::Settings> settings_;
+    std::vector<ltlib::Monitor> monitors_;
 };
 } // namespace worker
 

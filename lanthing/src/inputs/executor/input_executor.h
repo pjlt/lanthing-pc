@@ -38,6 +38,7 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <ltlib/system.h>
 #include <message_handler.h>
 
 namespace lt {
@@ -54,6 +55,7 @@ public:
         uint8_t types = 0;
         uint32_t screen_width = 0;
         uint32_t screen_height = 0;
+        ltlib::Monitor monitor;
         std::function<bool(uint32_t, const MessageHandler&)> register_message_handler;
         std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
             send_message;

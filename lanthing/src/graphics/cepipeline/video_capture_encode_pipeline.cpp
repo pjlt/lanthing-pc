@@ -62,6 +62,7 @@ public:
     bool start();
     void stop();
     VideoCodecType codec() const;
+    bool defaultOutput();
 
 private:
     void mainLoop(const std::function<void()>& i_am_alive, std::promise<bool>& start_promise);
@@ -80,6 +81,7 @@ private:
 private:
     uint32_t width_;
     uint32_t height_;
+    ltlib::Monitor monitor_;
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
         send_message_;
@@ -101,6 +103,7 @@ private:
 VCEPipeline::VCEPipeline(const VideoCaptureEncodePipeline::Params& params)
     : width_{params.width}
     , height_{params.height}
+    , monitor_{params.monitor}
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
     , client_supported_codecs_{params.codecs} {}
@@ -114,7 +117,7 @@ bool VCEPipeline::init() {
     if (!registerHandlers()) {
         return false;
     }
-    auto capturer = VideoCapturer::create(VideoCapturer::Backend::Dxgi);
+    auto capturer = VideoCapturer::create(VideoCapturer::Backend::Dxgi, monitor_);
     if (capturer == nullptr) {
         return false;
     }
@@ -164,6 +167,15 @@ VideoCodecType VCEPipeline::codec() const {
     return codec_type_;
 }
 
+bool VCEPipeline::defaultOutput() {
+    if (capturer_) {
+        return capturer_->defaultOutput();
+    }
+    else {
+        return true;
+    }
+}
+
 void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
                            std::promise<bool>& start_promise) {
     if (!ltlib::setThreadDesktop()) {
@@ -195,6 +207,7 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
         captureAndSendCursor();
     }
     stop_promise_->set_value();
+    LOG(INFO) << "VideoCaptureEncodePipeline stoped";
 }
 
 void VCEPipeline::loadSystemCursor() { // 释放?
@@ -309,7 +322,7 @@ void VCEPipeline::captureAndSendVideoFrame() {
 }
 
 std::optional<ltlib::DisplayOutputDesc> VCEPipeline::resolutionChanged() {
-    ltlib::DisplayOutputDesc desc = ltlib::getDisplayOutputDesc();
+    ltlib::DisplayOutputDesc desc = ltlib::getDisplayOutputDesc(monitor_.name);
     if (desc.height != static_cast<int32_t>(height_) ||
         desc.width != static_cast<int32_t>(width_)) {
         LOGF(INFO, "The resolution has changed from {w:%u, h:%u} to {w:%d, h:%d}", width_, height_,
@@ -326,6 +339,7 @@ void VCEPipeline::sendChangeStreamingParams(ltlib::DisplayOutputDesc desc) {
     params->set_video_width(desc.width);
     params->set_video_height(desc.height);
     params->set_screen_refresh_rate(desc.frequency);
+    params->set_rotation(desc.rotation);
     send_message_(ltproto::id(msg), msg);
 }
 
@@ -402,6 +416,10 @@ void VideoCaptureEncodePipeline::stop() {
 
 VideoCodecType VideoCaptureEncodePipeline::codec() const {
     return impl_->codec();
+}
+
+bool VideoCaptureEncodePipeline::defaultOutput() {
+    return impl_->defaultOutput();
 }
 
 } // namespace lt

@@ -273,21 +273,48 @@ int32_t getScreenHeight() {
     return y;
 }
 
-DisplayOutputDesc getDisplayOutputDesc() {
-    uint32_t width, height, frequency;
-    DEVMODE dm;
+DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
+    uint32_t width, height, frequency, rotation;
+    DEVMODE dm{};
     dm.dmSize = sizeof(DEVMODE);
-    if (::EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
-        width = dm.dmPelsWidth;
-        height = dm.dmPelsHeight;
+    if (::EnumDisplaySettingsA(name.empty() ? nullptr : name.c_str(), ENUM_CURRENT_SETTINGS, &dm)) {
         frequency = dm.dmDisplayFrequency ? dm.dmDisplayFrequency : 60;
+        switch (dm.dmDisplayOrientation) {
+        case DMDO_DEFAULT:
+            rotation = 0;
+            width = dm.dmPelsWidth;
+            height = dm.dmPelsHeight;
+            break;
+        case DMDO_90:
+            rotation = 90;
+            width = dm.dmPelsHeight;
+            height = dm.dmPelsWidth;
+            break;
+        case DMDO_180:
+            rotation = 180;
+            width = dm.dmPelsWidth;
+            height = dm.dmPelsHeight;
+            break;
+        case DMDO_270:
+            rotation = 270;
+            width = dm.dmPelsHeight;
+            height = dm.dmPelsWidth;
+            break;
+        default:
+            rotation = 0;
+            width = dm.dmPelsWidth;
+            height = dm.dmPelsHeight;
+            break;
+        }
     }
     else {
+        // 哪个屏幕?
         width = getScreenWidth();
         height = getScreenHeight();
         frequency = 60;
+        rotation = 0;
     }
-    return DisplayOutputDesc{width, height, frequency};
+    return DisplayOutputDesc{width, height, frequency, rotation};
 }
 
 bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
@@ -391,6 +418,67 @@ bool selfElevateAndNeedExit() {
     return false;
 }
 
+std::vector<Monitor> enumMonitors() {
+    std::vector<Monitor> monitors;
+    monitors.push_back(Monitor{});
+    auto func = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
+        (void)hdcMonitor;
+        (void)lprcMonitor;
+        auto monitors = reinterpret_cast<std::vector<Monitor>*>(dwData);
+        MONITORINFOEXA info{};
+        info.cbSize = sizeof(MONITORINFOEXA);
+        GetMonitorInfoA(hMonitor, &info);
+        if (info.dwFlags == DISPLAY_DEVICE_MIRRORING_DRIVER) {
+            return TRUE;
+        }
+        DEVMODE mode{};
+        int32_t rotation = 0;
+        if (EnumDisplaySettingsA(info.szDevice, ENUM_CURRENT_SETTINGS, &mode)) {
+            switch (mode.dmDisplayOrientation) {
+            case DMDO_DEFAULT:
+                rotation = 0;
+                break;
+            case DMDO_90:
+                rotation = 90;
+                break;
+            case DMDO_180:
+                rotation = 180;
+                break;
+            case DMDO_270:
+                rotation = 270;
+                break;
+            default:
+                rotation = 0;
+                break;
+            }
+        }
+        char buff[CCHDEVICENAME + 1] = {0};
+        memcpy(buff, info.szDevice, CCHDEVICENAME);
+        std::string name = buff;
+        if (info.dwFlags == MONITORINFOF_PRIMARY) {
+            monitors->operator[](0) =
+                Monitor{info.rcMonitor.left,   info.rcMonitor.top, info.rcMonitor.right,
+                        info.rcMonitor.bottom, rotation,           name};
+        }
+        else {
+            monitors->push_back(Monitor{info.rcMonitor.left, info.rcMonitor.top,
+                                        info.rcMonitor.right, info.rcMonitor.bottom, rotation,
+                                        name});
+        }
+        return TRUE;
+    };
+    if (!EnumDisplayMonitors(nullptr, nullptr, func, reinterpret_cast<LPARAM>(&monitors))) {
+        LOGF(ERR, "EnumDisplayMonitors failed with %#x", GetLastError()); // MSDN没说GetLastError
+        return {};
+    }
+    if (monitors[0].left == 0 && monitors[0].top == 0 && monitors[0].right == 0 &&
+        monitors[0].bottom == 0) {
+        LOGF(ERR, "EnumDisplayMonitors failed, primary monitor is zero");
+        return {};
+    }
+    return monitors;
+}
+
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
@@ -440,19 +528,21 @@ int32_t getScreenHeight() {
     return -1;
 }
 
-DisplayOutputDesc getDisplayOutputDesc() {
+DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
+    // 选择屏幕?
+    (void)name;
     Display* d = XOpenDisplay(nullptr);
     if (d == nullptr) {
-        return {0, 0, 0};
+        return {0, 0, 0, 0};
     }
     Screen* s = DefaultScreenOfDisplay(d);
     if (s == nullptr) {
-        return {0, 0, 0};
+        return {0, 0, 0, 0};
     }
     uint32_t width = s->width;
     uint32_t height = s->height;
     XCloseDisplay(d);
-    return {width, height, 60};
+    return {width, height, 60, 0};
 }
 
 bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
@@ -468,6 +558,10 @@ bool setThreadDesktop() {
 
 bool selfElevateAndNeedExit() {
     return false;
+}
+
+std::vector<Monitor> enumMonitors() {
+    return {};
 }
 
 #endif // #elif defined(LT_LINUX)

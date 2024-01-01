@@ -56,7 +56,8 @@ std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     }
     std::unique_ptr<InputExecutor> input;
     if (params.types & static_cast<uint8_t>(Type::WIN32_MESSAGE)) {
-        input = std::make_unique<Win32SendInput>(params.screen_width, params.screen_height);
+        input = std::make_unique<Win32SendInput>(params.screen_width, params.screen_height,
+                                                 params.monitor);
     }
     else {
         return nullptr;

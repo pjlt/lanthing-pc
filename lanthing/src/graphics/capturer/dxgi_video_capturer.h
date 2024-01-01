@@ -35,6 +35,8 @@
 #include <future>
 #include <optional>
 
+#include <ltlib/system.h>
+
 #include <graphics/capturer/dxgi/duplication_manager.h>
 #include <graphics/capturer/video_capturer.h>
 
@@ -42,7 +44,7 @@ namespace lt {
 
 class DxgiVideoCapturer : public VideoCapturer {
 public:
-    DxgiVideoCapturer();
+    DxgiVideoCapturer(ltlib::Monitor monitor);
     ~DxgiVideoCapturer() override;
     bool init() override;
     bool start() override;
@@ -54,6 +56,7 @@ public:
     void* device() override;
     void* deviceContext() override;
     uint32_t vendorID() override;
+    bool defaultOutput() override;
 
 private:
     bool initD3D11();
@@ -65,6 +68,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_;
     int64_t luid_ = 0;
     uint32_t vendor_id_ = 0;
+    ltlib::Monitor monitor_;
 };
 
 } // namespace lt

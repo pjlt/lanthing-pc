@@ -99,9 +99,10 @@ void WorkerProcess::stop() {
     stoped_ = true;
 }
 
-void WorkerProcess::changeResolution(uint32_t width, uint32_t height) {
+void WorkerProcess::changeResolution(uint32_t width, uint32_t height, uint32_t monitor_index) {
     client_width_ = width;
     client_height_ = height;
+    monitor_index_ = monitor_index;
 }
 
 void WorkerProcess::start() {
@@ -135,7 +136,8 @@ bool WorkerProcess::launchWorkerProcess() {
     ss << path_ << " -type worker "
        << " -name " << pipe_name_ << " -width " << client_width_ << " -height " << client_height_
        << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_codecs_)
-       << " -action streaming";
+       << " -action streaming "
+       << " -mindex " << monitor_index_;
     if (first_launch_) {
         first_launch_ = false;
         ss << " -negotiate 1";

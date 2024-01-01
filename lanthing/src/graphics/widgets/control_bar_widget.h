@@ -44,6 +44,7 @@ public:
         std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
         std::function<void()> exit;
         std::function<void(bool)> show_stat;
+        std::function<void()> switch_monitor;
     };
 
 public:
@@ -58,6 +59,7 @@ private:
     std::function<void(uint32_t bps)> set_bitrate_; // 0代表自动
     std::function<void()> exit_;
     std::function<void(bool)> on_show_stat_;
+    std::function<void()> switch_monitor_;
     bool collapse_ = true;
     std::string fullscreen_text_;
     bool fullscreen_ = false;

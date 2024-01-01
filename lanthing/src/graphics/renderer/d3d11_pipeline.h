@@ -71,6 +71,7 @@ public:
         uint64_t luid;
         uint32_t widht;
         uint32_t height;
+        uint32_t rotation;
         uint32_t align;
     };
 
@@ -116,6 +117,7 @@ private:
     const uint64_t luid_;
     const uint32_t video_width_;
     const uint32_t video_height_;
+    const uint32_t rotation_;
     const uint32_t align_;
     int refresh_rate_ = 60;
 

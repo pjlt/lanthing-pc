@@ -121,7 +121,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-dinput") == options.end() ||
         options.find("-gamepad") == options.end() || options.find("-chans") == options.end() ||
-        options.find("-afreq") == options.end()) {
+        options.find("-afreq") == options.end() || options.find("-rotation") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
@@ -139,6 +139,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     int32_t freq = std::atoi(options["-freq"].c_str());
     int32_t audio_freq = std::atoi(options["-afreq"].c_str());
     int32_t audio_channels = std::atoi(options["-chans"].c_str());
+    int32_t rotation = std::atoi(options["-rotation"].c_str());
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
 
@@ -152,40 +153,46 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     }
 
     if (signaling_port <= 0 || signaling_port > 65535) {
-        LOG(ERR) << "Invalid parameter: port";
+        LOG(ERR) << "Invalid parameter: port " << signaling_port;
         return nullptr;
     }
     params.signaling_port = static_cast<uint16_t>(signaling_port);
 
     if (width <= 0) {
-        LOG(ERR) << "Invalid parameter: width";
+        LOG(ERR) << "Invalid parameter: width " << width;
         return nullptr;
     }
     params.width = static_cast<uint32_t>(width);
 
     if (height <= 0) {
-        LOG(ERR) << "Invalid parameter: height";
+        LOG(ERR) << "Invalid parameter: height " << height;
         return nullptr;
     }
     params.height = static_cast<uint32_t>(height);
 
     if (freq <= 0) {
-        LOG(ERR) << "Invalid parameter: freq";
+        LOG(ERR) << "Invalid parameter: freq " << freq;
         return nullptr;
     }
     params.screen_refresh_rate = static_cast<uint32_t>(freq);
 
     if (audio_channels <= 0) {
-        LOG(ERR) << "Invalid parameter: achans";
+        LOG(ERR) << "Invalid parameter: achans " << audio_channels;
         return nullptr;
     }
     params.audio_channels = static_cast<uint32_t>(audio_channels);
 
     if (audio_freq <= 0) {
-        LOG(ERR) << "Invalid parameter: afreq";
+        LOG(ERR) << "Invalid parameter: afreq " << audio_freq;
         return nullptr;
     }
     params.audio_freq = static_cast<uint32_t>(audio_freq);
+
+    if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
+        LOG(ERR) << "Invalid parameter: rotation " << rotation;
+        return nullptr;
+    }
+    params.rotation = static_cast<uint32_t>(rotation);
 
     std::unique_ptr<Client> client{new Client{params}};
     if (!client->init()) {
@@ -200,8 +207,11 @@ Client::Client(const Params& params)
     , p2p_password_{params.pwd}
     , signaling_params_{params.client_id, params.room_id, params.signaling_addr,
                         params.signaling_port}
-    , video_params_{videoCodecType(params.codec.c_str()), params.width, params.height,
+    , video_params_{videoCodecType(params.codec.c_str()),
+                    params.width,
+                    params.height,
                     params.screen_refresh_rate,
+                    params.rotation,
                     std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3)}
     , audio_params_{atype(), params.audio_freq, params.audio_channels}
@@ -926,12 +936,14 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
     auto msg = std::static_pointer_cast<ltproto::client2worker::ChangeStreamingParams>(_msg);
     auto width = static_cast<uint32_t>(msg->params().video_width());
     auto height = static_cast<uint32_t>(msg->params().video_height());
-    LOGF(INFO, "Received ChangeStreamingParams(w:%u, h:%u), old is (w:%u, h:%u)", width, height,
-         video_params_.width, video_params_.height);
+    auto rotation = static_cast<uint32_t>(msg->params().rotation());
+    LOGF(INFO, "Received ChangeStreamingParams(w:%u, h:%u, r:%u), old is (w:%u, h:%u, r:%u)", width,
+         height, rotation, video_params_.width, video_params_.height, video_params_.rotation);
     bool success = true;
     if (video_params_.width != width || video_params_.height != height) {
         video_params_.width = width;
         video_params_.height = height;
+        video_params_.rotation = rotation;
         std::lock_guard lock{dr_mutex_};
         video_pipeline_.reset(); // 手动reset再create，保证不同时存在两份VideoDecodeRenderPipeline
         video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);

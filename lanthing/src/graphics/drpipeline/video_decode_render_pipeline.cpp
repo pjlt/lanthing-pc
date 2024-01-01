@@ -41,6 +41,7 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#include <ltproto/client2worker/switch_monitor.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
 
@@ -87,6 +88,7 @@ private:
     bool waitForRender(std::chrono::microseconds ms);
     void onStat();
     void onUserSetBitrate(uint32_t bps);
+    void onUserSwitchMonitor();
     std::tuple<int32_t, float, float> getCursorInfo();
     bool isAbsoluteMouse();
 
@@ -95,6 +97,7 @@ private:
     const uint32_t width_;
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
+    const uint32_t rotation_;
     const lt::VideoCodecType codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
@@ -143,6 +146,7 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , width_{params.width}
     , height_{params.height}
     , screen_refresh_rate_{params.screen_refresh_rate}
+    , rotation_{params.rotation}
     , codec_type_{params.codec_type}
     , send_message_to_host_{params.send_message_to_host}
     , sdl_{params.sdl}
@@ -159,6 +163,7 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
+    LOGF(INFO, "w:%u, h:%u, r:%u", width_, height_, rotation_);
     VideoRenderer::Params render_params{};
 #if LT_WINDOWS
     if (!gpu_info_.init()) {
@@ -181,6 +186,7 @@ bool VDRPipeline::init() {
     render_params.window = window_;
     render_params.video_width = width_;
     render_params.video_height = height_;
+    render_params.rotation = rotation_;
     render_params.align = VideoDecoder::align(codec_type_);
     video_renderer_ = VideoRenderer::create(render_params);
     if (video_renderer_ == nullptr) {
@@ -217,6 +223,7 @@ bool VDRPipeline::init() {
     widgets_params.video_height = height_;
     widgets_params.set_bitrate =
         std::bind(&VDRPipeline::onUserSetBitrate, this, std::placeholders::_1);
+    widgets_params.switch_monitor = std::bind(&VDRPipeline::onUserSwitchMonitor, this);
     widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
         return false;
@@ -391,6 +398,11 @@ void VDRPipeline::onUserSetBitrate(uint32_t bps) {
     send_message_to_host_(ltproto::id(msg), msg, true);
 }
 
+void VDRPipeline::onUserSwitchMonitor() {
+    auto msg = std::make_shared<ltproto::client2worker::SwitchMonitor>();
+    send_message_to_host_(ltproto::id(msg), msg, true);
+}
+
 std::tuple<int32_t, float, float> VDRPipeline::getCursorInfo() {
     std::lock_guard lk{render_mtx_};
     return {cursor_id_, cursor_x_, cursor_y_};
@@ -446,13 +458,14 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
 
 VideoDecodeRenderPipeline::Params::Params(
     lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-    uint32_t _screen_refresh_rate,
+    uint32_t _screen_refresh_rate, uint32_t _rotation,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message)
     : codec_type(_codec_type)
     , width(_width)
     , height(_height)
     , screen_refresh_rate(_screen_refresh_rate)
+    , rotation(_rotation)
     , send_message_to_host(send_message) {}
 
 bool VideoDecodeRenderPipeline::Params::validate() const {

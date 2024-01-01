@@ -195,9 +195,11 @@ void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::Mes
     SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }
 
-Win32SendInput::Win32SendInput(uint32_t screen_width, uint32_t screen_height)
+Win32SendInput::Win32SendInput(uint32_t screen_width, uint32_t screen_height,
+                               ltlib::Monitor monitor)
     : screen_width_(screen_width)
-    , screen_height_(screen_height) {}
+    , screen_height_(screen_height)
+    , monitor_(monitor) {}
 
 bool Win32SendInput::initKeyMouse() {
     return true;
@@ -251,9 +253,16 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
 
     if (isAbsoluteMouse()) {
         if (mouse->has_x() || mouse->has_y()) {
-            inputs[0].mi.dx = static_cast<LONG>((65535.0f * mouse->x()));
-            inputs[0].mi.dy = static_cast<LONG>((65535.0f * mouse->y()));
-            inputs[0].mi.dwFlags |= MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+            inputs[0].mi.dx =
+                static_cast<LONG>((mouse->x() * (monitor_.right - monitor_.left) + monitor_.left -
+                                   GetSystemMetrics(SM_XVIRTUALSCREEN)) *
+                                  65535.0f / GetSystemMetrics(SM_CXVIRTUALSCREEN));
+            inputs[0].mi.dy =
+                static_cast<LONG>((mouse->y() * (monitor_.bottom - monitor_.top) + monitor_.top -
+                                   GetSystemMetrics(SM_YVIRTUALSCREEN)) *
+                                  65535.0f / GetSystemMetrics(SM_CYVIRTUALSCREEN));
+            inputs[0].mi.dwFlags |=
+                MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK;
         }
     }
     else {

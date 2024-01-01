@@ -146,7 +146,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     req->set_device_id(peerDeviceID);
     req->set_access_token(accessToken);
     req->set_cookie(cookie);
-    ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc();
+    ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc("");
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);
     params->set_enable_gamepad(false);
@@ -230,6 +230,7 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
     params.enable_gamepad = ack->streaming_params().enable_gamepad();
     params.audio_channels = ack->streaming_params().audio_channels();
     params.audio_freq = ack->streaming_params().audio_sample_rate();
+    params.rotation = ack->streaming_params().rotation();
     for (int i = 0; i < ack->reflex_servers_size(); i++) {
         params.reflex_servers.push_back(ack->reflex_servers(i));
     }

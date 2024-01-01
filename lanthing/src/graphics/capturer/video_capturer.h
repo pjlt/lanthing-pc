@@ -35,7 +35,7 @@
 #include <memory>
 #include <optional>
 
-#include <ltlib/threads.h>
+#include <ltlib/system.h>
 
 namespace lt {
 
@@ -50,7 +50,7 @@ public:
     };
 
 public:
-    static std::unique_ptr<VideoCapturer> create(const Backend& backend);
+    static std::unique_ptr<VideoCapturer> create(Backend backend, ltlib::Monitor monitor);
     virtual ~VideoCapturer();
     virtual std::optional<Frame> capture() = 0;
     virtual bool start() = 0;
@@ -61,6 +61,7 @@ public:
     virtual void* deviceContext() = 0;
     virtual void waitForVBlank() = 0;
     virtual uint32_t vendorID() = 0;
+    virtual bool defaultOutput() = 0;
 
 protected:
     VideoCapturer();

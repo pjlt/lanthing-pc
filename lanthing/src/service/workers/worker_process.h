@@ -65,7 +65,7 @@ public:
     static std::unique_ptr<WorkerProcess> create(const Params& params);
     ~WorkerProcess();
     void stop();
-    void changeResolution(uint32_t width, uint32_t height);
+    void changeResolution(uint32_t width, uint32_t height, uint32_t monitor_index);
 
 private:
     WorkerProcess(const Params& params);
@@ -81,6 +81,7 @@ private:
     uint32_t client_width_;
     uint32_t client_height_;
     uint32_t client_refresh_rate_;
+    uint32_t monitor_index_ = 0;
     std::vector<lt::VideoCodecType> client_codecs_;
     std::function<void()> on_failed_;
     bool run_as_win_service_;
