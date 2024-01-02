@@ -43,7 +43,7 @@ public:
         std::function<void()> toggle_fullscreen;
         std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
         std::function<void()> exit;
-        std::function<void(bool)> show_stat;
+        std::function<void()> show_stat;
         std::function<void()> switch_monitor;
         std::function<void()> stretch;
     };
@@ -59,7 +59,7 @@ private:
     std::function<void()> toggle_fullscreen_;
     std::function<void(uint32_t bps)> set_bitrate_; // 0代表自动
     std::function<void()> exit_;
-    std::function<void(bool)> on_show_stat_;
+    std::function<void()> on_show_stat_;
     std::function<void()> switch_monitor_;
     std::function<void()> stretch_;
     bool collapse_ = true;
@@ -70,6 +70,10 @@ private:
     bool show_stat_ = false;
     std::string stat_text_;
     bool first_time_ = true;
+    float display_width_ = 0.f;
+    float display_height_ = 0.f;
+    float window_x_ = 0.f;
+    float window_y_ = 0.f;
 };
 
 } // namespace lt

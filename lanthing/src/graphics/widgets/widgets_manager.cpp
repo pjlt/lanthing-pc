@@ -93,7 +93,7 @@ WidgetsManager::WidgetsManager(const Params& params)
     control_params.set_bitrate = set_bitrate_;
     control_params.switch_monitor = switch_monitor_;
     control_params.stretch = stretch_;
-    control_params.show_stat = [this](bool show) { show_statistics_ = show; };
+    control_params.show_stat = [this]() { show_statistics_ = !show_statistics_; };
     control_bar_ = std::make_shared<ControlBarWidget>(control_params);
 
 #if defined(LT_WINDOWS)

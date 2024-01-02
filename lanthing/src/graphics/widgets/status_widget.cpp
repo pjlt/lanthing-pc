@@ -59,15 +59,12 @@ void StatusWidget::setTaskBarPos(uint32_t direction, uint32_t left, uint32_t rig
 void StatusWidget::render() {
     const uint32_t kAssumeWidth = 250;
     const uint32_t kAssumeHeight = 50;
-    if (resize_.exchange(false)) {
-        auto& io = ImGui::GetIO();
-        display_width_ = static_cast<uint32_t>(io.DisplaySize.x);
-        display_height_ = static_cast<uint32_t>(io.DisplaySize.y);
-    }
-    float x = static_cast<float>(video_width_ - kAssumeWidth - right_margin_);
-    x = x * display_width_ / video_width_;
-    float y = static_cast<float>(video_height_ - kAssumeHeight - bottom_margin_);
-    y = y * display_height_ / video_height_;
+    auto& io = ImGui::GetIO();
+    display_width_ = static_cast<uint32_t>(io.DisplaySize.x);
+    display_height_ = static_cast<uint32_t>(io.DisplaySize.y);
+
+    float x = static_cast<float>(display_width_ - kAssumeWidth - right_margin_);
+    float y = static_cast<float>(display_height_ - kAssumeHeight - bottom_margin_);
     ImGui::SetNextWindowPos(ImVec2{x, y});
     ImGui::Begin("status", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |

@@ -51,11 +51,23 @@ ControlBarWidget::ControlBarWidget(const Params& params)
 }
 
 void ControlBarWidget::render() {
+    constexpr float K = 0.0000001f;
+    auto& io = ImGui::GetIO();
     if (first_time_) {
         first_time_ = false;
-        auto& io = ImGui::GetIO();
+
         ImGui::SetNextWindowPos(ImVec2{(io.DisplaySize.x - 24.f) / 2, 0.f});
         ImGui::SetNextWindowCollapsed(true);
+        display_width_ = io.DisplaySize.x;
+        display_height_ = io.DisplaySize.y;
+    }
+    else if (std::fabsf(io.DisplaySize.x - display_width_) > K ||
+             std::fabsf(io.DisplaySize.y - display_height_) > K) {
+        float normal_x = window_x_ / display_width_;
+        float normal_y = window_y_ / display_height_;
+        display_width_ = io.DisplaySize.x;
+        display_height_ = io.DisplaySize.y;
+        ImGui::SetNextWindowPos({normal_x * display_width_, normal_y * display_height_});
     }
     if (collapse_) {
         ImGui::SetNextWindowSize(ImVec2{24.f, 24.f});
@@ -67,37 +79,21 @@ void ControlBarWidget::render() {
     ImGui::Begin("Tool", nullptr,
                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNavInputs |
                      ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoResize);
+    auto vec2 = ImGui::GetWindowPos();
+    window_x_ = vec2.x;
+    window_y_ = vec2.y;
+
     if (ImGui::IsWindowCollapsed()) {
         collapse_ = true;
     }
     else {
         // FIXME: 应该读取当前窗口模式，而不是记录是否全屏，因为还有“快捷键切换”，记录不到这里
         collapse_ = false;
-        if (ImGui::Button(fullscreen_text_.c_str())) {
-            if (fullscreen_) {
-                fullscreen_ = false;
-                // fullscreen_text_ = u8"全屏";
-                fullscreen_text_ = "Fullscreen";
-                toggle_fullscreen_();
-            }
-            else {
-                fullscreen_ = true;
-                // fullscreen_text_ = u8"窗口化";
-                fullscreen_text_ = "Windowed";
-                toggle_fullscreen_();
-            }
+        if (ImGui::Button("Fullscreen")) {
+            toggle_fullscreen_();
         }
-        if (ImGui::Button(stat_text_.c_str())) {
-            if (show_stat_) {
-                // stat_text_ = u8"显示统计";
-                stat_text_ = "Show stat";
-            }
-            else {
-                // stat_text_ = u8"关闭统计";
-                stat_text_ = "Hide stat";
-            }
-            show_stat_ = !show_stat_;
-            on_show_stat_(show_stat_);
+        if (ImGui::Button("Stat")) {
+            on_show_stat_();
         }
         ImGui::Text("Bitrate:");
         // if (ImGui::RadioButton(u8"自动", &radio_, 0)) {

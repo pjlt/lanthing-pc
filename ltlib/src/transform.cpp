@@ -30,6 +30,8 @@
 
 #include <ltlib/transform.h>
 
+#include <cmath>
+
 namespace ltlib {
 
 Rect calcMaxInnerRect(Rect outer, Rect iorigin) {
