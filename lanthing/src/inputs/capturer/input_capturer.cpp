@@ -505,13 +505,13 @@ std::pair<float, float> InputCapturerImpl::calcAbsPos(int32_t x, int32_t y, int3
         ltlib::Rect outer{}, iorigin{};
         outer.w = win_width;
         outer.h = win_height;
-        if (rotation_ == 90 || rotation_ == 270) {
-            iorigin.w = video_height_;
-            iorigin.h = video_width_;
+        if (rotation == 90 || rotation == 270) {
+            iorigin.w = video_height;
+            iorigin.h = video_width;
         }
         else {
-            iorigin.w = video_width_;
-            iorigin.h = video_height_;
+            iorigin.w = video_width;
+            iorigin.h = video_height;
         }
         ltlib::Rect inner = ltlib::calcMaxInnerRect(outer, iorigin);
         int32_t y1 = win_height - inner.h - inner.y;
