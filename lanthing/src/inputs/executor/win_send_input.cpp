@@ -253,6 +253,9 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
 
     if (isAbsoluteMouse()) {
         if (mouse->has_x() || mouse->has_y()) {
+            LOGF(INFO, "sw:%u, l:%d, r:%d, xv:%d, cx:%d", screen_width_, monitor_.left,
+                 monitor_.right, GetSystemMetrics(SM_XVIRTUALSCREEN),
+                 GetSystemMetrics(SM_CXVIRTUALSCREEN));
             inputs[0].mi.dx =
                 static_cast<LONG>((mouse->x() * (monitor_.right - monitor_.left) + monitor_.left -
                                    GetSystemMetrics(SM_XVIRTUALSCREEN)) *
