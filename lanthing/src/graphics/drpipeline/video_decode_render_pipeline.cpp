@@ -190,9 +190,15 @@ bool VDRPipeline::init() {
     render_params.device = 0;
 #else
 #endif
+    uint32_t video_width = width_;
+    uint32_t video_height = height_;
+    if (rotation_ == 90 || rotation_ == 270) {
+        video_width = height_;
+        video_height = width_;
+    }
     render_params.window = window_;
-    render_params.video_width = width_;
-    render_params.video_height = height_;
+    render_params.video_width = video_width;
+    render_params.video_height = video_height;
     render_params.rotation = rotation_;
     render_params.stretch = is_stretch_;
     render_params.align = VideoDecoder::align(codec_type_);
@@ -211,8 +217,9 @@ bool VDRPipeline::init() {
 #else
 #error unknown platform
 #endif
-    decode_params.width = width_;
-    decode_params.height = height_;
+    decode_params.width = video_width;
+    decode_params.height = video_height;
+
     video_decoder_ = VideoDecoder::create(decode_params);
     if (video_decoder_ == nullptr) {
         return false;

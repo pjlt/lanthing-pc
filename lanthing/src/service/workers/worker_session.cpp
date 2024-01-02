@@ -1081,6 +1081,7 @@ void WorkerSession::onChangeStreamingParams(std::shared_ptr<google::protobuf::Me
     auto height = static_cast<uint32_t>(msg->params().video_height());
     auto mindex = static_cast<uint32_t>(msg->params().monitor_index());
     if (worker_process_) {
+        // 改为不协商后，传回去的widht、height已经没多大用。不过将来可能会加回协商逻辑。。。
         worker_process_->changeResolution(width, height, mindex);
     }
     else {
