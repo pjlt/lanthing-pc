@@ -10,14 +10,15 @@
 
 #include <cassert>
 
-#include <fstream>
-#include <iostream>
-#include <functional>
-#include <regex>
 #include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <regex>
 
-namespace
-{
+#include <ltlib/times.h>
+
+namespace {
 
 const std::string file_name_time_formatted = "%Y%m%d-%H%M%S";
 const std::string time_formatted = "%H:%M:%S.%f3";
@@ -25,25 +26,26 @@ const std::string date_formatted = "%Y/%m/%d";
 const std::string kFractionalIdentier = "%f";
 const size_t kFractionalIdentierSize = 2;
 
-std::string header(const std::string& headerFormat)
-{
+std::string header(const std::string& headerFormat) {
     std::ostringstream ss_entry;
-    //  Day Month Date Time Year: is written as "%a %b %d %H:%M:%S %Y" and formatted output as : Wed Sep 19 08:28:16 2012
+    //  Day Month Date Time Year: is written as "%a %b %d %H:%M:%S %Y" and formatted output as : Wed
+    //  Sep 19 08:28:16 2012
     auto now = std::chrono::system_clock::now();
-    ss_entry << "\t\tltlib::LogSink created log at: " << g3::localtime_formatted(now, "%a %b %d %H:%M:%S %Y") << "\n";
+    ss_entry << "\t\tltlib::LogSink created log at: "
+             << g3::localtime_formatted(now, "%a %b %d %H:%M:%S %Y") << "\n";
     ss_entry << headerFormat;
     return ss_entry.str();
 }
 
-bool isValidFilename(const std::string& prefix_filename)
-{
+bool isValidFilename(const std::string& prefix_filename) {
     std::string illegal_characters("/,|<>:#$%{}[]\'\"^!?+* ");
     size_t pos = prefix_filename.find_first_of(illegal_characters, 0);
     if (pos != std::string::npos) {
         std::cerr << "Illegal character [" << prefix_filename.at(pos) << "] in logname prefix: "
                   << "[" << prefix_filename << "]" << std::endl;
         return false;
-    } else if (prefix_filename.empty()) {
+    }
+    else if (prefix_filename.empty()) {
         std::cerr << "Empty filename prefix is not allowed" << std::endl;
         return false;
     }
@@ -51,8 +53,7 @@ bool isValidFilename(const std::string& prefix_filename)
     return true;
 }
 
-std::string prefixSanityFix(std::string prefix)
-{
+std::string prefixSanityFix(std::string prefix) {
     prefix.erase(std::remove_if(prefix.begin(), prefix.end(), ::isspace), prefix.end());
     prefix.erase(std::remove(prefix.begin(), prefix.end(), '/'), prefix.end());
     prefix.erase(std::remove(prefix.begin(), prefix.end(), '\\'), prefix.end());
@@ -64,8 +65,7 @@ std::string prefixSanityFix(std::string prefix)
     return prefix;
 }
 
-std::string createLogFileName(const std::string& verified_prefix)
-{
+std::string createLogFileName(const std::string& verified_prefix) {
     std::stringstream oss_name;
     oss_name << verified_prefix << ".";
     auto now = std::chrono::system_clock::now();
@@ -74,8 +74,7 @@ std::string createLogFileName(const std::string& verified_prefix)
     return oss_name.str();
 }
 
-std::string pathSanityFix(std::string path, std::string file_name)
-{
+std::string pathSanityFix(std::string path, std::string file_name) {
     // Unify the delimeters,. maybe sketchy solution but it seems to work
     // on at least win7 + ubuntu. All bets are off for older windows
     std::replace(path.begin(), path.end(), '\\', '/');
@@ -101,9 +100,9 @@ std::string pathSanityFix(std::string path, std::string file_name)
     return path;
 }
 
-bool openLogFile(const std::string& complete_file_with_path, std::ofstream& outstream)
-{
-    std::ios_base::openmode mode = std::ios_base::out; // for clarity: it's really overkill since it's an ofstream
+bool openLogFile(const std::string& complete_file_with_path, std::ofstream& outstream) {
+    std::ios_base::openmode mode =
+        std::ios_base::out; // for clarity: it's really overkill since it's an ofstream
     mode |= std::ios_base::trunc;
     outstream.open(complete_file_with_path, mode);
     if (!outstream.is_open()) {
@@ -117,8 +116,7 @@ bool openLogFile(const std::string& complete_file_with_path, std::ofstream& outs
     return true;
 }
 
-std::unique_ptr<std::ofstream> createLogFile(const std::string& file_with_full_path)
-{
+std::unique_ptr<std::ofstream> createLogFile(const std::string& file_with_full_path) {
     std::unique_ptr<std::ofstream> out(new std::ofstream);
     std::ofstream& stream(*(out.get()));
     bool success_with_open_file = openLogFile(file_with_full_path, stream);
@@ -128,8 +126,7 @@ std::unique_ptr<std::ofstream> createLogFile(const std::string& file_with_full_p
     return out;
 }
 
-tm localtime(const std::time_t& ts)
-{
+tm localtime(const std::time_t& ts) {
     struct tm tm_snapshot;
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
     localtime_s(&tm_snapshot, &ts); // windsows
@@ -140,7 +137,8 @@ tm localtime(const std::time_t& ts)
 }
 
 /*
-std::string localtime_formatted_fractions(const g3::system_time_point& ts, std::string format_buffer)
+std::string localtime_formatted_fractions(const g3::system_time_point& ts, std::string
+format_buffer)
 {
     // iterating through every "%f" instance in the format string
     auto identifierExtraSize = 0;
@@ -162,36 +160,34 @@ std::string localtime_formatted_fractions(const g3::system_time_point& ts, std::
 }
 */
 
-std::string logDetailsToString(const g3::LogMessage& msg)
-{
+std::string logDetailsToString(const g3::LogMessage& msg) {
     std::stringstream ss;
-    ss << '[' << msg.timestamp({ date_formatted + " " + time_formatted }) << "]["
-       << msg.threadID()
+    ss << '[' << msg.timestamp({date_formatted + " " + time_formatted}) << "][" << msg.threadID()
        << "][" << msg.level() << "][" << msg.file() << ':' << msg.line() << "] ";
     return ss.str();
 }
 
 } // namespace
 
-namespace ltlib
-{
+namespace ltlib {
 
-LogSink::LogSink(const std::string& log_prefix, const std::string& log_directory, size_t write_to_log_every_x_message)
+LogSink::LogSink(const std::string& log_prefix, const std::string& log_directory,
+                 size_t write_to_log_every_x_message)
     : _log_directory(log_directory)
     , _log_prefix_backup(log_prefix)
     , _outptr(new std::ofstream)
     , _header("\t\tLOG format: [YYYY/MM/DD hh:mm:ss.uuu][THREAD][LEVEL][FILE:LINE] message\n\n")
     , _firstEntry(true)
     , _write_counter(0)
-    , _write_to_log_every_x_message(write_to_log_every_x_message)
-{
+    , _write_to_log_every_x_message(write_to_log_every_x_message) {
     auto time_point = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm t = localtime(time_point);
     _last_mday = t.tm_mday + 1;
 
     _log_prefix_backup = prefixSanityFix(log_prefix);
     if (!isValidFilename(_log_prefix_backup)) {
-        std::cerr << "g3log: forced abort due to illegal log prefix [" << log_prefix << "]" << std::endl;
+        std::cerr << "g3log: forced abort due to illegal log prefix [" << log_prefix << "]"
+                  << std::endl;
         abort();
     }
 
@@ -207,9 +203,8 @@ LogSink::LogSink(const std::string& log_prefix, const std::string& log_directory
     assert(_outptr && "cannot open log file at startup");
 }
 
-LogSink::~LogSink()
-{
-    std::string exit_msg = { "\ng3log with ltlib::LogSink shutdown at: " };
+LogSink::~LogSink() {
+    std::string exit_msg = {"\ng3log with ltlib::LogSink shutdown at: "};
     auto now = std::chrono::system_clock::now();
     exit_msg.append(g3::localtime_formatted(now, time_formatted)).append("\n");
 
@@ -220,11 +215,11 @@ LogSink::~LogSink()
     std::cerr << exit_msg << std::flush;
 }
 
-void LogSink::fileWrite(g3::LogMessageMover message)
-{
+void LogSink::fileWrite(g3::LogMessageMover message) {
     if (_firstEntry) {
         addLogFileHeader();
         _firstEntry = false;
+        tryRemoveOldLogs();
     }
     if (isTimeToRoll()) {
         changeLogFile();
@@ -240,8 +235,7 @@ void LogSink::fileWrite(g3::LogMessageMover message)
     }
 }
 
-std::string LogSink::changeLogFile()
-{
+std::string LogSink::changeLogFile() {
     std::string file_name = createLogFileName(_log_prefix_backup);
     auto log_file_with_path = pathSanityFix(_log_directory, file_name);
     auto new_outptr = createLogFile(log_file_with_path);
@@ -256,29 +250,28 @@ std::string LogSink::changeLogFile()
     return _log_file_with_path;
 }
 
-bool LogSink::isTimeToRoll()
-{
+bool LogSink::isTimeToRoll() {
     auto time_point = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm t = localtime(time_point);
     if (t.tm_mday + 1 != _last_mday) {
         _last_mday = t.tm_mday + 1;
         return true;
-    } else {
+    }
+    else {
         return false;
     }
 }
 
-void LogSink::tryRemoveOldLogs()
-{
-    auto expire_tp = std::chrono::system_clock::now() - std::chrono::hours { 24 * 7 };
+void LogSink::tryRemoveOldLogs() {
+    auto expire_tp = std::chrono::system_clock::now() - std::chrono::hours{24 * 7};
     auto expire_time_t = std::chrono::system_clock::to_time_t(expire_tp);
     struct tm expire_tm = localtime(expire_time_t);
     expire_tm.tm_year += 1900;
     expire_tm.tm_mday += 1;
     int expire_date = expire_tm.tm_year * 10000 + (expire_tm.tm_mon + 1) * 100 + expire_tm.tm_mday;
-    std::regex pattern { ".+?([0-9]+?)-.+?" };
-    std::filesystem::path directory { _log_directory };
-    for (const auto& file : std::filesystem::directory_iterator { directory }) {
+    std::regex pattern{".+?([0-9]+?)-.+?"};
+    std::filesystem::path directory{_log_directory};
+    for (const auto& file : std::filesystem::directory_iterator{directory}) {
 
         std::smatch sm;
         std::string filename = file.path().string();
@@ -292,13 +285,11 @@ void LogSink::tryRemoveOldLogs()
     }
 }
 
-std::string LogSink::fileName()
-{
+std::string LogSink::fileName() {
     return _log_file_with_path;
 }
 
-void LogSink::addLogFileHeader()
-{
+void LogSink::addLogFileHeader() {
     filestream() << header(_header);
 }
 
