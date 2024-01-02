@@ -93,6 +93,7 @@ private:
     void onUserSwitchStretchOrOrigin();
     std::tuple<int32_t, float, float> getCursorInfo();
     bool isAbsoluteMouse();
+    bool isStretchMode();
 
 private:
     const bool for_test_;
@@ -430,6 +431,11 @@ bool VDRPipeline::isAbsoluteMouse() {
     return absolute_mouse_;
 }
 
+bool VDRPipeline::isStretchMode() {
+    std::lock_guard lk{render_mtx_};
+    return is_stretch_;
+}
+
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
@@ -438,6 +444,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             auto frame = smoother_.get(cur_time.microseconds());
             smoother_.pop();
             video_renderer_->switchMouseMode(isAbsoluteMouse());
+            video_renderer_->switchStretchMode(isStretchMode());
             if (frame.has_value()) {
                 auto [cursor, x, y] = getCursorInfo();
                 video_renderer_->updateCursor(cursor, x, y, visible_);

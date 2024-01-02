@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,39 +29,19 @@
  */
 
 #pragma once
-#include <memory>
-#include <vector>
+#include <ltlib/ltlib.h>
 
-namespace lt {
+#include <cstdint>
 
-class VideoRenderer {
-public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-        uint32_t rotation;
-    };
+namespace ltlib {
 
-    enum class RenderResult { Success2, Failed, Reset };
-
-public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual RenderResult render(int64_t frame) = 0;
-    virtual void updateCursor(int32_t cursor_id, float x, float y, bool visible) = 0;
-    virtual void switchMouseMode(bool absolute) = 0;
-    virtual void switchStretchMode(bool stretch) = 0;
-    virtual void resetRenderTarget() = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
+struct LT_API Rect {
+    int32_t x;
+    int32_t y;
+    int32_t w;
+    int32_t h;
 };
 
-} // namespace lt
+Rect LT_API calcMaxInnerRect(Rect outer, Rect inner_original);
+
+} // namespace ltlib

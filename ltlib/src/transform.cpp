@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,40 +28,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <memory>
-#include <vector>
+#include <ltlib/transform.h>
 
-namespace lt {
+namespace ltlib {
 
-class VideoRenderer {
-public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-        uint32_t rotation;
-    };
+Rect calcMaxInnerRect(Rect outer, Rect iorigin) {
+    Rect inner{};
+    if (outer.h * 1.0f / outer.w > iorigin.h * 1.0f / iorigin.w) {
+        inner.w = outer.w;
+        inner.h = outer.w * iorigin.h / iorigin.w;
+        inner.x = 0;
+        inner.y = (outer.h - inner.h) / 2;
+    }
+    else {
+        inner.h = outer.h;
+        inner.w = outer.h * iorigin.w / iorigin.h;
+        inner.y = 0;
+        inner.x = (outer.w - inner.w) / 2;
+    }
+    return inner;
+}
 
-    enum class RenderResult { Success2, Failed, Reset };
-
-public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual RenderResult render(int64_t frame) = 0;
-    virtual void updateCursor(int32_t cursor_id, float x, float y, bool visible) = 0;
-    virtual void switchMouseMode(bool absolute) = 0;
-    virtual void switchStretchMode(bool stretch) = 0;
-    virtual void resetRenderTarget() = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
-};
-
-} // namespace lt
+} // namespace ltlib

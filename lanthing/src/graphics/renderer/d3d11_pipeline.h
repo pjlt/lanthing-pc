@@ -83,6 +83,7 @@ public:
     RenderResult render(int64_t frame) override;
     void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
     void switchMouseMode(bool absolute) override;
+    void switchStretchMode(bool stretch) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;
@@ -105,6 +106,7 @@ private:
                             std::vector<uint8_t>& data);
     bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
                                         const std::vector<uint8_t>& data);
+    bool calcVertexes();
     bool setupCursorD3DResources();
     const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
@@ -149,6 +151,7 @@ private:
 
     CursorInfo cursor_info_;
     bool absolute_mouse_ = true;
+    bool stretch_ = false;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;
     std::atomic<bool> reset_{false};

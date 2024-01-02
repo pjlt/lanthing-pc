@@ -219,6 +219,10 @@ void VaGlPipeline::switchMouseMode(bool absolute) {
     (void)absolute;
 }
 
+void switchStretchMode(bool stretch) {
+    (void)stretch;
+}
+
 void VaGlPipeline::resetRenderTarget() {
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     int window_width, window_height;
