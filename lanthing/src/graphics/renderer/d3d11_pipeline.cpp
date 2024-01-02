@@ -183,7 +183,8 @@ D3D11Pipeline::D3D11Pipeline(const Params& params)
     , video_width_{params.widht}
     , video_height_{params.height}
     , rotation_{params.rotation}
-    , align_{params.align} {
+    , align_{params.align}
+    , stretch_{params.stretch} {
     DwmEnableMMCSS(TRUE);
 }
 
@@ -905,29 +906,32 @@ bool D3D11Pipeline::calcVertexes() {
     video_vertex_buffer_ = nullptr;
     float u = (float)video_width_ / _ALIGN(video_width_, align_);
     float v = (float)video_height_ / _ALIGN(video_height_, align_);
-    ltlib::Rect outer{}, iorigin{};
-    outer.w = display_width_;
-    outer.h = display_height_;
-    if (rotation_ == 90 || rotation_ == 270) {
-        iorigin.w = video_height_;
-        iorigin.h = video_width_;
+    float x = -1.0f;
+    float y = -1.0f;
+    if (!stretch_) {
+        ltlib::Rect outer{}, iorigin{};
+        outer.w = display_width_;
+        outer.h = display_height_;
+        if (rotation_ == 90 || rotation_ == 270) {
+            iorigin.w = video_height_;
+            iorigin.h = video_width_;
+        }
+        else {
+            iorigin.w = video_width_;
+            iorigin.h = video_height_;
+        }
+        ltlib::Rect inner = ltlib::calcMaxInnerRect(outer, iorigin);
+        x = inner.x * 1.0f / (outer.w / 2.0f) - 1.0f;
+        y = inner.y * 1.0f / (outer.h / 2.0f) - 1.0f;
+        // float w = inner.w * 1.0f / (outer.w / 2.0f);
+        // float h = inner.h * 1.0f / (outer.h / 2.0f);
     }
-    else {
-        iorigin.w = video_width_;
-        iorigin.h = video_height_;
-    }
-    ltlib::Rect inner = ltlib::calcMaxInnerRect(outer, iorigin);
-    float x = inner.x * 1.0f / (outer.w / 2.0f) - 1.0f;
-    float y = inner.y * 1.0f / (outer.h / 2.0f) - 1.0f;
-    // float w = inner.w * 1.0f / (outer.w / 2.0f);
-    // float h = inner.h * 1.0f / (outer.h / 2.0f);
     std::pair<float, float> q1{-x, -y};
     std::pair<float, float> q2{x, -y};
     std::pair<float, float> q3{x, y};
     std::pair<float, float> q4{-x, y};
-    // LOGF(INFO, "{x:%.2f, y:%.2f}, {x:%.2f, y:%.2f}, {x:%.2f, y:%.2f}, {x:%.2f, y:%.2f}",
-    // q2.first,
-    //      q2.second, q1.first, q1.second, q4.first, q4.second, q3.first, q3.second);
+    LOGF(DEBUG, "q2{x:%.2f, y:%.2f}, q1{x:%.2f, y:%.2f}, q4{x:%.2f, y:%.2f}, q3{x:%.2f, y:%.2f}",
+         q2.first, q2.second, q1.first, q1.second, q4.first, q4.second, q3.first, q3.second);
     Vertex verts[] = {{q2.first, q2.second, 0.0f, 0.0f},
                       {q1.first, q1.second, u, 0.0f},
                       {q4.first, q4.second, u, v},

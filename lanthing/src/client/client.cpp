@@ -212,6 +212,7 @@ Client::Client(const Params& params)
                     params.height,
                     params.screen_refresh_rate,
                     params.rotation,
+                    is_stretch_,
                     std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3),
                     std::bind(&Client::onUserSwitchStretch, this)}
@@ -763,8 +764,10 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     that->input_params_.send_message =
         std::bind(&Client::sendMessageToHost, that, std::placeholders::_1, std::placeholders::_2,
                   std::placeholders::_3);
-    that->input_params_.host_height = that->video_params_.height;
-    that->input_params_.host_width = that->video_params_.width;
+    that->input_params_.video_height = that->video_params_.height;
+    that->input_params_.video_width = that->video_params_.width;
+    that->input_params_.rotation = that->video_params_.rotation;
+    that->input_params_.stretch = that->video_params_.stretch;
     that->input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, that);
     that->input_params_.switch_mouse_mode = std::bind(&Client::switchMouseMode, that);
     that->input_capturer_ = InputCapturer::create(that->input_params_);
@@ -945,6 +948,8 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
         video_params_.width = width;
         video_params_.height = height;
         video_params_.rotation = rotation;
+        input_capturer_->changeVideoParameters(video_params_.width, video_params_.height,
+                                               video_params_.rotation, is_stretch_);
         std::lock_guard lock{dr_mutex_};
         video_pipeline_.reset(); // 手动reset再create，保证不同时存在两份VideoDecodeRenderPipeline
         video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
@@ -968,7 +973,8 @@ void Client::onUserSwitchStretch() {
     postTask([this]() {
         // 统一用IOLoop去做，减小bug发生概率
         video_pipeline_->switchStretchMode(is_stretch_);
-        input_capturer_->switchStretchMode(is_stretch_);
+        input_capturer_->changeVideoParameters(video_params_.width, video_params_.height,
+                                               video_params_.rotation, is_stretch_);
     });
 }
 

@@ -44,8 +44,9 @@ class InputCapturer {
 public:
     struct Params {
         PcSdl* sdl;
-        uint32_t host_width;
-        uint32_t host_height;
+        uint32_t video_width;
+        uint32_t video_height;
+        uint32_t rotation;
         bool stretch;
         std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
             send_message;
@@ -55,7 +56,8 @@ public:
 
 public:
     static std::unique_ptr<InputCapturer> create(const Params& params);
-    void switchStretchMode(bool stretch);
+    void changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
+                               bool stretch);
 
 private:
     InputCapturer() = default;

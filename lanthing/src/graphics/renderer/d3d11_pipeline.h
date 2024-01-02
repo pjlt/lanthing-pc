@@ -73,6 +73,7 @@ public:
         uint32_t height;
         uint32_t rotation;
         uint32_t align;
+        bool stretch;
     };
 
 public:
@@ -151,7 +152,7 @@ private:
 
     CursorInfo cursor_info_;
     bool absolute_mouse_ = true;
-    bool stretch_ = false;
+    bool stretch_;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;
     std::atomic<bool> reset_{false};

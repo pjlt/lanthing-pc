@@ -194,6 +194,7 @@ bool VDRPipeline::init() {
     render_params.video_width = width_;
     render_params.video_height = height_;
     render_params.rotation = rotation_;
+    render_params.stretch = is_stretch_;
     render_params.align = VideoDecoder::align(codec_type_);
     video_renderer_ = VideoRenderer::create(render_params);
     if (video_renderer_ == nullptr) {
@@ -482,7 +483,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
 
 VideoDecodeRenderPipeline::Params::Params(
     lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-    uint32_t _screen_refresh_rate, uint32_t _rotation,
+    uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message,
     std::function<void()> _switch_stretch)
@@ -491,6 +492,7 @@ VideoDecodeRenderPipeline::Params::Params(
     , height(_height)
     , screen_refresh_rate(_screen_refresh_rate)
     , rotation(_rotation)
+    , stretch(_stretch)
     , send_message_to_host(send_message)
     , switch_stretch(_switch_stretch) {}
 

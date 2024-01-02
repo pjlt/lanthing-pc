@@ -43,6 +43,7 @@ public:
         uint32_t video_height;
         uint32_t align;
         uint32_t rotation;
+        bool stretch;
     };
 
     enum class RenderResult { Success2, Failed, Reset };
