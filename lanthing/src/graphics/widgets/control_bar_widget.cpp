@@ -63,8 +63,8 @@ void ControlBarWidget::render() {
         display_width_ = io.DisplaySize.x;
         display_height_ = io.DisplaySize.y;
     }
-    else if (std::fabsf(io.DisplaySize.x - display_width_) > K ||
-             std::fabsf(io.DisplaySize.y - display_height_) > K) {
+    else if (std::fabs(io.DisplaySize.x - display_width_) > K ||
+             std::fabs(io.DisplaySize.y - display_height_) > K) {
         float normal_x = window_x_ / display_width_;
         float normal_y = window_y_ / display_height_;
         display_width_ = io.DisplaySize.x;
