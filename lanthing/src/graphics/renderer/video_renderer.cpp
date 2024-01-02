@@ -55,6 +55,7 @@ std::unique_ptr<VideoRenderer> lt::VideoRenderer::create(const Params& params) {
     d3d11_params.height = params.video_height;
     d3d11_params.rotation = params.rotation;
     d3d11_params.align = params.align;
+    d3d11_params.stretch = params.stretch;
     auto renderer = std::make_unique<D3D11Pipeline>(d3d11_params);
     if (!renderer->init()) {
         return nullptr;

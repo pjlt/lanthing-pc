@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,41 +29,19 @@
  */
 
 #pragma once
-#include <inputs/capturer/input_event.h>
+#include <ltlib/ltlib.h>
 
-#include <memory>
+#include <cstdint>
 
-#include <google/protobuf/api.pb.h>
+namespace ltlib {
 
-namespace lt {
-
-class PcSdl;
-class InputCapturerImpl;
-
-class InputCapturer {
-public:
-    struct Params {
-        PcSdl* sdl;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t rotation;
-        bool stretch;
-        std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
-            send_message;
-        std::function<void()> toggle_fullscreen;
-        std::function<void()> switch_mouse_mode;
-    };
-
-public:
-    static std::unique_ptr<InputCapturer> create(const Params& params);
-    void changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
-                               bool stretch);
-
-private:
-    InputCapturer() = default;
-
-private:
-    std::shared_ptr<InputCapturerImpl> impl_;
+struct LT_API Rect {
+    int32_t x;
+    int32_t y;
+    int32_t w;
+    int32_t h;
 };
 
-} // namespace lt
+Rect LT_API calcMaxInnerRect(Rect outer, Rect inner_original);
+
+} // namespace ltlib

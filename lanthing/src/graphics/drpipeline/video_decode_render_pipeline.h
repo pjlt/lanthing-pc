@@ -45,9 +45,10 @@ class VideoDecodeRenderPipeline {
 public:
     struct Params {
         Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-               uint32_t _screen_refresh_rate, uint32_t _rotation,
+               uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
                std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
-                   send_message);
+                   send_message,
+               std::function<void()> switch_stretch);
         bool validate() const;
 
         bool for_test = false;
@@ -56,9 +57,11 @@ public:
         uint32_t height;
         uint32_t screen_refresh_rate;
         uint32_t rotation;
+        bool stretch;
         PcSdl* sdl = nullptr;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;
+        std::function<void()> switch_stretch;
     };
 
     enum class Action {
@@ -77,6 +80,7 @@ public:
     void setLossRate(float rate);
     void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
     void switchMouseMode(bool absolute);
+    void switchStretchMode(bool stretch);
 
 private:
     VideoDecodeRenderPipeline() = default;

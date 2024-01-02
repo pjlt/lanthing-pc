@@ -62,6 +62,7 @@ public:
     RenderResult render(int64_t frame) override;
     void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
     void switchMouseMode(bool absolute) override;
+    void switchStretchMode(bool stretch) override;
     void resetRenderTarget() override;
     bool present() override;
     bool waitForPipeline(int64_t max_wait_ms) override;

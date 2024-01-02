@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,42 +28,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <inputs/capturer/input_event.h>
+#include <ltlib/transform.h>
 
-#include <memory>
+#include <cmath>
 
-#include <google/protobuf/api.pb.h>
+namespace ltlib {
 
-namespace lt {
+Rect calcMaxInnerRect(Rect outer, Rect iorigin) {
+    Rect inner{};
+    if (outer.h * 1.0f / outer.w > iorigin.h * 1.0f / iorigin.w) {
+        inner.w = outer.w;
+        inner.h = outer.w * iorigin.h / iorigin.w;
+        inner.x = 0;
+        inner.y = (outer.h - inner.h) / 2;
+    }
+    else {
+        inner.h = outer.h;
+        inner.w = outer.h * iorigin.w / iorigin.h;
+        inner.y = 0;
+        inner.x = (outer.w - inner.w) / 2;
+    }
+    return inner;
+}
 
-class PcSdl;
-class InputCapturerImpl;
-
-class InputCapturer {
-public:
-    struct Params {
-        PcSdl* sdl;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t rotation;
-        bool stretch;
-        std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
-            send_message;
-        std::function<void()> toggle_fullscreen;
-        std::function<void()> switch_mouse_mode;
-    };
-
-public:
-    static std::unique_ptr<InputCapturer> create(const Params& params);
-    void changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
-                               bool stretch);
-
-private:
-    InputCapturer() = default;
-
-private:
-    std::shared_ptr<InputCapturerImpl> impl_;
-};
-
-} // namespace lt
+} // namespace ltlib

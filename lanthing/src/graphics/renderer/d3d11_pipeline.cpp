@@ -38,6 +38,7 @@
 #include <SDL_syswm.h>
 
 #include <ltlib/logging.h>
+#include <ltlib/transform.h>
 
 using namespace Microsoft::WRL;
 
@@ -182,7 +183,8 @@ D3D11Pipeline::D3D11Pipeline(const Params& params)
     , video_width_{params.widht}
     , video_height_{params.height}
     , rotation_{params.rotation}
-    , align_{params.align} {
+    , align_{params.align}
+    , stretch_{params.stretch} {
     DwmEnableMMCSS(TRUE);
 }
 
@@ -240,6 +242,13 @@ void D3D11Pipeline::switchMouseMode(bool absolute) {
     absolute_mouse_ = absolute;
 }
 
+void D3D11Pipeline::switchStretchMode(bool stretch) {
+    if (stretch != stretch_) {
+        stretch_ = stretch;
+        calcVertexes();
+    }
+}
+
 bool D3D11Pipeline::present() {
     auto hr = swap_chain_->Present(0, 0);
     pipeline_ready_ = false;
@@ -290,6 +299,9 @@ VideoRenderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
         hr = d3d11_dev_->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_view_);
         if (FAILED(hr)) {
             LOGF(ERR, "ID3D11Device::CreateRenderTargetView failed: %#x", hr);
+            return RenderResult::Failed;
+        }
+        if (!calcVertexes()) {
             return RenderResult::Failed;
         }
         setupRSStage();
@@ -567,60 +579,7 @@ bool D3D11Pipeline::setupIAAndVSStage() {
         LOGF(WARNING, "Failed to create input layout: %#x", hr);
         return false;
     }
-    float u = (float)video_width_ / _ALIGN(video_width_, align_);
-    float v = (float)video_height_ / _ALIGN(video_height_, align_);
-    Vertex verts[] = {{-1.0f, 1.0f, 0.0f, 0.0f},
-                      {1.0f, 1.0f, u, 0.0f},
-                      {1.0f, -1.0f, u, v},
-                      {-1.0f, -1.0f, 0.0f, v}};
-    switch (rotation_) {
-    case 270:
-    {
-
-        Vertex v270[] = {{-1.0f, 1.0f, u, 0.0f},
-                         {1.0f, 1.0f, u, v},
-                         {1.0f, -1.0f, 0.0f, v},
-                         {-1.0f, -1.0f, 0.0f, 0.0f}};
-        memcpy(verts, v270, sizeof(v270));
-        break;
-    }
-    case 180:
-    {
-
-        Vertex v180[] = {{-1.0f, 1.0f, u, v},
-                         {1.0f, 1.0f, 0.0f, v},
-                         {1.0f, -1.0f, 0.0f, 0.0f},
-                         {-1.0f, -1.0f, u, 0.0f}};
-        memcpy(verts, v180, sizeof(v180));
-        break;
-    }
-    case 90:
-    {
-
-        Vertex v90[] = {{-1.0f, 1.0f, 0.0f, v},
-                        {1.0f, 1.0f, 0.0f, 0.0f},
-                        {1.0f, -1.0f, u, 0.0f},
-                        {-1.0f, -1.0f, u, v}};
-        memcpy(verts, v90, sizeof(v90));
-        break;
-    }
-    default:
-        break;
-    }
-    D3D11_BUFFER_DESC vb_desc = {};
-    vb_desc.ByteWidth = sizeof(verts);
-    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
-    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vb_desc.CPUAccessFlags = 0;
-    vb_desc.MiscFlags = 0;
-    vb_desc.StructureByteStride = sizeof(Vertex);
-
-    D3D11_SUBRESOURCE_DATA vb_data = {};
-    vb_data.pSysMem = verts;
-
-    hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, video_vertex_buffer_.GetAddressOf());
-    if (FAILED(hr)) {
-        LOGF(ERR, "Failed to create vertext buffer, hr:0x%08x", hr);
+    if (!calcVertexes()) {
         return false;
     }
 
@@ -940,6 +899,93 @@ bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     cr.height = height;
     cursors_[id] = cr;
     LOG(INFO) << "Create D3D11 Resource for cursor " << id << " success";
+    return true;
+}
+
+bool D3D11Pipeline::calcVertexes() {
+    video_vertex_buffer_ = nullptr;
+    float u = (float)video_width_ / _ALIGN(video_width_, align_);
+    float v = (float)video_height_ / _ALIGN(video_height_, align_);
+    float x = -1.0f;
+    float y = -1.0f;
+    if (!stretch_) {
+        ltlib::Rect outer{}, iorigin{};
+        outer.w = display_width_;
+        outer.h = display_height_;
+        if (rotation_ == 90 || rotation_ == 270) {
+            iorigin.w = video_height_;
+            iorigin.h = video_width_;
+        }
+        else {
+            iorigin.w = video_width_;
+            iorigin.h = video_height_;
+        }
+        ltlib::Rect inner = ltlib::calcMaxInnerRect(outer, iorigin);
+        x = inner.x * 1.0f / (outer.w / 2.0f) - 1.0f;
+        y = inner.y * 1.0f / (outer.h / 2.0f) - 1.0f;
+        // float w = inner.w * 1.0f / (outer.w / 2.0f);
+        // float h = inner.h * 1.0f / (outer.h / 2.0f);
+    }
+    std::pair<float, float> q1{-x, -y};
+    std::pair<float, float> q2{x, -y};
+    std::pair<float, float> q3{x, y};
+    std::pair<float, float> q4{-x, y};
+    LOGF(DEBUG, "q2{x:%.2f, y:%.2f}, q1{x:%.2f, y:%.2f}, q4{x:%.2f, y:%.2f}, q3{x:%.2f, y:%.2f}",
+         q2.first, q2.second, q1.first, q1.second, q4.first, q4.second, q3.first, q3.second);
+    Vertex verts[] = {{q2.first, q2.second, 0.0f, 0.0f},
+                      {q1.first, q1.second, u, 0.0f},
+                      {q4.first, q4.second, u, v},
+                      {q3.first, q3.second, 0.0f, v}};
+    switch (rotation_) {
+    case 270:
+    {
+
+        Vertex v270[] = {{q2.first, q2.second, u, 0.0f},
+                         {q1.first, q1.second, u, v},
+                         {q4.first, q4.second, 0.0f, v},
+                         {q3.first, q3.second, 0.0f}};
+        memcpy(verts, v270, sizeof(v270));
+        break;
+    }
+    case 180:
+    {
+
+        Vertex v180[] = {{q2.first, q2.second, u, v},
+                         {q1.first, q1.second, 0.0f, v},
+                         {q4.first, q4.second, 0.0f, 0.0f},
+                         {q3.first, q3.second, u, 0.0f}};
+        memcpy(verts, v180, sizeof(v180));
+        break;
+    }
+    case 90:
+    {
+
+        Vertex v90[] = {{q2.first, q2.second, 0.0f, v},
+                        {q1.first, q1.second, 0.0f, 0.0f},
+                        {q4.first, q4.second, u, 0.0f},
+                        {q3.first, q3.second, u, v}};
+        memcpy(verts, v90, sizeof(v90));
+        break;
+    }
+    default:
+        break;
+    }
+    D3D11_BUFFER_DESC vb_desc = {};
+    vb_desc.ByteWidth = sizeof(verts);
+    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
+    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vb_desc.CPUAccessFlags = 0;
+    vb_desc.MiscFlags = 0;
+    vb_desc.StructureByteStride = sizeof(Vertex);
+
+    D3D11_SUBRESOURCE_DATA vb_data = {};
+    vb_data.pSysMem = verts;
+
+    HRESULT hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, video_vertex_buffer_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(ERR, "Failed to create vertext buffer, hr:0x%08x", hr);
+        return false;
+    }
     return true;
 }
 

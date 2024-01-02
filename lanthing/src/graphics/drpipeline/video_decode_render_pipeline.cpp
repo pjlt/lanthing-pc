@@ -78,6 +78,7 @@ public:
     void resetRenderTarget();
     void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
     void switchMouseMode(bool absolute);
+    void switchStretchMode(bool stretch);
 
 private:
     void decodeLoop(const std::function<void()>& i_am_alive);
@@ -89,8 +90,10 @@ private:
     void onStat();
     void onUserSetBitrate(uint32_t bps);
     void onUserSwitchMonitor();
+    void onUserSwitchStretchOrOrigin();
     std::tuple<int32_t, float, float> getCursorInfo();
     bool isAbsoluteMouse();
+    bool isStretchMode();
 
 private:
     const bool for_test_;
@@ -101,6 +104,7 @@ private:
     const lt::VideoCodecType codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
+    std::function<void()> switch_stretch_;
     PcSdl* sdl_;
     void* window_;
 
@@ -139,6 +143,7 @@ private:
     float cursor_y_ = 0.f;
     bool visible_ = true;
     bool absolute_mouse_ = true;
+    bool is_stretch_;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -149,8 +154,10 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , rotation_{params.rotation}
     , codec_type_{params.codec_type}
     , send_message_to_host_{params.send_message_to_host}
+    , switch_stretch_{params.switch_stretch}
     , sdl_{params.sdl}
-    , statistics_{new VideoStatistics} {
+    , statistics_{new VideoStatistics}
+    , is_stretch_{params.stretch} {
     window_ = params.sdl->window();
 }
 
@@ -187,6 +194,7 @@ bool VDRPipeline::init() {
     render_params.video_width = width_;
     render_params.video_height = height_;
     render_params.rotation = rotation_;
+    render_params.stretch = is_stretch_;
     render_params.align = VideoDecoder::align(codec_type_);
     video_renderer_ = VideoRenderer::create(render_params);
     if (video_renderer_ == nullptr) {
@@ -224,6 +232,7 @@ bool VDRPipeline::init() {
     widgets_params.set_bitrate =
         std::bind(&VDRPipeline::onUserSetBitrate, this, std::placeholders::_1);
     widgets_params.switch_monitor = std::bind(&VDRPipeline::onUserSwitchMonitor, this);
+    widgets_params.stretch = std::bind(&VDRPipeline::onUserSwitchStretchOrOrigin, this);
     widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
         return false;
@@ -320,6 +329,11 @@ void VDRPipeline::switchMouseMode(bool absolute) {
     absolute_mouse_ = absolute;
 }
 
+void VDRPipeline::switchStretchMode(bool stretch) {
+    std::lock_guard lk{render_mtx_};
+    is_stretch_ = stretch;
+}
+
 bool VDRPipeline::waitForDecode(std::vector<VideoFrameInternal>& frames,
                                 std::chrono::microseconds max_delay) {
     std::unique_lock<std::mutex> lock(decode_mtx_);
@@ -403,6 +417,11 @@ void VDRPipeline::onUserSwitchMonitor() {
     send_message_to_host_(ltproto::id(msg), msg, true);
 }
 
+void VDRPipeline::onUserSwitchStretchOrOrigin() {
+    // 跑在渲染线程
+    switch_stretch_();
+}
+
 std::tuple<int32_t, float, float> VDRPipeline::getCursorInfo() {
     std::lock_guard lk{render_mtx_};
     return {cursor_id_, cursor_x_, cursor_y_};
@@ -413,6 +432,11 @@ bool VDRPipeline::isAbsoluteMouse() {
     return absolute_mouse_;
 }
 
+bool VDRPipeline::isStretchMode() {
+    std::lock_guard lk{render_mtx_};
+    return is_stretch_;
+}
+
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
     while (!stoped_) {
         i_am_alive();
@@ -421,6 +445,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             auto frame = smoother_.get(cur_time.microseconds());
             smoother_.pop();
             video_renderer_->switchMouseMode(isAbsoluteMouse());
+            video_renderer_->switchStretchMode(isStretchMode());
             if (frame.has_value()) {
                 auto [cursor, x, y] = getCursorInfo();
                 video_renderer_->updateCursor(cursor, x, y, visible_);
@@ -458,15 +483,18 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
 
 VideoDecodeRenderPipeline::Params::Params(
     lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-    uint32_t _screen_refresh_rate, uint32_t _rotation,
+    uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
-        send_message)
+        send_message,
+    std::function<void()> _switch_stretch)
     : codec_type(_codec_type)
     , width(_width)
     , height(_height)
     , screen_refresh_rate(_screen_refresh_rate)
     , rotation(_rotation)
-    , send_message_to_host(send_message) {}
+    , stretch(_stretch)
+    , send_message_to_host(send_message)
+    , switch_stretch(_switch_stretch) {}
 
 bool VideoDecodeRenderPipeline::Params::validate() const {
     if (codec_type == lt::VideoCodecType::Unknown || sdl == nullptr ||
@@ -526,6 +554,10 @@ void VideoDecodeRenderPipeline::setCursorInfo(int32_t cursor_id, float x, float 
 
 void VideoDecodeRenderPipeline::switchMouseMode(bool absolute) {
     impl_->switchMouseMode(absolute);
+}
+
+void VideoDecodeRenderPipeline::switchStretchMode(bool stretch) {
+    impl_->switchStretchMode(stretch);
 }
 
 } // namespace lt

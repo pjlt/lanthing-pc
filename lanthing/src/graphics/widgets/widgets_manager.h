@@ -60,6 +60,7 @@ public:
         // std::function<void()> exit;
         std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
         std::function<void()> switch_monitor;
+        std::function<void()> stretch;
     };
 
 public:
@@ -96,6 +97,7 @@ private:
     // bool show_control_bar_ = true;
     std::function<void(uint32_t bps)> set_bitrate_;
     std::function<void()> switch_monitor_;
+    std::function<void()> stretch_;
     std::shared_ptr<StatusWidget> status_;
     std::shared_ptr<StatisticsWidget> statistics_;
     std::shared_ptr<ControlBarWidget> control_bar_;

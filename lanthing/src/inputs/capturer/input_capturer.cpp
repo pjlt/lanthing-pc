@@ -40,6 +40,8 @@
 #include <ltproto/client2worker/mouse_event.pb.h>
 #include <ltproto/ltproto.h>
 
+#include <ltlib/transform.h>
+
 #include <inputs/executor/scancode.h>
 
 namespace {
@@ -99,6 +101,8 @@ class InputCapturerImpl {
 public:
     InputCapturerImpl(const InputCapturer::Params& params);
     void init();
+    void changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
+                               bool stretch);
 
 private:
     void sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
@@ -113,14 +117,17 @@ private:
     void handleControllerAxis(const ControllerAxisEvent& ev);
     void sendControllerState(uint32_t index);
     void processHotKeys();
+    std::pair<float, float> calcAbsPos(int32_t x, int32_t y, int32_t w, int32_t h);
 
 private:
     bool doHandleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev);
 
 private:
     PcSdl* sdl_;
-    uint32_t host_width_;
-    uint32_t host_height_;
+    uint32_t video_width_;
+    uint32_t video_height_;
+    uint32_t rotation_;
+    bool is_stretch_;
     std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
         send_message_to_host_;
     std::function<void()> toggle_fullscreen_;
@@ -128,6 +135,7 @@ private:
     // 0表示松开，非0表示按下。不用bool而用uint8_t是担心menset()之类函数不好处理bool数组
     std::array<uint8_t, 512> key_states_ = {0};
     std::array<std::optional<ControllerState>, 4> cstates_;
+    std::mutex mutex_;
 };
 
 std::unique_ptr<InputCapturer> InputCapturer::create(const Params& params) {
@@ -138,10 +146,17 @@ std::unique_ptr<InputCapturer> InputCapturer::create(const Params& params) {
     return input;
 }
 
+void InputCapturer::changeVideoParameters(uint32_t video_width, uint32_t video_height,
+                                          uint32_t rotation, bool stretch) {
+    impl_->changeVideoParameters(video_width, video_height, rotation, stretch);
+}
+
 InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     : sdl_{params.sdl}
-    , host_width_{params.host_width}
-    , host_height_{params.host_height}
+    , video_width_{params.video_width}
+    , video_height_{params.video_height}
+    , rotation_{params.rotation}
+    , is_stretch_{params.stretch}
     , send_message_to_host_{params.send_message}
     , toggle_fullscreen_{params.toggle_fullscreen}
     , switch_mouse_mode_{params.switch_mouse_mode} {}
@@ -149,6 +164,15 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
 void InputCapturerImpl::init() {
     sdl_->setInputHandler(
         std::bind(&InputCapturerImpl::onPlatformInputEvent, this, std::placeholders::_1));
+}
+
+void InputCapturerImpl::changeVideoParameters(uint32_t video_width, uint32_t video_height,
+                                              uint32_t rotation, bool stretch) {
+    std::lock_guard lock{mutex_};
+    video_width_ = video_width;
+    video_height_ = video_height;
+    rotation_ = rotation;
+    is_stretch_ = stretch;
 }
 
 void InputCapturerImpl::sendMessageToHost(uint32_t type,
@@ -226,8 +250,13 @@ void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
     }
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_key_falg(key_flag);
-    msg->set_x(ev.x * 1.0f / ev.window_width);
-    msg->set_y(ev.y * 1.0f / ev.window_height);
+    auto [x, y] = calcAbsPos(ev.x, ev.y, static_cast<int32_t>(ev.window_width),
+                             static_cast<int32_t>(ev.window_height));
+    if (x < 0.f || x > 1.f || y < 0.f || y > 1.f) {
+        return;
+    }
+    msg->set_x(x);
+    msg->set_y(y);
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
@@ -241,8 +270,13 @@ void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
 
     // TODO: 相对模式可能要累积一段再发出去
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
-    msg->set_x(ev.x * 1.0f / ev.window_width);
-    msg->set_y(ev.y * 1.0f / ev.window_height);
+    auto [x, y] = calcAbsPos(ev.x, ev.y, static_cast<int32_t>(ev.window_width),
+                             static_cast<int32_t>(ev.window_height));
+    if (x < 0.f || x > 1.f || y < 0.f || y > 1.f) {
+        // ?
+    }
+    msg->set_x(x);
+    msg->set_y(y);
     msg->set_delta_x(ev.delta_x);
     msg->set_delta_y(ev.delta_y);
     sendMessageToHost(ltproto::id(msg), msg, true);
@@ -450,6 +484,39 @@ void InputCapturerImpl::processHotKeys() {
     if (key_states_[Scancode::SCANCODE_LGUI] && key_states_[Scancode::SCANCODE_LSHIFT] &&
         key_states_[Scancode::SCANCODE_X]) {
         switch_mouse_mode_();
+    }
+}
+
+std::pair<float, float> InputCapturerImpl::calcAbsPos(int32_t x, int32_t y, int32_t win_width,
+                                                      int32_t win_height) {
+    int32_t video_width, video_height, rotation;
+    bool stretch;
+    {
+        std::lock_guard lock{mutex_};
+        video_width = video_width_;
+        video_height = video_height_;
+        rotation = rotation_;
+        stretch = is_stretch_;
+    }
+    if (stretch) {
+        return std::make_pair(x * 1.0f / win_width, y * 1.0f / win_height);
+    }
+    else {
+        ltlib::Rect outer{}, iorigin{};
+        outer.w = win_width;
+        outer.h = win_height;
+        if (rotation == 90 || rotation == 270) {
+            iorigin.w = video_height;
+            iorigin.h = video_width;
+        }
+        else {
+            iorigin.w = video_width;
+            iorigin.h = video_height;
+        }
+        ltlib::Rect inner = ltlib::calcMaxInnerRect(outer, iorigin);
+        int32_t y1 = win_height - inner.h - inner.y;
+        int32_t x1 = win_width - inner.w - inner.x;
+        return std::make_pair((x - x1) * 1.0f / inner.w, (y - y1) * 1.0f / inner.h);
     }
 }
 
