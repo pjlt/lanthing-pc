@@ -219,7 +219,7 @@ void VaGlPipeline::switchMouseMode(bool absolute) {
     (void)absolute;
 }
 
-void switchStretchMode(bool stretch) {
+void VaGlPipeline::switchStretchMode(bool stretch) {
     (void)stretch;
 }
 
