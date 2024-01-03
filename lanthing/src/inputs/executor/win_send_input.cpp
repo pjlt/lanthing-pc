@@ -253,17 +253,13 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
 
     if (isAbsoluteMouse()) {
         if (mouse->has_x() || mouse->has_y()) {
-            LOGF(INFO, "sw:%u, l:%d, r:%d, xv:%d, cx:%d", screen_width_, monitor_.left,
-                 monitor_.right, GetSystemMetrics(SM_XVIRTUALSCREEN),
-                 GetSystemMetrics(SM_CXVIRTUALSCREEN));
-            inputs[0].mi.dx =
-                static_cast<LONG>((mouse->x() * (monitor_.right - monitor_.left) + monitor_.left -
-                                   GetSystemMetrics(SM_XVIRTUALSCREEN)) *
-                                  65535.0f / GetSystemMetrics(SM_CXVIRTUALSCREEN));
-            inputs[0].mi.dy =
-                static_cast<LONG>((mouse->y() * (monitor_.bottom - monitor_.top) + monitor_.top -
-                                   GetSystemMetrics(SM_YVIRTUALSCREEN)) *
-                                  65535.0f / GetSystemMetrics(SM_CYVIRTUALSCREEN));
+            // FIXME: 这么写，理论上在多显示器+非100%缩放，有bug
+            inputs[0].mi.dx = static_cast<LONG>(
+                (mouse->x() * screen_width_ + monitor_.left - GetSystemMetrics(SM_XVIRTUALSCREEN)) *
+                65535.0f / GetSystemMetrics(SM_CXVIRTUALSCREEN));
+            inputs[0].mi.dy = static_cast<LONG>(
+                (mouse->y() * screen_height_ + monitor_.top - GetSystemMetrics(SM_YVIRTUALSCREEN)) *
+                65535.0f / GetSystemMetrics(SM_CYVIRTUALSCREEN));
             inputs[0].mi.dwFlags |=
                 MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK;
         }
