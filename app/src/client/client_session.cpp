@@ -217,6 +217,8 @@ bool ClientSession::start() {
         args.push_back(std::to_string(params_.audio_channels));
         args.push_back("-afreq");
         args.push_back(std::to_string(params_.audio_freq));
+        args.push_back("-rotation");
+        args.push_back("0");
         for (auto& arg : args) {
             argv.push_back(arg.data());
         }

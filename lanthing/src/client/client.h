@@ -164,6 +164,11 @@ private:
     std::string auth_token_;
     std::string p2p_username_;
     std::string p2p_password_;
+#if LT_WINDOWS
+    std::atomic<bool> is_stretch_{false};
+#else  // LT_WINDOWS
+    std::atomic<bool> is_stretch_{true};
+#endif // LT_WINDOWS
     SignalingParams signaling_params_;
     InputCapturer::Params input_params_{};
     VideoDecodeRenderPipeline::Params video_params_;
@@ -194,7 +199,6 @@ private:
     bool last_w_or_h_is_0_ = false;
     int64_t last_received_keepalive_;
     bool connected_to_app_ = false;
-    std::atomic<bool> is_stretch_ = false;
 };
 
 } // namespace cli
