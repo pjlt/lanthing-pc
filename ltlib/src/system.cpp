@@ -282,30 +282,22 @@ DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
         switch (dm.dmDisplayOrientation) {
         case DMDO_DEFAULT:
             rotation = 0;
-            width = dm.dmPelsWidth;
-            height = dm.dmPelsHeight;
             break;
         case DMDO_90:
             rotation = 90;
-            width = dm.dmPelsHeight;
-            height = dm.dmPelsWidth;
             break;
         case DMDO_180:
             rotation = 180;
-            width = dm.dmPelsWidth;
-            height = dm.dmPelsHeight;
             break;
         case DMDO_270:
             rotation = 270;
-            width = dm.dmPelsHeight;
-            height = dm.dmPelsWidth;
             break;
         default:
             rotation = 0;
-            width = dm.dmPelsWidth;
-            height = dm.dmPelsHeight;
             break;
         }
+        width = dm.dmPelsWidth;
+        height = dm.dmPelsHeight;
     }
     else {
         // 哪个屏幕?
@@ -456,14 +448,20 @@ std::vector<Monitor> enumMonitors() {
         memcpy(buff, info.szDevice, CCHDEVICENAME);
         std::string name = buff;
         if (info.dwFlags == MONITORINFOF_PRIMARY) {
-            monitors->operator[](0) =
-                Monitor{info.rcMonitor.left,   info.rcMonitor.top, info.rcMonitor.right,
-                        info.rcMonitor.bottom, rotation,           name};
+            monitors->operator[](0) = Monitor{info.rcMonitor.left,
+                                              info.rcMonitor.top,
+                                              info.rcMonitor.right,
+                                              info.rcMonitor.bottom,
+                                              static_cast<int32_t>(mode.dmPelsWidth),
+                                              static_cast<int32_t>(mode.dmPelsHeight),
+                                              rotation,
+                                              name};
         }
         else {
             monitors->push_back(Monitor{info.rcMonitor.left, info.rcMonitor.top,
-                                        info.rcMonitor.right, info.rcMonitor.bottom, rotation,
-                                        name});
+                                        info.rcMonitor.right, info.rcMonitor.bottom,
+                                        static_cast<int32_t>(mode.dmPelsWidth),
+                                        static_cast<int32_t>(mode.dmPelsHeight), rotation, name});
         }
         return TRUE;
     };
@@ -471,8 +469,7 @@ std::vector<Monitor> enumMonitors() {
         LOGF(ERR, "EnumDisplayMonitors failed with %#x", GetLastError()); // MSDN没说GetLastError
         return {};
     }
-    if (monitors[0].left == 0 && monitors[0].top == 0 && monitors[0].right == 0 &&
-        monitors[0].bottom == 0) {
+    if (monitors[0].width == 0 || monitors[0].height == 0) {
         LOGF(ERR, "EnumDisplayMonitors failed, primary monitor is zero");
         return {};
     }

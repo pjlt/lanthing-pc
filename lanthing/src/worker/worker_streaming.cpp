@@ -187,8 +187,7 @@ bool WorkerStreaming::init() {
         monitor_index_ = 0;
     }
     for (auto& m : monitors_) {
-        LOGF(INFO, "l:%d, r:%d, t:%d, b:%d, w:%d, h:%d, o:%d", m.left, m.right, m.top, m.bottom,
-             (m.right - m.left), (m.bottom - m.top), m.rotation);
+        LOGF(INFO, "w:%d, h:%d, o:%d", m.width, m.height, m.rotation);
     }
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
@@ -366,16 +365,8 @@ bool WorkerStreaming::negotiateStreamParameters() {
     video_params.codecs = client_codec_types_;
     // video_params.width = negotiated_display_setting_.width;
     // video_params.height = negotiated_display_setting_.height;
-    auto w = monitors_[monitor_index_].right - monitors_[monitor_index_].left;
-    auto h = monitors_[monitor_index_].bottom - monitors_[monitor_index_].top;
-    if (monitors_[monitor_index_].rotation == 90 || monitors_[monitor_index_].rotation == 270) {
-        video_params.width = h;
-        video_params.height = w;
-    }
-    else {
-        video_params.width = w;
-        video_params.height = h;
-    }
+    video_params.width = static_cast<uint32_t>(monitors_[monitor_index_].width);
+    video_params.height = static_cast<uint32_t>(monitors_[monitor_index_].height);
     video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
@@ -540,10 +531,8 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
                              static_cast<uint8_t>(InputExecutor::Type::WIN32_DRIVER);
         input_params.monitor = monitors_[monitor_index_];
-        input_params.screen_width =
-            static_cast<uint32_t>(input_params.monitor.right - input_params.monitor.left);
-        input_params.screen_height =
-            static_cast<uint32_t>(input_params.monitor.bottom - input_params.monitor.top);
+        input_params.screen_width = static_cast<uint32_t>(input_params.monitor.width);
+        input_params.screen_height = static_cast<uint32_t>(input_params.monitor.height);
         input_params.register_message_handler =
             std::bind(&WorkerStreaming::registerMessageHandler, this, std::placeholders::_1,
                       std::placeholders::_2);
@@ -612,18 +601,9 @@ void WorkerStreaming::onSwitchMonitor(const std::shared_ptr<google::protobuf::Me
     }
     video_->stop();
     auto next_index = (monitor_index_ + 1) % monitors_.size();
-    auto w = monitors_[next_index].right - monitors_[next_index].left;
-    auto h = monitors_[next_index].bottom - monitors_[next_index].top;
     auto msg = std::make_shared<ltproto::client2worker::ChangeStreamingParams>();
-    if (monitors_[next_index].rotation == 90 || monitors_[next_index].rotation == 270) {
-        msg->mutable_params()->set_video_width(h);
-        msg->mutable_params()->set_video_height(w);
-    }
-    else {
-        msg->mutable_params()->set_video_width(w);
-        msg->mutable_params()->set_video_height(h);
-    }
-
+    msg->mutable_params()->set_video_width(monitors_[next_index].width);
+    msg->mutable_params()->set_video_height(monitors_[next_index].height);
     msg->mutable_params()->set_rotation(monitors_[next_index].rotation);
     msg->mutable_params()->set_monitor_index(static_cast<int32_t>(next_index));
     sendPipeMessage(ltproto::id(msg), msg);

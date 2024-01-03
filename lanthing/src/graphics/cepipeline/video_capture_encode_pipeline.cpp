@@ -123,8 +123,14 @@ bool VCEPipeline::init() {
     }
     VideoEncoder::InitParams encode_params{};
     encode_params.bitrate_bps = 4 * 1024 * 1024;
-    encode_params.width = width_;
-    encode_params.height = height_;
+    if (monitor_.rotation == 90 || monitor_.rotation == 270) {
+        encode_params.width = height_;
+        encode_params.height = width_;
+    }
+    else {
+        encode_params.width = width_;
+        encode_params.height = height_;
+    }
     encode_params.luid = capturer->luid();
     encode_params.device = capturer->device();
     encode_params.context = capturer->deviceContext();

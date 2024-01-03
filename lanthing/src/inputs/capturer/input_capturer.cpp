@@ -489,13 +489,12 @@ void InputCapturerImpl::processHotKeys() {
 
 std::pair<float, float> InputCapturerImpl::calcAbsPos(int32_t x, int32_t y, int32_t win_width,
                                                       int32_t win_height) {
-    int32_t video_width, video_height, rotation;
+    int32_t video_width, video_height;
     bool stretch;
     {
         std::lock_guard lock{mutex_};
         video_width = video_width_;
         video_height = video_height_;
-        rotation = rotation_;
         stretch = is_stretch_;
     }
     if (stretch) {
@@ -505,14 +504,8 @@ std::pair<float, float> InputCapturerImpl::calcAbsPos(int32_t x, int32_t y, int3
         ltlib::Rect outer{}, iorigin{};
         outer.w = win_width;
         outer.h = win_height;
-        if (rotation == 90 || rotation == 270) {
-            iorigin.w = video_height;
-            iorigin.h = video_width;
-        }
-        else {
-            iorigin.w = video_width;
-            iorigin.h = video_height;
-        }
+        iorigin.w = video_width;
+        iorigin.h = video_height;
         ltlib::Rect inner = ltlib::calcMaxInnerRect(outer, iorigin);
         int32_t y1 = win_height - inner.h - inner.y;
         int32_t x1 = win_width - inner.w - inner.x;

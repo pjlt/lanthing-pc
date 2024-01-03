@@ -73,6 +73,8 @@ struct LT_API Monitor {
     int32_t top;
     int32_t right;
     int32_t bottom;
+    int32_t width;
+    int32_t height;
     int32_t rotation;
     std::string name;
 };
