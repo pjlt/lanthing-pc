@@ -68,7 +68,7 @@ public:
         ltlib::IOLoop* ioloop;
         std::string user_defined_relay_server;
         std::shared_ptr<google::protobuf::MessageLite> msg;
-        std::function<void(bool, const std::string&,
+        std::function<void(bool, int64_t, const std::string&,
                            std::shared_ptr<google::protobuf::MessageLite>)>
             on_create_completed;
         std::function<void(int64_t, CloseReason, const std::string&, const std::string&)> on_closed;
@@ -202,7 +202,8 @@ private:
     std::vector<std::string> reflex_servers_;
     std::vector<std::string> relay_servers_;
     std::atomic<bool> client_connected_{false};
-    std::function<void(bool, const std::string&, std::shared_ptr<google::protobuf::MessageLite>)>
+    std::function<void(bool, int64_t, const std::string&,
+                       std::shared_ptr<google::protobuf::MessageLite>)>
         on_create_session_completed_;
     std::function<void(int64_t, CloseReason, const std::string&, const std::string&)> on_closed_;
     std::atomic<int64_t> last_recv_time_us_ = 0;

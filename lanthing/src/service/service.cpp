@@ -332,7 +332,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     worker_params.msg = msg;
     worker_params.on_create_completed =
         std::bind(&Service::onCreateSessionCompletedThreadSafe, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3);
+                  std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
@@ -386,12 +386,14 @@ void Service::sendKeepAliveToServer() {
 }
 
 void Service::onCreateSessionCompletedThreadSafe(
-    bool success, const std::string& session_name,
+    bool success, int64_t device_id, const std::string& session_name,
     std::shared_ptr<google::protobuf::MessageLite> params) {
-    postTask(std::bind(&Service::onCreateSessionCompleted, this, success, session_name, params));
+    postTask(std::bind(&Service::onCreateSessionCompleted, this, success, device_id, session_name,
+                       params));
 }
 
-void Service::onCreateSessionCompleted(bool success, const std::string& session_name,
+void Service::onCreateSessionCompleted(bool success, int64_t device_id,
+                                       const std::string& session_name,
                                        std::shared_ptr<google::protobuf::MessageLite> params) {
     (void)session_name;
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
@@ -400,11 +402,14 @@ void Service::onCreateSessionCompleted(bool success, const std::string& session_
         auto streaming_params = ack->mutable_streaming_params();
         auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(params);
         streaming_params->CopyFrom(*negotiated_params);
+        tcp_client_->send(ltproto::id(ack), ack);
     }
     else {
-        ack->set_err_code(ltproto::ErrorCode::Unknown);
+        ack->set_err_code(ltproto::ErrorCode::ControlledInitFailed);
+        tcp_client_->send(ltproto::id(ack), ack);
+        destroySession(session_name);
+        tellAppSessionClosed(device_id);
     }
-    tcp_client_->send(ltproto::id(ack), ack);
 }
 
 void Service::onSessionClosedThreadSafe(int64_t device_id, WorkerSession::CloseReason close_reason,

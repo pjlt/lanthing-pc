@@ -91,9 +91,10 @@ private:
 
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    void onCreateSessionCompletedThreadSafe(bool success, const std::string& session_name,
+    void onCreateSessionCompletedThreadSafe(bool success, int64_t device_id,
+                                            const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);
-    void onCreateSessionCompleted(bool success, const std::string& session_name,
+    void onCreateSessionCompleted(bool success, int64_t device_id, const std::string& session_name,
                                   std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSessionClosedThreadSafe(int64_t device_id, WorkerSession::CloseReason close_reason,
                                    const std::string& session_name, const std::string& room_id);
