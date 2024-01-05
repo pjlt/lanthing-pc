@@ -304,9 +304,10 @@ void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLit
         keyboard_hit_time_ = msg->hit_keyboard() ? ltlib::steady_now_ms() : keyboard_hit_time_;
         gamepad_hit_time_ = msg->hit_gamepad() ? ltlib::steady_now_ms() : gamepad_hit_time_;
         std::ostringstream oss;
-        oss << msg->device_id() << " " << delay_ms << "ms " << std::fixed << std::setprecision(1)
-            << Mbps << "Mbps " << video_codec_ << " " << (p2p_ ? "P2P " : "Relay ")
-            << (gpu_encode_ ? "GPU:" : "CPU:") << (gpu_decode_ ? "GPU " : "CPU ");
+        oss << msg->device_id() << " " << delay_ms * 2 << "ms " << std::fixed
+            << std::setprecision(1) << Mbps << "Mbps " << video_codec_ << " "
+            << (p2p_ ? "P2P " : "Relay ") << (gpu_encode_ ? "GPU:" : "CPU:")
+            << (gpu_decode_ ? "GPU " : "CPU ");
         ui->labelClient1->setToolTip(QString::fromStdString(oss.str()));
     });
 }
