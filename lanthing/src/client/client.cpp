@@ -972,9 +972,10 @@ void Client::onUserSwitchStretch() {
     is_stretch_ = !is_stretch_;
     postTask([this]() {
         // 统一用IOLoop去做，减小bug发生概率
-        video_pipeline_->switchStretchMode(is_stretch_);
         input_capturer_->changeVideoParameters(video_params_.width, video_params_.height,
                                                video_params_.rotation, is_stretch_);
+        std::lock_guard lock{dr_mutex_};
+        video_pipeline_->switchStretchMode(is_stretch_);
     });
 }
 

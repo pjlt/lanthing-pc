@@ -60,6 +60,8 @@ QString errorCode2FriendlyMessage(int32_t code) {
          QObject::tr("Controlled side initialize audio capture or audio encoder failed")},
         {ltproto::ErrorCode::WorkerInitInputFailed,
          QObject::tr("Controlled side initialize input executor failed")},
+        {ltproto::ErrorCode::ControlledInitFailed,
+         QObject::tr("Controlled side initialize failed")},
         {ltproto::ErrorCode::ServingAnotherClient, QObject::tr("Target is serving another client")},
         {ltproto::ErrorCode::UserReject, QObject::tr("Peer user rejected you request")},
         // 30000~ *******************************************

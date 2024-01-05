@@ -418,17 +418,18 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
         return;
     }
     if (join_signaling_room_success_ == false) {
-        on_create_session_completed_(false, session_name_, empty_params);
+        on_create_session_completed_(false, client_device_id_, session_name_, empty_params);
         return;
     }
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
     if (!initTransport()) {
-        on_create_session_completed_(false, session_name_, empty_params);
+        on_create_session_completed_(false, client_device_id_, session_name_, empty_params);
         return;
     }
-    on_create_session_completed_(true, session_name_, negotiated_streaming_params_);
+    on_create_session_completed_(true, client_device_id_, session_name_,
+                                 negotiated_streaming_params_);
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
@@ -744,7 +745,10 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
 }
 
 void WorkerSession::onWorkerFailedFromOtherThread() {
-    postTask([this]() { onClosed(CloseReason::WorkerFailed); });
+    postTask([this]() {
+        auto empty_params = std::make_shared<ltproto::common::StreamingParams>();
+        on_create_session_completed_(false, client_device_id_, session_name_, empty_params);
+    });
 }
 
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {
