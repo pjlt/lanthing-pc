@@ -445,45 +445,53 @@ bool VDRPipeline::isStretchMode() {
 }
 
 void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
+    std::optional<CTSmoother::Frame> frame;
     while (!stoped_) {
         i_am_alive();
         ltlib::Timestamp cur_time = ltlib::Timestamp::now();
-        if (video_renderer_->waitForPipeline(16) && waitForRender(2ms)) {
-            auto frame = smoother_.get(cur_time.microseconds());
+        if (video_renderer_->waitForPipeline(16)) {
+            waitForRender(16ms);
+            auto new_frame = smoother_.get(cur_time.microseconds());
             smoother_.pop();
+            if (new_frame.has_value()) {
+                frame = new_frame;
+            }
+            if (!frame.has_value()) {
+                continue;
+            }
             video_renderer_->switchMouseMode(isAbsoluteMouse());
             video_renderer_->switchStretchMode(isStretchMode());
-            if (frame.has_value()) {
-                auto [cursor, x, y] = getCursorInfo();
-                video_renderer_->updateCursor(cursor, x, y, visible_);
-                LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
-                           << ltlib::steady_now_us() - frame->capture_time - time_diff_;
+            auto [cursor, x, y] = getCursorInfo();
+            video_renderer_->updateCursor(cursor, x, y, visible_);
+            LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
+                       << ltlib::steady_now_us() - frame->capture_time - time_diff_;
+            if (new_frame.has_value()) {
                 statistics_->addRenderVideo();
-                auto start = ltlib::steady_now_us();
-                auto result = video_renderer_->render(frame->no);
-                auto end = ltlib::steady_now_us();
-                switch (result) {
-                case VideoRenderer::RenderResult::Failed:
-                    // TODO: 更好地通知退出
-                    LOG(ERR) << "Render failed, exit render loop";
-                    return;
-                case VideoRenderer::RenderResult::Reset:
-                    widgets_->reset();
-                    break;
-                case VideoRenderer::RenderResult::Success2:
-                default:
-                    break;
-                }
-                statistics_->updateRenderVideoTime(end - start);
             }
-            auto start = ltlib::steady_now_us();
+            auto t0 = ltlib::steady_now_us();
+            auto result = video_renderer_->render(frame->no);
+            auto t1 = ltlib::steady_now_us();
+            switch (result) {
+            case VideoRenderer::RenderResult::Failed:
+                // TODO: 更好地通知退出
+                LOG(ERR) << "Render failed, exit render loop";
+                return;
+            case VideoRenderer::RenderResult::Reset:
+                widgets_->reset();
+                break;
+            case VideoRenderer::RenderResult::Success2:
+            default:
+                break;
+            }
+            statistics_->updateRenderVideoTime(t1 - t0);
+            auto t2 = ltlib::steady_now_us();
             widgets_->render();
-            auto mid = ltlib::steady_now_us();
+            auto t3 = ltlib::steady_now_us();
             video_renderer_->present();
-            auto end = ltlib::steady_now_us();
+            auto t4 = ltlib::steady_now_us();
             statistics_->addPresent();
-            statistics_->updateRenderWidgetsTime(mid - start);
-            statistics_->updatePresentTime(end - mid);
+            statistics_->updateRenderWidgetsTime(t3 - t2);
+            statistics_->updatePresentTime(t4 - t3);
         }
     }
 }
