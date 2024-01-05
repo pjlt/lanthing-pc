@@ -122,6 +122,13 @@ bool VCEPipeline::init() {
         return false;
     }
     VideoEncoder::InitParams encode_params{};
+    encode_params.freq = static_cast<uint32_t>(monitor_.frequency);
+    if (encode_params.freq == 0) {
+        encode_params.freq = 60;
+    }
+    else if (encode_params.freq > 240) {
+        encode_params.freq = 240;
+    }
     encode_params.bitrate_bps = 4 * 1024 * 1024;
     if (monitor_.rotation == 90 || monitor_.rotation == 270) {
         encode_params.width = height_;

@@ -35,19 +35,19 @@
 
 namespace lt {
 VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t width,
-                                                 uint32_t height, int fps, uint32_t bitrate_kbps,
-                                                 bool enable_vbv)
+                                                 uint32_t height, uint32_t fps,
+                                                 uint32_t bitrate_kbps, bool enable_vbv)
     : codec_type_{c}
     , width_{width}
     , height_{height}
-    , fps_{fps}
+    , fps_{static_cast<int>(fps)} // 为什么用int？忘了
     , bitrate_kbps_{bitrate_kbps}
     , enable_vbv_{enable_vbv}
     , profile_{c == lt::VideoCodecType::H264 ? Profile::AvcMain : Profile::HevcMain} {
     assert(c == lt::VideoCodecType::H264 || c == lt::VideoCodecType::H265);
     uint32_t bitrate_bps = bitrate_kbps_ * 1024;
     if (enable_vbv) {
-        float vbv = 2.6f;
+        float vbv = 1.3f;
         int bitrate_vbv = static_cast<int>(bitrate_bps * vbv + 0.5f);
         int vbv_buf = static_cast<int>(bitrate_vbv * 1.0f / fps_ + 0.5f);
         vbvbufsize_ = vbv_buf;

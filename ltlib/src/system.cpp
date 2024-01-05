@@ -444,6 +444,7 @@ std::vector<Monitor> enumMonitors() {
                 break;
             }
         }
+        auto frequency = mode.dmDisplayFrequency ? mode.dmDisplayFrequency : 60;
         char buff[CCHDEVICENAME + 1] = {0};
         memcpy(buff, info.szDevice, CCHDEVICENAME);
         std::string name = buff;
@@ -455,13 +456,15 @@ std::vector<Monitor> enumMonitors() {
                                               static_cast<int32_t>(mode.dmPelsWidth),
                                               static_cast<int32_t>(mode.dmPelsHeight),
                                               rotation,
+                                              static_cast<int32_t>(frequency),
                                               name};
         }
         else {
             monitors->push_back(Monitor{info.rcMonitor.left, info.rcMonitor.top,
                                         info.rcMonitor.right, info.rcMonitor.bottom,
                                         static_cast<int32_t>(mode.dmPelsWidth),
-                                        static_cast<int32_t>(mode.dmPelsHeight), rotation, name});
+                                        static_cast<int32_t>(mode.dmPelsHeight), rotation,
+                                        static_cast<int32_t>(frequency), name});
         }
         return TRUE;
     };

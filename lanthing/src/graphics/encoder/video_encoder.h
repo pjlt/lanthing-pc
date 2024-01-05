@@ -55,6 +55,7 @@ public:
         uint32_t width = 0;
         uint32_t height = 0;
         uint32_t bitrate_bps = 0;
+        uint32_t freq = 0;
 
         bool validate() const;
     };

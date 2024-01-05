@@ -158,7 +158,8 @@ std::unique_ptr<lt::VideoEncoder> doCreateEncoder(const lt::VideoEncoder::InitPa
                                                   void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt;
     VideoEncodeParamsHelper params_helper{
-        params.codec_type, params.width, params.height, 60, params.bitrate_bps / 1024, true};
+        params.codec_type,         params.width, params.height, params.freq,
+        params.bitrate_bps / 1024, true};
     switch (params.vendor_id) {
     case kNvidiaVendorID:
     {
@@ -379,7 +380,8 @@ VideoEncoder::checkEncodeAbilitiesWithLuid(int64_t luid, uint32_t width, uint32_
 
 bool VideoEncoder::InitParams::validate() const {
     if (this->width == 0 || this->height == 0 || this->bitrate_bps == 0 ||
-        this->device == nullptr || this->context == nullptr) {
+        this->device == nullptr || this->context == nullptr || this->freq == 0 ||
+        this->freq > 240) {
         return false;
     }
     if (codec_type != lt::VideoCodecType::H264 && codec_type != lt::VideoCodecType::H265) {
