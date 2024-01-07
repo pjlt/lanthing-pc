@@ -215,7 +215,8 @@ Client::Client(const Params& params)
                     is_stretch_,
                     std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3),
-                    std::bind(&Client::onUserSwitchStretch, this)}
+                    std::bind(&Client::onUserSwitchStretch, this),
+                    std::bind_front(&Client::resetVideoPipeline, this)}
     , audio_params_{atype(), params.audio_freq, params.audio_channels}
     , reflex_servers_{params.reflex_servers} {}
 
@@ -978,6 +979,26 @@ void Client::onUserSwitchStretch() {
                                                video_params_.rotation, is_stretch_);
         std::lock_guard lock{dr_mutex_};
         video_pipeline_->switchStretchMode(is_stretch_);
+    });
+}
+
+void Client::resetVideoPipeline() {
+    // 跑在解码线程
+    postTask([this]() {
+        bool need_exit = false;
+        {
+            std::lock_guard lock{dr_mutex_};
+            video_pipeline_
+                .reset(); // 手动reset再create，保证不同时存在两份VideoDecodeRenderPipeline
+            video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+            if (video_pipeline_ == nullptr) {
+                LOG(ERR) << "Recreate VideoDecodeRenderPipeline failed, exit process";
+                need_exit = true;
+            }
+        }
+        if (need_exit) {
+            onPlatformExit();
+        }
     });
 }
 

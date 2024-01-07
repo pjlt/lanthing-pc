@@ -105,6 +105,7 @@ private:
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
     std::function<void()> switch_stretch_;
+    std::function<void()> reset_pipeline_;
     PcSdl* sdl_;
     void* window_;
 
@@ -156,6 +157,7 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , codec_type_{params.codec_type}
     , send_message_to_host_{params.send_message_to_host}
     , switch_stretch_{params.switch_stretch}
+    , reset_pipeline_{params.reset_pipeline}
     , sdl_{params.sdl}
     , statistics_{new VideoStatistics}
     , is_stretch_{params.stretch}
@@ -373,7 +375,12 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
                 break;
             }
             else if (decoded_frame.status == DecodeStatus::EAgain) {
-                LOG(FATAL) << "Should not be reach here";
+                LOG(ERR) << "Decode return EAgain(should not be reach here), try reset pipeline";
+                reset_pipeline_();
+            }
+            else if (decoded_frame.status == DecodeStatus::NeedReset) {
+                LOG(ERR) << "Decode return NeedReset, reset pipeline";
+                reset_pipeline_();
             }
             else {
                 LOG(DEBUG) << "CAPTURE-AFTER_DECODE "
@@ -504,7 +511,7 @@ VideoDecodeRenderPipeline::Params::Params(
     uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message,
-    std::function<void()> _switch_stretch)
+    std::function<void()> _switch_stretch, std::function<void()> _reset_pipeline)
     : codec_type(_codec_type)
     , width(_width)
     , height(_height)
@@ -512,7 +519,8 @@ VideoDecodeRenderPipeline::Params::Params(
     , rotation(_rotation)
     , stretch(_stretch)
     , send_message_to_host(send_message)
-    , switch_stretch(_switch_stretch) {
+    , switch_stretch(_switch_stretch)
+    , reset_pipeline(_reset_pipeline) {
     status_color = -1;
 }
 

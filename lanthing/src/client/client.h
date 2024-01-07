@@ -158,6 +158,7 @@ private:
     void onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onUserSwitchStretch();
+    void resetVideoPipeline();
 
 private:
     std::unique_ptr<ltlib::Settings> settings_;

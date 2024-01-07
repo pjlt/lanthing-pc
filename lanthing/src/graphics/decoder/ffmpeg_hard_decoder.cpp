@@ -394,6 +394,10 @@ DecodedFrame FFmpegHardDecoder::decode(const uint8_t* data, uint32_t size) {
         frame.status = DecodeStatus::EAgain;
         return frame;
     }
+    else if (ret == AVERROR(EPERM)) {
+        frame.status = DecodeStatus::NeedReset;
+        return frame;
+    }
     else {
         ret = av_strerror(ret, strbuff, kBuffLen);
         LOG(ERR) << "avcodec_send_packet failed: " << (ret == 0 ? strbuff : "unknown error");

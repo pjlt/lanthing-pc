@@ -192,6 +192,7 @@ D3D11Pipeline::~D3D11Pipeline() {
     if (waitable_obj_) {
         CloseHandle(waitable_obj_);
     }
+    cursors_.clear();
 }
 
 bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {

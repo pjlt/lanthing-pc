@@ -48,7 +48,7 @@ public:
                uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
                std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
                    send_message,
-               std::function<void()> switch_stretch);
+               std::function<void()> switch_stretch, std::function<void()> reset_pipeline);
         bool validate() const;
 
         bool for_test = false;
@@ -63,6 +63,7 @@ public:
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;
         std::function<void()> switch_stretch;
+        std::function<void()> reset_pipeline;
     };
 
     enum class Action {
