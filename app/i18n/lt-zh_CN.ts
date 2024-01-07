@@ -43,78 +43,78 @@
         <translation type="vanished">连接已断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="253"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="266"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="255"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="268"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="259"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="272"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="261"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="274"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="262"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="275"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="426"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="439"/>
         <source>The new version %s has been released, please download it&lt;br&gt;from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="434"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="447"/>
         <source>Version: </source>
         <translation>版本： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="436"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="449"/>
         <source>Released date: </source>
         <translation>发布日期： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="437"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="450"/>
         <source>New features:</source>
         <translation>新特性：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="443"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="456"/>
         <source>Bug fix:</source>
         <translation>修复：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="420"/>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="451"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="433"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="464"/>
         <source>New Version</source>
         <translation>新版本</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="412"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="425"/>
         <source>The new version %s has been released, this is a force update version, please download it from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，该版本与旧版不兼容，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="583"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="615"/>
         <source>🟢Connected to server</source>
         <translation>🟢已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="595"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="627"/>
         <source>🔴Disconnected from server</source>
         <translation>🔴与服务器断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="606"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="638"/>
         <source>🟢Controlled module up</source>
         <translation>🟢被控模块正常</translation>
     </message>
@@ -123,44 +123,44 @@
         <translation type="vanished">🟡正在启动被控模块</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="610"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="642"/>
         <source>🔴Controlled module down</source>
         <translation>🔴被控模块掉线</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="629"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="661"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="630"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="662"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="631"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="663"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="632"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="664"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="740"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="772"/>
         <source>DeviceID or AccessToken invalid</source>
         <translation>设备码或验证码错误</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="859"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="912"/>
         <source>delete</source>
         <translation>删除</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="233"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1870"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1955"/>
         <source>Lanthing</source>
         <translation></translation>
     </message>
@@ -254,7 +254,8 @@
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1708"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1762"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1774"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1845"/>
         <source>Confirm</source>
         <translation>确认</translation>
     </message>
@@ -263,7 +264,7 @@
         <translation type="vanished">鼠标模式（暂不生效）</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="589"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="621"/>
         <source>🟡Connecting...</source>
         <translation>🟡正在连接服务器</translation>
     </message>
@@ -318,47 +319,59 @@
         <translation>强制中转</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1735"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1747"/>
         <source>Port Range</source>
         <translation>端口范围</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1804"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1817"/>
+        <source>Status Color</source>
+        <translation type="unfinished">状态颜色</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1824"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1831"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1838"/>
+        <source>0-255</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1889"/>
         <source>Shotcut key</source>
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1813"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1898"/>
         <source>Switch Fullscreen</source>
         <translation>切换全屏</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1820"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1905"/>
         <source>Win+Shift+Z</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1831"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1916"/>
         <source>Mouse mode</source>
         <translation>鼠标模式</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1838"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1923"/>
         <source>Win+Shift+X</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1877"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1962"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing is a remote control tool created by &lt;a href=&quot;https://github.com/pjlt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;Project Lanthing&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1902"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1987"/>
         <source>License</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1909"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1994"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing release under &lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/LICENSE&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;BSD-3-Clause license&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Thirdparty software licenses are listed in&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>

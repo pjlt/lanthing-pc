@@ -163,6 +163,19 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->leditMinPort->setText(QString::number(settings.min_port));
         ui->leditMaxPort->setText(QString::number(settings.max_port));
     }
+    ui->btnStatusColor->setEnabled(false);
+    ui->leditRed->setValidator(new QIntValidator(0, 255, this));
+    ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
+    ui->leditBlue->setValidator(new QIntValidator(0, 255, this));
+    if (settings.status_color.has_value() && settings.status_color.value() >= 0) {
+        uint32_t color = settings.status_color.value();
+        uint32_t red = (color & 0xff000000) >> 24;
+        uint32_t green = (color & 0x00ff0000) >> 16;
+        uint32_t blue = (color & 0x0000ff00) >> 8;
+        ui->leditRed->setText(QString::number(red));
+        ui->leditGreen->setText(QString::number(green));
+        ui->leditBlue->setText(QString::number(blue));
+    }
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
@@ -573,6 +586,25 @@ void MainWindow::setupOtherCallbacks() {
             ui->btnPortRange->setEnabled(false);
         }
     });
+    connect(ui->leditRed, &QLineEdit::textChanged,
+            std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
+    connect(ui->leditGreen, &QLineEdit::textChanged,
+            std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
+    connect(ui->leditBlue, &QLineEdit::textChanged,
+            std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
+    connect(ui->btnStatusColor, &QPushButton::clicked, [this]() {
+        ui->btnStatusColor->setEnabled(false);
+        if (ui->leditRed->text().isEmpty() && ui->leditGreen->text().isEmpty() &&
+            ui->leditBlue->text().isEmpty()) {
+            params_.set_status_color(-1);
+        }
+        else {
+            uint32_t red = static_cast<uint32_t>(ui->leditRed->text().trimmed().toInt());
+            uint32_t green = static_cast<uint32_t>(ui->leditGreen->text().trimmed().toInt());
+            uint32_t blue = static_cast<uint32_t>(ui->leditBlue->text().trimmed().toInt());
+            params_.set_status_color((red << 24) | (green << 16) | (blue << 8));
+        }
+    });
 }
 
 void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {
@@ -795,6 +827,27 @@ void MainWindow::onTimeoutHideToken() {
         QTimer::singleShot(token_last_show_time_ms_ + 5'100 - now_ms,
                            std::bind(&MainWindow::onTimeoutHideToken, this));
     }
+}
+
+void MainWindow::onLineEditStatusColorChanged(const QString&) {
+    if (ui->leditRed->text().isEmpty() && ui->leditGreen->text().isEmpty() &&
+        ui->leditBlue->text().isEmpty()) {
+        ui->btnStatusColor->setEnabled(true);
+        return;
+    }
+    if (ui->leditRed->text().isEmpty() || ui->leditGreen->text().isEmpty() ||
+        ui->leditBlue->text().isEmpty()) {
+        ui->btnStatusColor->setEnabled(false);
+        return;
+    }
+    uint32_t red = static_cast<uint32_t>(ui->leditRed->text().trimmed().toInt());
+    uint32_t green = static_cast<uint32_t>(ui->leditGreen->text().trimmed().toInt());
+    uint32_t blue = static_cast<uint32_t>(ui->leditBlue->text().trimmed().toInt());
+    if (red > 255 || green > 255 || blue > 255) {
+        ui->btnStatusColor->setEnabled(false);
+        return;
+    }
+    ui->btnStatusColor->setEnabled(true);
 }
 
 void MainWindow::addOrUpdateTrustedDevices() {

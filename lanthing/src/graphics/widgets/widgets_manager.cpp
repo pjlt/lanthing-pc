@@ -66,7 +66,7 @@ WidgetsManager::WidgetsManager(const Params& params)
     , set_bitrate_{params.set_bitrate}
     , switch_monitor_{params.switch_monitor}
     , stretch_{params.stretch}
-    , status_{std::make_shared<StatusWidget>(video_width_, video_height_)}
+    , status_{std::make_shared<StatusWidget>(video_width_, video_height_, params.status_color)}
     , statistics_{std::make_shared<StatisticsWidget>(video_width_, video_height_)} {
 #if LT_WINDOWS
     SDL_SysWMinfo info{};

@@ -108,6 +108,7 @@ bool App::init() {
     force_relay_ = settings_->getBoolean("force_relay").value_or(false);
     min_port_ = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     max_port_ = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
+    status_color_ = settings_->getInteger("status_color").value_or(-1);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -174,6 +175,7 @@ int App::exec(int argc, char** argv) {
     params.ignore_version = std::bind(&App::ignoreVersion, this, std::placeholders::_1);
     params.set_port_range =
         std::bind(&App::setPortRange, this, std::placeholders::_1, std::placeholders::_2);
+    params.set_status_color = std::bind(&App::setStatusColor, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -223,6 +225,10 @@ GUI::Settings App::getSettings() const {
     settings.force_relay = force_relay_;
     settings.min_port = min_port_;
     settings.max_port = max_port_;
+    if (status_color_ >= 0) {
+        settings.status_color = static_cast<uint32_t>(status_color_);
+    }
+
     return settings;
 }
 
@@ -335,6 +341,16 @@ void App::setPortRange(uint16_t min_port, uint16_t max_port) {
     max_port_ = max_port;
     settings_->setInteger("min_port", min_port);
     settings_->setInteger("max_port", max_port);
+}
+
+void App::setStatusColor(int64_t color) {
+    status_color_ = color;
+    if (color < 0) {
+        settings_->deleteKey("status_color");
+    }
+    else {
+        settings_->setInteger("status_color", color);
+    }
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

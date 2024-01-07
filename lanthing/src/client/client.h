@@ -193,6 +193,7 @@ private:
     int64_t rtt_ = 0;
     int64_t time_diff_ = 0;
     bool windowed_fullscreen_ = true;
+    int64_t status_color_ = -1;
     bool signaling_keepalive_inited_ = false;
     std::optional<bool> is_p2p_;
     bool absolute_mouse_ = true;

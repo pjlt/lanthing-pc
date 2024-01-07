@@ -144,6 +144,7 @@ private:
     bool visible_ = true;
     bool absolute_mouse_ = true;
     bool is_stretch_;
+    int64_t status_color_;
 };
 
 VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
@@ -157,7 +158,8 @@ VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
     , switch_stretch_{params.switch_stretch}
     , sdl_{params.sdl}
     , statistics_{new VideoStatistics}
-    , is_stretch_{params.stretch} {
+    , is_stretch_{params.stretch}
+    , status_color_{params.status_color} {
     window_ = params.sdl->window();
 }
 
@@ -236,6 +238,7 @@ bool VDRPipeline::init() {
     widgets_params.window = window_;
     widgets_params.video_width = width_;
     widgets_params.video_height = height_;
+    widgets_params.status_color = status_color_;
     widgets_params.set_bitrate =
         std::bind(&VDRPipeline::onUserSetBitrate, this, std::placeholders::_1);
     widgets_params.switch_monitor = std::bind(&VDRPipeline::onUserSwitchMonitor, this);
@@ -509,7 +512,9 @@ VideoDecodeRenderPipeline::Params::Params(
     , rotation(_rotation)
     , stretch(_stretch)
     , send_message_to_host(send_message)
-    , switch_stretch(_switch_stretch) {}
+    , switch_stretch(_switch_stretch) {
+    status_color = -1;
+}
 
 bool VideoDecodeRenderPipeline::Params::validate() const {
     if (codec_type == lt::VideoCodecType::Unknown || sdl == nullptr ||
