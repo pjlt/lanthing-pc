@@ -58,6 +58,7 @@ public:
         uint32_t screen_refresh_rate;
         uint32_t rotation;
         bool stretch;
+        int64_t status_color;
         PcSdl* sdl = nullptr;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;

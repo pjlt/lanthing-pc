@@ -36,7 +36,7 @@ namespace lt {
 
 class StatusWidget {
 public:
-    StatusWidget(uint32_t video_width, uint32_t video_height);
+    StatusWidget(uint32_t video_width, uint32_t video_height, int64_t color);
     ~StatusWidget();
     void setTaskBarPos(uint32_t direction, uint32_t left, uint32_t right, uint32_t top,
                        uint32_t bottom);
@@ -53,8 +53,11 @@ private:
     uint32_t fps_ = 0;
     float loss_ = 0.0f;
     uint32_t bottom_margin_ = 48;
-    uint32_t right_margin_ = 36;
+    uint32_t right_margin_ = 24;
     std::atomic<bool> resize_;
+    float red_;
+    float green_;
+    float blue_;
 };
 
 } // namespace lt

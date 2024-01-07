@@ -260,6 +260,7 @@ bool Client::init() {
         // 没有设置 或者 设置为真，即默认窗口化全屏
         windowed_fullscreen_ = true;
     }
+    video_params_.status_color = settings_->getInteger("status_color").value_or(-1);
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         LOG(ERR) << "Init IOLoop failed";

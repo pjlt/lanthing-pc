@@ -38,10 +38,21 @@
 
 namespace lt {
 
-StatusWidget::StatusWidget(uint32_t video_width, uint32_t video_height)
+StatusWidget::StatusWidget(uint32_t video_width, uint32_t video_height, int64_t color)
     : video_width_{video_width}
     , video_height_{video_height} {
     resize_ = true;
+    if (color < 0) {
+        red_ = .5f;
+        green_ = .5f;
+        blue_ = .5f;
+    }
+    else {
+        uint32_t ucolor = static_cast<uint32_t>(color);
+        red_ = ((ucolor & 0xff000000) >> 24) / 255.f;
+        green_ = ((ucolor & 0x00ff0000) >> 16) / 255.f;
+        blue_ = ((ucolor & 0x0000ff00) >> 8) / 255.f;
+    }
 }
 
 StatusWidget::~StatusWidget() {}
@@ -57,20 +68,18 @@ void StatusWidget::setTaskBarPos(uint32_t direction, uint32_t left, uint32_t rig
 }
 
 void StatusWidget::render() {
-    const uint32_t kAssumeWidth = 250;
-    const uint32_t kAssumeHeight = 50;
+    const char* kFormat = "RTT:%u  FPS:%u  LOSS:%.1f%%";
+    auto kTextSize = ImGui::CalcTextSize(kFormat);
     auto& io = ImGui::GetIO();
     display_width_ = static_cast<uint32_t>(io.DisplaySize.x);
     display_height_ = static_cast<uint32_t>(io.DisplaySize.y);
-
-    float x = static_cast<float>(display_width_ - kAssumeWidth - right_margin_);
-    float y = static_cast<float>(display_height_ - kAssumeHeight - bottom_margin_);
+    float x = static_cast<float>(display_width_ - kTextSize.x - right_margin_);
+    float y = static_cast<float>(display_height_ - kTextSize.y - bottom_margin_);
     ImGui::SetNextWindowPos(ImVec2{x, y});
     ImGui::Begin("status", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                      ImGuiWindowFlags_NoBackground);
-    ImGui::TextColored(ImVec4{.5f, .5f, .5f, 1.f}, "RTT:%u  FPS:%u  LOSS:%.1f%% ", rtt_ms_, fps_,
-                       loss_);
+    ImGui::TextColored(ImVec4{red_, green_, blue_, 1.f}, kFormat, rtt_ms_, fps_, loss_);
     ImGui::End();
 }
 

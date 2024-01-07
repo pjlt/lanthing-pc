@@ -79,6 +79,7 @@ private:
     void setForceRelay(bool force);
     void ignoreVersion(int64_t version);
     void setPortRange(uint16_t min_port, uint16_t max_port);
+    void setStatusColor(int64_t color);
 
     void createAndStartService();
     void stopService();
@@ -142,6 +143,7 @@ private:
     bool force_relay_ = false;
     uint16_t min_port_ = 0;
     uint16_t max_port_ = 0;
+    int64_t status_color_ = -1;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;

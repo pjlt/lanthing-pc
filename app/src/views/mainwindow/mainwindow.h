@@ -114,6 +114,8 @@ private:
 
     void onTimeoutHideToken();
 
+    void onLineEditStatusColorChanged(const QString&);
+
     void addOrUpdateTrustedDevices();
 
     void addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool mouse, bool keyboard,

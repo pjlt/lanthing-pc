@@ -56,6 +56,7 @@ public:
         void* window;
         uint32_t video_width;
         uint32_t video_height;
+        int64_t status_color;
         // std::function<void(bool)> toggle_fullscreen;
         // std::function<void()> exit;
         std::function<void(uint32_t bps)> set_bitrate; // 0代表自动
