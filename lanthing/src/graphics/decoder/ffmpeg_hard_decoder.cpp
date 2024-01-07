@@ -181,6 +181,7 @@ FFmpegHardDecoder::~FFmpegHardDecoder() {
     if (av_hw_ctx_ != nullptr) {
         av_buffer_unref(reinterpret_cast<AVBufferRef**>(&av_hw_ctx_));
     }
+    deRefHwDevCtx();
 }
 
 FFmpegHardDecoder::FFmpegHardDecoder(const Params& params)
@@ -190,6 +191,9 @@ FFmpegHardDecoder::FFmpegHardDecoder(const Params& params)
     , va_type_{params.va_type} {}
 
 bool FFmpegHardDecoder::init() {
+    if (!addRefHwDevCtx()) {
+        return false;
+    }
     // 参考 https://www.ffmpeg.org/doxygen/4.4/hw__decode_8c_source.html
     //  由于我们已经提前知道编码类型，不需要像例子里那样，从码流中分析出AVCodec
     if (!allocatePacketAndFrames()) {
@@ -333,6 +337,37 @@ bool FFmpegHardDecoder::allocatePacketAndFrames() {
         return false;
     }
     return true;
+}
+
+bool FFmpegHardDecoder::addRefHwDevCtx() {
+#ifdef LT_WINDOWS
+    if (hw_ctx_ == nullptr || hw_dev_ == nullptr) {
+        LOG(ERR) << "hw_ctx == nullptr or hw_dev == nullptr";
+        return false;
+    }
+    else {
+        auto ctx = reinterpret_cast<ID3D11DeviceContext*>(hw_ctx_);
+        auto dev = reinterpret_cast<ID3D11Device*>(hw_dev_);
+        ctx->AddRef();
+        dev->AddRef();
+        return true;
+    }
+#else
+    return true;
+
+#endif // LT_WINDOWS
+}
+
+void FFmpegHardDecoder::deRefHwDevCtx() {
+#ifdef LT_WINDOWS
+    if (hw_ctx_ == nullptr || hw_dev_ == nullptr) {
+        return;
+    }
+    auto ctx = reinterpret_cast<ID3D11DeviceContext*>(hw_ctx_);
+    auto dev = reinterpret_cast<ID3D11Device*>(hw_dev_);
+    ctx->Release();
+    dev->Release();
+#endif // LT_WINDOWS
 }
 
 int32_t FFmpegHardDecoder::getHwPixFormat() const {
