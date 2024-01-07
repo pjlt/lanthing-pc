@@ -496,6 +496,7 @@ void Client::onSignalingNetMessage(uint32_t type,
 
 void Client::onSignalingDisconnected() {
     // TODO: 业务代码，目前是直接退出进程.
+    LOG(INFO) << "Disconnected from signaling server, exit process";
     stopWait();
 }
 
