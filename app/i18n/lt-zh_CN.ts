@@ -160,7 +160,7 @@
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="233"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1955"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1998"/>
         <source>Lanthing</source>
         <translation></translation>
     </message>
@@ -219,27 +219,32 @@
         <translation>上次连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1599"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1614"/>
+        <source>System</source>
+        <translation>系统</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1626"/>
         <source>Run as Service</source>
         <translation>以服务运行</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1606"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1633"/>
         <source>Auto refresh access token</source>
         <translation>自动更新验证码</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1637"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1643"/>
         <source>Fullscreen Mode</source>
         <translation>全屏模式</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1644"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1655"/>
         <source>Fullscreen</source>
         <translation>全屏独占</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1651"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1662"/>
         <source>Windowed Fullscreen</source>
         <translation>窗口化全屏</translation>
     </message>
@@ -248,14 +253,14 @@
         <translation type="vanished">强制中转（在被控端设置）</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1685"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1712"/>
         <source>Relay Server</source>
         <translation>中继服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1708"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1774"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1845"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1735"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1799"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1883"/>
         <source>Confirm</source>
         <translation>确认</translation>
     </message>
@@ -314,64 +319,74 @@
         <translation>操作</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1670"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1672"/>
+        <source>Network</source>
+        <translation>网络</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1684"/>
         <source>Force Relay</source>
         <translation>强制中转</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1747"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1772"/>
         <source>Port Range</source>
         <translation>端口范围</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1817"/>
-        <source>Status Color</source>
-        <translation type="unfinished">状态颜色</translation>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1828"/>
+        <source>Misc</source>
+        <translation>杂项</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1824"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1831"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1838"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1855"/>
+        <source>Status Color</source>
+        <translation>状态颜色</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1862"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1869"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1876"/>
         <source>0-255</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1889"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1932"/>
         <source>Shotcut key</source>
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1898"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1941"/>
         <source>Switch Fullscreen</source>
         <translation>切换全屏</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1905"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1948"/>
         <source>Win+Shift+Z</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1916"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1959"/>
         <source>Mouse mode</source>
         <translation>鼠标模式</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1923"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1966"/>
         <source>Win+Shift+X</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1962"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2005"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing is a remote control tool created by &lt;a href=&quot;https://github.com/pjlt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;Project Lanthing&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1987"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2030"/>
         <source>License</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1994"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2037"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing release under &lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/LICENSE&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;BSD-3-Clause license&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Thirdparty software licenses are listed in&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
