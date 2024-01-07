@@ -167,7 +167,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     ui->leditRed->setValidator(new QIntValidator(0, 255, this));
     ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
     ui->leditBlue->setValidator(new QIntValidator(0, 255, this));
-    if (settings.status_color.has_value() && settings.status_color.value() >= 0) {
+    if (settings.status_color.has_value()) {
         uint32_t color = settings.status_color.value();
         uint32_t red = (color & 0xff000000) >> 24;
         uint32_t green = (color & 0x00ff0000) >> 16;
