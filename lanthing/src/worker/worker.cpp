@@ -30,8 +30,10 @@
 
 #include "worker.h"
 #include "worker_check_decode.h"
+#if LT_WINDOWS
 #include "worker_setting.h"
 #include "worker_streaming.h"
+#endif // LT_WINDOWS
 
 #include <ltlib/logging.h>
 
@@ -45,6 +47,7 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
         LOG(ERR) << "Invalid worker parameters: no worker action";
         return nullptr;
     }
+#if LT_WINDOWS
     else if (iter->second == "streaming") {
         LOG(INFO) << "Launch worker for streaming";
         return WorkerStreaming::create(options);
@@ -53,6 +56,7 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
         LOG(INFO) << "Launch worker for setting";
         return WorkerSetting::create(options);
     }
+#endif // LT_WINDOWS
     else if (iter->second == "check_decode") {
         LOG(INFO) << "Launch worker for check_decode";
         return WorkerCheckDecode::create(options);

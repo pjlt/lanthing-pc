@@ -247,7 +247,7 @@ int runAsService(std::map<std::string, std::string> options) {
 
 int runAsWorker(std::map<std::string, std::string> options) {
     (void)options;
-#if defined(LT_WINDOWS)
+#if defined(LT_WINDOWS) || defined(LT_LINUX)
     initLogAndMinidump(Role::Worker);
     auto worker = lt::worker::Worker::create(options);
     if (worker) {

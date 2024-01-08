@@ -98,10 +98,46 @@ WARNING_ENABLE(6335)
 
 uint32_t checkDecodeAbility() {
     SimpleGuard a{[]() {}};
-    // TODO: 实现它
     return VideoCodecType::H264_420 | VideoCodecType::H265_420;
+#if 0
+    auto process_id = fork();
+    if (process_id == -1) {
+        LOG(ERR) << "Launch worker fork() failed: " << errno;
+        return 0;
+    }
+    else if (process_id == 0) {
+        // is child
+        std::string path = ltlib::getProgramPath() + "/lanthing";
+        std::vector<std::string> args;
+        std::vector<char*> argv;
+        args.push_back("-type");
+        args.push_back("worker");
+        args.push_back("-action");
+        args.push_back("check_decode");
+        for (auto& arg : args) {
+            argv.push_back(arg.data());
+        }
+        argv.push_back(nullptr);
+        if (execv(path.c_str(), reinterpret_cast<char* const*>(argv.data()))) {
+            // 还是同一个log文件吗？
+            LOG(ERR) << "Child process: execv return " << errno;
+            exit(0);
+        }
+        return 0;
+    }
+    else {
+        // is parent
+        int status = 0;
+        int ret = waitpid(process_id, &status, 0);
+        if (ret <= 0) {
+            LOG(ERR) << "waitpid return " << ret << " errno " << errno;
+        }
+        status = status < 0 ? 0 : status;
+        return static_cast<uint32_t>(status);
+    }
+#endif // 0
 }
-#else // LT_WINDOWS | LT_LINUX
+#else  // LT_WINDOWS | LT_LINUX
 #error Unsupported platform
 #endif // LT_WINDOWS | LT_LINUX
 

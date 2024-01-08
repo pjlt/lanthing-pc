@@ -20,22 +20,26 @@ set(LT_SVC_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.cpp
 )
 
-set(LT_WORKER_SRCS
+set(LT_WORKER_WIN_SRCS
     # Worker
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_streaming.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_streaming.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
+)
+
+set(LT_WORKER_SRCS
+    # Worker
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.cpp
 )
 
 set(LT_VIDEO_ENCODER_SRCS
@@ -196,6 +200,8 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
 
+    ${LT_WORKER_SRCS}
+
     ${LT_DAEMON_SRCS}
 
     ${LT_CLIENT_SRCS}
@@ -212,7 +218,7 @@ set(LT_SRCS
 if (LT_WINDOWS)
     list(APPEND LT_SRCS
         ${LT_SVC_SRCS}
-        ${LT_WORKER_SRCS}
+        ${LT_WORKER_WIN_SRCS}
         ${LT_VIDEO_ENCODER_SRCS}
         ${LT_VIDEO_CAPTURER_SRCS}
         ${LT_VIDEO_CE_PIPELINE_SRCS}
