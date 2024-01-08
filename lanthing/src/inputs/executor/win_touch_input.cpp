@@ -91,8 +91,8 @@ void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POI
         break;
     case TouchEvent_TouchFlag_TouchMove:
         point.pointerFlags |= POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_UPDATE;
-        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * w - ox);
-        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * h - oy);
+        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * w + monitor.left - ox);
+        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * h + monitor.top - oy);
         break;
     case TouchEvent_TouchFlag_TouchCancel:
         if (point.pointerFlags & POINTER_FLAG_INCONTACT) {
