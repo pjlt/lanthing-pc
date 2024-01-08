@@ -77,7 +77,7 @@ bool injectSyntheticPointerInput(HSYNTHETICPOINTERDEVICE device,
 }
 
 void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POINTER_INFO& point,
-             int32_t w, int32_t h, int32_t ox, int32_t oy) {
+             const ltlib::Monitor& monitor, int32_t w, int32_t h, int32_t ox, int32_t oy) {
     using namespace ltproto::client2worker;
     switch (msg->touch_flag()) {
     case TouchEvent_TouchFlag_TouchUp:
@@ -86,8 +86,8 @@ void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POI
         break;
     case TouchEvent_TouchFlag_TouchDown:
         point.pointerFlags |= POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_DOWN;
-        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * w - ox);
-        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * h - oy);
+        point.ptPixelLocation.x = static_cast<LONG>(msg->x() * w + monitor.left - ox);
+        point.ptPixelLocation.y = static_cast<LONG>(msg->y() * h + monitor.top - oy);
         break;
     case TouchEvent_TouchFlag_TouchMove:
         point.pointerFlags |= POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_UPDATE;
@@ -115,8 +115,9 @@ void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POI
 
 namespace lt {
 
-std::unique_ptr<TouchExecutor> TouchExecutor::create() {
-    std::unique_ptr<TouchExecutor> touch{new TouchExecutor};
+std::unique_ptr<TouchExecutor> TouchExecutor::create(uint32_t screen_width, uint32_t screen_height,
+                                                     ltlib::Monitor monitor) {
+    std::unique_ptr<TouchExecutor> touch{new TouchExecutor{screen_width, screen_height, monitor}};
     if (!touch->init()) {
         return nullptr;
     }
@@ -129,13 +130,14 @@ TouchExecutor::~TouchExecutor() {
     }
 }
 
-TouchExecutor::TouchExecutor() {
+TouchExecutor::TouchExecutor(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor)
+    : screen_width_{screen_width}
+    , screen_height_{screen_height}
+    , monitor_{monitor} {
     resetPointState();
 }
 
 bool TouchExecutor::init() {
-    width_ = ltlib::getScreenWidth();
-    height_ = ltlib::getScreenHeight();
     offset_x_ = GetSystemMetrics(SM_XVIRTUALSCREEN);
     offset_y_ = GetSystemMetrics(SM_YVIRTUALSCREEN);
     return true;
@@ -216,7 +218,8 @@ bool TouchExecutor::submit(const std::shared_ptr<google::protobuf::MessageLite>&
         LOG(WARNING) << "Too many touch points, up to " << points_.size() << " supported";
         return false;
     }
-    convert(msg, points_[i].touchInfo.pointerInfo, width_, height_, offset_x_, offset_y_);
+    convert(msg, points_[i].touchInfo.pointerInfo, monitor_, screen_width_, screen_height_,
+            offset_x_, offset_y_);
     points_[i].touchInfo.touchMask = TOUCH_MASK_NONE;
     if (points_[i].touchInfo.pointerInfo.pointerFlags & POINTER_FLAG_INCONTACT) {
         if (msg->pressure() != 0) {

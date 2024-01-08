@@ -39,30 +39,34 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <ltlib/system.h>
+
 namespace lt {
 
 class TouchExecutor {
 public:
-    static std::unique_ptr<TouchExecutor> create();
+    static std::unique_ptr<TouchExecutor> create(uint32_t screen_width, uint32_t screen_height,
+                                                 ltlib::Monitor monitor);
     ~TouchExecutor();
 
     bool submit(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void update();
 
 private:
-    TouchExecutor();
+    TouchExecutor(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor);
     bool init();
     bool init2();
     bool reset();
     void resetPointState();
 
 private:
+    uint32_t screen_width_;
+    uint32_t screen_height_;
+    ltlib::Monitor monitor_;
     std::optional<bool> init_success_;
     std::vector<POINTER_TYPE_INFO> points_;
     uint32_t using_points_ = 0;
     HSYNTHETICPOINTERDEVICE touch_dev_ = nullptr;
-    int32_t width_ = 0;
-    int32_t height_ = 0;
     int32_t offset_x_ = 0;
     int32_t offset_y_ = 0;
 };

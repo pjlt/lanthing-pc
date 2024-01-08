@@ -67,6 +67,8 @@ std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     if (!input->init()) {
         return nullptr;
     }
+    input->touch_ =
+        TouchExecutor::create(params.screen_width, params.screen_height, params.monitor);
     return input;
 }
 
@@ -86,7 +88,6 @@ bool InputExecutor::init() {
     gamepad_ =
         Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this, std::placeholders::_1,
                                   std::placeholders::_2, std::placeholders::_3));
-    touch_ = TouchExecutor::create();
     return true;
 }
 
