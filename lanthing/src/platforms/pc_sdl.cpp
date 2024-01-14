@@ -258,7 +258,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     promise.set_value(true);
     SDL_StopTextInput();
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
-    SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1");
+    SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "0");
     SDL_SetWindowKeyboardGrab(window_, SDL_TRUE);
 
     // 在Win10下，长时间点住SDL的窗口拖动，会让SDL_WaitEventTimeout()卡住，SDL_AddEventWatch才能获取到相关事件
