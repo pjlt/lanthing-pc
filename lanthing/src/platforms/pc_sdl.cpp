@@ -258,6 +258,8 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     promise.set_value(true);
     SDL_StopTextInput();
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
+    SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "0");
+    SDL_SetWindowKeyboardGrab(window_, SDL_TRUE);
 
     // 在Win10下，长时间点住SDL的窗口拖动，会让SDL_WaitEventTimeout()卡住，SDL_AddEventWatch才能获取到相关事件
     // 但回调似乎是在其它线程执行，这点需要小心
@@ -507,10 +509,17 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlTouchEvent(const SDL_Event& ev) {
 
 PcSdlImpl::DispatchResult PcSdlImpl::handleToggleFullscreen() {
     auto flag = SDL_GetWindowFlags(window_);
-    auto is_fullscreen = (flag & SDL_WINDOW_FULLSCREEN) || (flag & SDL_WINDOW_FULLSCREEN_DESKTOP);
+    auto current_is_fullscreen =
+        (flag & SDL_WINDOW_FULLSCREEN) || (flag & SDL_WINDOW_FULLSCREEN_DESKTOP);
+    if (current_is_fullscreen) {
+        SDL_SetWindowGrab(window_, SDL_FALSE);
+    }
+    else {
+        SDL_SetWindowGrab(window_, SDL_TRUE);
+    }
     SDL_WindowFlags fullscreen_mode =
         windowed_fullscreen_ ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
-    SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : fullscreen_mode);
+    SDL_SetWindowFullscreen(window_, current_is_fullscreen ? 0 : fullscreen_mode);
     return DispatchResult::kContinue;
 }
 
