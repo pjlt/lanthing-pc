@@ -7,8 +7,8 @@ Lanthing是一款开源的串流/远程控制工具。除了主控端和被控�
 当前支持下列系统：
 
 * Windows 10 或以上
-* Linux (仅支持主控，beta阶段，仅在少数平台测试过)
-* Android (仅支持主控，alpha阶段，在交流群内测中)
+* Linux
+* Android
 
 ## 特性
 
@@ -71,11 +71,6 @@ cp options-default.cmake options-user.cmake  #可选，如果需要修改编译�
 
 注意：**连接上对方默认只有手柄权限，鼠标和键盘权限需要被控方手动给予。** 如果不想每次都这么麻烦，可以在`管理`页面修改某个客户端的默认权限。
 
-## 进度
-
-开发者这么久不发版本？是不是在摸鱼！
-
-让我瞅瞅有没有在[磨洋工](https://github.com/orgs/pjlt/projects/1/views/1)。
 
 ## 交流
 
