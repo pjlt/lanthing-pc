@@ -32,12 +32,15 @@
 
 #include <Windows.h>
 
+#include <ltproto/error_code.pb.h>
 #include <ltproto/worker2service/stop_working.pb.h>
 
+#include <lt_constants.h>
 #include <ltlib/logging.h>
 #include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
+
 namespace {
 
 std::string to_string(std::vector<lt::VideoCodecType> codecs) {
@@ -244,10 +247,31 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
         }
         else if (exit_code <= 255) {
             // 我们定义的错误
-            on_failed_();
+            ltproto::ErrorCode ec = ltproto::ErrorCode::Unknown;
+            switch (exit_code) {
+            case kExitCodeTimeout:
+                ec = ltproto::ErrorCode::WorkerKeepAliveTimeout;
+                break;
+            case kExitCodeInitVideoFailed:
+                ec = ltproto::ErrorCode::WrokerInitVideoFailed;
+                break;
+            case kExitCodeInitAudioFailed:
+                ec = ltproto::ErrorCode::WorkerInitAudioFailed;
+                break;
+            case kExitCodeInitInputFailed:
+                ec = ltproto::ErrorCode::WorkerInitInputFailed;
+                break;
+            case kExitCodeClientChangeStreamingParamsFailed:
+                ec = ltproto::ErrorCode::InitDecodeRenderPipelineFailed;
+                break;
+            default:
+                break;
+            }
+            on_failed_(ec);
             return false;
         }
         else {
+            LOG(INFO) << "Try restart worker";
             // Windows的错误，可能崩溃了
             // 也有可能是我自已定义的'重启'错误码
             return true;

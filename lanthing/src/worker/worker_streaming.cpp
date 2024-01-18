@@ -39,18 +39,12 @@
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
 
+#include <lt_constants.h>
 #include <ltlib/logging.h>
 #include <ltlib/system.h>
 #include <ltlib/times.h>
 
 namespace {
-
-constexpr int kExitNeedRestart = 256;
-constexpr int kExitOK = 0;
-constexpr int kExitTimeout = 2;
-constexpr int kExitStartWorkingFailed = 3;
-constexpr int kExitClientChangeStreamingParamsFailed = 4;
-constexpr int kExitRestartResolutionChanged = kExitNeedRestart + 1;
 
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
@@ -336,13 +330,13 @@ bool WorkerStreaming::negotiateAllParameters() {
         }
     }
     // negotiated_display_setting_ = result.negotiated;
-    if (!negotiateStreamParameters()) {
+    if (negotiateStreamParameters() != 0) {
         return false;
     }
     return true;
 }
 
-bool WorkerStreaming::negotiateStreamParameters() {
+int32_t WorkerStreaming::negotiateStreamParameters() {
 
     auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
@@ -356,7 +350,7 @@ bool WorkerStreaming::negotiateStreamParameters() {
         std::bind(&WorkerStreaming::onCapturedAudioData, this, std::placeholders::_1);
     auto audio = AudioCapturer::create(audio_params);
     if (audio == nullptr) {
-        return false;
+        return ltproto::ErrorCode::WorkerInitAudioFailed;
     }
     negotiated_params->set_audio_channels(audio->channels());
     negotiated_params->set_audio_sample_rate(audio->framesPerSec());
@@ -376,7 +370,7 @@ bool WorkerStreaming::negotiateStreamParameters() {
     auto video = lt::VideoCaptureEncodePipeline::create(video_params);
     if (video == nullptr) {
         LOGF(ERR, "Create VideoCaptureEncodePipeline failed");
-        return false;
+        return ltproto::ErrorCode::WrokerInitVideoFailed;
     }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
@@ -394,7 +388,7 @@ bool WorkerStreaming::negotiateStreamParameters() {
     negotiated_params_ = negotiated_params;
     video_ = std::move(video);
     audio_ = std::move(audio);
-    return true;
+    return ltproto::ErrorCode::Success;
 }
 
 void WorkerStreaming::mainLoop(const std::function<void()>& i_am_alive) {
@@ -467,7 +461,7 @@ void WorkerStreaming::checkCimeout() {
     if (now - last_time_received_from_service_ > kTimeout) {
         LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_
                      << "ms, worker exit.";
-        stop(kExitTimeout);
+        stop(kExitCodeTimeout);
     }
     else {
         postDelayTask(500, [this]() { checkCimeout(); });
@@ -517,9 +511,11 @@ void WorkerStreaming::onPipeConnected() {
 void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
     auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorking>(_msg);
     auto ack = std::make_shared<ltproto::worker2service::StartWorkingAck>();
+    int32_t error_code = kExitCodeStartWorkingFailed;
     do {
         if (!video_->start()) {
             ack->set_err_code(ltproto::ErrorCode::WrokerInitVideoFailed);
+            error_code = kExitCodeInitVideoFailed;
             break;
         }
         if (video_->defaultOutput()) {
@@ -541,6 +537,7 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         input_ = InputExecutor::create(input_params);
         if (input_ == nullptr) {
             ack->set_err_code(ltproto::ErrorCode::WorkerInitInputFailed);
+            error_code = kExitCodeInitInputFailed;
             break;
         }
         ack->set_err_code(ltproto::ErrorCode::Success);
@@ -559,13 +556,13 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         }
         input_ = nullptr;
         LOG(ERR) << "Start working failed, exit worker";
-        postDelayTask(100, std::bind(&WorkerStreaming::stop, this, kExitStartWorkingFailed));
+        postDelayTask(100, std::bind(&WorkerStreaming::stop, this, error_code));
     }
 }
 
 void WorkerStreaming::onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>&) {
     LOG(INFO) << "Received StopWorking";
-    stop(kExitOK);
+    stop(kExitCodeOK);
 }
 
 void WorkerStreaming::onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>&) {
@@ -588,10 +585,10 @@ void WorkerStreaming::onChangeStreamingParamsAck(
         LOG(ERR) << "Received ChangeStreamingParamsAck with error code "
                  << static_cast<int32_t>(msg->err_code()) << " : "
                  << ltproto::ErrorCode_Name(msg->err_code());
-        stop(kExitClientChangeStreamingParamsFailed);
+        stop(kExitCodeClientChangeStreamingParamsFailed);
     }
     else {
-        stop(kExitRestartResolutionChanged);
+        stop(kExitCodeRestartResolutionChanged);
     }
 }
 

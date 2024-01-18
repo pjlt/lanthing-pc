@@ -386,18 +386,18 @@ void Service::sendKeepAliveToServer() {
 }
 
 void Service::onCreateSessionCompletedThreadSafe(
-    bool success, int64_t device_id, const std::string& session_name,
+    int32_t error_code, int64_t device_id, const std::string& session_name,
     std::shared_ptr<google::protobuf::MessageLite> params) {
-    postTask(std::bind(&Service::onCreateSessionCompleted, this, success, device_id, session_name,
-                       params));
+    postTask(std::bind(&Service::onCreateSessionCompleted, this, error_code, device_id,
+                       session_name, params));
 }
 
-void Service::onCreateSessionCompleted(bool success, int64_t device_id,
+void Service::onCreateSessionCompleted(int32_t error_code, int64_t device_id,
                                        const std::string& session_name,
                                        std::shared_ptr<google::protobuf::MessageLite> params) {
     (void)session_name;
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
-    if (success) {
+    if (error_code == ltproto::ErrorCode::Success) {
         ack->set_err_code(ltproto::ErrorCode::Success);
         auto streaming_params = ack->mutable_streaming_params();
         auto negotiated_params = std::static_pointer_cast<ltproto::common::StreamingParams>(params);
@@ -405,7 +405,12 @@ void Service::onCreateSessionCompleted(bool success, int64_t device_id,
         tcp_client_->send(ltproto::id(ack), ack);
     }
     else {
-        ack->set_err_code(ltproto::ErrorCode::ControlledInitFailed);
+        if (ltproto::ErrorCode_IsValid(error_code)) {
+            ack->set_err_code(static_cast<ltproto::ErrorCode>(error_code));
+        }
+        else {
+            ack->set_err_code(ltproto::ErrorCode::ControlledInitFailed);
+        }
         tcp_client_->send(ltproto::id(ack), ack);
         destroySession(session_name);
         tellAppSessionClosed(device_id);

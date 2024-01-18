@@ -66,7 +66,7 @@
 #include <transport/transport_tcp.h>
 
 #include "worker_process.h"
-#include <string_keys.h>
+#include <lt_constants.h>
 
 namespace {
 
@@ -371,7 +371,8 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
     params.client_codecs = client_codecs;
-    params.on_failed = std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this);
+    params.on_failed =
+        std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this, std::placeholders::_1);
     worker_process_ = WorkerProcess::create(params);
 }
 
@@ -418,17 +419,19 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
         return;
     }
     if (join_signaling_room_success_ == false) {
-        on_create_session_completed_(false, client_device_id_, session_name_, empty_params);
+        on_create_session_completed_(ltproto::ErrorCode::JoinRoomFailed, client_device_id_,
+                                     session_name_, empty_params);
         return;
     }
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
     if (!initTransport()) {
-        on_create_session_completed_(false, client_device_id_, session_name_, empty_params);
+        on_create_session_completed_(ltproto::ErrorCode::TransportInitFailed, client_device_id_,
+                                     session_name_, empty_params);
         return;
     }
-    on_create_session_completed_(true, client_device_id_, session_name_,
+    on_create_session_completed_(ltproto::ErrorCode::Success, client_device_id_, session_name_,
                                  negotiated_streaming_params_);
 }
 
@@ -744,10 +747,10 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
     }
 }
 
-void WorkerSession::onWorkerFailedFromOtherThread() {
-    postTask([this]() {
+void WorkerSession::onWorkerFailedFromOtherThread(int32_t error_code) {
+    postTask([this, error_code]() {
         auto empty_params = std::make_shared<ltproto::common::StreamingParams>();
-        on_create_session_completed_(false, client_device_id_, session_name_, empty_params);
+        on_create_session_completed_(error_code, client_device_id_, session_name_, empty_params);
     });
 }
 

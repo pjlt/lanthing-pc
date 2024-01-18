@@ -80,7 +80,7 @@ private:
     bool saveAndChangeCurrentDisplaySettings(DisplaySettingNegotiator::Result result);
     void recoverDisplaySettings();
     bool negotiateAllParameters();
-    bool negotiateStreamParameters();
+    int32_t negotiateStreamParameters();
     void mainLoop(const std::function<void()>& i_am_alive);
     void stop(int exit_code);
     void postTask(const std::function<void()>& task);

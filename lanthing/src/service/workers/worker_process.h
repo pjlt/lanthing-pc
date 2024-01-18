@@ -58,7 +58,7 @@ public:
         uint32_t client_height;
         uint32_t client_refresh_rate;
         std::vector<lt::VideoCodecType> client_codecs;
-        std::function<void()> on_failed;
+        std::function<void(int32_t)> on_failed;
     };
 
 public:
@@ -83,7 +83,7 @@ private:
     uint32_t client_refresh_rate_;
     uint32_t monitor_index_ = 0;
     std::vector<lt::VideoCodecType> client_codecs_;
-    std::function<void()> on_failed_;
+    std::function<void(int32_t)> on_failed_;
     bool run_as_win_service_;
     std::mutex mutex_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
