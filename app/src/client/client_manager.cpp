@@ -206,8 +206,11 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
 void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto ack = std::static_pointer_cast<ltproto::server::RequestConnectionAck>(_msg);
     if (ack->err_code() != ltproto::ErrorCode::Success) {
-        LOGF(WARNING, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") failed",
-             ack->device_id(), ack->request_id());
+        LOGF(WARNING,
+             "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64
+             ") failed, error code: %d %s",
+             ack->device_id(), ack->request_id(), static_cast<int32_t>(ack->err_code()),
+             ltproto::ErrorCode_Name(ack->err_code()).c_str());
         sessions_.erase(ack->request_id());
         on_connect_failed_(ack->device_id(), ack->err_code());
         return;

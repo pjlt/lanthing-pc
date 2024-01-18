@@ -45,8 +45,7 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::InternalError, QObject::tr("Internal error")},
         {ltproto::ErrorCode::InvalidParameter, QObject::tr("Invalid parameters")},
         {ltproto::ErrorCode::InvalidStatus,
-         QObject::tr(
-             "Invalid status, the local program or server has invalid status, probably a bug")},
+         QObject::tr("Invalid status, the local program or server has invalid status")},
         {ltproto::ErrorCode::AppNotOnline,
          QObject::tr("Remove app not online, can't confirm connection")},
         {ltproto::ErrorCode::AuthFailed, QObject::tr("Auth failed")},
@@ -54,6 +53,8 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::DecodeFailed, QObject::tr("Decode failed")},
         {ltproto::ErrorCode::RenderFailed, QObject::tr("Render failed")},
         {ltproto::ErrorCode::NoDecodeAbility, QObject::tr("No decode ability")},
+        {ltproto::ErrorCode::InitDecodeRenderPipelineFailed,
+         QObject::tr("Initialize decode-render pipeline failed")},
         {ltproto::ErrorCode::WrokerInitVideoFailed,
          QObject::tr("Controlled side initialize video capture or video encoder failed")},
         {ltproto::ErrorCode::WorkerInitAudioFailed,
@@ -62,7 +63,9 @@ QString errorCode2FriendlyMessage(int32_t code) {
          QObject::tr("Controlled side initialize input executor failed")},
         {ltproto::ErrorCode::ControlledInitFailed,
          QObject::tr("Controlled side initialize failed")},
+        {ltproto::ErrorCode::WorkerKeepAliveTimeout, QObject::tr("KeepAlive timeout")},
         {ltproto::ErrorCode::ServingAnotherClient, QObject::tr("Target is serving another client")},
+        {ltproto::ErrorCode::TransportInitFailed, QObject::tr("Initialize transport failed")},
         {ltproto::ErrorCode::UserReject, QObject::tr("Peer user rejected you request")},
         // 30000~ *******************************************
         {ltproto::ErrorCode::AllocateDeviceIDNoAvailableID,
@@ -71,23 +74,20 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::LoginDeviceInvalidID,
          QObject::tr("Login device failed, invalid device ID")},
         {ltproto::ErrorCode::LoginDeviceInvalidStatus,
-         QObject::tr("Login device failed, server has invalid status, probably a bug")},
+         QObject::tr("Login device failed, server has invalid status")},
         // deprecated RequestConnectionClientRefuse
         {ltproto::ErrorCode::RequestConnectionClientRefuse, QObject::tr("")},
         {ltproto::ErrorCode::RequestConnectionInvalidStatus,
-         QObject::tr("Request connection failed, server has invalid status, probably a bug")},
+         QObject::tr("Request connection failed, server has invalid status")},
         {ltproto::ErrorCode::RequestConnectionCreateOrderFailed,
-         QObject::tr(
-             "Request connection failed, server can not create order, probably controlled side is "
-             "serving another clinet, or controlled side's 'lanthing.exe' is hanging. If it's the "
-             "second situation, try to kill all 'lanthing.exe' and 'app.exe' processes, then "
-             "retry")},
+         QObject::tr("Request connection failed, probably controlled side is "
+                     "serving another clinet")},
         {ltproto::ErrorCode::RequestConnectionPeerNotOnline,
          QObject::tr("Request connection failed, peer not online")},
         {ltproto::ErrorCode::RequestConnectionTimeout, QObject::tr("Request connection timeout")},
         // 50000~ *******************************************
         {ltproto::ErrorCode::JoinRoomFailed,
-         QObject::tr("Signaling server error, join room failed, probably a bug")},
+         QObject::tr("Signaling server error, join room failed")},
         {ltproto::ErrorCode::SignalingPeerNotOnline,
          QObject::tr("Send signaling message failed, peer not online")},
         // 60000~ *******************************************
@@ -95,8 +95,7 @@ QString errorCode2FriendlyMessage(int32_t code) {
          QObject::tr("Controlled module disconnected from server")},
         // 70000~ *******************************************
         {ltproto::ErrorCode::ClientStatusConnectTimeout, QObject::tr("Connect timeout")},
-        {ltproto::ErrorCode::ClientStatusKeepAliveTimeout,
-         QObject::tr("KeepAlive timeout, maybe your network is poor")},
+        {ltproto::ErrorCode::ClientStatusKeepAliveTimeout, QObject::tr("KeepAlive timeout")},
     };
     QString final_msg = kPrefix.arg(code);
     final_msg += "\n    ";

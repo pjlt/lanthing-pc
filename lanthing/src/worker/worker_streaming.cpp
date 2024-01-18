@@ -142,7 +142,12 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
 
     std::unique_ptr<WorkerStreaming> worker{new WorkerStreaming{params}};
     int32_t ec = worker->init();
-    return {std::move(worker), ec};
+    if (ec != kExitCodeOK) {
+        return {nullptr, ec};
+    }
+    else {
+        return {std::move(worker), kExitCodeOK};
+    }
 }
 
 WorkerStreaming::WorkerStreaming(const Params& params)

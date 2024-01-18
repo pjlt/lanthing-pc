@@ -241,7 +241,7 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
             CloseHandle(thread_handle_);
             thread_handle_ = nullptr;
         }
-        if (exit_code == 0) {
+        if (exit_code == kExitCodeOK) {
             // 正常退出
             return false;
         }
@@ -251,6 +251,9 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
             switch (exit_code) {
             case kExitCodeTimeout:
                 ec = ltproto::ErrorCode::WorkerKeepAliveTimeout;
+                break;
+            case kExitCodeInitWorkerFailed:
+                ec = ltproto::ErrorCode::ControlledInitFailed;
                 break;
             case kExitCodeInitVideoFailed:
                 ec = ltproto::ErrorCode::WrokerInitVideoFailed;
@@ -267,7 +270,10 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
             default:
                 break;
             }
-            on_failed_(ec);
+            // 只返回初始化错误，超时这种‘中途’错误不返回
+            if (ec != ltproto::ErrorCode::WorkerKeepAliveTimeout) {
+                on_failed_(ec);
+            }
             return false;
         }
         else {
