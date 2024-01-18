@@ -132,6 +132,7 @@ private:
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
     if (params.on_reset == nullptr || params.on_exit == nullptr) {
+        LOG(ERR) << "Create PcSdl failed: invalid parameters";
         return nullptr;
     }
     std::unique_ptr<PcSdlImpl> sdl{new PcSdlImpl(params)};
@@ -244,6 +245,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
 
     if (window_ == nullptr) {
         // 出错了，退出整个client（
+        LOG(ERR) << "SDL_CreateWindow failed: " << SDL_GetError();
         promise.set_value(false);
         return;
     }

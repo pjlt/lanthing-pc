@@ -58,6 +58,7 @@
 #endif
 
 #include "firewall.h"
+#include "lt_constants.h"
 
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 // 不显示命令行窗口.
@@ -249,7 +250,7 @@ int runAsWorker(std::map<std::string, std::string> options) {
     (void)options;
 #if defined(LT_WINDOWS) || defined(LT_LINUX)
     initLogAndMinidump(Role::Worker);
-    auto worker = lt::worker::Worker::create(options);
+    auto [worker, exit_code] = lt::worker::Worker::create(options);
     if (worker) {
         int ret = worker->wait();
         LOG(INFO) << "Normal exit " << ret;
@@ -258,7 +259,7 @@ int runAsWorker(std::map<std::string, std::string> options) {
     else {
         LOG(INFO) << "Exit with failure";
         // worker初始化失败的错误码
-        return 255;
+        return exit_code;
     }
 #else  // LT_WINDOWS
     printf("Unavailable 'runAsWorker' for current platform\n");

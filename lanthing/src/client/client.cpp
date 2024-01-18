@@ -52,10 +52,10 @@
 #include <ltproto/signaling/signaling_message.pb.h>
 #include <ltproto/signaling/signaling_message_ack.pb.h>
 
+#include <lt_constants.h>
 #include <ltlib/logging.h>
 #include <ltlib/system.h>
 #include <ltlib/time_sync.h>
-#include <string_keys.h>
 
 #include <transport/transport_rtc.h>
 #include <transport/transport_rtc2.h>

@@ -30,26 +30,21 @@
 
 #pragma once
 
-#include <worker/worker.h>
-
 namespace lt {
 
-namespace worker {
+// Signaling Keys
+inline const char kSigCoreClose[] = "close";
 
-class WorkerCheckDecode : public Worker {
-public:
-    static std::tuple<std::unique_ptr<WorkerCheckDecode>, int32_t>
-    create(std::map<std::string, std::string> options);
-    ~WorkerCheckDecode() override;
-    int wait() override;
-
-private:
-    WorkerCheckDecode(uint32_t codecs);
-
-private:
-    const uint32_t codecs_;
-};
-
-} // namespace worker
+// Worker Exit Code
+constexpr int kExitCodeNeedRestart = 256;
+constexpr int kExitCodeOK = 0;
+constexpr int kExitCodeTimeout = 2;
+constexpr int kExitCodeInitWorkerFailed = 3;
+constexpr int kExitCodeClientChangeStreamingParamsFailed = 4;
+constexpr int kExitCodeInitVideoFailed = 5;
+constexpr int kExitCodeInitAudioFailed = 6;
+constexpr int kExitCodeInitInputFailed = 7;
+constexpr int kExitCodeInvalidParameters = 8;
+constexpr int kExitCodeRestartResolutionChanged = kExitCodeNeedRestart + 1;
 
 } // namespace lt

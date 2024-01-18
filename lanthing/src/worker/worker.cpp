@@ -35,17 +35,19 @@
 #include "worker_streaming.h"
 #endif // LT_WINDOWS
 
+#include <lt_constants.h>
 #include <ltlib/logging.h>
 
 namespace lt {
 
 namespace worker {
 
-std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> options) {
+std::tuple<std::unique_ptr<Worker>, int32_t>
+Worker::create(std::map<std::string, std::string> options) {
     auto iter = options.find("-action");
     if (iter == options.cend()) {
         LOG(ERR) << "Invalid worker parameters: no worker action";
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
 #if LT_WINDOWS
     else if (iter->second == "streaming") {
@@ -63,7 +65,7 @@ std::unique_ptr<Worker> Worker::create(std::map<std::string, std::string> option
     }
     else {
         LOG(ERR) << "Unkonwn worker action: " << iter->second;
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
 }
 
