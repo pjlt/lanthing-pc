@@ -47,7 +47,7 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::InvalidStatus,
          QObject::tr("Invalid status, the local program or server has invalid status")},
         {ltproto::ErrorCode::AppNotOnline,
-         QObject::tr("Remove app not online, can't confirm connection")},
+         QObject::tr("Remote app not online, can't confirm connection")},
         {ltproto::ErrorCode::AuthFailed, QObject::tr("Auth failed")},
         // 10000~ *******************************************
         {ltproto::ErrorCode::DecodeFailed, QObject::tr("Decode failed")},
@@ -76,7 +76,8 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::LoginDeviceInvalidStatus,
          QObject::tr("Login device failed, server has invalid status")},
         // deprecated RequestConnectionClientRefuse
-        {ltproto::ErrorCode::RequestConnectionClientRefuse, QObject::tr("")},
+        {ltproto::ErrorCode::RequestConnectionClientRefuse,
+         QObject::tr("Peer user rejected you request")},
         {ltproto::ErrorCode::RequestConnectionInvalidStatus,
          QObject::tr("Request connection failed, server has invalid status")},
         {ltproto::ErrorCode::RequestConnectionCreateOrderFailed,

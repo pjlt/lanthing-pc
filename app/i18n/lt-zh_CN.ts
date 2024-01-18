@@ -566,8 +566,12 @@
         <translation>状态错误，本地程序或者服务器内部产生没有考虑到的状态</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="50"/>
         <source>Remove app not online, can&apos;t confirm connection</source>
+        <translation type="vanished">远端APP未启动，无法弹窗点击确认</translation>
+    </message>
+    <message>
+        <location filename="../src/views/friendly_error_code.cpp" line="50"/>
+        <source>Remote app not online, can&apos;t confirm connection</source>
         <translation>远端APP未启动，无法弹窗点击确认</translation>
     </message>
     <message>
@@ -617,7 +621,7 @@
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="66"/>
-        <location filename="../src/views/friendly_error_code.cpp" line="98"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="99"/>
         <source>KeepAlive timeout</source>
         <translation>心跳超时</translation>
     </message>
@@ -633,6 +637,7 @@
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="69"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="80"/>
         <source>Peer user rejected you request</source>
         <translation>对方拒绝你的连接请求</translation>
     </message>
@@ -652,12 +657,12 @@
         <translation>登录设备失败，服务器内部产生没有考虑到的状态</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="81"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="82"/>
         <source>Request connection failed, server has invalid status</source>
         <translation>请求连接失败，服务器内部产生没有考虑到的状态</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="83"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="84"/>
         <source>Request connection failed, probably controlled side is serving another clinet</source>
         <translation>请求连接失败，可能是被控端正在服务其它客户端</translation>
     </message>
@@ -674,27 +679,27 @@
         <translation type="vanished">请求连接失败，服务器未能为这次连接创建订单，可能是被控端正在服务其它客户端，也可能是被控端的&apos;lanthing.exe&apos;进程卡住了。如果是后者，请尝试杀掉所有的&apos;lanthing.exe&apos;和&apos;app.exe&apos;进程，再启动试试</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="86"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="87"/>
         <source>Request connection failed, peer not online</source>
         <translation>请求连接失败，对方不在线</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="87"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="88"/>
         <source>Request connection timeout</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="90"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="91"/>
         <source>Signaling server error, join room failed</source>
         <translation>信令服务器错误，加入房间失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="95"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="96"/>
         <source>Controlled module disconnected from server</source>
         <translation>被控模块与服务器断开连接</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="97"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="98"/>
         <source>Connect timeout</source>
         <translation>连接超时</translation>
     </message>
@@ -715,7 +720,7 @@
         <translation type="vanished">信令服务器错误，加入房间失败，可能是bug导致的</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="92"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="93"/>
         <source>Send signaling message failed, peer not online</source>
         <translation>发送信令消息失败，对方未连接信令服务器</translation>
     </message>
