@@ -267,6 +267,9 @@ bool WorkerProcess::waitForWorkerProcess(const std::function<void()>& i_am_alive
             case kExitCodeClientChangeStreamingParamsFailed:
                 ec = ltproto::ErrorCode::InitDecodeRenderPipelineFailed;
                 break;
+            case kExitCodeInvalidParameters:
+                ec = ltproto::ErrorCode::InvalidParameter;
+                break;
             default:
                 break;
             }

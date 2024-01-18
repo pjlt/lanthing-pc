@@ -573,7 +573,7 @@
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="51"/>
         <source>Auth failed</source>
-        <translation>认证不通过</translation>
+        <translation>校验不通过</translation>
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="53"/>
@@ -598,17 +598,17 @@
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="59"/>
         <source>Controlled side initialize video capture or video encoder failed</source>
-        <translation>被控端初始化画面捕捉器失败，或是初始化编码器失败</translation>
+        <translation>捕捉画面失败，或是编码失败</translation>
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="61"/>
         <source>Controlled side initialize audio capture or audio encoder failed</source>
-        <translation>被控端初始化音频捕捉器失败，或是初始化音频编码器失败</translation>
+        <translation>捕获音频失败，或是编码失败</translation>
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="63"/>
         <source>Controlled side initialize input executor failed</source>
-        <translation>被控端初始化输入执行器失败（用于执行主控端发送的鼠标、键盘等输入信号）</translation>
+        <translation>模拟输入失败</translation>
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="65"/>
@@ -629,7 +629,7 @@
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="68"/>
         <source>Initialize transport failed</source>
-        <translation>传输模块初始化失败</translation>
+        <translation>初始化传输模块失败</translation>
     </message>
     <message>
         <location filename="../src/views/friendly_error_code.cpp" line="69"/>
