@@ -86,14 +86,14 @@ namespace lt {
 
 namespace worker {
 
-std::unique_ptr<WorkerStreaming>
+std::tuple<std::unique_ptr<WorkerStreaming>, int32_t>
 WorkerStreaming::create(std::map<std::string, std::string> options) {
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
         options.find("-name") == options.end() || options.find("-negotiate") == options.end() ||
         options.find("-mindex") == options.end()) {
         LOG(ERR) << "Parameter invalid";
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     Params params{};
     int32_t width = std::atoi(options["-width"].c_str());
@@ -106,25 +106,26 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     params.name = options["-name"];
     if (params.name.empty()) {
         LOG(ERR) << "Parameter invalid: name";
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     if (width <= 0) {
         LOG(ERR) << "Parameter invalid: width " << width;
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     params.width = static_cast<uint32_t>(width);
     if (height <= 0) {
         LOG(ERR) << "Parameter invalid: height " << height;
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     params.height = static_cast<uint32_t>(height);
     if (freq <= 0) {
         LOG(ERR) << "Parameter invalid: freq " << freq;
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     params.refresh_rate = static_cast<uint32_t>(freq);
     if (monitor_index < 0 || monitor_index >= 10) {
-        LOG(ERR) << "Parameter invalid: mindex " << monitor_index;
+        LOG(ERR) << "Parameter invalid: mindex " << monitor_index << ", change to 0";
+        monitor_index = 0;
     }
     params.monitor_index = monitor_index;
     std::string codec_str;
@@ -136,14 +137,12 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     }
     if (params.codecs.empty()) {
         LOG(ERR) << "Parameter invalid: codecs";
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
 
     std::unique_ptr<WorkerStreaming> worker{new WorkerStreaming{params}};
-    if (!worker->init()) {
-        return nullptr;
-    }
-    return worker;
+    int32_t ec = worker->init();
+    return {std::move(worker), ec};
 }
 
 WorkerStreaming::WorkerStreaming(const Params& params)
@@ -169,11 +168,11 @@ int WorkerStreaming::wait() {
     return session_observer_->waitForChange();
 }
 
-bool WorkerStreaming::init() {
+int32_t WorkerStreaming::init() {
     monitors_ = ltlib::enumMonitors();
     if (monitors_.size() == 0) {
         LOG(ERR) << "There is no monitor";
-        return false;
+        return kExitCodeInitVideoFailed;
     }
     if (monitors_.size() - 1 < monitor_index_) {
         LOG(WARNING) << "Client requesting monitor " << monitor_index_ << ", but we only have "
@@ -186,16 +185,16 @@ bool WorkerStreaming::init() {
     session_observer_ = SessionChangeObserver::create();
     if (session_observer_ == nullptr) {
         LOG(ERR) << "Create session observer failed";
-        return false;
+        return kExitCodeInitWorkerFailed;
     }
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         LOG(ERR) << "Create IOLoop failed";
-        return false;
+        return kExitCodeInitWorkerFailed;
     }
     if (!initPipeClient()) {
         LOG(ERR) << "Init pipe client failed";
-        return false;
+        return kExitCodeInitWorkerFailed;
     }
 #if 0 // 引入多屏支持后，协商变得很麻烦
     if (need_negotiate_) {
@@ -212,8 +211,9 @@ bool WorkerStreaming::init() {
         }
     }
 #else
-    if (!negotiateStreamParameters()) {
-        return false;
+    int32_t ec = negotiateStreamParameters();
+    if (ec != kExitCodeOK) {
+        return ec;
     }
 #endif
 
@@ -241,7 +241,7 @@ bool WorkerStreaming::init() {
         });
     future.get();
     ioloop_->postDelay(500 /*ms*/, std::bind(&WorkerStreaming::checkCimeout, this));
-    return true;
+    return kExitCodeOK;
 } // namespace lt
 
 bool WorkerStreaming::initPipeClient() {
@@ -350,7 +350,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
         std::bind(&WorkerStreaming::onCapturedAudioData, this, std::placeholders::_1);
     auto audio = AudioCapturer::create(audio_params);
     if (audio == nullptr) {
-        return ltproto::ErrorCode::WorkerInitAudioFailed;
+        return kExitCodeInitAudioFailed;
     }
     negotiated_params->set_audio_channels(audio->channels());
     negotiated_params->set_audio_sample_rate(audio->framesPerSec());
@@ -370,7 +370,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     auto video = lt::VideoCaptureEncodePipeline::create(video_params);
     if (video == nullptr) {
         LOGF(ERR, "Create VideoCaptureEncodePipeline failed");
-        return ltproto::ErrorCode::WrokerInitVideoFailed;
+        return kExitCodeInitVideoFailed;
     }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
@@ -388,7 +388,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     negotiated_params_ = negotiated_params;
     video_ = std::move(video);
     audio_ = std::move(audio);
-    return ltproto::ErrorCode::Success;
+    return kExitCodeOK;
 }
 
 void WorkerStreaming::mainLoop(const std::function<void()>& i_am_alive) {
@@ -511,7 +511,7 @@ void WorkerStreaming::onPipeConnected() {
 void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
     auto msg = std::static_pointer_cast<ltproto::worker2service::StartWorking>(_msg);
     auto ack = std::make_shared<ltproto::worker2service::StartWorkingAck>();
-    int32_t error_code = kExitCodeStartWorkingFailed;
+    int32_t error_code = kExitCodeInitWorkerFailed;
     do {
         if (!video_->start()) {
             ack->set_err_code(ltproto::ErrorCode::WrokerInitVideoFailed);

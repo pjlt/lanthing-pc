@@ -38,7 +38,8 @@ namespace worker {
 
 class WorkerCheckDecode : public Worker {
 public:
-    static std::unique_ptr<WorkerCheckDecode> create(std::map<std::string, std::string> options);
+    static std::tuple<std::unique_ptr<WorkerCheckDecode>, int32_t>
+    create(std::map<std::string, std::string> options);
     ~WorkerCheckDecode() override;
     int wait() override;
 

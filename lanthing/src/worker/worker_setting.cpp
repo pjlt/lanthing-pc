@@ -30,6 +30,7 @@
 
 #include "worker_setting.h"
 
+#include <lt_constants.h>
 #include <ltlib/logging.h>
 #include <ltlib/system.h>
 
@@ -37,18 +38,19 @@ namespace lt {
 
 namespace worker {
 
-std::unique_ptr<WorkerSetting> WorkerSetting::create(std::map<std::string, std::string> options) {
+std::tuple<std::unique_ptr<WorkerSetting>, int32_t>
+WorkerSetting::create(std::map<std::string, std::string> options) {
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end()) {
         LOG(ERR) << "Create WorkerSetting failed: Parameters not found";
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     int32_t width = std::atoi(options["-width"].c_str());
     int32_t height = std::atoi(options["-height"].c_str());
     int32_t freq = std::atoi(options["-freq"].c_str());
     if (width <= 0 || height <= 0 || freq <= 0) {
         LOG(ERR) << "Create WorkerSetting failed: Invalid parameters";
-        return nullptr;
+        return {nullptr, kExitCodeInvalidParameters};
     }
     if (ltlib::changeDisplaySettings(static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                                      static_cast<uint32_t>(freq))) {
@@ -57,12 +59,12 @@ std::unique_ptr<WorkerSetting> WorkerSetting::create(std::map<std::string, std::
     else {
         LOGF(INFO, "Change display settings to {w:%d, h:%d, f:%d} failed", width, height, freq);
     }
-    return std::make_unique<WorkerSetting>();
+    return {std::make_unique<WorkerSetting>(), kExitCodeOK};
 }
 WorkerSetting::~WorkerSetting() = default;
 
 int WorkerSetting::wait() {
-    return 0;
+    return kExitCodeOK;
 }
 
 } // namespace worker

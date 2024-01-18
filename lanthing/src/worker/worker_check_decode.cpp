@@ -33,12 +33,13 @@
 #include <future>
 
 #include <graphics/drpipeline/video_decode_render_pipeline.h>
+#include <lt_constants.h>
 
 namespace lt {
 
 namespace worker {
 
-std::unique_ptr<WorkerCheckDecode>
+std::tuple<std::unique_ptr<WorkerCheckDecode>, int32_t>
 WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     (void)options;
     std::promise<void> promise;
@@ -50,7 +51,7 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     sdl_params.hide_window = true;
     auto sdl = PcSdl::create(sdl_params);
     if (sdl == nullptr) {
-        return nullptr;
+        return {nullptr, kExitCodeInitWorkerFailed};
     }
     // 只检测H264_420和H265_420
     uint32_t codecs = 0;
@@ -69,7 +70,7 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     sdl->stop();
     std::unique_ptr<WorkerCheckDecode> w{new WorkerCheckDecode{codecs}};
     promise.get_future().get();
-    return w;
+    return {std::move(w), kExitCodeOK};
 }
 
 WorkerCheckDecode::WorkerCheckDecode(uint32_t codecs)

@@ -40,7 +40,8 @@ namespace worker {
 
 class WorkerSetting : public Worker {
 public:
-    static std::unique_ptr<WorkerSetting> create(std::map<std::string, std::string> options);
+    static std::tuple<std::unique_ptr<WorkerSetting>, int32_t>
+    create(std::map<std::string, std::string> options);
     ~WorkerSetting() override;
     int wait() override;
 };

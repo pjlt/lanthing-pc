@@ -39,11 +39,12 @@ inline const char kSigCoreClose[] = "close";
 constexpr int kExitCodeNeedRestart = 256;
 constexpr int kExitCodeOK = 0;
 constexpr int kExitCodeTimeout = 2;
-constexpr int kExitCodeStartWorkingFailed = 3;
+constexpr int kExitCodeInitWorkerFailed = 3;
 constexpr int kExitCodeClientChangeStreamingParamsFailed = 4;
 constexpr int kExitCodeInitVideoFailed = 5;
 constexpr int kExitCodeInitAudioFailed = 6;
 constexpr int kExitCodeInitInputFailed = 7;
+constexpr int kExitCodeInvalidParameters = 8;
 constexpr int kExitCodeRestartResolutionChanged = kExitCodeNeedRestart + 1;
 
 } // namespace lt

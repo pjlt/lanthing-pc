@@ -69,13 +69,14 @@ public:
     };
 
 public:
-    static std::unique_ptr<WorkerStreaming> create(std::map<std::string, std::string> options);
+    static std::tuple<std::unique_ptr<WorkerStreaming>, int32_t>
+    create(std::map<std::string, std::string> options);
     ~WorkerStreaming() override;
     int wait() override;
 
 private:
     WorkerStreaming(const Params& params);
-    bool init();
+    int32_t init();
     bool initPipeClient();
     bool saveAndChangeCurrentDisplaySettings(DisplaySettingNegotiator::Result result);
     void recoverDisplaySettings();

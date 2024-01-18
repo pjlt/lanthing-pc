@@ -34,6 +34,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <tuple>
 
 namespace lt {
 
@@ -41,7 +42,8 @@ namespace worker {
 
 class Worker {
 public:
-    static std::unique_ptr<Worker> create(std::map<std::string, std::string> options);
+    static std::tuple<std::unique_ptr<Worker>, int32_t>
+    create(std::map<std::string, std::string> options);
     virtual ~Worker() {}
     virtual int wait() = 0;
 };
