@@ -109,6 +109,7 @@ bool App::init() {
     min_port_ = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     max_port_ = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
     status_color_ = settings_->getInteger("status_color").value_or(-1);
+    rel_mouse_accel_ = settings_->getInteger("rel_mouse_accel").value_or(0);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -176,6 +177,7 @@ int App::exec(int argc, char** argv) {
     params.set_port_range =
         std::bind(&App::setPortRange, this, std::placeholders::_1, std::placeholders::_2);
     params.set_status_color = std::bind(&App::setStatusColor, this, std::placeholders::_1);
+    params.set_rel_mouse_accel = std::bind(&App::setRelMouseAccel, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -228,6 +230,7 @@ GUI::Settings App::getSettings() const {
     if (status_color_ >= 0) {
         settings.status_color = static_cast<uint32_t>(status_color_);
     }
+    settings.rel_mouse_accel = rel_mouse_accel_;
 
     return settings;
 }
@@ -350,6 +353,16 @@ void App::setStatusColor(int64_t color) {
     }
     else {
         settings_->setInteger("status_color", color);
+    }
+}
+
+void App::setRelMouseAccel(int64_t accel) {
+    rel_mouse_accel_ = accel;
+    if (accel >= 1 && accel <= 30) {
+        settings_->setInteger("rel_mouse_accel", accel);
+    }
+    else {
+        settings_->deleteKey("rel_mouse_accel");
     }
 }
 

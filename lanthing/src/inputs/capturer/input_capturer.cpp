@@ -128,6 +128,7 @@ private:
     uint32_t video_height_;
     uint32_t rotation_;
     bool is_stretch_;
+    int64_t rel_mouse_accel_;
     std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
         send_message_to_host_;
     std::function<void()> toggle_fullscreen_;
@@ -157,6 +158,7 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     , video_height_{params.video_height}
     , rotation_{params.rotation}
     , is_stretch_{params.stretch}
+    , rel_mouse_accel_{params.rel_mouse_accel}
     , send_message_to_host_{params.send_message}
     , toggle_fullscreen_{params.toggle_fullscreen}
     , switch_mouse_mode_{params.switch_mouse_mode} {}
@@ -277,8 +279,14 @@ void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
     }
     msg->set_x(x);
     msg->set_y(y);
-    msg->set_delta_x(ev.delta_x);
-    msg->set_delta_y(ev.delta_y);
+    if (rel_mouse_accel_ >= 1 && rel_mouse_accel_ <= 30) {
+        msg->set_delta_x(static_cast<int32_t>(ev.delta_x * rel_mouse_accel_ / 10.0));
+        msg->set_delta_y(static_cast<int32_t>(ev.delta_y * rel_mouse_accel_ / 10.0));
+    }
+    else {
+        msg->set_delta_x(ev.delta_x);
+        msg->set_delta_y(ev.delta_y);
+    }
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 

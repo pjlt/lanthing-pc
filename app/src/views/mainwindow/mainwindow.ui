@@ -1593,15 +1593,15 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>0</y>
+                      <y>-125</y>
                       <width>527</width>
-                      <height>500</height>
+                      <height>550</height>
                      </rect>
                     </property>
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>500</height>
+                      <height>550</height>
                      </size>
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,3,1">
@@ -1724,6 +1724,9 @@ QHeaderView::section:vertical
                              <property name="styleSheet">
                               <string notr="true"/>
                              </property>
+                             <property name="placeholderText">
+                              <string>relay:127.0.0.1:19000:user1:password1</string>
+                             </property>
                             </widget>
                            </item>
                            <item>
@@ -1781,6 +1784,9 @@ QHeaderView::section:vertical
                                <height>16777215</height>
                               </size>
                              </property>
+                             <property name="placeholderText">
+                              <string>1025</string>
+                             </property>
                             </widget>
                            </item>
                            <item>
@@ -1790,6 +1796,9 @@ QHeaderView::section:vertical
                                <width>80</width>
                                <height>16777215</height>
                               </size>
+                             </property>
+                             <property name="placeholderText">
+                              <string>65535</string>
                              </property>
                             </widget>
                            </item>
@@ -1845,9 +1854,15 @@ QHeaderView::section:vertical
                           <layout class="QHBoxLayout" name="horizontalLayout_14">
                            <item>
                             <widget class="QLabel" name="labelStatusColor">
-                             <property name="maximumSize">
+                             <property name="minimumSize">
                               <size>
                                <width>80</width>
+                               <height>0</height>
+                              </size>
+                             </property>
+                             <property name="maximumSize">
+                              <size>
+                               <width>16777215</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -1886,6 +1901,61 @@ QHeaderView::section:vertical
                            </item>
                            <item>
                             <spacer name="horizontalSpacer_5">
+                             <property name="orientation">
+                              <enum>Qt::Horizontal</enum>
+                             </property>
+                             <property name="sizeType">
+                              <enum>QSizePolicy::Fixed</enum>
+                             </property>
+                             <property name="sizeHint" stdset="0">
+                              <size>
+                               <width>140</width>
+                               <height>20</height>
+                              </size>
+                             </property>
+                            </spacer>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_3">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QHBoxLayout" name="horizontalLayout_6">
+                           <item>
+                            <widget class="QLabel" name="labelMouseAccel">
+                             <property name="minimumSize">
+                              <size>
+                               <width>80</width>
+                               <height>0</height>
+                              </size>
+                             </property>
+                             <property name="text">
+                              <string>Mouse Accel</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLineEdit" name="leditMouseAccel">
+                             <property name="placeholderText">
+                              <string>0.1-3.0</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QPushButton" name="btnMouseAccel">
+                             <property name="text">
+                              <string>Confirm</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <spacer name="horizontalSpacer_6">
                              <property name="orientation">
                               <enum>Qt::Horizontal</enum>
                              </property>

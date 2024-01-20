@@ -764,6 +764,7 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
         return;
     }
+    int64_t rel_mouse_accel = that->settings_->getInteger("rel_mouse_accel").value_or(0);
     that->input_params_.send_message =
         std::bind(&Client::sendMessageToHost, that, std::placeholders::_1, std::placeholders::_2,
                   std::placeholders::_3);
@@ -771,6 +772,7 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     that->input_params_.video_width = that->video_params_.width;
     that->input_params_.rotation = that->video_params_.rotation;
     that->input_params_.stretch = that->video_params_.stretch;
+    that->input_params_.rel_mouse_accel = rel_mouse_accel;
     that->input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, that);
     that->input_params_.switch_mouse_mode = std::bind(&Client::switchMouseMode, that);
     that->input_capturer_ = InputCapturer::create(that->input_params_);

@@ -80,6 +80,7 @@ private:
     void ignoreVersion(int64_t version);
     void setPortRange(uint16_t min_port, uint16_t max_port);
     void setStatusColor(int64_t color);
+    void setRelMouseAccel(int64_t accel);
 
     void createAndStartService();
     void stopService();
@@ -144,6 +145,7 @@ private:
     uint16_t min_port_ = 0;
     uint16_t max_port_ = 0;
     int64_t status_color_ = -1;
+    int64_t rel_mouse_accel_ = 0;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;

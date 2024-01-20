@@ -69,6 +69,7 @@ public:
         uint16_t min_port;
         uint16_t max_port;
         std::optional<uint32_t> status_color;
+        uint8_t rel_mouse_accel;
     };
 
     struct TrustedDevice {
@@ -96,6 +97,7 @@ public:
         std::function<void(int64_t)> ignore_version;
         std::function<void(uint16_t, uint16_t)> set_port_range;
         std::function<void(int64_t)> set_status_color;
+        std::function<void(int64_t)> set_rel_mouse_accel;
     };
 
 public:

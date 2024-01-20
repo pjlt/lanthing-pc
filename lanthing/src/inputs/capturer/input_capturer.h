@@ -48,6 +48,7 @@ public:
         uint32_t video_height;
         uint32_t rotation;
         bool stretch;
+        int64_t rel_mouse_accel;
         std::function<void(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&, bool)>
             send_message;
         std::function<void()> toggle_fullscreen;

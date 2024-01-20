@@ -176,6 +176,12 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->leditGreen->setText(QString::number(green));
         ui->leditBlue->setText(QString::number(blue));
     }
+    ui->btnMouseAccel->setEnabled(false);
+    ui->leditMouseAccel->setValidator(new QDoubleValidator(0.1, 3.0, 1, this));
+    if (settings.rel_mouse_accel > 0 && settings.rel_mouse_accel <= 30) {
+        double accel = settings.rel_mouse_accel / 10.0;
+        ui->leditMouseAccel->setText(QString::number(accel, 'f', 1));
+    }
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
@@ -603,6 +609,37 @@ void MainWindow::setupOtherCallbacks() {
             uint32_t green = static_cast<uint32_t>(ui->leditGreen->text().trimmed().toInt());
             uint32_t blue = static_cast<uint32_t>(ui->leditBlue->text().trimmed().toInt());
             params_.set_status_color((red << 24) | (green << 16) | (blue << 8));
+        }
+    });
+    connect(ui->leditMouseAccel, &QLineEdit::textChanged, [this](const QString&) {
+        if (ui->leditMouseAccel->text().isEmpty()) {
+            ui->btnMouseAccel->setEnabled(true);
+            return;
+        }
+        double accel = ui->leditMouseAccel->text().trimmed().toDouble();
+        int64_t accel_int = static_cast<int64_t>(accel * 10);
+        if (accel_int >= 1 && accel_int <= 30) {
+            ui->btnMouseAccel->setEnabled(true);
+        }
+        else {
+            ui->btnMouseAccel->setEnabled(false);
+        }
+    });
+    connect(ui->btnMouseAccel, &QPushButton::clicked, [this]() {
+        ui->btnMouseAccel->setEnabled(false);
+        if (ui->leditMouseAccel->text().isEmpty()) {
+            params_.set_rel_mouse_accel(0);
+        }
+        else {
+            double accel = ui->leditMouseAccel->text().trimmed().toDouble();
+            int64_t accel_int = static_cast<int64_t>(accel * 10);
+            if (accel_int >= 1 && accel_int <= 30) {
+                params_.set_rel_mouse_accel(accel_int);
+            }
+            else {
+                LOG(ERR) << "Set relative mouse accel '"
+                         << ui->leditMouseAccel->text().toStdString() << "' failed";
+            }
         }
     });
 }
