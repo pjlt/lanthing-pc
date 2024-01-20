@@ -49,6 +49,8 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::AppNotOnline,
          QObject::tr("Remote app not online, can't confirm connection")},
         {ltproto::ErrorCode::AuthFailed, QObject::tr("Auth failed")},
+        {ltproto::ErrorCode::CreateServiceFailed, QObject::tr("Create service failed")},
+        {ltproto::ErrorCode::StartServiceFailed, QObject::tr("Start service failed")},
         // 10000~ *******************************************
         {ltproto::ErrorCode::DecodeFailed, QObject::tr("Decode failed")},
         {ltproto::ErrorCode::RenderFailed, QObject::tr("Render failed")},

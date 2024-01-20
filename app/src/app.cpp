@@ -380,10 +380,12 @@ void App::createAndStartService() {
     if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
         LOGF(ERR, "Create service failed (name:%s, path:%s)", service_name.c_str(),
              bin_path.string().c_str());
+        gui_.errorCode(ltproto::ErrorCode::CreateServiceFailed);
         return;
     }
     if (!ltlib::ServiceCtrl::startService(service_name)) {
         LOGF(ERR, "Start service(%s) failed", service_name.c_str());
+        gui_.errorCode(ltproto::ErrorCode::StartServiceFailed);
         return;
     }
     LOGF(INFO, "Start service(%s) success", service_name.c_str());
