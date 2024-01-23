@@ -153,5 +153,6 @@ private:
     bool signaling_keepalive_inited_ = false;
     bool stoped_ = true;
     uint32_t hard_decode_abilities_ = 0;
+    bool service_started_ = false;
 };
 } // namespace lt

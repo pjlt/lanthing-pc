@@ -374,6 +374,9 @@ void App::ioLoop(const std::function<void()>& i_am_alive) {
 
 void App::createAndStartService() {
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
+    if (service_started_) {
+        return;
+    }
     std::string path = ltlib::getProgramPath();
     std::filesystem::path bin_path(path);
     bin_path /= "lanthing.exe";
@@ -388,6 +391,7 @@ void App::createAndStartService() {
         gui_.errorCode(ltproto::ErrorCode::StartServiceFailed);
         return;
     }
+    service_started_ = true;
     LOGF(INFO, "Start service(%s) success", service_name.c_str());
 #endif // if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 }
