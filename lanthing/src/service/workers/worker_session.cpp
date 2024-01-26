@@ -318,6 +318,7 @@ tp::Server* WorkerSession::createRtcServer() {
         params.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
         params.nbp2p_params.relay_servers = relay_servers.data();
         params.nbp2p_params.relay_servers_count = static_cast<uint32_t>(relay_servers.size());
+        params.nbp2p_params.ignored_adapters = kIgnoredNetworkAdapters;
     }
     params.audio_channels = negotiated_params->audio_channels();
     params.audio_sample_rate = negotiated_params->audio_sample_rate();
@@ -784,7 +785,11 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
     });
 }
 
-void WorkerSession::onTpConnChanged(void*) {}
+void WorkerSession::onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkType new_type) {
+    (void)user_data;
+    LOG(INFO) << "Transport LinkType changed: " << toString(old_type) << " => "
+              << toString(new_type);
+}
 
 void WorkerSession::onTpFailed(void* user_data) {
     auto that = reinterpret_cast<WorkerSession*>(user_data);

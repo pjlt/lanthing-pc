@@ -145,7 +145,7 @@ private:
     // rtc server
     static void onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable);
     static void onTpAccepted(void* user_data, lt::LinkType link_type);
-    static void onTpConnChanged(void* user_data);
+    static void onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkType new_type);
     static void onTpFailed(void* user_data);
     static void onTpDisconnected(void* user_data);
     static void onTpSignalingMessage(void* user_data, const char* key, const char* value);

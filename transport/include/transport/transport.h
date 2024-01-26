@@ -129,6 +129,25 @@ enum class LinkType {
     TCP = 11,
 };
 
+constexpr const char* toString(LinkType type) {
+    switch (type) {
+    case LinkType::UDP:
+        return "UDP";
+    case LinkType::LanUDP:
+        return "LanUDP";
+    case LinkType::WanUDP:
+        return "WanUDP";
+    case LinkType::IPv6UDP:
+        return "IPv6UDP";
+    case LinkType::RelayUDP:
+        return "RelayUDP";
+    case LinkType::TCP:
+        return "TCP";
+    default:
+        return "?";
+    }
+}
+
 struct TP_API VideoFrame {
     bool is_keyframe;
     uint64_t ltframe_id;
@@ -152,7 +171,7 @@ typedef void (*OnData)(void*, const uint8_t*, uint32_t, bool);
 typedef void (*OnVideo)(void*, const VideoFrame&);
 typedef void (*OnAudio)(void*, const AudioData&);
 typedef void (*OnConnected)(void*, LinkType);
-typedef void (*OnConnChanged)(void* /*1. old_conn_info, 2. new_conn_info*/);
+typedef void (*OnConnChanged)(void*, LinkType /*old*/, LinkType /*new*/);
 typedef void (*OnDisconnected)(void*);
 typedef void (*OnFailed)(void*);
 typedef void (*OnSignalingMessage)(void*, const char*, const char*);
