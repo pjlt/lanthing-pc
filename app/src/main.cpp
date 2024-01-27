@@ -68,6 +68,7 @@ void terminateCallback(const std::string& last_word) {
 }
 
 void cleanupDumps(const std::filesystem::path& path) {
+    return;
     while (true) {
         auto now = std::filesystem::file_time_type::clock::now();
         for (const auto& file : std::filesystem::directory_iterator{path}) {
