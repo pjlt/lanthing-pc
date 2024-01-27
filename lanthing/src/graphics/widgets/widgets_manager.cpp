@@ -159,8 +159,8 @@ void WidgetsManager::render() {
 
 void WidgetsManager::reset() {
 #if LT_WINDOWS
-    uninitImgui();
-    initImgui();
+    // uninitImgui();
+    // initImgui();
 #endif
 }
 
