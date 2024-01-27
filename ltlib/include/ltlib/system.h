@@ -82,4 +82,6 @@ struct LT_API Monitor {
 
 std::vector<Monitor> LT_API enumMonitors();
 
+void LT_API openFolder(const std::string& path);
+
 } // namespace ltlib

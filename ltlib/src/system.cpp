@@ -479,6 +479,25 @@ std::vector<Monitor> enumMonitors() {
     return monitors;
 }
 
+void openFolder(const std::string& path) {
+    HRESULT hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
+    if (hr != RPC_E_CHANGED_MODE) {
+        if (FAILED(hr)) {
+            LOG(WARNING) << "openFolder: CoInitializeEx failed";
+            return;
+        }
+    }
+    HINSTANCE ret = ShellExecuteA(nullptr, "open", path.c_str(), nullptr, nullptr, SW_SHOWDEFAULT);
+    if (reinterpret_cast<int64_t>(ret) > 32) {
+        LOG(INFO) << "openFolder " << path << " success";
+    }
+    else {
+        LOG(ERR) << "openFolder " << path << " failed, ret " << reinterpret_cast<int64_t>(ret)
+                 << ", GetLastError() " << GetLastError();
+    }
+    CoUninitialize();
+}
+
 #elif defined(LT_LINUX)
 
 std::string getProgramFullpath() {
@@ -562,6 +581,10 @@ bool selfElevateAndNeedExit() {
 
 std::vector<Monitor> enumMonitors() {
     return {};
+}
+
+void openFolder(const std::string& path) {
+    (void)path;
 }
 
 #endif // #elif defined(LT_LINUX)

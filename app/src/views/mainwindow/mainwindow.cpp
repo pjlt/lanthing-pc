@@ -49,6 +49,7 @@
 
 #include <ltlib/logging.h>
 #include <ltlib/strings.h>
+#include <ltlib/system.h>
 #include <ltlib/times.h>
 #include <ltproto/server/new_version.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
@@ -105,6 +106,14 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     // 无边框
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+
+    // 日志
+#if defined(LT_WINDOWS)
+    connect(ui->btnLog, &QPushButton::clicked,
+            [this]() { ltlib::openFolder(std::string(getenv("APPDATA")) + "\\lanthing\\log\\"); });
+#else
+    ui->btnLog->setVisible(false);
+#endif // !defined(LT_WINDOWS)
 
     // 调整"已复制"标签的SizePolicy，让它在隐藏的时候保持占位
     QSizePolicy retain = ui->labelCopied->sizePolicy();
