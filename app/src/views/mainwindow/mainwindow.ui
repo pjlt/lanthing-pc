@@ -1613,8 +1613,8 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>0</y>
-                      <width>469</width>
+                      <y>-37</y>
+                      <width>527</width>
                       <height>550</height>
                      </rect>
                     </property>
@@ -1698,13 +1698,6 @@ QHeaderView::section:vertical
                         <property name="bottomMargin">
                          <number>30</number>
                         </property>
-                        <item>
-                         <widget class="QCheckBox" name="checkboxForceRelay">
-                          <property name="text">
-                           <string>Force Relay</string>
-                          </property>
-                         </widget>
-                        </item>
                         <item>
                          <widget class="QFrame" name="setRowRelay">
                           <property name="frameShape">

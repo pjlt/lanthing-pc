@@ -105,7 +105,6 @@ bool App::init() {
     auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
     relay_server_ = settings_->getString("relay").value_or("");
     windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
-    force_relay_ = settings_->getBoolean("force_relay").value_or(false);
     min_port_ = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     max_port_ = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
     status_color_ = settings_->getInteger("status_color").value_or(-1);
@@ -172,7 +171,6 @@ int App::exec(int argc, char** argv) {
     params.delete_trusted_device =
         std::bind(&App::deleteTrustedDevice, this, std::placeholders::_1);
     params.get_trusted_devices = std::bind(&App::getTrustedDevices, this);
-    params.force_relay = std::bind(&App::setForceRelay, this, std::placeholders::_1);
     params.ignore_version = std::bind(&App::ignoreVersion, this, std::placeholders::_1);
     params.set_port_range =
         std::bind(&App::setPortRange, this, std::placeholders::_1, std::placeholders::_2);
@@ -224,7 +222,6 @@ GUI::Settings App::getSettings() const {
     settings.run_as_daemon = run_as_daemon_;
     settings.relay_server = relay_server_;
     settings.windowed_fullscreen = windowed_fullscreen_;
-    settings.force_relay = force_relay_;
     settings.min_port = min_port_;
     settings.max_port = max_port_;
     if (status_color_ >= 0) {
@@ -328,11 +325,6 @@ std::vector<GUI::TrustedDevice> App::getTrustedDevices() {
         result.push_back(device);
     }
     return result;
-}
-
-void App::setForceRelay(bool force) {
-    force_relay_ = force;
-    settings_->setBoolean("force_relay", force);
 }
 
 void App::ignoreVersion(int64_t version) {

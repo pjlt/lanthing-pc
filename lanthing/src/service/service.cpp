@@ -321,7 +321,6 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         settings_->getBoolean("enable_keyboard_for_" + id_str).value_or(false);
     worker_params.enable_mouse =
         settings_->getBoolean("enable_mouse_for_" + id_str).value_or(false);
-    worker_params.force_relay = settings_->getBoolean("force_relay").value_or(false);
     worker_params.min_port = min_port;
     worker_params.max_port = max_port;
     worker_params.ioloop = ioloop_.get();

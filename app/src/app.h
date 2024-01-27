@@ -76,7 +76,6 @@ private:
     void enableDevicePermission(int64_t device_id, GUI::DeviceType type, bool enable);
     void deleteTrustedDevice(int64_t device_id);
     std::vector<GUI::TrustedDevice> getTrustedDevices();
-    void setForceRelay(bool force);
     void ignoreVersion(int64_t version);
     void setPortRange(uint16_t min_port, uint16_t max_port);
     void setStatusColor(int64_t color);
@@ -141,7 +140,6 @@ private:
     std::vector<std::string> history_ids_;
     bool run_as_daemon_ = false;
     bool auto_refresh_access_token_ = false;
-    bool force_relay_ = false;
     uint16_t min_port_ = 0;
     uint16_t max_port_ = 0;
     int64_t status_color_ = -1;

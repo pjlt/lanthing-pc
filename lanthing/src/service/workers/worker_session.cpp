@@ -115,7 +115,6 @@ WorkerSession::WorkerSession(const Params& params)
     , enable_gamepad_(params.enable_gamepad)
     , enable_keyboard_(params.enable_keyboard)
     , enable_mouse_(params.enable_mouse)
-    , force_relay_(params.force_relay)
     , min_port_(params.min_port)
     , max_port_(params.max_port) {
     constexpr int kRandLength = 4;
@@ -305,10 +304,10 @@ tp::Server* WorkerSession::createRtcServer() {
         // LOG(DEBUG) << "Relay: " << svr;
     }
     if (params.use_nbp2p) {
-        params.nbp2p_params.disable_ipv6 = force_relay_;
-        params.nbp2p_params.disable_lan_udp = force_relay_;
-        params.nbp2p_params.disable_mapping = force_relay_;
-        params.nbp2p_params.disable_reflex = force_relay_;
+        params.nbp2p_params.disable_ipv6 = false;
+        params.nbp2p_params.disable_lan_udp = false;
+        params.nbp2p_params.disable_mapping = false;
+        params.nbp2p_params.disable_reflex = false;
         params.nbp2p_params.min_port = min_port_;
         params.nbp2p_params.max_port = max_port_;
         params.nbp2p_params.disable_relay = false;

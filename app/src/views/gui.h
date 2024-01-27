@@ -65,7 +65,6 @@ public:
         bool auto_refresh_access_token;
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
-        bool force_relay;
         uint16_t min_port;
         uint16_t max_port;
         std::optional<uint32_t> status_color;
@@ -93,7 +92,6 @@ public:
         std::function<void(int64_t, DeviceType, bool)> enable_device_permission;
         std::function<void(int64_t)> delete_trusted_device;
         std::function<std::vector<TrustedDevice>()> get_trusted_devices;
-        std::function<void(bool)> force_relay;
         std::function<void(int64_t)> ignore_version;
         std::function<void(uint16_t, uint16_t)> set_port_range;
         std::function<void(int64_t)> set_status_color;
