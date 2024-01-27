@@ -109,6 +109,7 @@ bool App::init() {
     max_port_ = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
     status_color_ = settings_->getInteger("status_color").value_or(-1);
     rel_mouse_accel_ = settings_->getInteger("rel_mouse_accel").value_or(0);
+    ignored_nic_ = settings_->getString("ignored_nic").value_or("");
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -176,6 +177,7 @@ int App::exec(int argc, char** argv) {
         std::bind(&App::setPortRange, this, std::placeholders::_1, std::placeholders::_2);
     params.set_status_color = std::bind(&App::setStatusColor, this, std::placeholders::_1);
     params.set_rel_mouse_accel = std::bind(&App::setRelMouseAccel, this, std::placeholders::_1);
+    params.set_ignored_nic = std::bind(&App::setIgnoredNIC, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -228,6 +230,7 @@ GUI::Settings App::getSettings() const {
         settings.status_color = static_cast<uint32_t>(status_color_);
     }
     settings.rel_mouse_accel = rel_mouse_accel_;
+    settings.ignored_nic = ignored_nic_;
 
     return settings;
 }
@@ -355,6 +358,16 @@ void App::setRelMouseAccel(int64_t accel) {
     }
     else {
         settings_->deleteKey("rel_mouse_accel");
+    }
+}
+
+void App::setIgnoredNIC(const std::string& nic_list) {
+    ignored_nic_ = nic_list;
+    if (nic_list.empty()) {
+        settings_->deleteKey("ignored_nic");
+    }
+    else {
+        settings_->setString("ignored_nic", nic_list);
     }
 }
 

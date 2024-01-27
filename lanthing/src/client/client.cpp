@@ -652,6 +652,7 @@ tp::Client* Client::createRtcClient() {
     }
     uint16_t min_port = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     uint16_t max_port = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
+    ignored_nic_ = settings_->getString("ignored_nic").value_or(kIgnoredNetworkAdapters);
     if (params.use_nbp2p) {
         params.nbp2p_params.disable_ipv6 = false;
         params.nbp2p_params.disable_lan_udp = false;
@@ -666,7 +667,7 @@ tp::Client* Client::createRtcClient() {
         params.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
         params.nbp2p_params.relay_servers = nullptr;
         params.nbp2p_params.relay_servers_count = 0;
-        params.nbp2p_params.ignored_adapters = kIgnoredNetworkAdapters;
+        params.nbp2p_params.ignored_adapters = ignored_nic_.c_str();
     }
     params.on_data = &Client::onTpData;
     params.on_video = &Client::onTpVideoFrame;

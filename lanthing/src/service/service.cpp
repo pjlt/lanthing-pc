@@ -48,6 +48,8 @@
 #include <ltproto/service2app/operate_connection.pb.h>
 #include <ltproto/service2app/service_status.pb.h>
 
+#include <lt_constants.h>
+
 namespace lt {
 
 namespace svc {
@@ -323,6 +325,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         settings_->getBoolean("enable_mouse_for_" + id_str).value_or(false);
     worker_params.min_port = min_port;
     worker_params.max_port = max_port;
+    worker_params.ignored_nic =
+        settings_->getString("ignored_nic").value_or(kIgnoredNetworkAdapters);
     worker_params.ioloop = ioloop_.get();
     worker_params.post_task = std::bind(&Service::postTask, this, std::placeholders::_1);
     worker_params.post_delay_task =

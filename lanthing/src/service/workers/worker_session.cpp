@@ -116,7 +116,8 @@ WorkerSession::WorkerSession(const Params& params)
     , enable_keyboard_(params.enable_keyboard)
     , enable_mouse_(params.enable_mouse)
     , min_port_(params.min_port)
-    , max_port_(params.max_port) {
+    , max_port_(params.max_port)
+    , ignored_nic_(params.ignored_nic) {
     constexpr int kRandLength = 4;
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
@@ -317,7 +318,7 @@ tp::Server* WorkerSession::createRtcServer() {
         params.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
         params.nbp2p_params.relay_servers = relay_servers.data();
         params.nbp2p_params.relay_servers_count = static_cast<uint32_t>(relay_servers.size());
-        params.nbp2p_params.ignored_adapters = kIgnoredNetworkAdapters;
+        params.nbp2p_params.ignored_adapters = ignored_nic_.c_str();
     }
     params.audio_channels = negotiated_params->audio_channels();
     params.audio_sample_rate = negotiated_params->audio_sample_rate();

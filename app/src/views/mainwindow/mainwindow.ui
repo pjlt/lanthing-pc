@@ -1613,15 +1613,15 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>-37</y>
+                      <y>-120</y>
                       <width>527</width>
-                      <height>550</height>
+                      <height>600</height>
                      </rect>
                     </property>
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>550</height>
+                      <height>600</height>
                      </size>
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,3,1">
@@ -1708,16 +1708,22 @@ QHeaderView::section:vertical
                           </property>
                           <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0">
                            <property name="spacing">
-                            <number>0</number>
+                            <number>6</number>
                            </property>
                            <property name="sizeConstraint">
                             <enum>QLayout::SetDefaultConstraint</enum>
                            </property>
                            <item>
                             <widget class="QLabel" name="labelRelay">
+                             <property name="minimumSize">
+                              <size>
+                               <width>90</width>
+                               <height>0</height>
+                              </size>
+                             </property>
                              <property name="maximumSize">
                               <size>
-                               <width>80</width>
+                               <width>90</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -1731,7 +1737,7 @@ QHeaderView::section:vertical
                              <property name="minimumSize">
                               <size>
                                <width>0</width>
-                               <height>30</height>
+                               <height>0</height>
                               </size>
                              </property>
                              <property name="styleSheet">
@@ -1778,9 +1784,15 @@ QHeaderView::section:vertical
                            </property>
                            <item>
                             <widget class="QLabel" name="labelPortRange">
+                             <property name="minimumSize">
+                              <size>
+                               <width>90</width>
+                               <height>0</height>
+                              </size>
+                             </property>
                              <property name="maximumSize">
                               <size>
-                               <width>80</width>
+                               <width>90</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -1816,27 +1828,72 @@ QHeaderView::section:vertical
                             </widget>
                            </item>
                            <item>
+                            <spacer name="horizontalSpacer_4">
+                             <property name="orientation">
+                              <enum>Qt::Horizontal</enum>
+                             </property>
+                             <property name="sizeType">
+                              <enum>QSizePolicy::Expanding</enum>
+                             </property>
+                             <property name="sizeHint" stdset="0">
+                              <size>
+                               <width>20</width>
+                               <height>20</height>
+                              </size>
+                             </property>
+                            </spacer>
+                           </item>
+                           <item>
                             <widget class="QPushButton" name="btnPortRange">
                              <property name="text">
                               <string>Confirm</string>
                              </property>
                             </widget>
                            </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_5">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QHBoxLayout" name="horizontalLayout_16">
                            <item>
-                            <spacer name="horizontalSpacer_4">
-                             <property name="orientation">
-                              <enum>Qt::Horizontal</enum>
-                             </property>
-                             <property name="sizeType">
-                              <enum>QSizePolicy::Fixed</enum>
-                             </property>
-                             <property name="sizeHint" stdset="0">
+                            <widget class="QLabel" name="labelIgnoredNIC">
+                             <property name="minimumSize">
                               <size>
-                               <width>140</width>
-                               <height>20</height>
+                               <width>90</width>
+                               <height>0</height>
                               </size>
                              </property>
-                            </spacer>
+                             <property name="maximumSize">
+                              <size>
+                               <width>90</width>
+                               <height>16777215</height>
+                              </size>
+                             </property>
+                             <property name="text">
+                              <string>Ignored NIC</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLineEdit" name="leditIgnoredNIC">
+                             <property name="placeholderText">
+                              <string>Tailscale;Netease;Virtual;TAP-Windows;Sangfor;</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QPushButton" name="btnIgnoredNIC">
+                             <property name="text">
+                              <string>Confirm</string>
+                             </property>
+                            </widget>
                            </item>
                           </layout>
                          </widget>
@@ -1869,13 +1926,13 @@ QHeaderView::section:vertical
                             <widget class="QLabel" name="labelStatusColor">
                              <property name="minimumSize">
                               <size>
-                               <width>80</width>
+                               <width>90</width>
                                <height>0</height>
                               </size>
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>16777215</width>
+                               <width>90</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -1922,7 +1979,7 @@ QHeaderView::section:vertical
                              </property>
                              <property name="sizeHint" stdset="0">
                               <size>
-                               <width>140</width>
+                               <width>120</width>
                                <height>20</height>
                               </size>
                              </property>
@@ -1944,8 +2001,14 @@ QHeaderView::section:vertical
                             <widget class="QLabel" name="labelMouseAccel">
                              <property name="minimumSize">
                               <size>
-                               <width>80</width>
+                               <width>90</width>
                                <height>0</height>
+                              </size>
+                             </property>
+                             <property name="maximumSize">
+                              <size>
+                               <width>90</width>
+                               <height>16777215</height>
                               </size>
                              </property>
                              <property name="text">
@@ -1977,7 +2040,7 @@ QHeaderView::section:vertical
                              </property>
                              <property name="sizeHint" stdset="0">
                               <size>
-                               <width>140</width>
+                               <width>120</width>
                                <height>20</height>
                               </size>
                              </property>

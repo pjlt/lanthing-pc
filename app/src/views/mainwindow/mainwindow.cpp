@@ -171,6 +171,10 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->leditMinPort->setText(QString::number(settings.min_port));
         ui->leditMaxPort->setText(QString::number(settings.max_port));
     }
+    ui->btnIgnoredNIC->setEnabled(false);
+    if (!settings.ignored_nic.empty()) {
+        ui->leditIgnoredNIC->setText(QString::fromStdString(settings.ignored_nic));
+    }
     ui->btnStatusColor->setEnabled(false);
     ui->leditRed->setValidator(new QIntValidator(0, 255, this));
     ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
@@ -541,7 +545,7 @@ void MainWindow::setupOtherCallbacks() {
     });
     connect(ui->btnRelay, &QPushButton::clicked, [this]() {
         ui->btnRelay->setEnabled(false);
-        params_.set_relay_server(ui->leditRelay->text().toStdString());
+        params_.set_relay_server(ui->leditRelay->text().trimmed().toStdString());
     });
     connect(ui->leditMinPort, &QLineEdit::textChanged, [this](const QString& _text) {
         if (_text.trimmed().isEmpty() && ui->leditMaxPort->text().trimmed().isEmpty()) {
@@ -597,6 +601,12 @@ void MainWindow::setupOtherCallbacks() {
             params_.set_port_range(min_port, max_port);
             ui->btnPortRange->setEnabled(false);
         }
+    });
+    connect(ui->leditIgnoredNIC, &QLineEdit::textChanged,
+            [this](const QString&) { ui->btnIgnoredNIC->setEnabled(true); });
+    connect(ui->btnIgnoredNIC, &QPushButton::clicked, [this]() {
+        ui->btnIgnoredNIC->setEnabled(false);
+        params_.set_ignored_nic(ui->leditIgnoredNIC->text().trimmed().toStdString());
     });
     connect(ui->leditRed, &QLineEdit::textChanged,
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));

@@ -81,6 +81,7 @@ public:
         bool enable_mouse;
         uint16_t min_port;
         uint16_t max_port;
+        std::string ignored_nic;
     };
 
 public:
@@ -219,6 +220,7 @@ private:
     int64_t video_send_bps_ = 0;
     uint16_t min_port_ = 0;
     uint16_t max_port_ = 0;
+    std::string ignored_nic_;
     bool first_start_working_ack_received_ = false;
 
     std::atomic<bool> enable_gamepad_;
