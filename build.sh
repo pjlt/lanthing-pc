@@ -33,12 +33,12 @@ check_build_type() {
 }
 
 rtc_fetch() {
-    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.6.1/rtc.linux.tar.gz"
+    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.6.2/rtc.linux.zip"
     mkdir -p ./transport/rtc/linux
     echo "Fetch $rtc_url"
-    wget $rtc_url -O ./third_party/prebuilt/rtc.linux.tar.gz
-    echo "Extra rtc.linux.tar.gz"
-    tar -xzvf ./third_party/prebuilt/rtc.linux.tar.gz -C ./transport/rtc/linux
+    wget $rtc_url -O ./third_party/prebuilt/rtc.linux.zip
+    echo "Extra rtc.linux.zip"
+    unzip ./third_party/prebuilt/rtc.linux.zip -d ./transport/rtc/linux
 }
 
 prebuilt_fetch() {
