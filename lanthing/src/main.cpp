@@ -175,7 +175,6 @@ void initLogAndMinidump(Role role) {
     if (LT_CRASH_ON_THREAD_HANGS) {
         ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
         ltlib::ThreadWatcher::instance()->registerTerminateCallback(terminateCallback);
-        ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
     }
     else {
         ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
