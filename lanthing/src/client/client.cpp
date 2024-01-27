@@ -667,6 +667,7 @@ tp::Client* Client::createRtcClient() {
         params.nbp2p_params.reflex_servers_count = static_cast<uint32_t>(reflex_servers.size());
         params.nbp2p_params.relay_servers = nullptr;
         params.nbp2p_params.relay_servers_count = 0;
+        params.nbp2p_params.ignored_adapters = kIgnoredNetworkAdapters;
     }
     params.on_data = &Client::onTpData;
     params.on_video = &Client::onTpVideoFrame;
@@ -758,7 +759,6 @@ void Client::onTpAudioData(void* user_data, const lt::AudioData& audio_data) {
 void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     auto that = reinterpret_cast<Client*>(user_data);
-    (void)link_type;
     that->video_pipeline_ = VideoDecodeRenderPipeline::create(that->video_params_);
     if (that->video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
@@ -804,7 +804,16 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     that->sdl_->setTitle(oss.str());
 }
 
-void Client::onTpConnChanged(void*) {}
+void Client::onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkType new_type) {
+    auto that = reinterpret_cast<Client*>(user_data);
+    LOG(INFO) << "Transport LinkType changed: " << toString(old_type) << " => "
+              << toString(new_type);
+    that->is_p2p_ = new_type != lt::LinkType::RelayUDP;
+    std::ostringstream oss;
+    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ")
+        << toString(that->video_params_.codec_type) << " GPU:GPU"; // 暂时只支持硬件编解码.
+    that->sdl_->setTitle(oss.str());
+}
 
 void Client::onTpFailed(void* user_data) {
     auto that = reinterpret_cast<Client*>(user_data);

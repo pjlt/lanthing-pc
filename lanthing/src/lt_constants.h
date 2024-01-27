@@ -35,6 +35,10 @@ namespace lt {
 // Signaling Keys
 inline const char kSigCoreClose[] = "close";
 
+// xxxx
+inline const char kIgnoredNetworkAdapters[] =
+    "Tailscale;Netease;Virtual;TAP-Windows;Sangfor;OpenVPN;";
+
 // Worker Exit Code
 constexpr int kExitCodeNeedRestart = 256;
 constexpr int kExitCodeOK = 0;

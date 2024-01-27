@@ -140,7 +140,7 @@ private:
     static void onTpVideoFrame(void* user_data, const lt::VideoFrame& frame);
     static void onTpAudioData(void* user_data, const lt::AudioData& audio_data);
     static void onTpConnected(void* user_data, lt::LinkType link_type);
-    static void onTpConnChanged(void* user_data /*old_conn_info, new_conn_info*/);
+    static void onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkType new_type);
     static void onTpFailed(void* user_data);
     static void onTpDisconnected(void* user_data);
     static void onTpSignalingMessage(void* user_data, const char* key, const char* value);
