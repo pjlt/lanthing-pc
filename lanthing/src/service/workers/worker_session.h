@@ -94,6 +94,8 @@ public:
     void disableMouse();
     void enableKeyboard();
     void disableKeyboard();
+    void enableAudio();
+    void disableAudio();
     void close();
 
 private:
@@ -226,6 +228,7 @@ private:
     std::atomic<bool> enable_gamepad_;
     std::atomic<bool> enable_keyboard_;
     std::atomic<bool> enable_mouse_;
+    std::atomic<bool> enable_audio_;
 };
 
 } // namespace svc

@@ -123,6 +123,7 @@ WorkerSession::WorkerSession(const Params& params)
     for (int i = 0; i < kRandLength; ++i) {
         pipe_name_.push_back(rand() % 26 + 'A');
     }
+    enable_audio_ = true;
 }
 
 WorkerSession::~WorkerSession() {
@@ -173,6 +174,14 @@ void WorkerSession::enableKeyboard() {
 
 void WorkerSession::disableKeyboard() {
     enable_keyboard_ = false;
+}
+
+void WorkerSession::enableAudio() {
+    enable_audio_ = true;
+}
+
+void WorkerSession::disableAudio() {
+    enable_audio_ = false;
 }
 
 void WorkerSession::close() {
@@ -880,6 +889,9 @@ void WorkerSession::onCapturedAudio(std::shared_ptr<google::protobuf::MessageLit
     if (!client_connected_) {
         return;
     }
+    if (!enable_audio_) {
+        return;
+    }
     auto captured_audio = std::static_pointer_cast<ltproto::client2worker::AudioData>(_msg);
     lt::AudioData audio_data{};
     audio_data.data = reinterpret_cast<const uint8_t*>(captured_audio->data().c_str());
@@ -1016,6 +1028,7 @@ void WorkerSession::tellAppAccpetedConnection() {
     msg->set_enable_gamepad(enable_gamepad_);
     msg->set_enable_keyboard(enable_keyboard_);
     msg->set_enable_mouse(enable_mouse_);
+    msg->set_enable_audio(enable_audio_);
     msg->set_gpu_decode(true); // 当前只支持硬编硬解
     msg->set_gpu_encode(true);
     msg->set_p2p(is_p2p_);

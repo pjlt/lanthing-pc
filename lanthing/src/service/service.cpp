@@ -606,6 +606,12 @@ void Service::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite>
         case ltproto::service2app::OperateConnection_Operation_DisableMouse:
             session->second->disableMouse();
             break;
+        case ltproto::service2app::OperateConnection_Operation_EnableAudio:
+            session->second->enableAudio();
+            break;
+        case ltproto::service2app::OperateConnection_Operation_DisableAudio:
+            session->second->disableAudio();
+            break;
         case ltproto::service2app::OperateConnection_Operation_Kick:
             session->second->close();
             break;

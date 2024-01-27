@@ -363,6 +363,7 @@ void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLi
         enable_gamepad_ = msg->enable_gamepad();
         enable_keyboard_ = msg->enable_keyboard();
         enable_mouse_ = msg->enable_mouse();
+        enable_audio_ = msg->enable_audio();
         gpu_encode_ = msg->gpu_encode();
         gpu_decode_ = msg->gpu_decode();
         p2p_ = msg->p2p();
@@ -714,6 +715,7 @@ void MainWindow::setupClientIndicators() {
         QAction* gamepad = new QAction(gp_, tr("gamepad"), menu);
         QAction* keyboard = new QAction(kb_, tr("keyboard"), menu);
         QAction* mouse = new QAction(mouse_, tr("mouse"), menu);
+        QAction* audio = new QAction(audio_, tr("audio"), menu);
         QAction* kick = new QAction(kick_, tr("kick"), menu);
 
         if (enable_gamepad_) {
@@ -724,6 +726,9 @@ void MainWindow::setupClientIndicators() {
         }
         if (enable_mouse_) {
             mouse->setText(mouse->text() + " √");
+        }
+        if (enable_audio_) {
+            audio->setText(audio->text() + " √");
         }
 
         connect(gamepad, &QAction::triggered, [this]() {
@@ -751,6 +756,14 @@ void MainWindow::setupClientIndicators() {
                               : ltproto::service2app::OperateConnection_Operation_DisableMouse);
             params_.on_operate_connection(msg);
         });
+        connect(audio, &QAction::triggered, [this]() {
+            enable_audio_ = !enable_audio_;
+            auto msg = std::make_shared<ltproto::service2app::OperateConnection>();
+            msg->add_operations(
+                enable_audio_ ? ltproto::service2app::OperateConnection_Operation_EnableAudio
+                              : ltproto::service2app::OperateConnection_Operation_DisableAudio);
+            params_.on_operate_connection(msg);
+        });
         connect(kick, &QAction::triggered, [this]() {
             auto msg = std::make_shared<ltproto::service2app::OperateConnection>();
             msg->add_operations(ltproto::service2app::OperateConnection_Operation_Kick);
@@ -760,6 +773,7 @@ void MainWindow::setupClientIndicators() {
         menu->addAction(gamepad);
         menu->addAction(mouse);
         menu->addAction(keyboard);
+        menu->addAction(audio);
         menu->addAction(kick);
 
         menu->exec(ui->labelClient1->mapToGlobal(pos));
@@ -790,6 +804,8 @@ void MainWindow::loadPixmap() {
     gp_gray_.load(":/res/png_icons/gamepad_gray.png");
     gp_red_.load(":/res/png_icons/gamepad_red.png");
     gp_green_.load(":/res/png_icons/gamepad_green.png");
+
+    audio_.load(":/res/png_icons/audio.png");
 }
 
 QPushButton* MainWindow::indexToTabButton(int32_t index) {

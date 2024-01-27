@@ -154,12 +154,14 @@ private:
     QPixmap gp_gray_;
     QPixmap gp_red_;
     QPixmap gp_green_;
+    QPixmap audio_;
     int64_t mouse_hit_time_ = 0;
     int64_t keyboard_hit_time_ = 0;
     int64_t gamepad_hit_time_ = 0;
     bool enable_mouse_ = false;
     bool enable_keyboard_ = false;
     bool enable_gamepad_ = false;
+    bool enable_audio_ = false;
     bool gpu_encode_ = false;
     bool gpu_decode_ = false;
     bool p2p_ = false;

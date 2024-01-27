@@ -68,53 +68,53 @@
         <translation>拒绝</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="457"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="458"/>
         <source>The new version %s has been released, please download it&lt;br&gt;from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="465"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="466"/>
         <source>Version: </source>
         <translation>版本： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="467"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="468"/>
         <source>Released date: </source>
         <translation>发布日期： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="468"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="469"/>
         <source>New features:</source>
         <translation>新特性：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="474"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="475"/>
         <source>Bug fix:</source>
         <translation>修复：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="451"/>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="482"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="452"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="483"/>
         <source>New Version</source>
         <translation>新版本</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="443"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="444"/>
         <source>The new version %s has been released, this is a force update version, please download it from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，该版本与旧版不兼容，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="668"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="669"/>
         <source>🟢Connected to server</source>
         <translation>🟢已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="680"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="681"/>
         <source>🔴Disconnected from server</source>
         <translation>🔴与服务器断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="691"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="692"/>
         <source>🟢Controlled module up</source>
         <translation>🟢被控模块正常</translation>
     </message>
@@ -123,37 +123,42 @@
         <translation type="vanished">🟡正在启动被控模块</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="695"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="696"/>
         <source>🔴Controlled module down</source>
         <translation>🔴被控模块掉线</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="714"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="715"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="715"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="716"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="716"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="717"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="717"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="718"/>
+        <source>audio</source>
+        <translation>声音</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="719"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="825"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="841"/>
         <source>DeviceID or AccessToken invalid</source>
         <translation>设备码或验证码错误</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="965"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="981"/>
         <source>delete</source>
         <translation>删除</translation>
     </message>
@@ -271,7 +276,7 @@
         <translation type="vanished">鼠标模式（暂不生效）</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="674"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="675"/>
         <source>🟡Connecting...</source>
         <translation>🟡正在连接服务器</translation>
     </message>
