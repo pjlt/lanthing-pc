@@ -129,7 +129,7 @@ GUID NvEncParamsHelper::profile() const {
     case lt::VideoEncodeParamsHelper::Profile::AvcMain:
         return NV_ENC_H264_PROFILE_MAIN_GUID;
     case lt::VideoEncodeParamsHelper::Profile::HevcMain:
-        return NV_ENC_H264_PROFILE_HIGH_GUID;
+        return NV_ENC_HEVC_PROFILE_MAIN_GUID;
     default:
         assert(false);
         return NV_ENC_H264_PROFILE_MAIN_GUID;
