@@ -99,12 +99,13 @@ bool WinAudioCapturer::initPlatform() {
         LOG(ERR) << "CoCreateInstance IMMDeviceEnumerator failed with " << toHex(hr);
         return false;
     }
-    hr = enumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole,
-                                              device_.GetAddressOf());
+    IMMDevice* mmdevice = nullptr;
+    hr = enumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole, &mmdevice);
     if (FAILED(hr)) {
         LOG(ERR) << "IMMDeviceEnumerator::GetDefaultAudioEndpoint failed with " << toHex(hr);
         return false;
     }
+    device_ = mmdevice;
     getDeviceName();
     hr = device_->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr,
                            reinterpret_cast<void**>(client_.GetAddressOf()));
