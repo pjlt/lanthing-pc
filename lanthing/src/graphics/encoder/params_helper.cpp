@@ -59,8 +59,11 @@ VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t 
     std::stringstream ssQmax;
     ssQmin << qmin_[0] << ',' << qmin_[1] << ',' << qmin_[2];
     ssQmax << qmax_[0] << ',' << qmax_[1] << ',' << qmax_[2];
+    params_["-width"] = std::to_string(width_);
+    params_["-height"] = std::to_string(width_);
+    params_["-fps"] = std::to_string(fps);
     params_["-bitrate"] = std::to_string(bitrate_bps);
-    params_["-maxbitrate"] = std::to_string(bitrate_bps * 1.05f);
+    params_["-maxbitrate"] = std::to_string(maxbitrate());
     params_["-codec"] = c == lt::VideoCodecType::H264 ? "h264" : "hevc";
     params_["-gop"] = std::to_string(gop_);
     params_["-rc"] = std::to_string((int)rc_);
@@ -68,7 +71,6 @@ VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t 
     params_["-profile"] = std::to_string((int)profile_);
     params_["-qmin"] = ssQmin.str();
     params_["-qmax"] = ssQmax.str();
-    params_["-fps"] = std::to_string(fps);
 }
 
 std::string VideoEncodeParamsHelper::params() const {

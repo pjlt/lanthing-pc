@@ -71,7 +71,7 @@ public:
     int fps() const { return params_.fps(); }
 
     uint32_t bitrate() const { return params_.bitrate(); }
-    uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate() * 1.05f); }
+    uint32_t maxbitrate() const { return params_.maxbitrate(); }
     NV_ENC_QP qmin() const { return {params_.qmin()[0], params_.qmin()[1], params_.qmin()[2]}; }
     NV_ENC_QP qmax() const { return {params_.qmax()[0], params_.qmax()[1], params_.qmax()[2]}; }
     std::optional<int> vbvbufsize() const { return params_.vbvbufsize(); }
@@ -262,7 +262,7 @@ void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& para
     if (params.bitrate_bps.has_value()) {
         encode_config_.rcParams.averageBitRate = params.bitrate_bps.value();
         encode_config_.rcParams.maxBitRate =
-            static_cast<uint32_t>(params.bitrate_bps.value() * 1.05f);
+            static_cast<uint32_t>(params.bitrate_bps.value() * 1.1f);
         changed = true;
     }
     if (params.fps.has_value()) {

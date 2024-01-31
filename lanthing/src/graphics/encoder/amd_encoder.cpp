@@ -58,6 +58,7 @@ public:
     int fps() const { return params_.fps(); }
     int64_t gop() const { return params_.gop() < 0 ? 0 : params_.gop(); }
     int64_t bitrate() const { return params_.bitrate(); }
+    int64_t max_bitrate() const { return params_.maxbitrate(); }
     int64_t qmin() const { return params_.qmin()[0]; }
     int64_t qmax() const { return params_.qmax()[0]; }
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM rc() const;
@@ -206,14 +207,21 @@ bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
 void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) {
     // FIXME: 是否可以动态设置fps?
     AMF_RESULT result = AMF_OK;
+    AMF_RESULT result2 = AMF_OK;
     if (params.bitrate_bps.has_value()) {
         if (codec_type_ == lt::VideoCodecType::H264) {
             result =
                 encoder_->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, params.bitrate_bps.value());
+            result2 =
+                encoder_->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE,
+                                      static_cast<int64_t>(params.bitrate_bps.value() * 1.1f));
         }
         else if (codec_type_ == lt::VideoCodecType::H265) {
             result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE,
                                            params.bitrate_bps.value());
+            result2 =
+                encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_PEAK_BITRATE,
+                                      static_cast<int64_t>(params.bitrate_bps.value() * 1.1f));
         }
         else {
             assert(false);
@@ -225,6 +233,11 @@ void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) 
             << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE/AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE failed "
                "with "
             << result;
+    }
+    if (result2 != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_PEAK_BITRATE/AMF_VIDEO_ENCODER_HEVC_PEAK_BITRATE failed "
+                    "with "
+                 << result2;
     }
 }
 
@@ -319,6 +332,10 @@ bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
         return false;
     }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE, params.max_bitrate());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
+    }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, params.qmin());
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_MIN_QP failed with " << result;
@@ -329,6 +346,7 @@ bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_MAX_QP failed with " << result;
         return false;
     }
+
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, params.presetAvc());
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_QUALITY_PRESET failed with " << result;
@@ -385,6 +403,10 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE failed with " << result;
         return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_PEAK_BITRATE, params.max_bitrate());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
     }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MIN_QP_P, params.qmin());
     if (result != AMF_OK) {

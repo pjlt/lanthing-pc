@@ -337,11 +337,12 @@ void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params
     }
     if (params.bitrate_bps.has_value()) {
         uint32_t target_kbps = params.bitrate_bps.value() / 1024;
-        uint32_t old8 = static_cast<uint32_t>(static_cast<uint32_t>(encode_param_.mfx.TargetKbps) *
-                                              encode_param_.mfx.BRCParamMultiplier * 0.8);
         VplSize vsize;
-        vsize.target = std::max(old8, target_kbps);
-        vsize.max = static_cast<uint32_t>(vsize.target * 1.05);
+        // uint32_t old8 = static_cast<uint32_t>(static_cast<uint32_t>(encode_param_.mfx.TargetKbps)
+        //                                      encode_param_.mfx.BRCParamMultiplier * 0.8);
+        // vsize.target = std::max(old8, target_kbps);
+        vsize.target = target_kbps;
+        vsize.max = static_cast<uint32_t>(vsize.target * 1.1f);
         vsize.init_delay = static_cast<uint32_t>(encode_param_.mfx.InitialDelayInKB) *
                            encode_param_.mfx.BRCParamMultiplier;
         vsize.buffer_size = static_cast<uint32_t>(encode_param_.mfx.BufferSizeInKB) *
