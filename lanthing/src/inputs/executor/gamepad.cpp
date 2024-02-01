@@ -39,6 +39,8 @@
 
 namespace lt {
 
+namespace input {
+
 std::unique_ptr<Gamepad>
 Gamepad::create(std::function<void(uint32_t, uint16_t, uint16_t)> gamepad_response) {
     std::unique_ptr<Gamepad> gp{new Gamepad{gamepad_response}};
@@ -153,5 +155,7 @@ void Gamepad::onGamepadResponse(PVIGEM_CLIENT client, PVIGEM_TARGET target, UCHA
         }
     }
 }
+
+} // namespace input
 
 } // namespace lt

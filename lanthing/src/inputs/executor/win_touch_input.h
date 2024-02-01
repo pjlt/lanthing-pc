@@ -43,6 +43,8 @@
 
 namespace lt {
 
+namespace input {
+
 class TouchExecutor {
 public:
     static std::unique_ptr<TouchExecutor> create(uint32_t screen_width, uint32_t screen_height,
@@ -70,5 +72,7 @@ private:
     int32_t offset_x_ = 0;
     int32_t offset_y_ = 0;
 };
+
+} // namespace input
 
 } // namespace lt

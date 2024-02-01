@@ -115,6 +115,8 @@ void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POI
 
 namespace lt {
 
+namespace input {
+
 std::unique_ptr<TouchExecutor> TouchExecutor::create(uint32_t screen_width, uint32_t screen_height,
                                                      ltlib::Monitor monitor) {
     std::unique_ptr<TouchExecutor> touch{new TouchExecutor{screen_width, screen_height, monitor}};
@@ -265,5 +267,7 @@ void TouchExecutor::update() {
     }
     injectSyntheticPointerInput(touch_dev_, points_, using_points_);
 }
+
+} // namespace input
 
 } // namespace lt

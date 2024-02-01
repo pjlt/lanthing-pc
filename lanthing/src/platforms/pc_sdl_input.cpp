@@ -74,7 +74,7 @@ void SdlInput::init() {
     }
 }
 
-void SdlInput::setInputHandler(const OnInputEvent& on_input_event) {
+void SdlInput::setInputHandler(const input::OnInputEvent& on_input_event) {
     std::lock_guard lock{mutex_};
     on_input_event_ = on_input_event;
 }
@@ -87,7 +87,8 @@ void SdlInput::handleKeyUpDown(const SDL_KeyboardEvent& ev) {
     if (ev.keysym.scancode <= SDL_SCANCODE_UNKNOWN || ev.keysym.scancode >= SDL_NUM_SCANCODES) {
         return;
     }
-    onInputEvent(KeyboardEvent{static_cast<uint16_t>(ev.keysym.scancode), ev.type == SDL_KEYDOWN});
+    onInputEvent(
+        input::KeyboardEvent{static_cast<uint16_t>(ev.keysym.scancode), ev.type == SDL_KEYDOWN});
 }
 
 void SdlInput::handleMouseButton(const SDL_MouseButtonEvent& ev) {
@@ -96,22 +97,22 @@ void SdlInput::handleMouseButton(const SDL_MouseButtonEvent& ev) {
     if (ev.which == SDL_TOUCH_MOUSEID) {
         return;
     }
-    MouseButtonEvent::Button btn;
+    input::MouseButtonEvent::Button btn;
     switch (ev.button) {
     case SDL_BUTTON_LEFT:
-        btn = MouseButtonEvent::Button::Left;
+        btn = input::MouseButtonEvent::Button::Left;
         break;
     case SDL_BUTTON_MIDDLE:
-        btn = MouseButtonEvent::Button::Mid;
+        btn = input::MouseButtonEvent::Button::Mid;
         break;
     case SDL_BUTTON_RIGHT:
-        btn = MouseButtonEvent::Button::Right;
+        btn = input::MouseButtonEvent::Button::Right;
         break;
     case SDL_BUTTON_X1:
-        btn = MouseButtonEvent::Button::X1;
+        btn = input::MouseButtonEvent::Button::X1;
         break;
     case SDL_BUTTON_X2:
-        btn = MouseButtonEvent::Button::X2;
+        btn = input::MouseButtonEvent::Button::X2;
         break;
     default:
         // SDL会不会出bug？
@@ -120,8 +121,9 @@ void SdlInput::handleMouseButton(const SDL_MouseButtonEvent& ev) {
     int width;
     int height;
     SDL_GetWindowSize(window_, &width, &height);
-    onInputEvent(MouseButtonEvent{btn, ev.state == SDL_PRESSED, ev.x, ev.y,
-                                  static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
+    onInputEvent(input::MouseButtonEvent{btn, ev.state == SDL_PRESSED, ev.x, ev.y,
+                                         static_cast<uint32_t>(width),
+                                         static_cast<uint32_t>(height)});
 }
 
 void SdlInput::handleMouseMove(const SDL_MouseMotionEvent& ev) {
@@ -135,15 +137,15 @@ void SdlInput::handleMouseMove(const SDL_MouseMotionEvent& ev) {
         LOG(WARNING) << "Get window width/height failed";
         return;
     }
-    onInputEvent(MouseMoveEvent{ev.x, ev.y, ev.xrel, ev.yrel, static_cast<uint32_t>(width),
-                                static_cast<uint32_t>(height)});
+    onInputEvent(input::MouseMoveEvent{ev.x, ev.y, ev.xrel, ev.yrel, static_cast<uint32_t>(width),
+                                       static_cast<uint32_t>(height)});
 }
 
 void SdlInput::handleMouseWheel(const SDL_MouseWheelEvent& ev) {
     if (ev.which == SDL_TOUCH_MOUSEID) {
         return;
     }
-    onInputEvent(MouseWheelEvent{ev.y * 120});
+    onInputEvent(input::MouseWheelEvent{ev.y * 120});
 }
 
 void SdlInput::handleControllerAxis(const SDL_ControllerAxisEvent& ev) {
@@ -158,45 +160,45 @@ void SdlInput::handleControllerAxis(const SDL_ControllerAxisEvent& ev) {
         return;
     }
     int16_t value;
-    ControllerAxisEvent::AxisType axis_type;
+    input::ControllerAxisEvent::AxisType axis_type;
     switch (ev.axis) {
     case SDL_CONTROLLER_AXIS_LEFTX:
-        axis_type = ControllerAxisEvent::AxisType::LeftThumbX;
+        axis_type = input::ControllerAxisEvent::AxisType::LeftThumbX;
         value = ev.value;
         break;
     case SDL_CONTROLLER_AXIS_LEFTY:
-        axis_type = ControllerAxisEvent::AxisType::LeftThumbY;
+        axis_type = input::ControllerAxisEvent::AxisType::LeftThumbY;
         value = ev.value;
         break;
     case SDL_CONTROLLER_AXIS_RIGHTX:
-        axis_type = ControllerAxisEvent::AxisType::RightThumbX;
+        axis_type = input::ControllerAxisEvent::AxisType::RightThumbX;
         value = ev.value;
         break;
     case SDL_CONTROLLER_AXIS_RIGHTY:
-        axis_type = ControllerAxisEvent::AxisType::RightThumbY;
+        axis_type = input::ControllerAxisEvent::AxisType::RightThumbY;
         value = ev.value;
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-        axis_type = ControllerAxisEvent::AxisType::LeftTrigger;
+        axis_type = input::ControllerAxisEvent::AxisType::LeftTrigger;
         value = ev.value;
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-        axis_type = ControllerAxisEvent::AxisType::RightTrigger;
+        axis_type = input::ControllerAxisEvent::AxisType::RightTrigger;
         value = ev.value;
         break;
     default:
         return;
     }
-    onInputEvent(ControllerAxisEvent{index, axis_type, value});
+    onInputEvent(input::ControllerAxisEvent{index, axis_type, value});
 }
 
 void SdlInput::handleControllerButton(const SDL_ControllerButtonEvent& ev) {
     for (uint8_t index = 0; index < kMaxControllers; index++) {
         if (controller_states_[index].has_value() &&
             controller_states_[index]->joystick_id == ev.which) {
-            onInputEvent(
-                ControllerButtonEvent{index, static_cast<ControllerButtonEvent::Button>(ev.button),
-                                      ev.state == SDL_PRESSED});
+            onInputEvent(input::ControllerButtonEvent{
+                index, static_cast<input::ControllerButtonEvent::Button>(ev.button),
+                ev.state == SDL_PRESSED});
             return;
         }
     }
@@ -237,7 +239,7 @@ void SdlInput::handleControllerAdded(const SDL_ControllerDeviceEvent& ev) {
         SDL_free((void*)mapping);
     }
 
-    onInputEvent(ControllerAddedRemovedEvent{index, true});
+    onInputEvent(input::ControllerAddedRemovedEvent{index, true});
 }
 
 void SdlInput::handleControllerRemoved(const SDL_ControllerDeviceEvent& ev) {
@@ -246,7 +248,7 @@ void SdlInput::handleControllerRemoved(const SDL_ControllerDeviceEvent& ev) {
             controller_states_[index]->joystick_id == ev.which) {
             SDL_GameControllerClose(controller_states_[index]->controller);
             controller_states_[index] = std::nullopt;
-            onInputEvent(ControllerAddedRemovedEvent{index, /*is_added=*/false});
+            onInputEvent(input::ControllerAddedRemovedEvent{index, /*is_added=*/false});
             return;
         }
     }
@@ -262,8 +264,8 @@ void SdlInput::handleJoystickAdded(const SDL_JoyDeviceEvent& ev) {
     LOG(WARNING) << "Unknown controller: " << name;
 }
 
-void SdlInput::onInputEvent(const InputEvent& ev) {
-    OnInputEvent handle_input;
+void SdlInput::onInputEvent(const input::InputEvent& ev) {
+    input::OnInputEvent handle_input;
     {
         std::lock_guard lock{mutex_};
         handle_input = on_input_event_;

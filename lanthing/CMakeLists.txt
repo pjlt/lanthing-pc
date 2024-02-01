@@ -43,90 +43,90 @@ set(LT_WORKER_SRCS
 )
 
 set(LT_VIDEO_ENCODER_SRCS
-    # graphics->encoder
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/video_encoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/nvidia_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/nvidia_encoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_allocator.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_allocator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/intel_encoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/amd_encoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/amd_encoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/params_helper.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/encoder/params_helper.cpp
+    # video->encoder
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/video_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/video_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/nvidia_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/nvidia_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/intel_allocator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/intel_allocator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/intel_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/intel_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/amd_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/amd_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/params_helper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/params_helper.cpp
 )
 
 set(LT_VIDEO_CAPTURER_SRCS
-    # graphics->capturer
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/video_capturer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi_video_capturer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi_video_capturer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/duplication_manager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/capturer/dxgi/common_types.h
+    # video->capturer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/video_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/video_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi_video_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi_video_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi/duplication_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi/duplication_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi/common_types.h
 )
 
 set(LT_VIDEO_CE_PIPELINE_SRCS
-    # graphics->cepipeline
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/cepipeline/video_capture_encode_pipeline.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/cepipeline/video_capture_encode_pipeline.cpp
+    # video->cepipeline
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/cepipeline/video_capture_encode_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/cepipeline/video_capture_encode_pipeline.cpp
 )
 
 set(LT_VIDEO_DECODER_SRCS
-    # graphics->decoder
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/video_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_hard_decoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_hard_decoder.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_soft_decoder.h
-    #${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/decoder/ffmpeg_soft_decoder.cpp
+    # video->decoder
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/video_decoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/video_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_hard_decoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_hard_decoder.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_soft_decoder.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_soft_decoder.cpp
 )
 
 set(LT_VIDEO_RENDERER_SRCS
-    # graphics->renderer
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/video_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/renderer_grab_inputs.cpp
+    # video->renderer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/video_renderer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/video_renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/renderer_grab_inputs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/renderer_grab_inputs.cpp
 )
 if (LT_WINDOWS)
     list(APPEND LT_VIDEO_RENDERER_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/d3d11_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.cpp
     )
 elseif (LT_LINUX)
     list(APPEND LT_VIDEO_RENDERER_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/va_gl_pipeline.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/renderer/va_gl_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/va_gl_pipeline.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/va_gl_pipeline.cpp
     )
 endif()
 
 set(LT_VIDEO_DR_PIPELINE_SRCS
-    # graphics->drpipeline
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_decode_render_pipeline.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/ct_smoother.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/ct_smoother.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/gpu_capability.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_statistics.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/drpipeline/video_statistics.cpp
+    # video->drpipeline
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/video_decode_render_pipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/video_decode_render_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/ct_smoother.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/ct_smoother.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/gpu_capability.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/gpu_capability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/video_statistics.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/drpipeline/video_statistics.cpp
 )
 
 
 set(LT_VIDEO_WIDGET_SRCS
-    # graphics->widget
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/widgets_manager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/control_bar_widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/control_bar_widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/statistics_widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/statistics_widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/status_widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/widgets/status_widget.cpp
+    # video->widget
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/widgets_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/widgets_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/control_bar_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/control_bar_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/statistics_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/statistics_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/status_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/status_widget.cpp
 )
 
 set(LT_AUDIO_CAPTURER_SRCS

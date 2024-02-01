@@ -38,6 +38,8 @@
 
 namespace lt {
 
+namespace audio {
+
 SdlAudioPlayer::SdlAudioPlayer(const Params& params)
     : AudioPlayer{params} {}
 
@@ -76,5 +78,7 @@ bool SdlAudioPlayer::play(const void* data, uint32_t size) {
     }
     return true;
 }
+
+} // namespace audio
 
 } // namespace lt

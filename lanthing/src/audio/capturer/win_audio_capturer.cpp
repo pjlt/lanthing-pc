@@ -60,6 +60,8 @@ private:
 
 namespace lt {
 
+namespace audio {
+
 using namespace Microsoft::WRL;
 
 WinAudioCapturer::WinAudioCapturer(const Params& params)
@@ -327,5 +329,7 @@ bool WinAudioCapturer::setAudioFormat() {
     CoTaskMemFree(pWfxClosestMatch);
     return hr == S_OK;
 }
+
+} // namespace audio
 
 } // namespace lt

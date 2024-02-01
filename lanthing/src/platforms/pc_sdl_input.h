@@ -1,21 +1,21 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *  
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -51,7 +51,7 @@ public:
 
 public:
     static std::unique_ptr<SdlInput> create(const Params& params);
-    void setInputHandler(const OnInputEvent& on_input_event);
+    void setInputHandler(const input::OnInputEvent& on_input_event);
     void rumble(uint16_t controller_number, uint16_t log_freq_motor, uint16_t high_freq_motor);
 
     void handleKeyUpDown(const SDL_KeyboardEvent& ev);
@@ -67,7 +67,7 @@ public:
 private:
     SdlInput(const Params& params);
     void init();
-    void onInputEvent(const InputEvent& ev);
+    void onInputEvent(const input::InputEvent& ev);
 
 private:
     struct ControllerState {
@@ -81,7 +81,7 @@ private:
     SDL_Window* window_;
     uint8_t keyboard_state_[512] = {0};
     std::mutex mutex_;
-    std::function<void(const InputEvent&)> on_input_event_;
+    std::function<void(const input::InputEvent&)> on_input_event_;
     std::array<std::optional<ControllerState>, kMaxControllers> controller_states_;
 };
 

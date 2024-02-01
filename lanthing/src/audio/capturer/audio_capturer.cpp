@@ -43,6 +43,8 @@
 
 namespace lt {
 
+namespace audio {
+
 std::unique_ptr<AudioCapturer> AudioCapturer::create(const Params& params) {
 #if LT_WINDOWS
     std::unique_ptr<AudioCapturer> capturer{new WinAudioCapturer{params}};
@@ -208,5 +210,7 @@ uint32_t AudioCapturer::framesPer10ms() const {
 uint32_t AudioCapturer::bytesPer10ms() const {
     return bytesPerFrame() * framesPer10ms();
 }
+
+} // namespace audio
 
 } // namespace lt

@@ -35,6 +35,8 @@
 
 namespace lt {
 
+namespace input {
+
 class Win32SendInput : public InputExecutor {
 public:
     Win32SendInput(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor);
@@ -49,5 +51,7 @@ private:
     uint32_t screen_height_;
     ltlib::Monitor monitor_;
 };
+
+} // namespace input
 
 } // namespace lt

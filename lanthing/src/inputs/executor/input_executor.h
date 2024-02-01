@@ -43,6 +43,8 @@
 
 namespace lt {
 
+namespace input {
+
 class Gamepad;
 class TouchExecutor;
 class InputExecutor {
@@ -92,5 +94,7 @@ private:
     std::shared_ptr<Gamepad> gamepad_;
     std::shared_ptr<TouchExecutor> touch_;
 };
+
+} // namespace input
 
 } // namespace lt

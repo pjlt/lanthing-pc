@@ -38,6 +38,9 @@
 namespace lt {
 
 class PcSdl;
+
+namespace input {
+
 class InputCapturerImpl;
 
 class InputCapturer {
@@ -66,5 +69,7 @@ private:
 private:
     std::shared_ptr<InputCapturerImpl> impl_;
 };
+
+} // namespace input
 
 } // namespace lt

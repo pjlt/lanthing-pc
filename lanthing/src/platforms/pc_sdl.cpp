@@ -39,7 +39,7 @@
 #include <ltlib/threads.h>
 #include <ltproto/client2worker/cursor_info.pb.h>
 
-#include <graphics/renderer/renderer_grab_inputs.h>
+#include <video/renderer/renderer_grab_inputs.h>
 
 #include "pc_sdl_input.h"
 
@@ -71,7 +71,7 @@ public:
     bool init();
     SDL_Window* window() override;
 
-    void setInputHandler(const OnInputEvent& on_event) override;
+    void setInputHandler(const input::OnInputEvent& on_event) override;
 
     void toggleFullscreen() override;
 
@@ -166,7 +166,7 @@ SDL_Window* PcSdlImpl::window() {
     return window_;
 }
 
-void PcSdlImpl::setInputHandler(const OnInputEvent& on_event) {
+void PcSdlImpl::setInputHandler(const input::OnInputEvent& on_event) {
     input_->setInputHandler(on_event);
 }
 
@@ -273,7 +273,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         if (!SDL_WaitEventTimeout(&ev, 1000)) {
             continue;
         }
-        if (rendererGrabInputs(&ev)) {
+        if (video::rendererGrabInputs(&ev)) {
             continue;
         }
         switch (dispatchSdlEvent(ev)) {

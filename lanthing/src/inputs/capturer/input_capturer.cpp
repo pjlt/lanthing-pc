@@ -97,6 +97,8 @@ Rect scale_src_to_dst_surface(Rect src, Rect dst) {
 
 namespace lt {
 
+namespace input {
+
 class InputCapturerImpl {
 public:
     InputCapturerImpl(const InputCapturer::Params& params);
@@ -520,5 +522,7 @@ std::pair<float, float> InputCapturerImpl::calcAbsPos(int32_t x, int32_t y, int3
         return std::make_pair((x - x1) * 1.0f / inner.w, (y - y1) * 1.0f / inner.h);
     }
 }
+
+} // namespace input
 
 } // namespace lt

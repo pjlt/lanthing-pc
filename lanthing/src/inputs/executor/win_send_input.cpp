@@ -47,9 +47,10 @@
 namespace {
 
 // ret: {win_key, use_scancode, extented, valid}
-constexpr auto scancodeToWinKey(const lt::Scancode scancode) -> std::tuple<WORD, bool, bool, bool> {
+constexpr auto scancodeToWinKey(const lt::input::Scancode scancode)
+    -> std::tuple<WORD, bool, bool, bool> {
     // FIXME: 有几个键是乱填的
-    using lt::Scancode;
+    using lt::input::Scancode;
     if (scancode >= Scancode::SCANCODE_A && scancode <= Scancode::SCANCODE_Z) {
         return {'A' + scancode - Scancode::SCANCODE_A, true, false, true};
     }
@@ -66,102 +67,102 @@ constexpr auto scancodeToWinKey(const lt::Scancode scancode) -> std::tuple<WORD,
         return {VK_NUMPAD1 + scancode - Scancode::SCANCODE_KP_1, true, false, true};
     }
     switch (scancode) {
-    case lt::SCANCODE_KP_PERIOD:
+    case lt::input::SCANCODE_KP_PERIOD:
         return {VK_DECIMAL, true, false, true};
-    case lt::SCANCODE_RETURN:
+    case lt::input::SCANCODE_RETURN:
         return {VK_RETURN, true, false, true};
-    case lt::SCANCODE_ESCAPE:
+    case lt::input::SCANCODE_ESCAPE:
         return {VK_ESCAPE, true, false, true};
-    case lt::SCANCODE_BACKSPACE:
+    case lt::input::SCANCODE_BACKSPACE:
         return {VK_BACK, true, false, true};
-    case lt::SCANCODE_TAB:
+    case lt::input::SCANCODE_TAB:
         return {VK_TAB, true, false, true};
-    case lt::SCANCODE_SPACE:
+    case lt::input::SCANCODE_SPACE:
         return {VK_SPACE, true, false, true};
-    case lt::SCANCODE_MINUS:
+    case lt::input::SCANCODE_MINUS:
         return {VK_OEM_MINUS, true, false, true};
-    case lt::SCANCODE_EQUALS:
+    case lt::input::SCANCODE_EQUALS:
         return {VK_OEM_PLUS, true, false, true};
-    case lt::SCANCODE_LEFTBRACKET:
+    case lt::input::SCANCODE_LEFTBRACKET:
         return {VK_OEM_4, true, false, true};
-    case lt::SCANCODE_RIGHTBRACKET:
+    case lt::input::SCANCODE_RIGHTBRACKET:
         return {VK_OEM_6, true, false, true};
-    case lt::SCANCODE_BACKSLASH:
-    case lt::SCANCODE_NONUSHASH:
+    case lt::input::SCANCODE_BACKSLASH:
+    case lt::input::SCANCODE_NONUSHASH:
         return {VK_OEM_5, true, false, true};
-    case lt::SCANCODE_SEMICOLON:
+    case lt::input::SCANCODE_SEMICOLON:
         return {VK_OEM_1, true, false, true};
-    case lt::SCANCODE_APOSTROPHE:
+    case lt::input::SCANCODE_APOSTROPHE:
         return {VK_OEM_7, true, false, true};
-    case lt::SCANCODE_GRAVE:
+    case lt::input::SCANCODE_GRAVE:
         return {VK_OEM_3, true, false, true};
-    case lt::SCANCODE_COMMA:
+    case lt::input::SCANCODE_COMMA:
         return {VK_OEM_COMMA, true, false, true};
-    case lt::SCANCODE_PERIOD:
+    case lt::input::SCANCODE_PERIOD:
         return {VK_OEM_PERIOD, true, false, true};
-    case lt::SCANCODE_SLASH:
+    case lt::input::SCANCODE_SLASH:
         return {VK_OEM_2, true, false, true};
-    case lt::SCANCODE_CAPSLOCK:
+    case lt::input::SCANCODE_CAPSLOCK:
         return {VK_CAPITAL, true, false, true};
-    case lt::SCANCODE_PRINTSCREEN:
+    case lt::input::SCANCODE_PRINTSCREEN:
         return {VK_SNAPSHOT, true, false, true};
-    case lt::SCANCODE_SCROLLLOCK:
+    case lt::input::SCANCODE_SCROLLLOCK:
         return {VK_SCROLL, true, false, true};
-    case lt::SCANCODE_PAUSE:
+    case lt::input::SCANCODE_PAUSE:
         return {VK_PAUSE, false, false, true};
-    case lt::SCANCODE_INSERT:
+    case lt::input::SCANCODE_INSERT:
         return {VK_INSERT, true, true, true};
-    case lt::SCANCODE_HOME:
+    case lt::input::SCANCODE_HOME:
         return {VK_HOME, true, true, true};
-    case lt::SCANCODE_PAGEUP:
+    case lt::input::SCANCODE_PAGEUP:
         return {VK_PRIOR, true, true, true};
-    case lt::SCANCODE_DELETE:
+    case lt::input::SCANCODE_DELETE:
         return {VK_DELETE, true, true, true};
-    case lt::SCANCODE_END:
+    case lt::input::SCANCODE_END:
         return {VK_END, true, true, true};
-    case lt::SCANCODE_PAGEDOWN:
+    case lt::input::SCANCODE_PAGEDOWN:
         return {VK_NEXT, true, true, true};
-    case lt::SCANCODE_RIGHT:
+    case lt::input::SCANCODE_RIGHT:
         return {VK_RIGHT, true, true, true};
-    case lt::SCANCODE_LEFT:
+    case lt::input::SCANCODE_LEFT:
         return {VK_LEFT, true, true, true};
-    case lt::SCANCODE_DOWN:
+    case lt::input::SCANCODE_DOWN:
         return {VK_DOWN, true, true, true};
-    case lt::SCANCODE_UP:
+    case lt::input::SCANCODE_UP:
         return {VK_UP, true, true, true};
-    case lt::SCANCODE_NUMLOCKCLEAR:
+    case lt::input::SCANCODE_NUMLOCKCLEAR:
         return {VK_NUMLOCK, true, false, true};
-    case lt::SCANCODE_KP_DIVIDE:
+    case lt::input::SCANCODE_KP_DIVIDE:
         return {VK_DIVIDE, true, true, true};
-    case lt::SCANCODE_KP_MULTIPLY:
+    case lt::input::SCANCODE_KP_MULTIPLY:
         return {VK_MULTIPLY, true, false, true};
-    case lt::SCANCODE_KP_MINUS:
+    case lt::input::SCANCODE_KP_MINUS:
         return {VK_SUBTRACT, true, false, true};
-    case lt::SCANCODE_KP_PLUS:
+    case lt::input::SCANCODE_KP_PLUS:
         return {VK_ADD, true, false, true};
-    case lt::SCANCODE_KP_ENTER:
+    case lt::input::SCANCODE_KP_ENTER:
         return {VK_RETURN, true, true, true};
-    case lt::SCANCODE_KP_0:
+    case lt::input::SCANCODE_KP_0:
         return {VK_NUMPAD0, true, false, true};
-    case lt::SCANCODE_KP_DECIMAL:
+    case lt::input::SCANCODE_KP_DECIMAL:
         return {VK_DECIMAL, true, false, true};
-    case lt::SCANCODE_LCTRL:
+    case lt::input::SCANCODE_LCTRL:
         return {VK_LCONTROL, true, false, true};
-    case lt::SCANCODE_LSHIFT:
+    case lt::input::SCANCODE_LSHIFT:
         return {VK_LSHIFT, true, false, true};
-    case lt::SCANCODE_LALT:
+    case lt::input::SCANCODE_LALT:
         return {VK_LMENU, true, false, true};
-    case lt::SCANCODE_LGUI:
+    case lt::input::SCANCODE_LGUI:
         return {VK_LWIN, true, true, true};
-    case lt::SCANCODE_RCTRL:
+    case lt::input::SCANCODE_RCTRL:
         return {VK_RCONTROL, true, true, true};
-    case lt::SCANCODE_RSHIFT:
+    case lt::input::SCANCODE_RSHIFT:
         return {VK_RSHIFT, true, false, true};
-    case lt::SCANCODE_RALT:
+    case lt::input::SCANCODE_RALT:
         return {VK_RMENU, true, true, true};
-    case lt::SCANCODE_RGUI:
+    case lt::input::SCANCODE_RGUI:
         return {VK_RWIN, true, true, true};
-    case lt::SCANCODE_APPLICATION:
+    case lt::input::SCANCODE_APPLICATION:
         return {VK_APPS, true, true, true};
     default:
         break;
@@ -172,6 +173,8 @@ constexpr auto scancodeToWinKey(const lt::Scancode scancode) -> std::tuple<WORD,
 } // namespace
 
 namespace lt {
+
+namespace input {
 
 void Win32SendInput::onKeyboardEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     auto keyboard = std::static_pointer_cast<ltproto::client2worker::KeyboardEvent>(msg);
@@ -284,5 +287,7 @@ void Win32SendInput::onMouseEvent(const std::shared_ptr<google::protobuf::Messag
         SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
     }
 }
+
+} // namespace input
 
 } // namespace lt

@@ -39,6 +39,8 @@
 
 namespace lt {
 
+namespace input {
+
 class Gamepad {
 public:
     static std::unique_ptr<Gamepad>
@@ -60,5 +62,7 @@ private:
     PVIGEM_CLIENT gamepad_driver_ = nullptr;
     std::vector<PVIGEM_TARGET> gamepad_target_;
 };
+
+} // namespace input
 
 } // namespace lt

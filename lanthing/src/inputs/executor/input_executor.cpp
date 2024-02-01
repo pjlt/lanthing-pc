@@ -50,6 +50,8 @@
 
 namespace lt {
 
+namespace input {
+
 std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     if (params.register_message_handler == nullptr || params.send_message == nullptr) {
         return nullptr;
@@ -173,5 +175,7 @@ void InputExecutor::onTouchEvent(const std::shared_ptr<google::protobuf::Message
         touch_->submit(msg);
     }
 }
+
+} // namespace input
 
 } // namespace lt
