@@ -40,15 +40,15 @@ namespace lt {
 
 namespace audio {
 
-std::unique_ptr<AudioPlayer> AudioPlayer::create(const Params& params) {
-    std::unique_ptr<AudioPlayer> player{new SdlAudioPlayer{params}};
+std::unique_ptr<Player> Player::create(const Params& params) {
+    std::unique_ptr<Player> player{new SdlAudioPlayer{params}};
     if (!player->init()) {
         return nullptr;
     }
     return player;
 }
 
-AudioPlayer::~AudioPlayer() {
+Player::~Player() {
     if (opus_decoder_) {
         auto decoder = reinterpret_cast<OpusDecoder*>(opus_decoder_);
         opus_decoder_destroy(decoder);
@@ -56,14 +56,14 @@ AudioPlayer::~AudioPlayer() {
     }
 }
 
-AudioPlayer::AudioPlayer(const Params& params)
+Player::Player(const Params& params)
     : type_{params.type}
     , frames_per_sec_{params.frames_per_second}
     , channels_{params.channels} {
     buffer_.resize(framesPer10ms() * channels() * 2);
 }
 
-bool AudioPlayer::init() {
+bool Player::init() {
     if (!initDecoder()) {
         return false;
     }
@@ -73,7 +73,7 @@ bool AudioPlayer::init() {
     return true;
 }
 
-bool AudioPlayer::initDecoder() {
+bool Player::initDecoder() {
     if (!needDecode()) {
         return true;
     }
@@ -87,7 +87,7 @@ bool AudioPlayer::initDecoder() {
     return true;
 }
 
-void AudioPlayer::submit(const void* data, uint32_t size) {
+void Player::submit(const void* data, uint32_t size) {
     if (needDecode()) {
         int32_t decoded_bytes = decode(data, size);
         if (decoded_bytes > 0) {
@@ -102,11 +102,11 @@ void AudioPlayer::submit(const void* data, uint32_t size) {
     }
 }
 
-bool AudioPlayer::needDecode() const {
+bool Player::needDecode() const {
     return type_ == AudioCodecType::OPUS;
 }
 
-int32_t AudioPlayer::decode(const void* data, uint32_t input_size) {
+int32_t Player::decode(const void* data, uint32_t input_size) {
     // static std::ofstream out{"./audio_dst", std::ios::binary | std::ios::trunc};
     // out.write(reinterpret_cast<const char*>(data), input_size);
     // out.flush();
@@ -123,15 +123,15 @@ int32_t AudioPlayer::decode(const void* data, uint32_t input_size) {
     return frames * channels() * sizeof(opus_int16);
 }
 
-uint32_t AudioPlayer::framesPerSec() const {
+uint32_t Player::framesPerSec() const {
     return frames_per_sec_;
 }
 
-uint32_t AudioPlayer::framesPer10ms() const {
+uint32_t Player::framesPer10ms() const {
     return framesPerSec() / 100;
 }
 
-uint32_t AudioPlayer::channels() const {
+uint32_t Player::channels() const {
     return channels_;
 }
 

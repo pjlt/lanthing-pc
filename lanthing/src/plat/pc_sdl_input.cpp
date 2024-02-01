@@ -40,6 +40,8 @@ constexpr size_t kGUIDLength = 64;
 
 namespace lt {
 
+namespace plat {
+
 std::unique_ptr<SdlInput> SdlInput::create(const Params& params) {
     std::unique_ptr<SdlInput> input{new SdlInput{params}};
     input->init();
@@ -274,5 +276,7 @@ void SdlInput::onInputEvent(const input::InputEvent& ev) {
         handle_input(ev);
     }
 }
+
+} // namespace plat
 
 } // namespace lt

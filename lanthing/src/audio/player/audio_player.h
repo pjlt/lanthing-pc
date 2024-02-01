@@ -39,7 +39,7 @@ namespace lt {
 
 namespace audio {
 
-class AudioPlayer {
+class Player {
 public:
     struct Params {
         AudioCodecType type;
@@ -48,12 +48,12 @@ public:
     };
 
 public:
-    static std::unique_ptr<AudioPlayer> create(const Params& params);
-    virtual ~AudioPlayer();
+    static std::unique_ptr<Player> create(const Params& params);
+    virtual ~Player();
     void submit(const void* data, uint32_t size);
 
 protected:
-    AudioPlayer(const Params& params);
+    Player(const Params& params);
     virtual bool initPlatform() = 0;
     virtual bool play(const void* data, uint32_t size) = 0;
     uint32_t framesPerSec() const;

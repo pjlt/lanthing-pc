@@ -133,14 +133,14 @@ bool DxgiVideoCapturer::initD3D11() {
     return false;
 }
 
-std::optional<VideoCapturer::Frame> DxgiVideoCapturer::capture() {
+std::optional<Capturer::Frame> DxgiVideoCapturer::capture() {
     FRAME_DATA frame;
     bool timeout = false;
     RECORD_T(point1);
     auto hr = impl_->GetFrame(&frame, &timeout);
     if (hr == DUPL_RETURN::DUPL_RETURN_SUCCESS && !timeout) {
         RECORD_T(point2);
-        VideoCapturer::Frame out_frame{};
+        Capturer::Frame out_frame{};
         out_frame.data = frame.Frame;
         out_frame.capture_timestamp_us = ltlib::steady_now_us();
         return out_frame;
@@ -156,7 +156,7 @@ void DxgiVideoCapturer::waitForVBlank() {
     impl_->WaitForVBlank();
 }
 
-VideoCapturer::Backend DxgiVideoCapturer::backend() const {
+Capturer::Backend DxgiVideoCapturer::backend() const {
     return Backend::Dxgi;
 }
 

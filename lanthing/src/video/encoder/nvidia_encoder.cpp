@@ -65,7 +65,7 @@ DXGI_FORMAT toDxgiFormat(NV_ENC_BUFFER_FORMAT format) {
 
 class NvEncParamsHelper {
 public:
-    NvEncParamsHelper(const lt::video::VideoEncodeParamsHelper& params)
+    NvEncParamsHelper(const lt::video::EncodeParamsHelper& params)
         : params_{params} {}
 
     int fps() const { return params_.fps(); }
@@ -83,14 +83,14 @@ public:
     GUID profile() const;
 
 private:
-    const lt::video::VideoEncodeParamsHelper params_;
+    const lt::video::EncodeParamsHelper params_;
 };
 
 NV_ENC_PARAMS_RC_MODE NvEncParamsHelper::rc() const {
     switch (params_.rc()) {
-    case lt::video::VideoEncodeParamsHelper::RcMode::CBR:
+    case lt::video::EncodeParamsHelper::RcMode::CBR:
         return NV_ENC_PARAMS_RC_CBR;
-    case lt::video::VideoEncodeParamsHelper::RcMode::VBR:
+    case lt::video::EncodeParamsHelper::RcMode::VBR:
         return NV_ENC_PARAMS_RC_VBR;
     default:
         assert(false);
@@ -100,11 +100,11 @@ NV_ENC_PARAMS_RC_MODE NvEncParamsHelper::rc() const {
 
 GUID NvEncParamsHelper::preset() const {
     switch (params_.preset()) {
-    case lt::video::VideoEncodeParamsHelper::Preset::Balanced:
+    case lt::video::EncodeParamsHelper::Preset::Balanced:
         return NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID;
-    case lt::video::VideoEncodeParamsHelper::Preset::Speed:
+    case lt::video::EncodeParamsHelper::Preset::Speed:
         return NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
-    case lt::video::VideoEncodeParamsHelper::Preset::Quality:
+    case lt::video::EncodeParamsHelper::Preset::Quality:
         return NV_ENC_PRESET_LOW_LATENCY_HQ_GUID;
     default:
         assert(false);
@@ -126,9 +126,9 @@ GUID NvEncParamsHelper::codec() const {
 
 GUID NvEncParamsHelper::profile() const {
     switch (params_.profile()) {
-    case lt::video::VideoEncodeParamsHelper::Profile::AvcMain:
+    case lt::video::EncodeParamsHelper::Profile::AvcMain:
         return NV_ENC_H264_PROFILE_MAIN_GUID;
-    case lt::video::VideoEncodeParamsHelper::Profile::HevcMain:
+    case lt::video::EncodeParamsHelper::Profile::HevcMain:
         return NV_ENC_HEVC_PROFILE_MAIN_GUID;
     default:
         assert(false);
@@ -146,8 +146,8 @@ class NvD3d11EncoderImpl {
 public:
     NvD3d11EncoderImpl(ID3D11Device* d3d11_dev);
     ~NvD3d11EncoderImpl();
-    bool init(const VideoEncodeParamsHelper& params);
-    void reconfigure(const VideoEncoder::ReconfigureParams& params);
+    bool init(const EncodeParamsHelper& params);
+    void reconfigure(const Encoder::ReconfigureParams& params);
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -189,7 +189,7 @@ NvD3d11EncoderImpl::~NvD3d11EncoderImpl() {
     releaseResources();
 }
 
-bool NvD3d11EncoderImpl::init(const VideoEncodeParamsHelper& params) {
+bool NvD3d11EncoderImpl::init(const EncodeParamsHelper& params) {
     NvEncParamsHelper params_helper{params};
     width_ = params.width();
     height_ = params.height();
@@ -258,7 +258,7 @@ void NvD3d11EncoderImpl::releaseResources() {
     nvencoder_ = nullptr;
 }
 
-void NvD3d11EncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) {
+void NvD3d11EncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     NV_ENC_RECONFIGURE_PARAMS reconfigure_params{NV_ENC_RECONFIGURE_PARAMS_VER};
     bool changed = false;
     if (params.bitrate_bps.has_value()) {
@@ -516,12 +516,12 @@ bool NvD3d11EncoderImpl::uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource) {
 }
 
 NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
-    : VideoEncoder{d3d11_dev, d3d11_ctx, width, height}
+    : Encoder{d3d11_dev, d3d11_ctx, width, height}
     , impl_{std::make_shared<NvD3d11EncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev))} {}
 
 NvD3d11Encoder::~NvD3d11Encoder() {}
 
-bool NvD3d11Encoder::init(const VideoEncodeParamsHelper& params) {
+bool NvD3d11Encoder::init(const EncodeParamsHelper& params) {
     return impl_->init(params);
 }
 

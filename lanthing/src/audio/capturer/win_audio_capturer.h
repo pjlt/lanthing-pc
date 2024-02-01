@@ -39,7 +39,7 @@ namespace lt {
 
 namespace audio {
 
-class WinAudioCapturer : public AudioCapturer {
+class WinAudioCapturer : public Capturer {
 public:
     WinAudioCapturer(const Params& params);
     ~WinAudioCapturer() override;

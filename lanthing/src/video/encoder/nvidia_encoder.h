@@ -44,12 +44,12 @@ namespace lt {
 namespace video {
 
 class NvD3d11EncoderImpl;
-class NvD3d11Encoder : public VideoEncoder {
+class NvD3d11Encoder : public Encoder {
 public:
     NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
     ~NvD3d11Encoder() override;
 
-    bool init(const VideoEncodeParamsHelper& params);
+    bool init(const EncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 

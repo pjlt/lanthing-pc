@@ -58,7 +58,7 @@ namespace video {
 
 class VCEPipeline {
 public:
-    VCEPipeline(const VideoCaptureEncodePipeline::Params& params);
+    VCEPipeline(const CaptureEncodePipeline::Params& params);
     ~VCEPipeline();
     bool init();
     bool start();
@@ -89,8 +89,8 @@ private:
         send_message_;
     std::vector<VideoCodecType> client_supported_codecs_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
-    std::unique_ptr<VideoCapturer> capturer_;
-    std::unique_ptr<VideoEncoder> encoder_;
+    std::unique_ptr<Capturer> capturer_;
+    std::unique_ptr<Encoder> encoder_;
     uint64_t frame_no_ = 0;
     std::atomic<bool> stoped_{true};
     std::unique_ptr<std::promise<void>> stop_promise_;
@@ -102,7 +102,7 @@ private:
     bool get_cursor_failed_ = false;
 };
 
-VCEPipeline::VCEPipeline(const VideoCaptureEncodePipeline::Params& params)
+VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
     : width_{params.width}
     , height_{params.height}
     , monitor_{params.monitor}
@@ -119,11 +119,11 @@ bool VCEPipeline::init() {
     if (!registerHandlers()) {
         return false;
     }
-    auto capturer = VideoCapturer::create(VideoCapturer::Backend::Dxgi, monitor_);
+    auto capturer = Capturer::create(Capturer::Backend::Dxgi, monitor_);
     if (capturer == nullptr) {
         return false;
     }
-    VideoEncoder::InitParams encode_params{};
+    Encoder::InitParams encode_params{};
     encode_params.freq = static_cast<uint32_t>(monitor_.frequency);
     if (encode_params.freq == 0) {
         encode_params.freq = 60;
@@ -144,10 +144,10 @@ bool VCEPipeline::init() {
     encode_params.device = capturer->device();
     encode_params.context = capturer->deviceContext();
     encode_params.vendor_id = capturer->vendorID();
-    std::unique_ptr<VideoEncoder> encoder;
+    std::unique_ptr<Encoder> encoder;
     for (auto codec : client_supported_codecs_) {
         encode_params.codec_type = codec;
-        encoder = VideoEncoder::create(encode_params);
+        encoder = Encoder::create(encode_params);
         if (encoder) {
             codec_type_ = codec;
             break;
@@ -206,7 +206,7 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
     start_promise.set_value(true);
     stop_promise_ = std::make_unique<std::promise<void>>();
     stoped_ = false;
-    LOG(INFO) << "VideoCaptureEncodePipeline start";
+    LOG(INFO) << "CaptureEncodePipeline start";
     while (!stoped_) {
         i_am_alive();
         // vblank后应该第一时间抓屏还是消费任务？
@@ -222,7 +222,7 @@ void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,
         captureAndSendCursor();
     }
     stop_promise_->set_value();
-    LOG(INFO) << "VideoCaptureEncodePipeline stoped";
+    LOG(INFO) << "CaptureEncodePipeline stoped";
 }
 
 void VCEPipeline::loadSystemCursor() { // 释放?
@@ -382,7 +382,7 @@ void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _
                 break;
             }
         }
-        VideoEncoder::ReconfigureParams params{};
+        Encoder::ReconfigureParams params{};
         bool changed = false;
         if (msg->has_bitrate_bps()) {
             LOG(DEBUG) << "Set bitrate " << msg->bitrate_bps();
@@ -405,35 +405,34 @@ void VCEPipeline::onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLit
     tasks_.push_back([this] { encoder_->requestKeyframe(); });
 }
 
-std::unique_ptr<VideoCaptureEncodePipeline>
-VideoCaptureEncodePipeline::create(const Params& params) {
+std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Params& params) {
     if (params.send_message == nullptr || params.register_message_handler == nullptr ||
         params.width == 0 || params.height == 0) {
-        LOG(FATAL) << "Create VideoCaptureEncodePipeline failed, invalid parameters";
+        LOG(FATAL) << "Create CaptureEncodePipeline failed, invalid parameters";
         return nullptr;
     }
     auto impl = std::make_shared<VCEPipeline>(params);
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<VideoCaptureEncodePipeline> pipeline{new VideoCaptureEncodePipeline};
+    std::unique_ptr<CaptureEncodePipeline> pipeline{new CaptureEncodePipeline};
     pipeline->impl_ = std::move(impl);
     return pipeline;
 }
 
-bool VideoCaptureEncodePipeline::start() {
+bool CaptureEncodePipeline::start() {
     return impl_->start();
 }
 
-void VideoCaptureEncodePipeline::stop() {
+void CaptureEncodePipeline::stop() {
     impl_->stop();
 }
 
-VideoCodecType VideoCaptureEncodePipeline::codec() const {
+VideoCodecType CaptureEncodePipeline::codec() const {
     return impl_->codec();
 }
 
-bool VideoCaptureEncodePipeline::defaultOutput() {
+bool CaptureEncodePipeline::defaultOutput() {
     return impl_->defaultOutput();
 }
 

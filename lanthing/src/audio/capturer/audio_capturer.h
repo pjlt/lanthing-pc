@@ -43,7 +43,7 @@ namespace lt {
 
 namespace audio {
 
-class AudioCapturer {
+class Capturer {
 public:
     struct Params {
         AudioCodecType type;
@@ -51,8 +51,8 @@ public:
     };
 
 public:
-    static std::unique_ptr<AudioCapturer> create(const Params& params);
-    virtual ~AudioCapturer();
+    static std::unique_ptr<Capturer> create(const Params& params);
+    virtual ~Capturer();
     void start();
     void stop();
     uint32_t bytesPerFrame() const;
@@ -62,7 +62,7 @@ public:
     uint32_t bytesPer10ms() const;
 
 protected:
-    AudioCapturer(const Params& params);
+    Capturer(const Params& params);
     virtual bool initPlatform() = 0;
     virtual void captureLoop(const std::function<void()>& i_am_alive) = 0;
     void onCapturedData(const uint8_t* data, uint32_t frames);

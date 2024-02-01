@@ -44,7 +44,7 @@ namespace lt {
 
 namespace video {
 
-std::unique_ptr<VideoRenderer> VideoRenderer::create(const Params& params) {
+std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(params.window);
     SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);

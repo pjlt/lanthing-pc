@@ -45,11 +45,11 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     std::promise<void> promise;
     auto empty_func = []() {};
     auto on_sdl_exit = [&promise]() { promise.set_value(); };
-    PcSdl::Params sdl_params{};
+    lt::plat::PcSdl::Params sdl_params{};
     sdl_params.on_exit = on_sdl_exit;
     sdl_params.on_reset = empty_func;
     sdl_params.hide_window = true;
-    auto sdl = PcSdl::create(sdl_params);
+    auto sdl = lt::plat::PcSdl::create(sdl_params);
     if (sdl == nullptr) {
         return {nullptr, kExitCodeInitWorkerFailed};
     }
@@ -57,11 +57,11 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     uint32_t codecs = 0;
     for (auto codec : {VideoCodecType::H265_420, VideoCodecType::H264_420}) {
         auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
-        lt::video::VideoDecodeRenderPipeline::Params params{
-            codec, 1920, 1080, 60, 0, true, empty_func2, empty_func, empty_func};
+        lt::video::DecodeRenderPipeline::Params params{codec, 1920,        1080,       60,        0,
+                                                       true,  empty_func2, empty_func, empty_func};
         params.sdl = sdl.get();
         params.for_test = true;
-        auto pipeline = lt::video::VideoDecodeRenderPipeline::create(params);
+        auto pipeline = lt::video::DecodeRenderPipeline::create(params);
         if (pipeline != nullptr) {
             // ffmepg解码的时候似乎不区分420 444???
             codecs = codecs | codec;

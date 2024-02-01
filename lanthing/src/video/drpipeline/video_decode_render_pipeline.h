@@ -35,7 +35,7 @@
 
 #include <google/protobuf/message_lite.h>
 
-#include <platforms/pc_sdl.h>
+#include <plat/pc_sdl.h>
 #include <transport/transport.h>
 
 namespace lt {
@@ -43,7 +43,7 @@ namespace lt {
 namespace video {
 
 class VDRPipeline;
-class VideoDecodeRenderPipeline {
+class DecodeRenderPipeline {
 public:
     struct Params {
         Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
@@ -61,7 +61,7 @@ public:
         uint32_t rotation;
         bool stretch;
         int64_t status_color;
-        PcSdl* sdl = nullptr;
+        lt::plat::PcSdl* sdl = nullptr;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;
         std::function<void()> switch_stretch;
@@ -74,7 +74,7 @@ public:
     };
 
 public:
-    static std::unique_ptr<VideoDecodeRenderPipeline> create(const Params& params);
+    static std::unique_ptr<DecodeRenderPipeline> create(const Params& params);
     Action submit(const lt::VideoFrame& frame);
     void resetRenderTarget();
     void setTimeDiff(int64_t diff_us);
@@ -87,7 +87,7 @@ public:
     void switchStretchMode(bool stretch);
 
 private:
-    VideoDecodeRenderPipeline() = default;
+    DecodeRenderPipeline() = default;
 
 private:
     std::shared_ptr<VDRPipeline> impl_;

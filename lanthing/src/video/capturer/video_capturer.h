@@ -41,7 +41,7 @@ namespace lt {
 
 namespace video {
 
-class VideoCapturer {
+class Capturer {
 public:
     enum class Backend {
         Dxgi,
@@ -52,8 +52,8 @@ public:
     };
 
 public:
-    static std::unique_ptr<VideoCapturer> create(Backend backend, ltlib::Monitor monitor);
-    virtual ~VideoCapturer();
+    static std::unique_ptr<Capturer> create(Backend backend, ltlib::Monitor monitor);
+    virtual ~Capturer();
     virtual std::optional<Frame> capture() = 0;
     virtual bool start() = 0;
     virtual void doneWithFrame() = 0;
@@ -66,7 +66,7 @@ public:
     virtual bool defaultOutput() = 0;
 
 protected:
-    VideoCapturer();
+    Capturer();
     virtual bool init() = 0;
 };
 

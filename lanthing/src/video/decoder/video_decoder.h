@@ -47,7 +47,7 @@ struct DecodedFrame {
     int64_t frame;
 };
 
-class VideoDecoder {
+class Decoder {
 public:
     struct Params {
         VideoCodecType codec_type;
@@ -59,10 +59,10 @@ public:
     };
 
 public:
-    static std::unique_ptr<VideoDecoder> create(const Params& params);
+    static std::unique_ptr<Decoder> create(const Params& params);
     static uint32_t align(lt::VideoCodecType type);
-    VideoDecoder(const Params& params);
-    virtual ~VideoDecoder() = default;
+    Decoder(const Params& params);
+    virtual ~Decoder() = default;
     virtual DecodedFrame decode(const uint8_t* data, uint32_t size) = 0;
     virtual std::vector<void*> textures() = 0;
 

@@ -45,7 +45,7 @@ namespace lt {
 
 namespace video {
 
-class VideoEncoder {
+class Encoder {
 public:
     struct InitParams {
         // 其实有一个device就够了，但是在创建d3ddevice的时候就能顺便获取其他值，就干脆传递过来
@@ -68,19 +68,18 @@ public:
     };
 
 public:
-    static std::unique_ptr<VideoEncoder> create(const InitParams& params);
-    virtual ~VideoEncoder();
+    static std::unique_ptr<Encoder> create(const InitParams& params);
+    virtual ~Encoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
     void requestKeyframe();
-    std::shared_ptr<ltproto::client2worker::VideoFrame>
-    encode(const VideoCapturer::Frame& input_frame);
+    std::shared_ptr<ltproto::client2worker::VideoFrame> encode(const Capturer::Frame& input_frame);
 
     // static std::vector<VideoCodecType> checkSupportedCodecs(uint32_t width, uint32_t height);
     // static std::vector<VideoCodecType> checkSupportedCodecsWithLuid(int64_t luid, uint32_t width,
     //                                                                 uint32_t height);
 
 protected:
-    VideoEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
+    Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
     bool needKeyframe();
     virtual std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) = 0;
 

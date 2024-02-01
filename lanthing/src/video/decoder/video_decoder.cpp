@@ -36,7 +36,7 @@ namespace lt {
 
 namespace video {
 
-std::unique_ptr<VideoDecoder> VideoDecoder::create(const Params& params) {
+std::unique_ptr<Decoder> Decoder::create(const Params& params) {
     auto decoder = std::make_unique<FFmpegHardDecoder>(params);
     if (!decoder->init()) {
         return nullptr;
@@ -44,7 +44,7 @@ std::unique_ptr<VideoDecoder> VideoDecoder::create(const Params& params) {
     return decoder;
 }
 
-uint32_t VideoDecoder::align(lt::VideoCodecType type) {
+uint32_t Decoder::align(lt::VideoCodecType type) {
     // NOTE: 下列值匹配ffmpeg，如果需要支持其它解码器，要改这里
     switch (type) {
     case lt::VideoCodecType::H264_420:
@@ -58,20 +58,20 @@ uint32_t VideoDecoder::align(lt::VideoCodecType type) {
     }
 }
 
-VideoDecoder::VideoDecoder(const Params& params)
+Decoder::Decoder(const Params& params)
     : codec_type_{params.codec_type}
     , width_{params.width}
     , height_{params.height} {}
 
-VideoCodecType VideoDecoder::codecType() const {
+VideoCodecType Decoder::codecType() const {
     return codec_type_;
 }
 
-uint32_t VideoDecoder::width() const {
+uint32_t Decoder::width() const {
     return width_;
 }
 
-uint32_t VideoDecoder::height() const {
+uint32_t Decoder::height() const {
     return height_;
 }
 

@@ -173,10 +173,10 @@ set(LT_CLIENT_SRCS
 
 set(LT_PLAT_SRCS
     # platforms
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl_input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/platforms/pc_sdl_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl_input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl_input.cpp
 )
 
 if(LT_WINDOWS)

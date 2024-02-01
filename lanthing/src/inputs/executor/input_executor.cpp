@@ -52,11 +52,11 @@ namespace lt {
 
 namespace input {
 
-std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
+std::unique_ptr<Executor> Executor::create(const Params& params) {
     if (params.register_message_handler == nullptr || params.send_message == nullptr) {
         return nullptr;
     }
-    std::unique_ptr<InputExecutor> input;
+    std::unique_ptr<Executor> input;
     if (params.types & static_cast<uint8_t>(Type::WIN32_MESSAGE)) {
         input = std::make_unique<Win32SendInput>(params.screen_width, params.screen_height,
                                                  params.monitor);
@@ -69,41 +69,39 @@ std::unique_ptr<InputExecutor> InputExecutor::create(const Params& params) {
     if (!input->init()) {
         return nullptr;
     }
-    input->touch_ =
-        TouchExecutor::create(params.screen_width, params.screen_height, params.monitor);
+    input->touch_ = WinTouch::create(params.screen_width, params.screen_height, params.monitor);
     return input;
 }
 
-void InputExecutor::update() {
+void Executor::update() {
     if (touch_) {
         touch_->update();
     }
 }
 
-bool InputExecutor::init() {
+bool Executor::init() {
     if (!registerHandlers()) {
         return false;
     }
     if (!initKeyMouse()) {
         return false;
     }
-    gamepad_ =
-        Gamepad::create(std::bind(&InputExecutor::onGamepadResponse, this, std::placeholders::_1,
-                                  std::placeholders::_2, std::placeholders::_3));
+    gamepad_ = Gamepad::create(std::bind(&Executor::onGamepadResponse, this, std::placeholders::_1,
+                                         std::placeholders::_2, std::placeholders::_3));
     return true;
 }
 
-bool InputExecutor::registerHandlers() {
+bool Executor::registerHandlers() {
     namespace ltype = ltproto::type;
     namespace ph = std::placeholders;
     const std::pair<uint32_t, MessageHandler> handlers[] = {
-        {ltype::kMouseEvent, std::bind(&InputExecutor::onMouseEvent, this, ph::_1)},
-        {ltype::kKeyboardEvent, std::bind(&InputExecutor::onKeyboardEvent, this, ph::_1)},
+        {ltype::kMouseEvent, std::bind(&Executor::onMouseEvent, this, ph::_1)},
+        {ltype::kKeyboardEvent, std::bind(&Executor::onKeyboardEvent, this, ph::_1)},
         {ltype::kControllerAddedRemoved,
-         std::bind(&InputExecutor::onControllerAddedRemoved, this, ph::_1)},
-        {ltype::kControllerStatus, std::bind(&InputExecutor::onControllerStatus, this, ph::_1)},
-        {ltype::kSwitchMouseMode, std::bind(&InputExecutor::onSwitchMouseMode, this, ph::_1)},
-        {ltype::kTouchEvent, std::bind(&InputExecutor::onTouchEvent, this, ph::_1)}};
+         std::bind(&Executor::onControllerAddedRemoved, this, ph::_1)},
+        {ltype::kControllerStatus, std::bind(&Executor::onControllerStatus, this, ph::_1)},
+        {ltype::kSwitchMouseMode, std::bind(&Executor::onSwitchMouseMode, this, ph::_1)},
+        {ltype::kTouchEvent, std::bind(&Executor::onTouchEvent, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler_(handler.first, handler.second)) {
             return false;
@@ -112,24 +110,23 @@ bool InputExecutor::registerHandlers() {
     return true;
 };
 
-void InputExecutor::sendMessage(uint32_t type,
-                                const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void Executor::sendMessage(uint32_t type,
+                           const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     send_message_(type, msg);
 }
 
-void InputExecutor::onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
+void Executor::onSwitchMouseMode(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::SwitchMouseMode>(_msg);
     std::lock_guard lk{mutex_};
     is_absolute_mouse_ = msg->absolute();
 }
 
-bool InputExecutor::isAbsoluteMouse() {
+bool Executor::isAbsoluteMouse() {
     std::lock_guard lk{mutex_};
     return is_absolute_mouse_;
 }
 
-void InputExecutor::onControllerAddedRemoved(
-    const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void Executor::onControllerAddedRemoved(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     if (gamepad_ == nullptr) {
         return;
     }
@@ -142,7 +139,7 @@ void InputExecutor::onControllerAddedRemoved(
     }
 }
 
-void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void Executor::onControllerStatus(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     if (gamepad_ == nullptr) {
         return;
     }
@@ -162,7 +159,7 @@ void InputExecutor::onControllerStatus(const std::shared_ptr<google::protobuf::M
     gamepad_->submit(controller->gamepad_index(), gamepad_report);
 }
 
-void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor) {
+void Executor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint16_t small_motor) {
     auto controller = std::make_shared<ltproto::client2worker::ControllerResponse>();
     controller->set_gamepad_index(index);
     controller->set_large_motor(large_motor);
@@ -170,7 +167,7 @@ void InputExecutor::onGamepadResponse(uint32_t index, uint16_t large_motor, uint
     sendMessage(ltproto::id(controller), controller);
 }
 
-void InputExecutor::onTouchEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+void Executor::onTouchEvent(const std::shared_ptr<google::protobuf::MessageLite>& msg) {
     if (touch_ != nullptr) {
         touch_->submit(msg);
     }

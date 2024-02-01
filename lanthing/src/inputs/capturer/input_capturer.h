@@ -37,16 +37,20 @@
 
 namespace lt {
 
+namespace plat {
+
 class PcSdl;
+
+} // namespace plat
 
 namespace input {
 
-class InputCapturerImpl;
+class CapturerImpl;
 
-class InputCapturer {
+class Capturer {
 public:
     struct Params {
-        PcSdl* sdl;
+        lt::plat::PcSdl* sdl;
         uint32_t video_width;
         uint32_t video_height;
         uint32_t rotation;
@@ -59,15 +63,15 @@ public:
     };
 
 public:
-    static std::unique_ptr<InputCapturer> create(const Params& params);
+    static std::unique_ptr<Capturer> create(const Params& params);
     void changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
                                bool stretch);
 
 private:
-    InputCapturer() = default;
+    Capturer() = default;
 
 private:
-    std::shared_ptr<InputCapturerImpl> impl_;
+    std::shared_ptr<CapturerImpl> impl_;
 };
 
 } // namespace input

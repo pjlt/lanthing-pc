@@ -41,7 +41,7 @@ namespace lt {
 namespace audio {
 
 SdlAudioPlayer::SdlAudioPlayer(const Params& params)
-    : AudioPlayer{params} {}
+    : Player{params} {}
 
 SdlAudioPlayer::~SdlAudioPlayer() {
     if (device_id_ != std::numeric_limits<uint32_t>::max()) {

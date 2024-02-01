@@ -206,7 +206,7 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
     return initShaderResources(textures);
 }
 
-VideoRenderer::RenderResult D3D11Pipeline::render(int64_t frame) {
+Renderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     // 1. 检查是否需要重置渲染目标
     // 2. 设置渲染目标
     // 3. 渲染视频
@@ -266,7 +266,7 @@ void D3D11Pipeline::resetRenderTarget() {
     reset_ = true;
 }
 
-VideoRenderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
+Renderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
     if (reset_.exchange(false)) {
         RECT rect;
         if (!GetClientRect(hwnd_, &rect)) {

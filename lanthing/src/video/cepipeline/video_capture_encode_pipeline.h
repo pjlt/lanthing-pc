@@ -43,7 +43,7 @@ namespace lt {
 namespace video {
 
 class VCEPipeline;
-class VideoCaptureEncodePipeline {
+class CaptureEncodePipeline {
 public:
     struct Params {
         std::vector<VideoCodecType> codecs;
@@ -56,14 +56,14 @@ public:
     };
 
 public:
-    static std::unique_ptr<VideoCaptureEncodePipeline> create(const Params& params);
+    static std::unique_ptr<CaptureEncodePipeline> create(const Params& params);
     bool start();
     void stop();
     VideoCodecType codec() const;
     bool defaultOutput();
 
 private:
-    VideoCaptureEncodePipeline() = default;
+    CaptureEncodePipeline() = default;
 
 private:
     std::shared_ptr<VCEPipeline> impl_;

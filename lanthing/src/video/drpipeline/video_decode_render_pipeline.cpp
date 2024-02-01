@@ -68,10 +68,10 @@ public:
     };
 
 public:
-    VDRPipeline(const VideoDecodeRenderPipeline::Params& params);
+    VDRPipeline(const DecodeRenderPipeline::Params& params);
     ~VDRPipeline();
     bool init();
-    VideoDecodeRenderPipeline::Action submit(const lt::VideoFrame& frame);
+    DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame);
     void setTimeDiff(int64_t diff_us);
     void setRTT(int64_t rtt_us);
     void setBWE(uint32_t bps);
@@ -108,7 +108,7 @@ private:
         send_message_to_host_;
     std::function<void()> switch_stretch_;
     std::function<void()> reset_pipeline_;
-    PcSdl* sdl_;
+    lt::plat::PcSdl* sdl_;
     void* window_;
 
     std::atomic<bool> request_i_frame_ = false;
@@ -123,8 +123,8 @@ private:
     std::condition_variable waiting_for_render_;
 
     GpuInfo gpu_info_;
-    std::unique_ptr<VideoRenderer> video_renderer_;
-    std::unique_ptr<VideoDecoder> video_decoder_;
+    std::unique_ptr<Renderer> video_renderer_;
+    std::unique_ptr<Decoder> video_decoder_;
     CTSmoother smoother_;
     std::atomic<bool> stoped_{true};
     std::unique_ptr<ltlib::BlockingThread> decode_thread_;
@@ -150,7 +150,7 @@ private:
     int64_t status_color_;
 };
 
-VDRPipeline::VDRPipeline(const VideoDecodeRenderPipeline::Params& params)
+VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     : for_test_{params.for_test}
     , width_{params.width}
     , height_{params.height}
@@ -177,7 +177,7 @@ VDRPipeline::~VDRPipeline() {
 
 bool VDRPipeline::init() {
     LOGF(INFO, "w:%u, h:%u, r:%u", width_, height_, rotation_);
-    VideoRenderer::Params render_params{};
+    Renderer::Params render_params{};
 #if LT_WINDOWS
     if (!gpu_info_.init()) {
         return false;
@@ -207,12 +207,12 @@ bool VDRPipeline::init() {
     render_params.video_height = video_height;
     render_params.rotation = rotation_;
     render_params.stretch = is_stretch_;
-    render_params.align = VideoDecoder::align(codec_type_);
-    video_renderer_ = VideoRenderer::create(render_params);
+    render_params.align = Decoder::align(codec_type_);
+    video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {
         return false;
     }
-    VideoDecoder::Params decode_params{};
+    Decoder::Params decode_params{};
     decode_params.codec_type = codec_type_;
     decode_params.hw_device = video_renderer_->hwDevice();
     decode_params.hw_context = video_renderer_->hwContext();
@@ -226,7 +226,7 @@ bool VDRPipeline::init() {
     decode_params.width = video_width;
     decode_params.height = video_height;
 
-    video_decoder_ = VideoDecoder::create(decode_params);
+    video_decoder_ = Decoder::create(decode_params);
     if (video_decoder_ == nullptr) {
         return false;
     }
@@ -264,7 +264,7 @@ bool VDRPipeline::init() {
     return true;
 }
 
-VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _frame) {
+DecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _frame) {
     // static std::fstream stream{"./vidoe_stream",
     //                            std::ios::out | std::ios::binary | std::ios::trunc};
     // stream.write(reinterpret_cast<const char*>(_frame.data), _frame.size);
@@ -300,8 +300,8 @@ VideoDecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _fra
     }
     waiting_for_decode_.notify_one();
     bool request_i_frame = request_i_frame_.exchange(false);
-    return request_i_frame ? VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME
-                           : VideoDecodeRenderPipeline::Action::NONE;
+    return request_i_frame ? DecodeRenderPipeline::Action::REQUEST_KEY_FRAME
+                           : DecodeRenderPipeline::Action::NONE;
 }
 
 void VDRPipeline::setTimeDiff(int64_t diff_us) {
@@ -484,14 +484,14 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             auto result = video_renderer_->render(frame->no);
             auto t1 = ltlib::steady_now_us();
             switch (result) {
-            case VideoRenderer::RenderResult::Failed:
+            case Renderer::RenderResult::Failed:
                 // TODO: 更好地通知退出
                 LOG(ERR) << "Render failed, exit render loop";
                 return;
-            case VideoRenderer::RenderResult::Reset:
+            case Renderer::RenderResult::Reset:
                 widgets_->reset();
                 break;
-            case VideoRenderer::RenderResult::Success2:
+            case Renderer::RenderResult::Success2:
             default:
                 break;
             }
@@ -508,7 +508,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
     }
 }
 
-VideoDecodeRenderPipeline::Params::Params(
+DecodeRenderPipeline::Params::Params(
     lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
     uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
@@ -526,7 +526,7 @@ VideoDecodeRenderPipeline::Params::Params(
     status_color = -1;
 }
 
-bool VideoDecodeRenderPipeline::Params::validate() const {
+bool DecodeRenderPipeline::Params::validate() const {
     if (codec_type == lt::VideoCodecType::Unknown || sdl == nullptr ||
         send_message_to_host == nullptr) {
         return false;
@@ -536,57 +536,57 @@ bool VideoDecodeRenderPipeline::Params::validate() const {
     }
 }
 
-std::unique_ptr<VideoDecodeRenderPipeline> VideoDecodeRenderPipeline::create(const Params& params) {
+std::unique_ptr<DecodeRenderPipeline> DecodeRenderPipeline::create(const Params& params) {
     if (!params.validate()) {
-        LOG(FATAL) << "Create VideoDecodeRenderPipeline failed: invalid parameter";
+        LOG(FATAL) << "Create DecodeRenderPipeline failed: invalid parameter";
         return nullptr;
     }
     auto impl = std::make_shared<VDRPipeline>(params);
     if (!impl->init()) {
         return nullptr;
     }
-    std::unique_ptr<VideoDecodeRenderPipeline> pipeline{new VideoDecodeRenderPipeline};
+    std::unique_ptr<DecodeRenderPipeline> pipeline{new DecodeRenderPipeline};
     pipeline->impl_ = std::move(impl);
     return pipeline;
 }
 
-VideoDecodeRenderPipeline::Action VideoDecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
+DecodeRenderPipeline::Action DecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
     return impl_->submit(frame);
 }
 
-void VideoDecodeRenderPipeline::resetRenderTarget() {
+void DecodeRenderPipeline::resetRenderTarget() {
     impl_->resetRenderTarget();
 }
 
-void VideoDecodeRenderPipeline::setTimeDiff(int64_t diff_us) {
+void DecodeRenderPipeline::setTimeDiff(int64_t diff_us) {
     impl_->setTimeDiff(diff_us);
 }
 
-void VideoDecodeRenderPipeline::setRTT(int64_t rtt_us) {
+void DecodeRenderPipeline::setRTT(int64_t rtt_us) {
     impl_->setRTT(rtt_us);
 }
 
-void VideoDecodeRenderPipeline::setBWE(uint32_t bps) {
+void DecodeRenderPipeline::setBWE(uint32_t bps) {
     impl_->setBWE(bps);
 }
 
-void VideoDecodeRenderPipeline::setNack(uint32_t nack) {
+void DecodeRenderPipeline::setNack(uint32_t nack) {
     impl_->setNack(nack);
 }
 
-void VideoDecodeRenderPipeline::setLossRate(float rate) {
+void DecodeRenderPipeline::setLossRate(float rate) {
     impl_->setLossRate(rate);
 }
 
-void VideoDecodeRenderPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
+void DecodeRenderPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
     impl_->setCursorInfo(cursor_id, x, y, visible);
 }
 
-void VideoDecodeRenderPipeline::switchMouseMode(bool absolute) {
+void DecodeRenderPipeline::switchMouseMode(bool absolute) {
     impl_->switchMouseMode(absolute);
 }
 
-void VideoDecodeRenderPipeline::switchStretchMode(bool stretch) {
+void DecodeRenderPipeline::switchStretchMode(bool stretch) {
     impl_->switchStretchMode(stretch);
 }
 

@@ -29,7 +29,7 @@
  */
 
 #include <inputs/capturer/input_capturer.h>
-#include <platforms/pc_sdl.h>
+#include <plat/pc_sdl.h>
 
 #include <array>
 
@@ -99,9 +99,9 @@ namespace lt {
 
 namespace input {
 
-class InputCapturerImpl {
+class CapturerImpl {
 public:
-    InputCapturerImpl(const InputCapturer::Params& params);
+    CapturerImpl(const Capturer::Params& params);
     void init();
     void changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
                                bool stretch);
@@ -125,7 +125,7 @@ private:
     bool doHandleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev);
 
 private:
-    PcSdl* sdl_;
+    lt::plat::PcSdl* sdl_;
     uint32_t video_width_;
     uint32_t video_height_;
     uint32_t rotation_;
@@ -141,20 +141,20 @@ private:
     std::mutex mutex_;
 };
 
-std::unique_ptr<InputCapturer> InputCapturer::create(const Params& params) {
-    std::unique_ptr<InputCapturer> input{new InputCapturer};
-    auto impl = std::make_unique<InputCapturerImpl>(params);
+std::unique_ptr<Capturer> Capturer::create(const Params& params) {
+    std::unique_ptr<Capturer> input{new Capturer};
+    auto impl = std::make_unique<CapturerImpl>(params);
     impl->init();
     input->impl_ = std::move(impl);
     return input;
 }
 
-void InputCapturer::changeVideoParameters(uint32_t video_width, uint32_t video_height,
-                                          uint32_t rotation, bool stretch) {
+void Capturer::changeVideoParameters(uint32_t video_width, uint32_t video_height, uint32_t rotation,
+                                     bool stretch) {
     impl_->changeVideoParameters(video_width, video_height, rotation, stretch);
 }
 
-InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
+CapturerImpl::CapturerImpl(const Capturer::Params& params)
     : sdl_{params.sdl}
     , video_width_{params.video_width}
     , video_height_{params.video_height}
@@ -165,13 +165,13 @@ InputCapturerImpl::InputCapturerImpl(const InputCapturer::Params& params)
     , toggle_fullscreen_{params.toggle_fullscreen}
     , switch_mouse_mode_{params.switch_mouse_mode} {}
 
-void InputCapturerImpl::init() {
+void CapturerImpl::init() {
     sdl_->setInputHandler(
-        std::bind(&InputCapturerImpl::onPlatformInputEvent, this, std::placeholders::_1));
+        std::bind(&CapturerImpl::onPlatformInputEvent, this, std::placeholders::_1));
 }
 
-void InputCapturerImpl::changeVideoParameters(uint32_t video_width, uint32_t video_height,
-                                              uint32_t rotation, bool stretch) {
+void CapturerImpl::changeVideoParameters(uint32_t video_width, uint32_t video_height,
+                                         uint32_t rotation, bool stretch) {
     std::lock_guard lock{mutex_};
     video_width_ = video_width;
     video_height_ = video_height;
@@ -179,13 +179,13 @@ void InputCapturerImpl::changeVideoParameters(uint32_t video_width, uint32_t vid
     is_stretch_ = stretch;
 }
 
-void InputCapturerImpl::sendMessageToHost(uint32_t type,
-                                          const std::shared_ptr<google::protobuf::MessageLite>& msg,
-                                          bool reliable) {
+void CapturerImpl::sendMessageToHost(uint32_t type,
+                                     const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                                     bool reliable) {
     send_message_to_host_(type, msg, reliable);
 }
 
-void InputCapturerImpl::onPlatformInputEvent(const InputEvent& e) {
+void CapturerImpl::onPlatformInputEvent(const InputEvent& e) {
     switch (e.type) {
     case InputEventType::Keyboard:
         handleKeyboardUpDown(std::get<KeyboardEvent>(e.ev));
@@ -214,7 +214,7 @@ void InputCapturerImpl::onPlatformInputEvent(const InputEvent& e) {
     }
 }
 
-void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
+void CapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
     // TODO: 增加一个reset状态的逻辑，入口在sdl还是input另说。
     key_states_[ev.scan_code] = ev.is_pressed ? 1 : 0;
     processHotKeys();
@@ -225,7 +225,7 @@ void InputCapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
     LOG(DEBUG) << "Key:" << ev.scan_code << ", down:" << ev.is_pressed;
 }
 
-void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
+void CapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
     ltproto::client2worker::MouseEvent::KeyFlag key_flag;
     switch (ev.button) {
     case MouseButtonEvent::Button::Left:
@@ -264,13 +264,13 @@ void InputCapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
+void CapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_delta_z(ev.amount);
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
+void CapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
 
     // TODO: 相对模式可能要累积一段再发出去
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
@@ -292,11 +292,11 @@ void InputCapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::handleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
+void CapturerImpl::handleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
     doHandleControllerAddedRemoved(ev);
 }
 
-bool InputCapturerImpl::doHandleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
+bool CapturerImpl::doHandleControllerAddedRemoved(const ControllerAddedRemovedEvent& ev) {
     if (ev.index >= cstates_.size()) {
         return false;
     }
@@ -313,7 +313,7 @@ bool InputCapturerImpl::doHandleControllerAddedRemoved(const ControllerAddedRemo
     return true;
 }
 
-void InputCapturerImpl::handleControllerButton(const ControllerButtonEvent& ev) {
+void CapturerImpl::handleControllerButton(const ControllerButtonEvent& ev) {
     ControllerAddedRemovedEvent ev2{ev.index, true};
     if (!doHandleControllerAddedRemoved(ev2)) {
         return;
@@ -428,7 +428,7 @@ void InputCapturerImpl::handleControllerButton(const ControllerButtonEvent& ev) 
     sendControllerState(ev.index);
 }
 
-void InputCapturerImpl::handleControllerAxis(const ControllerAxisEvent& ev) {
+void CapturerImpl::handleControllerAxis(const ControllerAxisEvent& ev) {
     ControllerAddedRemovedEvent ev2{ev.index, true};
     if (!doHandleControllerAddedRemoved(ev2)) {
         return;
@@ -465,7 +465,7 @@ void InputCapturerImpl::handleControllerAxis(const ControllerAxisEvent& ev) {
     sendControllerState(ev.index);
 }
 
-void InputCapturerImpl::sendControllerState(uint32_t index) {
+void CapturerImpl::sendControllerState(uint32_t index) {
     if (index >= cstates_.size()) {
         return;
     }
@@ -485,7 +485,7 @@ void InputCapturerImpl::sendControllerState(uint32_t index) {
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
-void InputCapturerImpl::processHotKeys() {
+void CapturerImpl::processHotKeys() {
     // TODO: 按键释放问题
     if (key_states_[Scancode::SCANCODE_LGUI] && key_states_[Scancode::SCANCODE_LSHIFT] &&
         key_states_[Scancode::SCANCODE_Z]) {
@@ -497,8 +497,8 @@ void InputCapturerImpl::processHotKeys() {
     }
 }
 
-std::pair<float, float> InputCapturerImpl::calcAbsPos(int32_t x, int32_t y, int32_t win_width,
-                                                      int32_t win_height) {
+std::pair<float, float> CapturerImpl::calcAbsPos(int32_t x, int32_t y, int32_t win_width,
+                                                 int32_t win_height) {
     int32_t video_width, video_height;
     bool stretch;
     {

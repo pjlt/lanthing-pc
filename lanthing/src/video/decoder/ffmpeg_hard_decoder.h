@@ -40,7 +40,7 @@ namespace lt {
 
 namespace video {
 
-class FFmpegHardDecoder : public VideoDecoder {
+class FFmpegHardDecoder : public Decoder {
 public:
     FFmpegHardDecoder(const Params& params);
     ~FFmpegHardDecoder() override;

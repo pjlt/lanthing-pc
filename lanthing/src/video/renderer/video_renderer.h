@@ -36,7 +36,7 @@ namespace lt {
 
 namespace video {
 
-class VideoRenderer {
+class Renderer {
 public:
     struct Params {
         void* window;
@@ -51,8 +51,8 @@ public:
     enum class RenderResult { Success2, Failed, Reset };
 
 public:
-    static std::unique_ptr<VideoRenderer> create(const Params& params);
-    virtual ~VideoRenderer() = default;
+    static std::unique_ptr<Renderer> create(const Params& params);
+    virtual ~Renderer() = default;
     virtual bool bindTextures(const std::vector<void*>& textures) = 0;
     virtual RenderResult render(int64_t frame) = 0;
     virtual void updateCursor(int32_t cursor_id, float x, float y, bool visible) = 0;

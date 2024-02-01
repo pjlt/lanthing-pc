@@ -41,7 +41,7 @@ namespace lt {
 
 namespace video {
 
-class VideoEncodeParamsHelper {
+class EncodeParamsHelper {
 public:
     enum class RcMode {
         Unknown,
@@ -61,8 +61,8 @@ public:
     };
 
 public:
-    VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uint32_t height, uint32_t fps,
-                            uint32_t bitrate_kbps, bool enable_vbv);
+    EncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uint32_t height, uint32_t fps,
+                       uint32_t bitrate_kbps, bool enable_vbv);
 
     uint32_t width() const { return width_; }
     uint32_t height() const { return height_; }

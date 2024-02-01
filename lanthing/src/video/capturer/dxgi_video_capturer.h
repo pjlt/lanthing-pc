@@ -44,13 +44,13 @@ namespace lt {
 
 namespace video {
 
-class DxgiVideoCapturer : public VideoCapturer {
+class DxgiVideoCapturer : public Capturer {
 public:
     DxgiVideoCapturer(ltlib::Monitor monitor);
     ~DxgiVideoCapturer() override;
     bool init() override;
     bool start() override;
-    std::optional<VideoCapturer::Frame> capture() override;
+    std::optional<Capturer::Frame> capture() override;
     void doneWithFrame() override;
     void waitForVBlank() override;
     Backend backend() const override;

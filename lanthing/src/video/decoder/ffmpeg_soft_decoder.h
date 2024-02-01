@@ -37,7 +37,7 @@ namespace lt {
 
 namespace video {
 
-class FFmpegSoftDecoder : public VideoDecoder {
+class FFmpegSoftDecoder : public Decoder {
 public:
     static std::unique_ptr<FFmpegSoftDecoder> create(const Params& params);
     ~FFmpegSoftDecoder() override;

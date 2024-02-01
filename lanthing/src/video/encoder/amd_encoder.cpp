@@ -51,7 +51,7 @@ amf::AMF_SURFACE_FORMAT toAmfFormat(DXGI_FORMAT format) {
 
 class AmfParamsHelper {
 public:
-    AmfParamsHelper(const lt::video::VideoEncodeParamsHelper& params)
+    AmfParamsHelper(const lt::video::EncodeParamsHelper& params)
         : params_{params} {}
 
     std::wstring codec() const;
@@ -66,7 +66,7 @@ public:
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM presetHevc() const;
 
 private:
-    const lt::video::VideoEncodeParamsHelper params_;
+    const lt::video::EncodeParamsHelper params_;
 };
 
 std::wstring AmfParamsHelper::codec() const {
@@ -83,11 +83,11 @@ std::wstring AmfParamsHelper::codec() const {
 
 AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM AmfParamsHelper::presetAvc() const {
     switch (params_.preset()) {
-    case lt::video::VideoEncodeParamsHelper::Preset::Balanced:
+    case lt::video::EncodeParamsHelper::Preset::Balanced:
         return AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED;
-    case lt::video::VideoEncodeParamsHelper::Preset::Speed:
+    case lt::video::EncodeParamsHelper::Preset::Speed:
         return AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED;
-    case lt::video::VideoEncodeParamsHelper::Preset::Quality:
+    case lt::video::EncodeParamsHelper::Preset::Quality:
         return AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY;
     default:
         assert(false);
@@ -97,11 +97,11 @@ AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM AmfParamsHelper::presetAvc() const {
 
 AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM AmfParamsHelper::presetHevc() const {
     switch (params_.preset()) {
-    case lt::video::VideoEncodeParamsHelper::Preset::Balanced:
+    case lt::video::EncodeParamsHelper::Preset::Balanced:
         return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED;
-    case lt::video::VideoEncodeParamsHelper::Preset::Speed:
+    case lt::video::EncodeParamsHelper::Preset::Speed:
         return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED;
-    case lt::video::VideoEncodeParamsHelper::Preset::Quality:
+    case lt::video::EncodeParamsHelper::Preset::Quality:
         return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY;
     default:
         assert(false);
@@ -111,9 +111,9 @@ AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM AmfParamsHelper::presetHevc() const {
 
 AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM AmfParamsHelper::rc() const {
     switch (params_.rc()) {
-    case lt::video::VideoEncodeParamsHelper::RcMode::CBR:
+    case lt::video::EncodeParamsHelper::RcMode::CBR:
         return AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR;
-    case lt::video::VideoEncodeParamsHelper::RcMode::VBR:
+    case lt::video::EncodeParamsHelper::RcMode::VBR:
         return AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR;
     default:
         assert(false);
@@ -131,8 +131,8 @@ class AmdEncoderImpl {
 public:
     AmdEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx);
     ~AmdEncoderImpl();
-    bool init(const VideoEncodeParamsHelper& params);
-    void reconfigure(const VideoEncoder::ReconfigureParams& params);
+    bool init(const EncodeParamsHelper& params);
+    void reconfigure(const Encoder::ReconfigureParams& params);
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -161,7 +161,7 @@ AmdEncoderImpl::AmdEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d
 
 AmdEncoderImpl::~AmdEncoderImpl() {}
 
-bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
+bool AmdEncoderImpl::init(const EncodeParamsHelper& params) {
     AmfParamsHelper params_helper{params};
     if (params.codec() != lt::VideoCodecType::H264 && params.codec() != lt::VideoCodecType::H265) {
         LOG(FATAL) << "Unknown video codec type " << (int)params.codec();
@@ -206,7 +206,7 @@ bool AmdEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     return true;
 }
 
-void AmdEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) {
+void AmdEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     // FIXME: 是否可以动态设置fps?
     AMF_RESULT result = AMF_OK;
     AMF_RESULT result2 = AMF_OK;
@@ -481,15 +481,15 @@ bool AmdEncoderImpl::isKeyFrame(amf::AMFDataPtr data) {
 }
 
 AmdEncoder::AmdEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
-    : VideoEncoder{d3d11_dev, d3d11_ctx, width, height}
+    : Encoder{d3d11_dev, d3d11_ctx, width, height}
     , impl_{std::make_shared<AmdEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
                                              reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx))} {}
 
-bool AmdEncoder::init(const VideoEncodeParamsHelper& params) {
+bool AmdEncoder::init(const EncodeParamsHelper& params) {
     return impl_->init(params);
 }
 
-void AmdEncoder::reconfigure(const VideoEncoder::ReconfigureParams& params) {
+void AmdEncoder::reconfigure(const Encoder::ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 

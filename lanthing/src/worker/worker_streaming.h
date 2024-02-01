@@ -128,9 +128,9 @@ private:
     std::unique_ptr<ltlib::Client> pipe_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     int64_t last_time_received_from_service_;
-    std::unique_ptr<lt::video::VideoCaptureEncodePipeline> video_;
-    std::unique_ptr<lt::input::InputExecutor> input_;
-    std::unique_ptr<lt::audio::AudioCapturer> audio_;
+    std::unique_ptr<lt::video::CaptureEncodePipeline> video_;
+    std::unique_ptr<lt::input::Executor> input_;
+    std::unique_ptr<lt::audio::Capturer> audio_;
     std::unique_ptr<ltlib::Settings> settings_;
     std::vector<ltlib::Monitor> monitors_;
 };

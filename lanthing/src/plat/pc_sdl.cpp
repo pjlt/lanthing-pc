@@ -64,6 +64,8 @@ int sdl_event_watcher(void* userdata, SDL_Event* ev) {
 
 namespace lt {
 
+namespace plat {
+
 class PcSdlImpl : public PcSdl {
 public:
     PcSdlImpl(const Params& params);
@@ -573,5 +575,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
     }
     return DispatchResult::kContinue;
 }
+
+} // namespace plat
 
 } // namespace lt

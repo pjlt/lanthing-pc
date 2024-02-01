@@ -29,60 +29,57 @@
  */
 
 #pragma once
-#include <array>
 #include <cstdint>
-#include <memory>
-#include <mutex>
-#include <optional>
 
-#include <SDL.h>
+#include <functional>
+#include <future>
+#include <memory>
+#include <string>
 
 #include <inputs/capturer/input_event.h>
 
+extern "C" {
+
+struct SDL_Window;
+
+} // extern "C"
+
 namespace lt {
 
-constexpr uint8_t kMaxControllers = 4;
+namespace plat {
 
-class SdlInput {
+class PcSdl {
 public:
     struct Params {
-        SDL_Window* window;
+        std::function<void()> on_reset;
+        std::function<void()> on_exit;
+        bool windowed_fullscreen = true;
+        bool absolute_mouse = true;
+        bool hide_window = false;
     };
 
 public:
-    static std::unique_ptr<SdlInput> create(const Params& params);
-    void setInputHandler(const input::OnInputEvent& on_input_event);
-    void rumble(uint16_t controller_number, uint16_t log_freq_motor, uint16_t high_freq_motor);
+    static std::unique_ptr<PcSdl> create(const Params& params);
+    virtual ~PcSdl(){};
+    // virtual void set_negotiated_params(uint32_t width, uint32_t height) = 0;
+    virtual SDL_Window* window() = 0;
 
-    void handleKeyUpDown(const SDL_KeyboardEvent& ev);
-    void handleMouseButton(const SDL_MouseButtonEvent& ev);
-    void handleMouseMove(const SDL_MouseMotionEvent& ev);
-    void handleMouseWheel(const SDL_MouseWheelEvent& ev);
-    void handleControllerAxis(const SDL_ControllerAxisEvent& ev);
-    void handleControllerButton(const SDL_ControllerButtonEvent& ev);
-    void handleControllerAdded(const SDL_ControllerDeviceEvent& ev);
-    void handleControllerRemoved(const SDL_ControllerDeviceEvent& ev);
-    void handleJoystickAdded(const SDL_JoyDeviceEvent& ev);
+    virtual void setInputHandler(const input::OnInputEvent&) = 0;
 
-private:
-    SdlInput(const Params& params);
-    void init();
-    void onInputEvent(const input::InputEvent& ev);
+    virtual void toggleFullscreen() = 0;
 
-private:
-    struct ControllerState {
-        SDL_GameController* controller = nullptr;
-        SDL_JoystickID joystick_id = -1;
-        uint8_t index = std::numeric_limits<uint8_t>::max();
-    };
+    virtual void setTitle(const std::string& title) = 0;
 
-private:
-    // 0表示没按下，其他任意数字表示按下
-    SDL_Window* window_;
-    uint8_t keyboard_state_[512] = {0};
-    std::mutex mutex_;
-    std::function<void(const input::InputEvent&)> on_input_event_;
-    std::array<std::optional<ControllerState>, kMaxControllers> controller_states_;
+    virtual void stop() = 0;
+
+    virtual void switchMouseMode(bool absolute) = 0;
+
+    virtual void setCursorInfo(int32_t cursor_id, bool visible) = 0;
+
+protected:
+    PcSdl() = default;
 };
+
+} // namespace plat
 
 } // namespace lt

@@ -65,7 +65,7 @@ namespace audio {
 using namespace Microsoft::WRL;
 
 WinAudioCapturer::WinAudioCapturer(const Params& params)
-    : AudioCapturer{params} {
+    : Capturer{params} {
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (SUCCEEDED(hr)) {
         need_co_uninit_ = true;

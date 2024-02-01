@@ -154,11 +154,10 @@ auto create_d3d11(std::optional<int64_t> luid)
     }
 }
 
-std::unique_ptr<lt::video::VideoEncoder>
-doCreateEncoder(const lt::video::VideoEncoder::InitParams& params, void* d3d11_dev,
-                void* d3d11_ctx) {
+std::unique_ptr<lt::video::Encoder> doCreateEncoder(const lt::video::Encoder::InitParams& params,
+                                                    void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt::video;
-    VideoEncodeParamsHelper params_helper{
+    EncodeParamsHelper params_helper{
         params.codec_type,         params.width, params.height, params.freq,
         params.bitrate_bps / 1024, true};
     switch (params.vendor_id) {
@@ -295,7 +294,7 @@ namespace lt {
 
 namespace video {
 
-std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params) {
+std::unique_ptr<Encoder> Encoder::create(const InitParams& params) {
     if (!params.validate()) {
         LOG(ERR) << "Create VideoEncoder failed: invalid parameters";
         return nullptr;
@@ -307,7 +306,7 @@ std::unique_ptr<VideoEncoder> VideoEncoder::create(const InitParams& params) {
     return doCreateEncoder(params, params.device, params.context);
 }
 
-VideoEncoder::VideoEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
+Encoder::Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
     : d3d11_dev_{d3d11_dev}
     , d3d11_ctx_{d3d11_ctx}
     , width_{width}
@@ -318,11 +317,11 @@ VideoEncoder::VideoEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uin
     ctx->AddRef();
 }
 
-bool VideoEncoder::needKeyframe() {
+bool Encoder::needKeyframe() {
     return request_keyframe_.exchange(false);
 }
 
-VideoEncoder::~VideoEncoder() {
+Encoder::~Encoder() {
     if (d3d11_dev_) {
         auto dev = reinterpret_cast<ID3D11Device*>(d3d11_dev_);
         dev->Release();
@@ -333,12 +332,12 @@ VideoEncoder::~VideoEncoder() {
     }
 }
 
-void VideoEncoder::requestKeyframe() {
+void Encoder::requestKeyframe() {
     request_keyframe_ = true;
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>
-VideoEncoder::encode(const VideoCapturer::Frame& input_frame) {
+Encoder::encode(const Capturer::Frame& input_frame) {
     const int64_t start_encode = ltlib::steady_now_us();
     auto encoded_frame = this->encodeFrame(input_frame.data);
     const int64_t end_encode = ltlib::steady_now_us();
@@ -381,7 +380,7 @@ VideoEncoder::checkEncodeAbilitiesWithLuid(int64_t luid, uint32_t width, uint32_
 }
 */
 
-bool VideoEncoder::InitParams::validate() const {
+bool Encoder::InitParams::validate() const {
     if (this->width == 0 || this->height == 0 || this->bitrate_bps == 0 ||
         this->device == nullptr || this->context == nullptr || this->freq == 0 ||
         this->freq > 240) {

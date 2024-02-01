@@ -142,7 +142,7 @@ void printMfxVideoParamVPP(const mfxVideoParam& p) {
 
 class VplParamsHelper {
 public:
-    VplParamsHelper(const lt::video::VideoEncodeParamsHelper& params)
+    VplParamsHelper(const lt::video::EncodeParamsHelper& params)
         : params_{params} {}
 
     mfxU32 codec() const;
@@ -158,7 +158,7 @@ public:
     mfxU16 profile() const;
 
 private:
-    const lt::video::VideoEncodeParamsHelper params_;
+    const lt::video::EncodeParamsHelper params_;
 };
 
 mfxU32 VplParamsHelper::codec() const {
@@ -167,9 +167,9 @@ mfxU32 VplParamsHelper::codec() const {
 
 mfxU16 VplParamsHelper::rc() const {
     switch (params_.rc()) {
-    case lt::video::VideoEncodeParamsHelper::RcMode::CBR:
+    case lt::video::EncodeParamsHelper::RcMode::CBR:
         return MFX_RATECONTROL_CBR;
-    case lt::video::VideoEncodeParamsHelper::RcMode::VBR:
+    case lt::video::EncodeParamsHelper::RcMode::VBR:
         return MFX_RATECONTROL_VBR;
     default:
         assert(false);
@@ -179,11 +179,11 @@ mfxU16 VplParamsHelper::rc() const {
 
 mfxU16 VplParamsHelper::preset() const {
     switch (params_.preset()) {
-    case lt::video::VideoEncodeParamsHelper::Preset::Balanced:
+    case lt::video::EncodeParamsHelper::Preset::Balanced:
         return MFX_TARGETUSAGE_BALANCED;
-    case lt::video::VideoEncodeParamsHelper::Preset::Speed:
+    case lt::video::EncodeParamsHelper::Preset::Speed:
         return MFX_TARGETUSAGE_BEST_SPEED;
-    case lt::video::VideoEncodeParamsHelper::Preset::Quality:
+    case lt::video::EncodeParamsHelper::Preset::Quality:
         return MFX_TARGETUSAGE_BEST_QUALITY;
     default:
         assert(false);
@@ -193,9 +193,9 @@ mfxU16 VplParamsHelper::preset() const {
 
 mfxU16 VplParamsHelper::profile() const {
     switch (params_.profile()) {
-    case lt::video::VideoEncodeParamsHelper::Profile::AvcMain:
+    case lt::video::EncodeParamsHelper::Profile::AvcMain:
         return MFX_PROFILE_AVC_MAIN;
-    case lt::video::VideoEncodeParamsHelper::Profile::HevcMain:
+    case lt::video::EncodeParamsHelper::Profile::HevcMain:
         return MFX_PROFILE_HEVC_MAIN;
     default:
         assert(false);
@@ -240,8 +240,8 @@ class IntelEncoderImpl {
 public:
     IntelEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx, int64_t luid);
     ~IntelEncoderImpl();
-    bool init(const VideoEncodeParamsHelper& params);
-    void reconfigure(const VideoEncoder::ReconfigureParams& params);
+    bool init(const EncodeParamsHelper& params);
+    void reconfigure(const Encoder::ReconfigureParams& params);
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -289,7 +289,7 @@ IntelEncoderImpl::~IntelEncoderImpl() {
     }
 }
 
-bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
+bool IntelEncoderImpl::init(const EncodeParamsHelper& params) {
     width_ = params.width();
     height_ = params.height();
     codec_type_ = params.codec();
@@ -333,7 +333,7 @@ bool IntelEncoderImpl::init(const VideoEncodeParamsHelper& params) {
     return true;
 }
 
-void IntelEncoderImpl::reconfigure(const VideoEncoder::ReconfigureParams& params) {
+void IntelEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     if (!params.bitrate_bps.has_value() && !params.fps.has_value()) {
         return;
     }
@@ -732,12 +732,12 @@ mfxVideoParam IntelEncoderImpl::genVppParams(const VplParamsHelper& params_helpe
 
 IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid, uint32_t width,
                            uint32_t height)
-    : VideoEncoder{d3d11_dev, d3d11_ctx, width, height}
+    : Encoder{d3d11_dev, d3d11_ctx, width, height}
     , impl_{std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
                                                reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx),
                                                luid)} {}
 
-bool IntelEncoder::init(const VideoEncodeParamsHelper& params) {
+bool IntelEncoder::init(const EncodeParamsHelper& params) {
     return impl_->init(params);
 }
 

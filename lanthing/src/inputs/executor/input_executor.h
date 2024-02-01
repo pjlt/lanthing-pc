@@ -46,8 +46,9 @@ namespace lt {
 namespace input {
 
 class Gamepad;
-class TouchExecutor;
-class InputExecutor {
+class WinTouch;
+
+class Executor {
 public:
     enum class Type : uint8_t {
         WIN32_MESSAGE = 1,
@@ -64,9 +65,9 @@ public:
     };
 
 public:
-    static std::unique_ptr<InputExecutor> create(const Params& params);
+    static std::unique_ptr<Executor> create(const Params& params);
     void update();
-    virtual ~InputExecutor() = default;
+    virtual ~Executor() = default;
 
 protected:
     virtual bool initKeyMouse() = 0;
@@ -92,7 +93,7 @@ private:
     std::mutex mutex_;
     bool is_absolute_mouse_ = true;
     std::shared_ptr<Gamepad> gamepad_;
-    std::shared_ptr<TouchExecutor> touch_;
+    std::shared_ptr<WinTouch> touch_;
 };
 
 } // namespace input

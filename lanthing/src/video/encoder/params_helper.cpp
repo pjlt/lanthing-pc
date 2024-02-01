@@ -37,9 +37,8 @@ namespace lt {
 
 namespace video {
 
-VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t width,
-                                                 uint32_t height, uint32_t fps,
-                                                 uint32_t bitrate_kbps, bool enable_vbv)
+EncodeParamsHelper::EncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uint32_t height,
+                                       uint32_t fps, uint32_t bitrate_kbps, bool enable_vbv)
     : codec_type_{c}
     , width_{width}
     , height_{height}
@@ -76,7 +75,7 @@ VideoEncodeParamsHelper::VideoEncodeParamsHelper(lt::VideoCodecType c, uint32_t 
     params_["-qmax"] = ssQmax.str();
 }
 
-std::string VideoEncodeParamsHelper::params() const {
+std::string EncodeParamsHelper::params() const {
     std::stringstream oss;
     for (const auto& param : params_) {
         if (param.first.empty() || param.second.empty()) {

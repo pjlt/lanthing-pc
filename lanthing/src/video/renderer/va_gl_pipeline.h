@@ -45,7 +45,7 @@ namespace lt {
 
 namespace video {
 
-class VaGlPipeline : public VideoRenderer {
+class VaGlPipeline : public Renderer {
 public:
     struct Params {
         SDL_Window* window;

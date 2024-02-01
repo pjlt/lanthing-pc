@@ -35,7 +35,7 @@ namespace lt {
 
 namespace audio {
 
-class SdlAudioPlayer : public AudioPlayer {
+class SdlAudioPlayer : public Player {
 public:
     SdlAudioPlayer(const Params& params);
     ~SdlAudioPlayer() override;

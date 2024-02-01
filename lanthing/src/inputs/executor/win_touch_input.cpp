@@ -65,7 +65,7 @@ bool injectSyntheticPointerInput(HSYNTHETICPOINTERDEVICE device,
         return true;
     }
     if (!ltlib::setThreadDesktop()) {
-        LOG(WARNING) << "TouchExecutor::submit SetThreadDesktop failed";
+        LOG(WARNING) << "WinTouch::submit SetThreadDesktop failed";
         return false;
     }
     ret = InjectSyntheticPointerInput(device, pointerInfo.data(), count);
@@ -117,35 +117,35 @@ namespace lt {
 
 namespace input {
 
-std::unique_ptr<TouchExecutor> TouchExecutor::create(uint32_t screen_width, uint32_t screen_height,
-                                                     ltlib::Monitor monitor) {
-    std::unique_ptr<TouchExecutor> touch{new TouchExecutor{screen_width, screen_height, monitor}};
+std::unique_ptr<WinTouch> WinTouch::create(uint32_t screen_width, uint32_t screen_height,
+                                           ltlib::Monitor monitor) {
+    std::unique_ptr<WinTouch> touch{new WinTouch{screen_width, screen_height, monitor}};
     if (!touch->init()) {
         return nullptr;
     }
     return touch;
 }
 
-TouchExecutor::~TouchExecutor() {
+WinTouch::~WinTouch() {
     if (touch_dev_ != nullptr) {
         DestroySyntheticPointerDevice(touch_dev_);
     }
 }
 
-TouchExecutor::TouchExecutor(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor)
+WinTouch::WinTouch(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor)
     : screen_width_{screen_width}
     , screen_height_{screen_height}
     , monitor_{monitor} {
     resetPointState();
 }
 
-bool TouchExecutor::init() {
+bool WinTouch::init() {
     offset_x_ = GetSystemMetrics(SM_XVIRTUALSCREEN);
     offset_y_ = GetSystemMetrics(SM_YVIRTUALSCREEN);
     return true;
 }
 
-bool TouchExecutor::init2() {
+bool WinTouch::init2() {
     if (init_success_.has_value()) {
         return init_success_.value();
     }
@@ -161,7 +161,7 @@ bool TouchExecutor::init2() {
     return true;
 }
 
-bool TouchExecutor::reset() {
+bool WinTouch::reset() {
     bool success = true;
     using_points_ = reArrangePoints(points_);
     if (using_points_ != 0) {
@@ -184,7 +184,7 @@ bool TouchExecutor::reset() {
     return success;
 }
 
-void TouchExecutor::resetPointState() {
+void WinTouch::resetPointState() {
     points_.resize(kMaxPoints);
     for (auto& point : points_) {
         point.type = PT_TOUCH;
@@ -192,7 +192,7 @@ void TouchExecutor::resetPointState() {
     }
 }
 
-bool TouchExecutor::submit(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
+bool WinTouch::submit(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::TouchEvent>(_msg);
     if (!init2()) {
         return false;
@@ -261,7 +261,7 @@ bool TouchExecutor::submit(const std::shared_ptr<google::protobuf::MessageLite>&
     return success;
 }
 
-void TouchExecutor::update() {
+void WinTouch::update() {
     if (touch_dev_ == nullptr) {
         return;
     }

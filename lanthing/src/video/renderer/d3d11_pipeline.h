@@ -45,7 +45,7 @@ namespace lt {
 
 namespace video {
 
-class D3D11Pipeline : public VideoRenderer {
+class D3D11Pipeline : public Renderer {
     struct ColorMatrix {
         float matrix[16];
     };

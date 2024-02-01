@@ -41,11 +41,11 @@ namespace video {
 
 class AmdEncoderImpl;
 
-class AmdEncoder : public VideoEncoder {
+class AmdEncoder : public Encoder {
 public:
     AmdEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
     ~AmdEncoder() override {}
-    bool init(const VideoEncodeParamsHelper& params);
+    bool init(const EncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 

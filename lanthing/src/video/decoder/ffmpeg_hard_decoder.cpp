@@ -187,7 +187,7 @@ FFmpegHardDecoder::~FFmpegHardDecoder() {
 }
 
 FFmpegHardDecoder::FFmpegHardDecoder(const Params& params)
-    : VideoDecoder{params}
+    : Decoder{params}
     , hw_dev_{params.hw_device}
     , hw_ctx_{params.hw_context}
     , va_type_{params.va_type} {}
