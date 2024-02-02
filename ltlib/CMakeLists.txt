@@ -19,7 +19,6 @@ endif()
 
 
 set(LTLIB_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/ltlib.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/strings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/system.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/event.h
@@ -72,7 +71,7 @@ if (LT_WINDOWS)
     )
 endif()
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME} STATIC
     ${LTLIB_SRCS}
 )
 
@@ -107,23 +106,8 @@ target_link_libraries(${PROJECT_NAME}
         ${PLATFORM_LIBS}
 )
 
-target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        BUILDING_LTLIB
-)
-
 set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
-install(
-	TARGETS ${PROJECT_NAME}
-)
-
-if (LT_WINDOWS)
-    install(
-        FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
-    )
-endif()
 
 if(${LT_ENABLE_TEST})
 if (LT_LINUX)

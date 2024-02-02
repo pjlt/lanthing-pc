@@ -30,18 +30,19 @@
 
 #pragma once
 #include <functional>
-#include <google/protobuf/message_lite.h>
-#include <ltlib/io/types.h>
-#include <ltlib/ltlib.h>
 #include <memory>
 #include <string>
+
+#include <google/protobuf/message_lite.h>
+
+#include <ltlib/io/types.h>
 
 namespace ltlib {
 
 class ClientImpl;
 class IOLoop;
 
-class LT_API Client {
+class Client {
 public:
     struct Params {
         StreamType stype;

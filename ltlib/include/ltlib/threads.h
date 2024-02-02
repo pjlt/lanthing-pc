@@ -42,12 +42,11 @@
 #include <string>
 #include <thread>
 
-#include <ltlib/ltlib.h>
 #include <ltlib/times.h>
 
 namespace ltlib {
 
-class LT_API ThreadWatcher {
+class ThreadWatcher {
 public:
     static constexpr int64_t kMaxBlockTimeMS = 5'000;
 
@@ -84,7 +83,7 @@ private:
     std::atomic<bool> enable_crash_{true};
 };
 
-class LT_API BlockingThread {
+class BlockingThread {
 public:
     using EntryFunction = std::function<void(std::function<void()> /*i_am_alive*/)>;
 
@@ -114,7 +113,7 @@ private:
     int64_t last_report_time_;
 };
 
-enum class LT_API Priority : uint32_t {
+enum class Priority : uint32_t {
     Low,
     Medium,
     High,
@@ -124,7 +123,7 @@ inline bool operator<(const Priority& left, const Priority& right) {
            static_cast<std::underlying_type_t<Priority>>(right);
 }
 
-class LT_API TaskThread {
+class TaskThread {
 public:
     using Task = std::function<void()>;
     using TimerID = int64_t;

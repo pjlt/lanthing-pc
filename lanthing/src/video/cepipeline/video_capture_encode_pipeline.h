@@ -43,6 +43,8 @@ namespace lt {
 namespace video {
 
 class VCEPipeline;
+class VCEPipeline2;
+
 class CaptureEncodePipeline {
 public:
     struct Params {
@@ -67,6 +69,7 @@ private:
 
 private:
     std::shared_ptr<VCEPipeline> impl_;
+    std::shared_ptr<VCEPipeline2> impl2_;
 };
 
 } // namespace video

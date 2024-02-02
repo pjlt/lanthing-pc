@@ -29,11 +29,10 @@
  */
 
 #pragma once
-#include <ltlib/ltlib.h>
 #include <string>
 
 namespace ltlib {
 
-bool LT_API makeSingletonProcess(const std::string& name);
+bool makeSingletonProcess(const std::string& name);
 
 } // namespace ltlib

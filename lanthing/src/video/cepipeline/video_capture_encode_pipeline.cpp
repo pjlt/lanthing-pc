@@ -56,6 +56,17 @@ namespace lt {
 
 namespace video {
 
+class VCEPipeline2 {
+public:
+    VCEPipeline2(const CaptureEncodePipeline::Params& params) { (void)params; }
+    ~VCEPipeline2() = default;
+    bool init() { return false; }
+    bool start() { return false; }
+    void stop() {}
+    VideoCodecType codec() const { return VideoCodecType::Unknown; }
+    bool defaultOutput() { return false; }
+};
+
 class VCEPipeline {
 public:
     VCEPipeline(const CaptureEncodePipeline::Params& params);
@@ -407,33 +418,83 @@ void VCEPipeline::onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLit
 
 std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Params& params) {
     if (params.send_message == nullptr || params.register_message_handler == nullptr ||
-        params.width == 0 || params.height == 0) {
+        params.width == 0 || params.height == 0 || params.codecs.empty()) {
         LOG(FATAL) << "Create CaptureEncodePipeline failed, invalid parameters";
         return nullptr;
     }
-    auto impl = std::make_shared<VCEPipeline>(params);
-    if (!impl->init()) {
+    std::unique_ptr<CaptureEncodePipeline> pipeline{new CaptureEncodePipeline};
+    Params params420 = params;
+    Params params444 = params;
+    std::vector<VideoCodecType> yuv420;
+    std::vector<VideoCodecType> yuv444;
+    for (auto codec : params.codecs) {
+        if (codec == lt::VideoCodecType::H264_420 || codec == lt::VideoCodecType::H265_420) {
+            yuv420.push_back(codec);
+        }
+        else if (codec == lt::VideoCodecType::H264_444 || codec == lt::VideoCodecType::H265_444) {
+            yuv444.push_back(codec);
+        }
+    }
+    params420.codecs = yuv420;
+    params444.codecs = yuv444;
+    if (yuv420.empty() && yuv444.empty()) {
+        // fatal error
+        LOG(ERR) << "Init VideoCaptureEncodePipeline failed: only support avc and hevc";
         return nullptr;
     }
-    std::unique_ptr<CaptureEncodePipeline> pipeline{new CaptureEncodePipeline};
-    pipeline->impl_ = std::move(impl);
-    return pipeline;
+    // try first
+    if (!yuv444.empty()) {
+        auto impl = std::make_shared<VCEPipeline2>(params444);
+        if (impl->init()) {
+            pipeline->impl2_ = impl;
+            return pipeline;
+        }
+    }
+    // fallback
+    if (!yuv420.empty()) {
+        auto impl = std::make_shared<VCEPipeline>(params420);
+        if (impl->init()) {
+            pipeline->impl_ = impl;
+            return pipeline;
+        }
+    }
+    return nullptr;
 }
 
 bool CaptureEncodePipeline::start() {
-    return impl_->start();
+    if (impl_) {
+        return impl_->start();
+    }
+    else {
+        return impl2_->start();
+    }
 }
 
 void CaptureEncodePipeline::stop() {
-    impl_->stop();
+    if (impl_) {
+        impl_->stop();
+    }
+    else {
+        impl2_->stop();
+    }
 }
 
 VideoCodecType CaptureEncodePipeline::codec() const {
-    return impl_->codec();
+    if (impl_) {
+        return impl_->codec();
+    }
+    else {
+        return impl2_->codec();
+    }
 }
 
 bool CaptureEncodePipeline::defaultOutput() {
-    return impl_->defaultOutput();
+    if (impl_) {
+        return impl_->defaultOutput();
+    }
+    else {
+        return impl2_->defaultOutput();
+    }
 }
 
 } // namespace video

@@ -36,11 +36,9 @@
 #include <string>
 #include <vector>
 
-#include <ltlib/ltlib.h>
-
 namespace ltlib {
 
-class LT_API Settings {
+class Settings {
 public:
     enum class Storage {
         Toml,
