@@ -45,9 +45,9 @@
 #include <transport/transport.h>
 
 #include <audio/capturer/audio_capturer.h>
-#include <graphics/cepipeline/video_capture_encode_pipeline.h>
 #include <inputs/executor/input_executor.h>
 #include <message_handler.h>
+#include <video/cepipeline/video_capture_encode_pipeline.h>
 #include <worker/display_setting.h>
 #include <worker/session_change_observer.h>
 #include <worker/worker.h>
@@ -128,9 +128,9 @@ private:
     std::unique_ptr<ltlib::Client> pipe_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
     int64_t last_time_received_from_service_;
-    std::unique_ptr<lt::VideoCaptureEncodePipeline> video_;
-    std::unique_ptr<lt::InputExecutor> input_;
-    std::unique_ptr<lt::AudioCapturer> audio_;
+    std::unique_ptr<lt::video::CaptureEncodePipeline> video_;
+    std::unique_ptr<lt::input::Executor> input_;
+    std::unique_ptr<lt::audio::Capturer> audio_;
     std::unique_ptr<ltlib::Settings> settings_;
     std::vector<ltlib::Monitor> monitors_;
 };

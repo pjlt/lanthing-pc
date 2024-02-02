@@ -63,36 +63,6 @@
 
 namespace {
 
-/*
-lt::VideoCodecType to_ltrtc(std::string codec_str) {
-constexpr const char* kAVC_420 = toString(lt::VideoCodecType::H264_420);
-constexpr const char* kHEVC_420 = toString(lt::VideoCodecType::H265_420);
-constexpr const char* kAVC_444 = toString(lt::VideoCodecType::H264_444);
-constexpr const char* kHEVC_444 = toString(lt::VideoCodecType::H265_444);
-constexpr const char* kAV1 = toString(lt::VideoCodecType::AV1);
-std::transform(codec_str.begin(), codec_str.end(), codec_str.begin(),
-               [](char c) -> char { return (char)std::toupper(c); });
-if (codec_str == kAVC_420) {
-    return lt::VideoCodecType::H264_420;
-}
-else if (codec_str == kHEVC_420) {
-    return lt::VideoCodecType::H265_420;
-}
-else if (codec_str == kAVC_444) {
-    return lt::VideoCodecType::H264_444;
-}
-else if (codec_str == kHEVC_444) {
-    return lt::VideoCodecType::H265_444;
-}
-else if (codec_str == kAV1) {
-    return lt::VideoCodecType::AV1;
-}
-else {
-    return lt::VideoCodecType::Unknown;
-}
-}
-*/
-
 lt::AudioCodecType atype() {
     switch (LT_TRANSPORT_TYPE) {
     case LT_TRANSPORT_RTC:
@@ -525,11 +495,11 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
         return;
     }
     LOG(INFO) << "Join signaling room success";
-    PcSdl::Params params{};
+    lt::plat::PcSdl::Params params{};
     params.on_reset = std::bind(&Client::onPlatformRenderTargetReset, this);
     params.on_exit = std::bind(&Client::onPlatformExit, this);
     params.windowed_fullscreen = windowed_fullscreen_;
-    sdl_ = PcSdl::create(params);
+    sdl_ = lt::plat::PcSdl::create(params);
     if (sdl_ == nullptr) {
         LOG(INFO) << "Initialize sdl failed";
         return;
@@ -725,7 +695,7 @@ void Client::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool 
 void Client::onTpVideoFrame(void* user_data, const lt::VideoFrame& frame) {
     // 跑在video线程
     auto that = reinterpret_cast<Client*>(user_data);
-    VideoDecodeRenderPipeline::Action action = VideoDecodeRenderPipeline::Action::NONE;
+    video::DecodeRenderPipeline::Action action = video::DecodeRenderPipeline::Action::NONE;
     {
         std::lock_guard lock{that->dr_mutex_};
         if (that->video_pipeline_ == nullptr) {
@@ -734,13 +704,13 @@ void Client::onTpVideoFrame(void* user_data, const lt::VideoFrame& frame) {
         action = that->video_pipeline_->submit(frame);
     }
     switch (action) {
-    case VideoDecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
+    case video::DecodeRenderPipeline::Action::REQUEST_KEY_FRAME:
     {
         auto req = std::make_shared<ltproto::client2worker::RequestKeyframe>();
         that->sendMessageToHost(ltproto::id(req), req, true);
         break;
     }
-    case VideoDecodeRenderPipeline::Action::NONE:
+    case video::DecodeRenderPipeline::Action::NONE:
         break;
     default:
         break;
@@ -759,7 +729,7 @@ void Client::onTpAudioData(void* user_data, const lt::AudioData& audio_data) {
 void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     auto that = reinterpret_cast<Client*>(user_data);
-    that->video_pipeline_ = VideoDecodeRenderPipeline::create(that->video_params_);
+    that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
     if (that->video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
         return;
@@ -775,12 +745,12 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     that->input_params_.rel_mouse_accel = rel_mouse_accel;
     that->input_params_.toggle_fullscreen = std::bind(&Client::toggleFullscreen, that);
     that->input_params_.switch_mouse_mode = std::bind(&Client::switchMouseMode, that);
-    that->input_capturer_ = InputCapturer::create(that->input_params_);
+    that->input_capturer_ = input::Capturer::create(that->input_params_);
     if (that->input_capturer_ == nullptr) {
         LOG(ERR) << "Create InputCapturer failed";
         return;
     }
-    that->audio_player_ = AudioPlayer::create(that->audio_params_);
+    that->audio_player_ = audio::Player::create(that->audio_params_);
     if (that->audio_player_ == nullptr) {
         LOG(INFO) << "Create AudioPlayer failed";
         return;
@@ -966,7 +936,7 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
                                                video_params_.rotation, is_stretch_);
         std::lock_guard lock{dr_mutex_};
         video_pipeline_.reset(); // 手动reset再create，保证不同时存在两份VideoDecodeRenderPipeline
-        video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+        video_pipeline_ = video::DecodeRenderPipeline::create(video_params_);
         if (video_pipeline_ == nullptr) {
             success = false;
             LOG(ERR) << "Recreate VideoDecodeRenderPipeline failed";
@@ -1001,7 +971,7 @@ void Client::resetVideoPipeline() {
             std::lock_guard lock{dr_mutex_};
             video_pipeline_
                 .reset(); // 手动reset再create，保证不同时存在两份VideoDecodeRenderPipeline
-            video_pipeline_ = VideoDecodeRenderPipeline::create(video_params_);
+            video_pipeline_ = video::DecodeRenderPipeline::create(video_params_);
             if (video_pipeline_ == nullptr) {
                 LOG(ERR) << "Recreate VideoDecodeRenderPipeline failed, exit process";
                 need_exit = true;

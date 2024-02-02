@@ -345,7 +345,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
 
     auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
-    lt::AudioCapturer::Params audio_params{};
+    lt::audio::Capturer::Params audio_params{};
 #if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
     audio_params.type = AudioCodecType::PCM;
 #else
@@ -353,14 +353,14 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
 #endif
     audio_params.on_audio_data =
         std::bind(&WorkerStreaming::onCapturedAudioData, this, std::placeholders::_1);
-    auto audio = AudioCapturer::create(audio_params);
+    auto audio = lt::audio::Capturer::create(audio_params);
     if (audio == nullptr) {
         return kExitCodeInitAudioFailed;
     }
     negotiated_params->set_audio_channels(audio->channels());
     negotiated_params->set_audio_sample_rate(audio->framesPerSec());
 
-    lt::VideoCaptureEncodePipeline::Params video_params{};
+    lt::video::CaptureEncodePipeline::Params video_params{};
     video_params.codecs = client_codec_types_;
     // video_params.width = negotiated_display_setting_.width;
     // video_params.height = negotiated_display_setting_.height;
@@ -372,7 +372,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     video_params.register_message_handler =
         std::bind(&WorkerStreaming::registerMessageHandler, this, std::placeholders::_1,
                   std::placeholders::_2);
-    auto video = lt::VideoCaptureEncodePipeline::create(video_params);
+    auto video = lt::video::CaptureEncodePipeline::create(video_params);
     if (video == nullptr) {
         LOGF(ERR, "Create VideoCaptureEncodePipeline failed");
         return kExitCodeInitVideoFailed;
@@ -528,9 +528,9 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         }
         audio_->start();
 
-        InputExecutor::Params input_params{};
-        input_params.types = static_cast<uint8_t>(InputExecutor::Type::WIN32_MESSAGE) |
-                             static_cast<uint8_t>(InputExecutor::Type::WIN32_DRIVER);
+        input::Executor::Params input_params{};
+        input_params.types = static_cast<uint8_t>(input::Executor::Type::WIN32_MESSAGE) |
+                             static_cast<uint8_t>(input::Executor::Type::WIN32_DRIVER);
         input_params.monitor = monitors_[monitor_index_];
         input_params.screen_width = static_cast<uint32_t>(input_params.monitor.width);
         input_params.screen_height = static_cast<uint32_t>(input_params.monitor.height);
@@ -539,7 +539,7 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
                       std::placeholders::_2);
         input_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread,
                                               this, std::placeholders::_1, std::placeholders::_2);
-        input_ = InputExecutor::create(input_params);
+        input_ = input::Executor::create(input_params);
         if (input_ == nullptr) {
             ack->set_err_code(ltproto::ErrorCode::WorkerInitInputFailed);
             error_code = kExitCodeInitInputFailed;

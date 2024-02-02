@@ -29,19 +29,15 @@
  */
 
 #pragma once
-#include <ltlib/ltlib.h>
-#include <memory>
 #include <cstdint>
+#include <memory>
 #include <optional>
 
-namespace ltlib
-{
+namespace ltlib {
 
-class LT_API TimeSync
-{
+class TimeSync {
 public:
-    struct Result
-    {
+    struct Result {
         int64_t rtt;
         int64_t time_diff;
     };

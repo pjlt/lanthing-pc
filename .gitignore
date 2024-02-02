@@ -38,6 +38,7 @@
 /build
 /install
 /transport/rtc
+/lanthing/src/video2
 CMakeSettings.json
 options-user.cmake
 *AppImage

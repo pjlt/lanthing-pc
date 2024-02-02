@@ -43,17 +43,19 @@
 
 namespace lt {
 
-class TouchExecutor {
+namespace input {
+
+class WinTouch {
 public:
-    static std::unique_ptr<TouchExecutor> create(uint32_t screen_width, uint32_t screen_height,
-                                                 ltlib::Monitor monitor);
-    ~TouchExecutor();
+    static std::unique_ptr<WinTouch> create(uint32_t screen_width, uint32_t screen_height,
+                                            ltlib::Monitor monitor);
+    ~WinTouch();
 
     bool submit(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void update();
 
 private:
-    TouchExecutor(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor);
+    WinTouch(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor monitor);
     bool init();
     bool init2();
     bool reset();
@@ -70,5 +72,7 @@ private:
     int32_t offset_x_ = 0;
     int32_t offset_y_ = 0;
 };
+
+} // namespace input
 
 } // namespace lt

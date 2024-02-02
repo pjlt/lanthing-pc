@@ -29,26 +29,25 @@
  */
 
 #pragma once
-#include <ltlib/ltlib.h>
 
 #include <string>
 #include <vector>
 
 namespace ltlib {
 
-std::string LT_API getProgramFullpath();
+std::string getProgramFullpath();
 
-std::string LT_API getProgramPath();
+std::string getProgramPath();
 
-std::string LT_API getConfigPath(bool is_service = false);
+std::string getConfigPath(bool is_service = false);
 
-bool LT_API isRunasLocalSystem();
-bool LT_API isRunAsService();
+bool isRunasLocalSystem();
+bool isRunAsService();
 
-int32_t LT_API getScreenWidth();
-int32_t LT_API getScreenHeight();
+int32_t getScreenWidth();
+int32_t getScreenHeight();
 
-struct LT_API DisplayOutputDesc {
+struct DisplayOutputDesc {
     DisplayOutputDesc() = delete;
     DisplayOutputDesc(uint32_t w, uint32_t h, uint32_t f, uint32_t r)
         : width(w)
@@ -60,15 +59,15 @@ struct LT_API DisplayOutputDesc {
     int32_t frequency;
     int32_t rotation;
 };
-DisplayOutputDesc LT_API getDisplayOutputDesc(const std::string& name);
+DisplayOutputDesc getDisplayOutputDesc(const std::string& name);
 
-bool LT_API changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f);
+bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f);
 
-bool LT_API setThreadDesktop();
+bool setThreadDesktop();
 
-bool LT_API selfElevateAndNeedExit();
+bool selfElevateAndNeedExit();
 
-struct LT_API Monitor {
+struct Monitor {
     int32_t left;
     int32_t top;
     int32_t right;
@@ -80,8 +79,8 @@ struct LT_API Monitor {
     std::string name;
 };
 
-std::vector<Monitor> LT_API enumMonitors();
+std::vector<Monitor> enumMonitors();
 
-void LT_API openFolder(const std::string& path);
+void openFolder(const std::string& path);
 
 } // namespace ltlib

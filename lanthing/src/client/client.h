@@ -47,9 +47,9 @@
 #include <transport/transport.h>
 
 #include <audio/player/audio_player.h>
-#include <graphics/drpipeline/video_decode_render_pipeline.h>
 #include <inputs/capturer/input_capturer.h>
-#include <platforms/pc_sdl.h>
+#include <plat/pc_sdl.h>
+#include <video/drpipeline/video_decode_render_pipeline.h>
 
 namespace lt {
 
@@ -171,20 +171,20 @@ private:
     std::atomic<bool> is_stretch_{true};
 #endif // LT_WINDOWS
     SignalingParams signaling_params_;
-    InputCapturer::Params input_params_{};
-    VideoDecodeRenderPipeline::Params video_params_;
-    AudioPlayer::Params audio_params_{};
+    input::Capturer::Params input_params_{};
+    video::DecodeRenderPipeline::Params video_params_;
+    audio::Player::Params audio_params_{};
     std::vector<std::string> reflex_servers_;
     std::mutex dr_mutex_;
-    std::unique_ptr<VideoDecodeRenderPipeline> video_pipeline_;
-    std::unique_ptr<InputCapturer> input_capturer_;
-    std::unique_ptr<AudioPlayer> audio_player_;
+    std::unique_ptr<video::DecodeRenderPipeline> video_pipeline_;
+    std::unique_ptr<input::Capturer> input_capturer_;
+    std::unique_ptr<audio::Player> audio_player_;
     std::shared_mutex ioloop_mutex_;
     std::unique_ptr<ltlib::IOLoop> ioloop_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::Client> app_client_;
     lt::tp::Client* tp_client_ = nullptr;
-    std::unique_ptr<PcSdl> sdl_;
+    std::unique_ptr<lt::plat::PcSdl> sdl_;
     std::unique_ptr<ltlib::BlockingThread> main_thread_;
     std::unique_ptr<ltlib::TaskThread> hb_thread_;
     std::condition_variable exit_cv_;

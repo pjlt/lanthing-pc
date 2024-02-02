@@ -43,9 +43,11 @@
 
 namespace lt {
 
-std::unique_ptr<AudioCapturer> AudioCapturer::create(const Params& params) {
+namespace audio {
+
+std::unique_ptr<Capturer> Capturer::create(const Params& params) {
 #if LT_WINDOWS
-    std::unique_ptr<AudioCapturer> capturer{new WinAudioCapturer{params}};
+    std::unique_ptr<Capturer> capturer{new WinAudioCapturer{params}};
     if (!capturer->init()) {
         return nullptr;
     }
@@ -55,7 +57,7 @@ std::unique_ptr<AudioCapturer> AudioCapturer::create(const Params& params) {
 #endif
 }
 
-AudioCapturer::~AudioCapturer() {
+Capturer::~Capturer() {
     if (opus_encoder_) {
         auto encoder = reinterpret_cast<OpusEncoder*>(opus_encoder_);
         opus_encoder_destroy(encoder);
@@ -63,22 +65,22 @@ AudioCapturer::~AudioCapturer() {
     }
 }
 
-void AudioCapturer::start() {
+void Capturer::start() {
     stoped_ = false;
     capture_thread_ = ltlib::BlockingThread::create(
         "audio_capture",
         [this](const std::function<void()>& i_am_alive) { captureLoop(i_am_alive); });
 }
 
-void AudioCapturer::stop() {
+void Capturer::stop() {
     stoped_ = true;
 }
 
-AudioCapturer::AudioCapturer(const Params& params)
+Capturer::Capturer(const Params& params)
     : type_{params.type}
     , on_audio_data_{params.on_audio_data} {}
 
-bool AudioCapturer::init() {
+bool Capturer::init() {
     if (!initPlatform()) {
         return false;
     }
@@ -88,11 +90,11 @@ bool AudioCapturer::init() {
     return true;
 }
 
-bool AudioCapturer::needEncode() const {
+bool Capturer::needEncode() const {
     return type_ == AudioCodecType::OPUS;
 }
 
-bool AudioCapturer::initEncoder() {
+bool Capturer::initEncoder() {
     if (type_ != AudioCodecType::OPUS) {
         LOG(INFO) << "No need OPUS";
         return true;
@@ -112,7 +114,7 @@ bool AudioCapturer::initEncoder() {
     return true;
 }
 
-void AudioCapturer::onCapturedData(const uint8_t* data, uint32_t frames) {
+void Capturer::onCapturedData(const uint8_t* data, uint32_t frames) {
     if (data == nullptr) {
         return;
     }
@@ -177,36 +179,38 @@ void AudioCapturer::onCapturedData(const uint8_t* data, uint32_t frames) {
     }
 }
 
-void AudioCapturer::setBytesPerFrame(uint32_t value) {
+void Capturer::setBytesPerFrame(uint32_t value) {
     bytes_per_frame_ = value;
 }
 
-void AudioCapturer::setChannels(uint32_t value) {
+void Capturer::setChannels(uint32_t value) {
     channels_ = value;
 }
 
-void AudioCapturer::setFramesPerSec(uint32_t value) {
+void Capturer::setFramesPerSec(uint32_t value) {
     frames_per_sec_ = value;
 }
 
-uint32_t AudioCapturer::bytesPerFrame() const {
+uint32_t Capturer::bytesPerFrame() const {
     return bytes_per_frame_;
 }
 
-uint32_t AudioCapturer::channels() const {
+uint32_t Capturer::channels() const {
     return channels_;
 }
 
-uint32_t AudioCapturer::framesPerSec() const {
+uint32_t Capturer::framesPerSec() const {
     return frames_per_sec_;
 }
 
-uint32_t AudioCapturer::framesPer10ms() const {
+uint32_t Capturer::framesPer10ms() const {
     return frames_per_sec_ / 100;
 }
 
-uint32_t AudioCapturer::bytesPer10ms() const {
+uint32_t Capturer::bytesPer10ms() const {
     return bytesPerFrame() * framesPer10ms();
 }
+
+} // namespace audio
 
 } // namespace lt

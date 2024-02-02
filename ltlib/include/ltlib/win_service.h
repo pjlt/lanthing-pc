@@ -30,14 +30,14 @@
 
 #pragma once
 #include <Windows.h>
+
 #include <cstdint>
-#include <ltlib/ltlib.h>
 #include <memory>
 #include <string>
 
 namespace ltlib {
 
-class LT_API WinApp {
+class WinApp {
 public:
     virtual ~WinApp() {}
     virtual void onStart() = 0;
@@ -45,7 +45,7 @@ public:
     virtual void run() = 0;
 };
 
-class LT_API ServiceApp {
+class ServiceApp {
 public:
     ServiceApp(WinApp* service);
     ~ServiceApp();
@@ -58,7 +58,7 @@ private:
     void run_service();
 };
 
-class LT_API ServiceCtrl {
+class ServiceCtrl {
 public:
     static bool createService(const std::string& service_name, const std::string& display_name,
                               const std::string& bin_path);

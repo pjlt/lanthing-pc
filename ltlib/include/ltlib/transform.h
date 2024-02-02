@@ -29,19 +29,18 @@
  */
 
 #pragma once
-#include <ltlib/ltlib.h>
 
 #include <cstdint>
 
 namespace ltlib {
 
-struct LT_API Rect {
+struct Rect {
     int32_t x;
     int32_t y;
     int32_t w;
     int32_t h;
 };
 
-Rect LT_API calcMaxInnerRect(Rect outer, Rect inner_original);
+Rect calcMaxInnerRect(Rect outer, Rect inner_original);
 
 } // namespace ltlib

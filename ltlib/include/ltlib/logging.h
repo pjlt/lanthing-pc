@@ -7,7 +7,6 @@
  * ============================================================================*/
 
 #pragma once
-#include <ltlib/ltlib.h>
 
 #include <inttypes.h>
 
@@ -27,7 +26,7 @@ const LEVELS ERR{WARNING.value + 100, "ERROR"};
         LogCapture(file, line, func, level).stream()
 
 namespace ltlib {
-class LT_API LogSink {
+class LogSink {
 public:
     LogSink(const std::string& log_prefix, const std::string& log_directory,
             size_t write_to_log_every_x_message = 30);
