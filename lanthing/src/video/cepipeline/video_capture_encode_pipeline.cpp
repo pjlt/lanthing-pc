@@ -56,28 +56,50 @@ namespace lt {
 
 namespace video {
 
-class VCEPipeline2 {
+class VCEPipeline2 : public CaptureEncodePipeline {
 public:
-    VCEPipeline2(const CaptureEncodePipeline::Params& params) { (void)params; }
-    ~VCEPipeline2() = default;
-    bool init() { return false; }
-    bool start() { return false; }
-    void stop() {}
-    VideoCodecType codec() const { return VideoCodecType::Unknown; }
-    bool defaultOutput() { return false; }
-};
+    static std::unique_ptr<VCEPipeline2> create(const CaptureEncodePipeline::Params& params);
+    ~VCEPipeline2() override;
+    bool start() override;
+    void stop() override;
+    VideoCodecType codec() const override;
+    bool defaultOutput() override;
 
-class VCEPipeline {
+protected:
+    VCEPipeline2();
+};
+VCEPipeline2::VCEPipeline2() = default;
+VCEPipeline2::~VCEPipeline2() = default;
+bool VCEPipeline2::start() {
+    return false;
+}
+void VCEPipeline2::stop() {}
+VideoCodecType VCEPipeline2::codec() const {
+    return VideoCodecType::Unknown;
+}
+bool VCEPipeline2::defaultOutput() {
+    return true;
+}
+#if defined(LT_WINDOWS) && defined(LT_USE_PREBUILT_VIDEO2)
+#else  //
+std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params& params) {
+    (void)params;
+    return nullptr;
+}
+#endif // LT_WINDOWS
+
+class VCEPipeline : public CaptureEncodePipeline {
 public:
-    VCEPipeline(const CaptureEncodePipeline::Params& params);
-    ~VCEPipeline();
-    bool init();
-    bool start();
-    void stop();
-    VideoCodecType codec() const;
-    bool defaultOutput();
+    static std::unique_ptr<VCEPipeline> create(const CaptureEncodePipeline::Params& params);
+    ~VCEPipeline() override;
+    bool start() override;
+    void stop() override;
+    VideoCodecType codec() const override;
+    bool defaultOutput() override;
 
 private:
+    VCEPipeline(const CaptureEncodePipeline::Params& params);
+    bool init();
     void mainLoop(const std::function<void()>& i_am_alive, std::promise<bool>& start_promise);
     void loadSystemCursor();
     bool registerHandlers();
@@ -120,6 +142,16 @@ VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
     , client_supported_codecs_{params.codecs} {}
+
+std::unique_ptr<VCEPipeline> VCEPipeline::create(const CaptureEncodePipeline::Params& params) {
+    std::unique_ptr<VCEPipeline> pipeline{new VCEPipeline(params)};
+    if (pipeline->init()) {
+        return pipeline;
+    }
+    else {
+        return nullptr;
+    }
+}
 
 VCEPipeline::~VCEPipeline() {
     stop();
@@ -422,7 +454,6 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
         LOG(FATAL) << "Create CaptureEncodePipeline failed, invalid parameters";
         return nullptr;
     }
-    std::unique_ptr<CaptureEncodePipeline> pipeline{new CaptureEncodePipeline};
     Params params420 = params;
     Params params444 = params;
     std::vector<VideoCodecType> yuv420;
@@ -444,57 +475,16 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
     }
     // try first
     if (!yuv444.empty()) {
-        auto impl = std::make_shared<VCEPipeline2>(params444);
-        if (impl->init()) {
-            pipeline->impl2_ = impl;
+        auto pipeline = VCEPipeline2::create(params444);
+        if (pipeline != nullptr) {
             return pipeline;
         }
     }
     // fallback
     if (!yuv420.empty()) {
-        auto impl = std::make_shared<VCEPipeline>(params420);
-        if (impl->init()) {
-            pipeline->impl_ = impl;
-            return pipeline;
-        }
+        return VCEPipeline::create(params420);
     }
     return nullptr;
-}
-
-bool CaptureEncodePipeline::start() {
-    if (impl_) {
-        return impl_->start();
-    }
-    else {
-        return impl2_->start();
-    }
-}
-
-void CaptureEncodePipeline::stop() {
-    if (impl_) {
-        impl_->stop();
-    }
-    else {
-        impl2_->stop();
-    }
-}
-
-VideoCodecType CaptureEncodePipeline::codec() const {
-    if (impl_) {
-        return impl_->codec();
-    }
-    else {
-        return impl2_->codec();
-    }
-}
-
-bool CaptureEncodePipeline::defaultOutput() {
-    if (impl_) {
-        return impl_->defaultOutput();
-    }
-    else {
-        return impl2_->defaultOutput();
-    }
 }
 
 } // namespace video

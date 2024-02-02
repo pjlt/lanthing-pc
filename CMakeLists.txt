@@ -75,6 +75,7 @@ add_definitions(-DLT_VERSION_PATCH=${LT_VERSION_PATCH})
 #misc
 add_definitions(-DLT_CRASH_ON_THREAD_HANGS=$<IF:$<BOOL:${LT_CRASH_ON_THREAD_HANGS}>,true,false>)
 add_definitions(-DLT_ENABLE_SELF_CONNECT=$<IF:$<BOOL:${LT_ENABLE_SELF_CONNECT}>,true,false>)
+add_definitions(-DLT_USE_PREBUILT_VIDEO2=$<IF:$<BOOL:${LT_USE_PREBUILT_VIDEO2}>,true,false>)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
 
