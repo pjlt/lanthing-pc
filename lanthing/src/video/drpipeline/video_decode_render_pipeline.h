@@ -43,6 +43,8 @@ namespace lt {
 namespace video {
 
 class VDRPipeline;
+class VDRPipeline2;
+
 class DecodeRenderPipeline {
 public:
     struct Params {
@@ -91,6 +93,7 @@ private:
 
 private:
     std::shared_ptr<VDRPipeline> impl_;
+    std::shared_ptr<VDRPipeline2> impl2_;
 };
 
 } // namespace video

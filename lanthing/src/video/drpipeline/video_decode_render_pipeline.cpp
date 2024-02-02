@@ -61,6 +61,32 @@ namespace video {
 
 using namespace std::chrono_literals;
 
+class VDRPipeline2 {
+
+public:
+    VDRPipeline2(const DecodeRenderPipeline::Params& params) { (void)params; }
+    ~VDRPipeline2() = default;
+    bool init() { return false; }
+    DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame) {
+        (void)frame;
+        return DecodeRenderPipeline::Action::NONE;
+    }
+    void setTimeDiff(int64_t diff_us) { (void)diff_us; }
+    void setRTT(int64_t rtt_us) { (void)rtt_us; }
+    void setBWE(uint32_t bps) { (void)bps; }
+    void setNack(uint32_t nack) { (void)nack; }
+    void setLossRate(float rate) { (void)rate; }
+    void resetRenderTarget() {}
+    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
+        (void)cursor_id;
+        (void)x;
+        (void)y;
+        (void)visible;
+    }
+    void switchMouseMode(bool absolute) { (void)absolute; }
+    void switchStretchMode(bool stretch) { (void)stretch; }
+};
+
 class VDRPipeline {
 public:
     struct VideoFrameInternal : lt::VideoFrame {
@@ -541,53 +567,119 @@ std::unique_ptr<DecodeRenderPipeline> DecodeRenderPipeline::create(const Params&
         LOG(FATAL) << "Create DecodeRenderPipeline failed: invalid parameter";
         return nullptr;
     }
-    auto impl = std::make_shared<VDRPipeline>(params);
-    if (!impl->init()) {
+    std::unique_ptr<DecodeRenderPipeline> pipeline{new DecodeRenderPipeline};
+    if (params.codec_type == VideoCodecType::H264_420 ||
+        params.codec_type == VideoCodecType::H265_420) {
+        auto impl = std::make_shared<VDRPipeline>(params);
+        if (!impl->init()) {
+            return nullptr;
+        }
+        pipeline->impl_ = impl;
+        return pipeline;
+    }
+    else if (params.codec_type == VideoCodecType::H264_444 ||
+             params.codec_type == VideoCodecType::H265_444) {
+        auto impl = std::make_shared<VDRPipeline2>(params);
+        if (!impl->init()) {
+            return nullptr;
+        }
+        pipeline->impl2_ = impl;
+        return pipeline;
+    }
+    else {
+        LOG(ERR) << "Init VideoDecodeRenderPipeline failed: only support avc and hevc";
         return nullptr;
     }
-    std::unique_ptr<DecodeRenderPipeline> pipeline{new DecodeRenderPipeline};
-    pipeline->impl_ = std::move(impl);
-    return pipeline;
 }
 
 DecodeRenderPipeline::Action DecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
-    return impl_->submit(frame);
+    if (impl_) {
+        return impl_->submit(frame);
+    }
+    else {
+        return impl2_->submit(frame);
+    }
 }
 
 void DecodeRenderPipeline::resetRenderTarget() {
-    impl_->resetRenderTarget();
+    if (impl_) {
+        impl_->resetRenderTarget();
+    }
+    else {
+        impl2_->resetRenderTarget();
+    }
 }
 
 void DecodeRenderPipeline::setTimeDiff(int64_t diff_us) {
-    impl_->setTimeDiff(diff_us);
+    if (impl_) {
+        impl_->setTimeDiff(diff_us);
+    }
+    else {
+        impl2_->setTimeDiff(diff_us);
+    }
 }
 
 void DecodeRenderPipeline::setRTT(int64_t rtt_us) {
-    impl_->setRTT(rtt_us);
+    if (impl_) {
+        impl_->setRTT(rtt_us);
+    }
+    else {
+        impl2_->setRTT(rtt_us);
+    }
 }
 
 void DecodeRenderPipeline::setBWE(uint32_t bps) {
-    impl_->setBWE(bps);
+    if (impl_) {
+        impl_->setBWE(bps);
+    }
+    else {
+        impl2_->setBWE(bps);
+    }
 }
 
 void DecodeRenderPipeline::setNack(uint32_t nack) {
-    impl_->setNack(nack);
+    if (impl_) {
+        impl_->setNack(nack);
+    }
+    else {
+        impl2_->setNack(nack);
+    }
 }
 
 void DecodeRenderPipeline::setLossRate(float rate) {
-    impl_->setLossRate(rate);
+    if (impl_) {
+        impl_->setLossRate(rate);
+    }
+    else {
+        impl2_->setLossRate(rate);
+    }
 }
 
 void DecodeRenderPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
-    impl_->setCursorInfo(cursor_id, x, y, visible);
+    if (impl_) {
+        impl_->setCursorInfo(cursor_id, x, y, visible);
+    }
+    else {
+        impl2_->setCursorInfo(cursor_id, x, y, visible);
+    }
 }
 
 void DecodeRenderPipeline::switchMouseMode(bool absolute) {
-    impl_->switchMouseMode(absolute);
+    if (impl_) {
+        impl_->switchMouseMode(absolute);
+    }
+    else {
+        impl2_->switchMouseMode(absolute);
+    }
 }
 
 void DecodeRenderPipeline::switchStretchMode(bool stretch) {
-    impl_->switchStretchMode(stretch);
+    if (impl_) {
+        impl_->switchStretchMode(stretch);
+    }
+    else {
+        impl2_->switchStretchMode(stretch);
+    }
 }
 
 } // namespace video
