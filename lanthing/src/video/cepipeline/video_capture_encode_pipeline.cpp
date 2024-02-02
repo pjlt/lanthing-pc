@@ -82,8 +82,7 @@ bool VCEPipeline2::defaultOutput() {
 }
 #if defined(LT_WINDOWS) && defined(LT_USE_PREBUILT_VIDEO2)
 #else  //
-std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params& params) {
-    (void)params;
+std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params&) {
     return nullptr;
 }
 #endif // LT_WINDOWS

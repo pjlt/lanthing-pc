@@ -42,9 +42,6 @@ namespace lt {
 
 namespace video {
 
-class VDRPipeline;
-class VDRPipeline2;
-
 class DecodeRenderPipeline {
 public:
     struct Params {

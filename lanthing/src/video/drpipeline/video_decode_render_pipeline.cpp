@@ -61,54 +61,69 @@ namespace video {
 
 using namespace std::chrono_literals;
 
-class VDRPipeline2 {
-
+class VDRPipeline2 : public DecodeRenderPipeline {
 public:
-    VDRPipeline2(const DecodeRenderPipeline::Params& params) { (void)params; }
-    ~VDRPipeline2() = default;
-    bool init() { return false; }
-    DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame) {
-        (void)frame;
-        return DecodeRenderPipeline::Action::NONE;
-    }
-    void setTimeDiff(int64_t diff_us) { (void)diff_us; }
-    void setRTT(int64_t rtt_us) { (void)rtt_us; }
-    void setBWE(uint32_t bps) { (void)bps; }
-    void setNack(uint32_t nack) { (void)nack; }
-    void setLossRate(float rate) { (void)rate; }
-    void resetRenderTarget() {}
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
-        (void)cursor_id;
-        (void)x;
-        (void)y;
-        (void)visible;
-    }
-    void switchMouseMode(bool absolute) { (void)absolute; }
-    void switchStretchMode(bool stretch) { (void)stretch; }
+    static std::unique_ptr<VDRPipeline2> create(const DecodeRenderPipeline::Params& params);
+    ~VDRPipeline2() override;
+    DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame) override;
+    void setTimeDiff(int64_t diff_us) override;
+    void setRTT(int64_t rtt_us) override;
+    void setBWE(uint32_t bps) override;
+    void setNack(uint32_t nack) override;
+    void setLossRate(float rate) override;
+    void resetRenderTarget() override;
+    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) override;
+    void switchMouseMode(bool absolute) override;
+    void switchStretchMode(bool stretch) override;
+
+protected:
+    VDRPipeline2();
 };
 
-class VDRPipeline {
+VDRPipeline2::VDRPipeline2() = default;
+VDRPipeline2::~VDRPipeline2() = default;
+DecodeRenderPipeline::Action VDRPipeline2::submit(const lt::VideoFrame&) {
+    return DecodeRenderPipeline::Action::NONE;
+}
+void VDRPipeline2::setTimeDiff(int64_t) {}
+void VDRPipeline2::setRTT(int64_t) {}
+void VDRPipeline2::setBWE(uint32_t) {}
+void VDRPipeline2::setNack(uint32_t) {}
+void VDRPipeline2::setLossRate(float) {}
+void VDRPipeline2::resetRenderTarget() {}
+void VDRPipeline2::setCursorInfo(int32_t, float, float, bool) {}
+void VDRPipeline2::switchMouseMode(bool) {}
+void VDRPipeline2::switchStretchMode(bool) {}
+#if defined(LT_WINDOWS) && defined(LT_USE_PREBUILT_VIDEO2)
+#else  //
+std::unique_ptr<VDRPipeline2> VDRPipeline2::create(const DecodeRenderPipeline::Params&) {
+    return nullptr;
+}
+#endif // LT_WINDOWS
+
+class VDRPipeline : public DecodeRenderPipeline {
 public:
     struct VideoFrameInternal : lt::VideoFrame {
         std::shared_ptr<uint8_t> data_internal;
     };
 
 public:
-    VDRPipeline(const DecodeRenderPipeline::Params& params);
-    ~VDRPipeline();
-    bool init();
+    static std::unique_ptr<VDRPipeline> create(const DecodeRenderPipeline::Params& params);
+    ~VDRPipeline() override;
     DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame);
-    void setTimeDiff(int64_t diff_us);
-    void setRTT(int64_t rtt_us);
-    void setBWE(uint32_t bps);
-    void setNack(uint32_t nack);
-    void setLossRate(float rate);
-    void resetRenderTarget();
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
-    void switchMouseMode(bool absolute);
-    void switchStretchMode(bool stretch);
+    void setTimeDiff(int64_t diff_us) override;
+    void setRTT(int64_t rtt_us) override;
+    void setBWE(uint32_t bps) override;
+    void setNack(uint32_t nack) override;
+    void setLossRate(float rate) override;
+    void resetRenderTarget() override;
+    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) override;
+    void switchMouseMode(bool absolute) override;
+    void switchStretchMode(bool stretch) override;
 
 private:
+    VDRPipeline(const DecodeRenderPipeline::Params& params);
+    bool init();
     void decodeLoop(const std::function<void()>& i_am_alive);
     void renderLoop(const std::function<void()>& i_am_alive);
 
@@ -191,6 +206,16 @@ VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     , is_stretch_{params.stretch}
     , status_color_{params.status_color} {
     window_ = params.sdl->window();
+}
+
+std::unique_ptr<VDRPipeline> VDRPipeline::create(const DecodeRenderPipeline::Params& params) {
+    std::unique_ptr<VDRPipeline> pipeline{new VDRPipeline(params)};
+    if (pipeline->init()) {
+        return pipeline;
+    }
+    else {
+        return nullptr;
+    }
 }
 
 VDRPipeline::~VDRPipeline() {
@@ -567,118 +592,17 @@ std::unique_ptr<DecodeRenderPipeline> DecodeRenderPipeline::create(const Params&
         LOG(FATAL) << "Create DecodeRenderPipeline failed: invalid parameter";
         return nullptr;
     }
-    std::unique_ptr<DecodeRenderPipeline> pipeline{new DecodeRenderPipeline};
     if (params.codec_type == VideoCodecType::H264_420 ||
         params.codec_type == VideoCodecType::H265_420) {
-        auto impl = std::make_shared<VDRPipeline>(params);
-        if (!impl->init()) {
-            return nullptr;
-        }
-        pipeline->impl_ = impl;
-        return pipeline;
+        return VDRPipeline::create(params);
     }
     else if (params.codec_type == VideoCodecType::H264_444 ||
              params.codec_type == VideoCodecType::H265_444) {
-        auto impl = std::make_shared<VDRPipeline2>(params);
-        if (!impl->init()) {
-            return nullptr;
-        }
-        pipeline->impl2_ = impl;
-        return pipeline;
+        return VDRPipeline2::create(params);
     }
     else {
         LOG(ERR) << "Init VideoDecodeRenderPipeline failed: only support avc and hevc";
         return nullptr;
-    }
-}
-
-DecodeRenderPipeline::Action DecodeRenderPipeline::submit(const lt::VideoFrame& frame) {
-    if (impl_) {
-        return impl_->submit(frame);
-    }
-    else {
-        return impl2_->submit(frame);
-    }
-}
-
-void DecodeRenderPipeline::resetRenderTarget() {
-    if (impl_) {
-        impl_->resetRenderTarget();
-    }
-    else {
-        impl2_->resetRenderTarget();
-    }
-}
-
-void DecodeRenderPipeline::setTimeDiff(int64_t diff_us) {
-    if (impl_) {
-        impl_->setTimeDiff(diff_us);
-    }
-    else {
-        impl2_->setTimeDiff(diff_us);
-    }
-}
-
-void DecodeRenderPipeline::setRTT(int64_t rtt_us) {
-    if (impl_) {
-        impl_->setRTT(rtt_us);
-    }
-    else {
-        impl2_->setRTT(rtt_us);
-    }
-}
-
-void DecodeRenderPipeline::setBWE(uint32_t bps) {
-    if (impl_) {
-        impl_->setBWE(bps);
-    }
-    else {
-        impl2_->setBWE(bps);
-    }
-}
-
-void DecodeRenderPipeline::setNack(uint32_t nack) {
-    if (impl_) {
-        impl_->setNack(nack);
-    }
-    else {
-        impl2_->setNack(nack);
-    }
-}
-
-void DecodeRenderPipeline::setLossRate(float rate) {
-    if (impl_) {
-        impl_->setLossRate(rate);
-    }
-    else {
-        impl2_->setLossRate(rate);
-    }
-}
-
-void DecodeRenderPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
-    if (impl_) {
-        impl_->setCursorInfo(cursor_id, x, y, visible);
-    }
-    else {
-        impl2_->setCursorInfo(cursor_id, x, y, visible);
-    }
-}
-
-void DecodeRenderPipeline::switchMouseMode(bool absolute) {
-    if (impl_) {
-        impl_->switchMouseMode(absolute);
-    }
-    else {
-        impl2_->switchMouseMode(absolute);
-    }
-}
-
-void DecodeRenderPipeline::switchStretchMode(bool stretch) {
-    if (impl_) {
-        impl_->switchStretchMode(stretch);
-    }
-    else {
-        impl2_->switchStretchMode(stretch);
     }
 }
 
