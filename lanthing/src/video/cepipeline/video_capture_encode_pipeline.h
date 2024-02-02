@@ -42,9 +42,6 @@ namespace lt {
 
 namespace video {
 
-class VCEPipeline;
-class VCEPipeline2;
-
 class CaptureEncodePipeline {
 public:
     struct Params {

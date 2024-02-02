@@ -77,23 +77,20 @@ public:
 
 public:
     static std::unique_ptr<DecodeRenderPipeline> create(const Params& params);
-    Action submit(const lt::VideoFrame& frame);
-    void resetRenderTarget();
-    void setTimeDiff(int64_t diff_us);
-    void setRTT(int64_t rtt_us);
-    void setBWE(uint32_t bps);
-    void setNack(uint32_t nack);
-    void setLossRate(float rate);
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible);
-    void switchMouseMode(bool absolute);
-    void switchStretchMode(bool stretch);
+    virtual ~DecodeRenderPipeline() = default;
+    virtual Action submit(const lt::VideoFrame& frame) = 0;
+    virtual void resetRenderTarget() = 0;
+    virtual void setTimeDiff(int64_t diff_us) = 0;
+    virtual void setRTT(int64_t rtt_us) = 0;
+    virtual void setBWE(uint32_t bps) = 0;
+    virtual void setNack(uint32_t nack) = 0;
+    virtual void setLossRate(float rate) = 0;
+    virtual void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) = 0;
+    virtual void switchMouseMode(bool absolute) = 0;
+    virtual void switchStretchMode(bool stretch) = 0;
 
-private:
+protected:
     DecodeRenderPipeline() = default;
-
-private:
-    std::shared_ptr<VDRPipeline> impl_;
-    std::shared_ptr<VDRPipeline2> impl2_;
 };
 
 } // namespace video
