@@ -111,7 +111,7 @@ bool VaGlPipeline::bindTextures(const std::vector<void*>& textures) {
     return true;
 }
 
-VideoRenderer::RenderResult VaGlPipeline::render(int64_t frame) {
+Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     EGLBoolean egl_ret = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
     if (egl_ret != EGL_TRUE) {
         LOG(ERR) << "eglMakeCurrent return " << egl_ret << " error: " << eglGetError();
