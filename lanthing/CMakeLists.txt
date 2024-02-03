@@ -252,9 +252,9 @@ set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
 if(LT_WINDOWS)
     if(LT_USE_PREBUILT_VIDEO2)
-        add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/prebuilt/video2/${LT_THIRD_POSTFIX})
+        #add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/prebuilt/video2/${LT_THIRD_POSTFIX})
     else(LT_USE_PREBUILT_VIDEO2)
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/video2)
+        #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/video2)
     endif(LT_USE_PREBUILT_VIDEO2)
     set(PLATFORM_LIBS
             video2
