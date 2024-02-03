@@ -50,7 +50,7 @@ prebuilt_fetch() {
         "opus https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.linux.v1.4-2.tar.gz"
         "g3log https://github.com/numbaa/g3log-build/releases/download/v2.3-4/g3log.linux.v2.3-4.tar.gz"
         "googletest https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.linux.v1.13.0-2.tar.gz"
-        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-8/ffmpeg.linux.v5.1.3-8.tar.gz"
+        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-9/ffmpeg.linux.v5.1.3-9.tar.gz"
         "protobuf https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.linux.v3.24.3-2.tar.gz"
         "sqlite https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.linux.v3.43.1-6.tar.gz"
     )

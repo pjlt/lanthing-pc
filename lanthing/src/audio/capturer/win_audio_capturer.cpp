@@ -91,6 +91,9 @@ WinAudioCapturer::~WinAudioCapturer() {
     if (need_co_uninit_) {
         CoUninitialize();
     }
+    if (swr_context_) {
+        swr_free(&swr_context_);
+    }
 }
 
 bool WinAudioCapturer::initPlatform() {
@@ -118,6 +121,11 @@ bool WinAudioCapturer::initPlatform() {
     printAudioEngineInternalFormat();
     if (!setAudioFormat()) {
         return false;
+    }
+    if (fmt_from_.has_value()) {
+        if (!createResampler()) {
+            return false;
+        }
     }
     hr = client_->SetEventHandle(read_ev_);
     if (FAILED(hr)) {
@@ -211,7 +219,12 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
                 }
                 pData = slient_buffer_.data();
             }
-            onCapturedData(pData, framesAvailable);
+            if (swr_context_) {
+                resample(pData, framesAvailable);
+            }
+            else {
+                onCapturedData(pData, framesAvailable);
+            }
             hr = capturer_->ReleaseBuffer(framesAvailable);
             if (FAILED(hr)) {
                 LOG(ERR) << "IAudioCaptureClient::ReleaseBuffer failed with " << toHex(hr);
@@ -290,18 +303,29 @@ bool WinAudioCapturer::setAudioFormat() {
             }
             else {
                 if (pWfxClosestMatch) {
+                    if (!fmt_from_.has_value()) {
+                        fmt_from_ = WAVEFORMATEXTENSIBLE{};
+                        fmt_from_->Format = *pWfxClosestMatch;
+                        fmt_from_->dwChannelMask = 0;
+                        fmt_from_->Samples.wValidBitsPerSample = pWfxClosestMatch->wBitsPerSample;
+                        fmt_from_->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+                        fmt_to_ = wfmte.Format;
+                    }
                     LOG(INFO) << "nChannels=" << wfmte.Format.nChannels
                               << ", nSamplesPerSec=" << wfmte.Format.nSamplesPerSec
+                              << ", nBlockAlign=" << wfmte.Format.nBlockAlign
                               << " is not supported. Closest match: "
                                  "nChannels="
                               << pWfxClosestMatch->nChannels
-                              << ", nSamplesPerSec=" << pWfxClosestMatch->nSamplesPerSec;
+                              << ", nSamplesPerSec=" << pWfxClosestMatch->nSamplesPerSec
+                              << ", nBlockAlign=" << pWfxClosestMatch->nBlockAlign;
                     CoTaskMemFree(pWfxClosestMatch);
                     pWfxClosestMatch = NULL;
                 }
                 else {
                     LOG(INFO) << "nChannels=" << wfmte.Format.nChannels
                               << ", nSamplesPerSec=" << wfmte.Format.nSamplesPerSec
+                              << ", nBlockAlign=" << wfmte.Format.nBlockAlign
                               << " is not supported. No closest match.";
                 }
             }
@@ -326,8 +350,76 @@ bool WinAudioCapturer::setAudioFormat() {
             LOG(ERR) << "IAudioClient::Initialize failed with " << toHex(hr);
         }
     }
+    else if (fmt_from_.has_value()) {
+        setBytesPerFrame(fmt_to_->nBlockAlign);
+        setFramesPerSec(fmt_to_->nSamplesPerSec);
+        setChannels(fmt_to_->nChannels);
+        LOGF(WARNING,
+             "Using first cloest audio capture format: wFormatTag:%#x, nChannels:%u, "
+             "nSamplesPerSec:%lu, nAvgBytesPerSec:%lu, nBlockAlign:%u, "
+             "wBitsPerSample:%u, cbSize:%u",
+             fmt_from_->Format.wFormatTag, fmt_from_->Format.nChannels,
+             fmt_from_->Format.nSamplesPerSec, fmt_from_->Format.nAvgBytesPerSec,
+             fmt_from_->Format.nBlockAlign, fmt_from_->Format.wBitsPerSample,
+             fmt_from_->Format.cbSize);
+        auto format = fmt_from_.value();
+        hr = client_->IsFormatSupported(
+            AUDCLNT_SHAREMODE_SHARED, reinterpret_cast<WAVEFORMATEX*>(&format), &pWfxClosestMatch);
+        if (FAILED(hr)) {
+            LOG(ERR) << "Cloest not supported";
+        }
+        else {
+            LOG(INFO) << "Cloest supported";
+        }
+        hr = client_->Initialize(AUDCLNT_SHAREMODE_SHARED,
+                                 AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_LOOPBACK,
+                                 0, 0, reinterpret_cast<WAVEFORMATEX*>(&format), NULL);
+        if (FAILED(hr)) {
+            LOG(ERR) << "IAudioClient::Initialize failed with " << toHex(hr);
+        }
+    }
     CoTaskMemFree(pWfxClosestMatch);
     return hr == S_OK;
+}
+
+bool WinAudioCapturer::createResampler() {
+    constexpr size_t kBuffLen = 1024;
+    char strbuff[kBuffLen] = {0};
+    int input_ch = fmt_from_->Format.nChannels;
+    int output_ch = fmt_to_->nChannels;
+    AVSampleFormat input_format = AVSampleFormat::AV_SAMPLE_FMT_FLT;
+    AVSampleFormat output_format = AVSampleFormat::AV_SAMPLE_FMT_S16;
+    av_channel_layout_default(&input_ch_layout_, input_ch);
+    av_channel_layout_default(&output_ch_layout_, output_ch);
+    int ret = swr_alloc_set_opts2(&swr_context_, &output_ch_layout_, output_format,
+                                  fmt_to_->nSamplesPerSec, &input_ch_layout_, input_format,
+                                  fmt_from_->Format.nSamplesPerSec, 0, nullptr);
+    if (swr_context_ == nullptr) {
+        int ret2 = av_strerror(ret, strbuff, kBuffLen);
+        LOG(ERR) << "swr_alloc_set_opts2 failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
+        return false;
+    }
+    return true;
+}
+
+void WinAudioCapturer::resample(const uint8_t* data, uint32_t frames) {
+    int64_t delay = swr_get_delay(swr_context_, fmt_from_->Format.nSamplesPerSec);
+    int64_t eframes = av_rescale_rnd(
+        delay + static_cast<int64_t>(frames), static_cast<int64_t>(fmt_to_->nSamplesPerSec),
+        static_cast<int64_t>(fmt_from_->Format.nSamplesPerSec), AV_ROUND_UP);
+    int64_t buff_size = static_cast<int64_t>(resample_buffer_.size());
+    int64_t ebuff_size = eframes * fmt_to_->nSamplesPerSec * fmt_to_->nChannels;
+    if (ebuff_size > buff_size) {
+        resample_buffer_.resize(static_cast<size_t>(ebuff_size));
+    }
+    auto output_data = resample_buffer_.data();
+    int ret = swr_convert(swr_context_, &output_data, eframes, &data, frames);
+    if (ret < 0) {
+        constexpr size_t kBuffLen = 1024;
+        char strbuff[kBuffLen] = {0};
+        int ret2 = av_strerror(ret, strbuff, kBuffLen);
+        LOG(ERR) << "swr_convert failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
+    }
 }
 
 } // namespace audio

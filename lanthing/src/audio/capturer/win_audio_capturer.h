@@ -35,6 +35,13 @@
 #include <mmdeviceapi.h>
 #include <wrl/client.h>
 
+#include <ltlib/pragma_warning.h>
+
+WARNING_DISABLE(4244)
+extern "C" {
+#include <libswresample/swresample.h>
+} // extern "C"
+
 namespace lt {
 
 namespace audio {
@@ -51,6 +58,8 @@ private:
     void getDeviceName();
     void printAudioEngineInternalFormat();
     bool setAudioFormat();
+    bool createResampler(); // 理应放到Capturer而不是WinAudioCapturer，这里偷懒了
+    void resample(const uint8_t* data, uint32_t frames);
 
 private:
     Microsoft::WRL::ComPtr<IMMDeviceEnumerator> enumerator_;
@@ -69,6 +78,13 @@ private:
     std::mutex mtx_;
     bool running_ = false;
     std::vector<uint8_t> slient_buffer_;
+    std::optional<WAVEFORMATEXTENSIBLE> fmt_from_;
+    std::optional<WAVEFORMATEX> fmt_to_;
+
+    struct SwrContext* swr_context_ = nullptr;
+    AVChannelLayout input_ch_layout_;
+    AVChannelLayout output_ch_layout_;
+    std::vector<uint8_t> resample_buffer_;
 };
 
 } // namespace audio
