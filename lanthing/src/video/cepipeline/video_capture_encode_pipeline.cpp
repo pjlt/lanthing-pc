@@ -80,12 +80,11 @@ VideoCodecType VCEPipeline2::codec() const {
 bool VCEPipeline2::defaultOutput() {
     return true;
 }
-#if defined(LT_WINDOWS) && defined(LT_USE_PREBUILT_VIDEO2)
-#else  //
+//#if !defined(LT_WINDOWS)
 std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params&) {
     return nullptr;
 }
-#endif // LT_WINDOWS
+//#endif // LT_WINDOWS
 
 class VCEPipeline : public CaptureEncodePipeline {
 public:

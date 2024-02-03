@@ -94,12 +94,11 @@ void VDRPipeline2::resetRenderTarget() {}
 void VDRPipeline2::setCursorInfo(int32_t, float, float, bool) {}
 void VDRPipeline2::switchMouseMode(bool) {}
 void VDRPipeline2::switchStretchMode(bool) {}
-#if defined(LT_WINDOWS) && defined(LT_USE_PREBUILT_VIDEO2)
-#else  //
+//#if !defined(LT_WINDOWS)
 std::unique_ptr<VDRPipeline2> VDRPipeline2::create(const DecodeRenderPipeline::Params&) {
     return nullptr;
 }
-#endif // LT_WINDOWS
+//#endif // LT_WINDOWS
 
 class VDRPipeline : public DecodeRenderPipeline {
 public:
