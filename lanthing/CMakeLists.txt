@@ -257,7 +257,7 @@ if(LT_WINDOWS)
         #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/video2)
     endif(LT_USE_PREBUILT_VIDEO2)
     set(PLATFORM_LIBS
-            video2
+            #video2
             Secur32.lib dmoguids.lib d3d11.lib d3dcompiler.lib
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
