@@ -116,4 +116,4 @@ cp options-default.cmake options-user.cmake  #可选，如果需要修改编译�
 
 ## 交流
 
-QQ群: 89746161
+遇到bug或者有任何建议请提issue，或在QQ群反馈。QQ群: 89746161

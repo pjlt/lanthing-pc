@@ -345,6 +345,7 @@ bool NvD3d11EncoderImpl::loadNvApi() {
     std::string lib_name = kNvEncLibName;
     nvapi_ = ltlib::DynamicLibrary::load(lib_name);
     if (nvapi_ == nullptr) {
+        LOG(ERR) << "Load library " << lib_name << " failed";
         return false;
     }
 

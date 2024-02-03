@@ -251,7 +251,13 @@ set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
 
 if(LT_WINDOWS)
+    if(LT_USE_PREBUILT_VIDEO2)
+        #add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/prebuilt/video2/${LT_THIRD_POSTFIX})
+    else(LT_USE_PREBUILT_VIDEO2)
+        #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/video2)
+    endif(LT_USE_PREBUILT_VIDEO2)
     set(PLATFORM_LIBS
+            #video2
             Secur32.lib dmoguids.lib d3d11.lib d3dcompiler.lib
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib

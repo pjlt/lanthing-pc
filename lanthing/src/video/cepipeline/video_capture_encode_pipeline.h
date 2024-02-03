@@ -42,9 +42,6 @@ namespace lt {
 
 namespace video {
 
-class VCEPipeline;
-class VCEPipeline2;
-
 class CaptureEncodePipeline {
 public:
     struct Params {
@@ -59,17 +56,14 @@ public:
 
 public:
     static std::unique_ptr<CaptureEncodePipeline> create(const Params& params);
-    bool start();
-    void stop();
-    VideoCodecType codec() const;
-    bool defaultOutput();
+    virtual ~CaptureEncodePipeline() = default;
+    virtual bool start() = 0;
+    virtual void stop() = 0;
+    virtual VideoCodecType codec() const = 0;
+    virtual bool defaultOutput() = 0;
 
-private:
+protected:
     CaptureEncodePipeline() = default;
-
-private:
-    std::shared_ptr<VCEPipeline> impl_;
-    std::shared_ptr<VCEPipeline2> impl2_;
 };
 
 } // namespace video

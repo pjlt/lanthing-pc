@@ -53,9 +53,9 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     if (sdl == nullptr) {
         return {nullptr, kExitCodeInitWorkerFailed};
     }
-    // 只检测H264_420和H265_420
     uint32_t codecs = 0;
-    for (auto codec : {VideoCodecType::H265_420, VideoCodecType::H264_420}) {
+    for (auto codec : {VideoCodecType::H265_420, VideoCodecType::H264_420, VideoCodecType::H265_444,
+                       VideoCodecType::H264_444}) {
         auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
         lt::video::DecodeRenderPipeline::Params params{codec, 1920,        1080,       60,        0,
                                                        true,  empty_func2, empty_func, empty_func};
@@ -63,7 +63,6 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
         params.for_test = true;
         auto pipeline = lt::video::DecodeRenderPipeline::create(params);
         if (pipeline != nullptr) {
-            // ffmepg解码的时候似乎不区分420 444???
             codecs = codecs | codec;
         }
     }
