@@ -68,6 +68,7 @@ void terminateCallback(const std::string& last_word) {
 }
 
 void cleanupDumps(const std::filesystem::path& path) {
+    // FIXME: std::filesystem::path 有中文路径bug
     return;
     while (true) {
         auto now = std::filesystem::file_time_type::clock::now();

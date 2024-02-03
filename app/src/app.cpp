@@ -61,8 +61,8 @@ using namespace ltlib::time;
 
 namespace {
 
-const std::string service_name = "Lanthing";
-const std::string display_name = "Lanthing Service";
+const std::string kServiceName = "Lanthing";
+const std::string kDisplayName = "Lanthing Service";
 
 } // namespace
 
@@ -382,38 +382,36 @@ void App::createAndStartService() {
     if (service_started_) {
         return;
     }
-    std::string path = ltlib::getProgramPath();
-    std::filesystem::path bin_path(path);
-    bin_path /= "lanthing.exe";
-    if (!ltlib::ServiceCtrl::createService(service_name, display_name, bin_path.string())) {
-        LOGF(ERR, "Create service failed (name:%s, path:%s)", service_name.c_str(),
-             bin_path.string().c_str());
+    // std::filesystem::path在字符编码上的问题好像挺复杂，先绕过
+    std::string bin_path = ltlib::getProgramPath() + "\\lanthing.exe";
+    if (!ltlib::ServiceCtrl::createService(kServiceName, kDisplayName, bin_path)) {
+        LOGF(ERR, "Create service failed (name:%s, path:%s)", kServiceName.c_str(),
+             bin_path.c_str());
         gui_.errorCode(ltproto::ErrorCode::CreateServiceFailed);
         return;
     }
-    if (!ltlib::ServiceCtrl::startService(service_name)) {
-        LOGF(ERR, "Start service(%s) failed", service_name.c_str());
+    if (!ltlib::ServiceCtrl::startService(kServiceName)) {
+        LOGF(ERR, "Start service(%s) failed", kServiceName.c_str());
         gui_.errorCode(ltproto::ErrorCode::StartServiceFailed);
         return;
     }
     service_started_ = true;
-    LOGF(INFO, "Start service(%s) success", service_name.c_str());
+    LOGF(INFO, "Start service(%s) success", kServiceName.c_str());
 #endif // if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 }
 
 void App::stopService() {
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
-    ltlib::ServiceCtrl::stopService(service_name);
+    ltlib::ServiceCtrl::stopService(kServiceName);
 #endif // if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 }
 
 void App::loadHistoryIDs() {
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
-    std::filesystem::path filepath{appdata_dir};
-    filepath /= "historyids";
+    std::string filepath = appdata_dir + "\\historyids";
     std::fstream file{filepath.c_str(), std::ios::in | std::ios::out};
     if (!file.good()) {
-        LOGF(WARNING, "Open history ids file(%s) failed", filepath.string().c_str());
+        LOGF(WARNING, "Open history ids file(%s) failed", filepath.c_str());
         return;
     }
     std::string id;
@@ -437,11 +435,10 @@ void App::saveHistoryIDs() {
         ss << id << ';';
     }
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
-    std::filesystem::path filepath{appdata_dir};
-    filepath /= "historyids";
+    std::string filepath = appdata_dir + "\\historyids";
     std::fstream file{filepath.c_str(), std::ios::out};
     if (!file.good()) {
-        LOGF(WARNING, "Open history ids file(%s) failed", filepath.string().c_str());
+        LOGF(WARNING, "Open history ids file(%s) failed", filepath.c_str());
         return;
     }
     std::string content;
