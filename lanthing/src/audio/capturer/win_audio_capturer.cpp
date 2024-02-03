@@ -363,14 +363,6 @@ bool WinAudioCapturer::setAudioFormat() {
              fmt_from_->Format.nBlockAlign, fmt_from_->Format.wBitsPerSample,
              fmt_from_->Format.cbSize);
         auto format = fmt_from_.value();
-        hr = client_->IsFormatSupported(
-            AUDCLNT_SHAREMODE_SHARED, reinterpret_cast<WAVEFORMATEX*>(&format), &pWfxClosestMatch);
-        if (FAILED(hr)) {
-            LOG(ERR) << "Cloest not supported";
-        }
-        else {
-            LOG(INFO) << "Cloest supported";
-        }
         hr = client_->Initialize(AUDCLNT_SHAREMODE_SHARED,
                                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_LOOPBACK,
                                  0, 0, reinterpret_cast<WAVEFORMATEX*>(&format), NULL);
@@ -399,6 +391,12 @@ bool WinAudioCapturer::createResampler() {
         LOG(ERR) << "swr_alloc_set_opts2 failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
         return false;
     }
+    ret = swr_init(swr_context_);
+    if (ret != 0) {
+        int ret2 = av_strerror(ret, strbuff, kBuffLen);
+        LOG(ERR) << "swr_init failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
+        return false;
+    }
     return true;
 }
 
@@ -419,6 +417,9 @@ void WinAudioCapturer::resample(const uint8_t* data, uint32_t frames) {
         char strbuff[kBuffLen] = {0};
         int ret2 = av_strerror(ret, strbuff, kBuffLen);
         LOG(ERR) << "swr_convert failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
+    }
+    else {
+        onCapturedData(resample_buffer_.data(), static_cast<uint32_t>(ret));
     }
 }
 
