@@ -1,4 +1,3 @@
-#include "openh264_encoder.h"
 /*
  * BSD 3-Clause License
  *
@@ -162,7 +161,6 @@ OpenH264EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     src.pData[1] = src.pData[0] + src.iPicWidth * src.iPicHeight;
     src.pData[2] = src.pData[1] + (src.iPicWidth * src.iPicHeight / 4);
     if (request_iframe) {
-        // »Ö¸´?
         int ret = encoder_->ForceIntraFrame(true);
         if (ret != 0) {
             LOG(ERR) << "ISVCEncoder::ForceIntraFrame failed " << ret;

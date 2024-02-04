@@ -33,8 +33,9 @@
 #include <d3d11.h>
 #include <dxgi.h>
 
-#include <ltlib/logging.h>
+#include <rtc/rtc.h>
 
+#include <ltlib/logging.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 #include <ltlib/times.h>
@@ -145,7 +146,11 @@ std::optional<Capturer::Frame> DxgiVideoCapturer::capture() {
             out_frame.data = frame.Frame;
         }
         else {
-            out_frame.data = toI420(frame.Frame);
+            auto mem_data = toI420(frame.Frame);
+            if (mem_data == nullptr) {
+                return {};
+            }
+            out_frame.data = mem_data;
         }
         out_frame.capture_timestamp_us = ltlib::steady_now_us();
         return out_frame;
@@ -154,7 +159,55 @@ std::optional<Capturer::Frame> DxgiVideoCapturer::capture() {
 }
 
 uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
-    return nullptr;
+    D3D11_TEXTURE2D_DESC desc{};
+    frame->GetDesc(&desc);
+    if (stage_texture_ == nullptr) {
+        D3D11_TEXTURE2D_DESC desc2{};
+        desc2.Width = desc.Width;
+        desc2.Height = desc.Height;
+        desc2.Format = desc.Format;
+        desc2.ArraySize = 1;
+        desc2.BindFlags = 0;
+        desc2.MiscFlags = 0;
+        desc2.SampleDesc.Count = 1;
+        desc2.SampleDesc.Quality = 0;
+        desc2.MipLevels = 1;
+        desc2.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+        desc2.Usage = D3D11_USAGE_STAGING;
+        HRESULT hr = d3d11_dev_->CreateTexture2D(&desc2, nullptr, stage_texture_.GetAddressOf());
+        if (FAILED(hr)) {
+            LOGF(ERR, "Create staging texture2d failed: %#x", hr);
+            return nullptr;
+        }
+        if (stage_texture_ == nullptr) {
+            LOG(ERR) << "Create staging texture2d failed, texture == nullptr";
+            return nullptr;
+        }
+    }
+    d3d11_ctx_->CopyResource(stage_texture_.Get(), frame);
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    UINT subres = D3D11CalcSubresource(0, 0, 0);
+    HRESULT hr = d3d11_ctx_->Map(stage_texture_.Get(), subres, D3D11_MAP_READ_WRITE, 0, &mapped);
+    if (FAILED(hr)) {
+        LOGF(ERR, "ID3D11DeviceContext::Map failed %#x", hr);
+        return nullptr;
+    }
+    size_t need_size = desc.Width * desc.Height * 3 / 2;
+    if (mem_buff_.size() < need_size) {
+        mem_buff_.resize(need_size);
+    }
+    // 其实是libyuv，但是rtc.dll已经集成了，就不再单独编译一份libyuv，二次导出即可
+    int width = static_cast<int>(desc.Width);
+    int height = static_cast<int>(desc.Height);
+    int ret = rtc::ARGBToI420(reinterpret_cast<BYTE*>(mapped.pData), mapped.RowPitch,
+                              mem_buff_.data(), width, mem_buff_.data() + width * height, width / 2,
+                              mem_buff_.data() + width * height + width * height / 4, width / 2,
+                              width, height);
+    if (ret != 0) {
+        LOG(ERR) << "rtc::ARGBToI420 failed " << ret;
+        return nullptr;
+    }
+    return mem_buff_.data();
 }
 
 void DxgiVideoCapturer::doneWithFrame() {
@@ -196,18 +249,12 @@ bool DxgiVideoCapturer::setCaptureFormat(CaptureFormat format) {
     capture_foramt_ = format;
     switch (format) {
     case CaptureFormat::D3D11_BGRA:
-        return true;
     case CaptureFormat::MEM_I420:
-        createI420Converter();
         return true;
     default:
         LOG(ERR) << "DxgiVideoCapturer: Unknown CaptureFormat " << (int)format;
         return false;
     }
-}
-
-void DxgiVideoCapturer::createI420Converter() {
-    //
 }
 
 } // namespace video

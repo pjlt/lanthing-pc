@@ -186,19 +186,19 @@ bool VCEPipeline::init() {
     encode_params.context = capturer->deviceContext();
     encode_params.vendor_id = capturer->vendorID();
     std::unique_ptr<Encoder> encoder;
-    for (auto codec : client_supported_codecs_) {
-        encode_params.codec_type = codec;
-        encoder = Encoder::createHard(encode_params);
-        if (encoder) {
-            codec_type_ = codec;
-            break;
-        }
-    }
-    if (encoder != nullptr) {
-        encoder_ = std::move(encoder);
-        capturer_ = std::move(capturer);
-        return true;
-    }
+    // for (auto codec : client_supported_codecs_) {
+    //     encode_params.codec_type = codec;
+    //     encoder = Encoder::createHard(encode_params);
+    //     if (encoder) {
+    //         codec_type_ = codec;
+    //         break;
+    //     }
+    // }
+    // if (encoder != nullptr) {
+    //     encoder_ = std::move(encoder);
+    //     capturer_ = std::move(capturer);
+    //     return true;
+    // }
     for (auto codec : client_supported_codecs_) {
         encode_params.codec_type = codec;
         encoder = Encoder::createSoft(encode_params);

@@ -40,6 +40,7 @@
 #include "amd_encoder.h"
 #include "intel_encoder.h"
 #include "nvidia_encoder.h"
+#include "openh264_encoder.h"
 #include "params_helper.h"
 #include "video_encoder.h"
 
@@ -307,7 +308,15 @@ std::unique_ptr<Encoder> Encoder::createHard(const InitParams& params) {
 }
 
 std::unique_ptr<Encoder> Encoder::createSoft(const InitParams& params) {
-    return std::unique_ptr<Encoder>();
+    EncodeParamsHelper params_helper{
+        params.codec_type,         params.width, params.height, params.freq,
+        params.bitrate_bps / 1024, true};
+    auto openh264_encoder = std::make_unique<OpenH264Encoder>(params.device, params.context,
+                                                              params.width, params.height);
+    if (!openh264_encoder->init(params_helper)) {
+        return nullptr;
+    }
+    return openh264_encoder;
 }
 
 Encoder::Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
