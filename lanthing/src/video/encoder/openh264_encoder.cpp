@@ -35,6 +35,7 @@
 
 #include <ltlib/load_library.h>
 #include <ltlib/logging.h>
+#include <ltlib/times.h>
 
 namespace {
 class OpenH264ParamsHelper {
@@ -73,6 +74,7 @@ private:
 private:
     std::unique_ptr<ltlib::DynamicLibrary> openh264_lib_;
     ISVCEncoder* encoder_ = nullptr;
+    SEncParamExt init_params_{};
     decltype(&WelsCreateSVCEncoder) create_encoder_ = nullptr;
     decltype(&WelsDestroySVCEncoder) destroy_encoder_ = nullptr;
     bool encoder_init_success_ = false;
@@ -103,23 +105,22 @@ bool OpenH264EncoderImpl::init(const EncodeParamsHelper& params) {
         LOG(ERR) << "WelsCreateSVCEncoder failed " << ret;
         return false;
     }
-    SEncParamExt init_params{};
-    ret = encoder_->GetDefaultParams(&init_params);
+    ret = encoder_->GetDefaultParams(&init_params_);
     if (ret != 0) {
         LOG(ERR) << "ISVCEncoder::GetDefaultParams failed " << ret;
         return false;
     }
-    generateEncodeParams(params_helper, init_params);
-    ret = encoder_->InitializeExt(&init_params);
+    generateEncodeParams(params_helper, init_params_);
+    ret = encoder_->InitializeExt(&init_params_);
     if (ret != 0) {
         LOG(ERR) << "ISVCEncoder::InitializeExt failed " << ret;
         return false;
     }
     encoder_init_success_ = true;
-    int option = EVideoFormatType::videoFormatNV12;
+    int option = EVideoFormatType::videoFormatI420;
     ret = encoder_->SetOption(ENCODER_OPTION_DATAFORMAT, &option);
     if (ret != 0) {
-        LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_DATAFORMAT, videoFormatNV12) failed "
+        LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_DATAFORMAT, videoFormatI420) failed "
                  << ret;
         return false;
     }
@@ -149,7 +150,72 @@ void OpenH264EncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) 
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>
 OpenH264EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
-    return std::shared_ptr<ltproto::client2worker::VideoFrame>();
+    SSourcePicture src{};
+    src.iColorFormat = EVideoFormatType::videoFormatI420;
+    src.iPicHeight = init_params_.iPicHeight;
+    src.iPicWidth = init_params_.iPicWidth;
+    src.uiTimeStamp = ltlib::steady_now_ms();
+    src.iStride[0] = src.iPicWidth;
+    src.iStride[1] = src.iPicWidth / 2;
+    src.iStride[2] = src.iPicWidth / 2;
+    src.pData[0] = reinterpret_cast<uint8_t*>(input_frame);
+    src.pData[1] = src.pData[0] + src.iPicWidth * src.iPicHeight;
+    src.pData[2] = src.pData[1] + (src.iPicWidth * src.iPicHeight / 4);
+    if (request_iframe) {
+        // »Ö¸´?
+        int ret = encoder_->ForceIntraFrame(true);
+        if (ret != 0) {
+            LOG(ERR) << "ISVCEncoder::ForceIntraFrame failed " << ret;
+        }
+    }
+    SFrameBSInfo info{};
+    int ret = encoder_->EncodeFrame(&src, &info);
+    if (ret != 0) {
+        LOG(ERR) << "ISVCEncoder::EncodeFrame failed " << ret;
+        return nullptr;
+    }
+    auto out_frame = std::make_shared<ltproto::client2worker::VideoFrame>();
+    switch (info.eFrameType) {
+    case EVideoFrameType::videoFrameTypeIDR:
+    case EVideoFrameType::videoFrameTypeI:
+        out_frame->set_is_keyframe(true);
+        break;
+    case EVideoFrameType::videoFrameTypeP:
+        out_frame->set_is_keyframe(false);
+        break;
+    case EVideoFrameType::videoFrameTypeSkip:
+        LOG(ERR) << "FATAL ERROR: ISVCEncoder::EncodeFrame done with 'videoFrameTypeSkip'";
+        return nullptr;
+    default:
+        LOG(ERR) << "FATAL ERROR: ISVCEncoder::EncodeFrame done with unkown eFrameType "
+                 << (int)info.eFrameType;
+        return nullptr;
+    }
+    // credit: WebRTC
+    size_t required_capacity = 0;
+    size_t fragments_count = 0;
+    for (int layer = 0; layer < info.iLayerNum; ++layer) {
+        const SLayerBSInfo& layerInfo = info.sLayerInfo[layer];
+        for (int nal = 0; nal < layerInfo.iNalCount; ++nal, ++fragments_count) {
+            required_capacity += layerInfo.pNalLengthInByte[nal];
+        }
+    }
+    std::vector<uint8_t> buff;
+    buff.resize(required_capacity);
+    size_t copied = 0;
+    for (int layer = 0; layer < info.iLayerNum; ++layer) {
+        const SLayerBSInfo& layerInfo = info.sLayerInfo[layer];
+        // Iterate NAL units making up this layer, noting fragments.
+        size_t layer_len = 0;
+        for (int nal = 0; nal < layerInfo.iNalCount; ++nal) {
+            layer_len += layerInfo.pNalLengthInByte[nal];
+        }
+        // Copy the entire layer's data (including start codes).
+        memcpy(buff.data() + copied, layerInfo.pBsBuf, layer_len);
+        copied += layer_len;
+    }
+    out_frame->set_frame(buff.data(), copied);
+    return out_frame;
 }
 
 bool OpenH264EncoderImpl::loadApi() {
