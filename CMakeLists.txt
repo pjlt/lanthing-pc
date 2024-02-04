@@ -123,6 +123,7 @@ find_package(Opus REQUIRED PATHS third_party/prebuilt/opus/${LT_THIRD_POSTFIX})
 if (LT_WINDOWS)
     find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_THIRD_POSTFIX})
     add_subdirectory(third_party/wintoast)
+    add_subdirectory(third_party/prebuilt/openh264/win)
 endif(LT_WINDOWS)
 
 if (LT_LINUX)

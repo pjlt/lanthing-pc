@@ -54,6 +54,8 @@ set(LT_VIDEO_ENCODER_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/intel_encoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/amd_encoder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/amd_encoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/openh264_encoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/openh264_encoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/params_helper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/params_helper.cpp
 )
@@ -258,6 +260,7 @@ if(LT_WINDOWS)
     endif(LT_USE_PREBUILT_VIDEO2)
     set(PLATFORM_LIBS
             #video2
+            openh264
             Secur32.lib dmoguids.lib d3d11.lib d3dcompiler.lib
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib

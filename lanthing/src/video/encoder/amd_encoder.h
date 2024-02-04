@@ -32,7 +32,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "params_helper.h"
+#include <video/encoder/params_helper.h>
 #include <video/encoder/video_encoder.h>
 
 namespace lt {

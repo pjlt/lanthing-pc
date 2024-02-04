@@ -27,12 +27,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 #pragma once
 
+#include <cstdint>
 #include <memory>
-
-#include <transport/transport.h>
 
 #include <video/encoder/params_helper.h>
 #include <video/encoder/video_encoder.h>
@@ -41,18 +39,18 @@ namespace lt {
 
 namespace video {
 
-class NvD3d11EncoderImpl;
-class NvD3d11Encoder : public Encoder {
+class OpenH264EncoderImpl;
+class OpenH264Encoder : public Encoder {
 public:
-    NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
-    ~NvD3d11Encoder() override;
+    OpenH264Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
+    ~OpenH264Encoder() override;
 
     bool init(const EncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:
-    std::shared_ptr<NvD3d11EncoderImpl> impl_;
+    std::shared_ptr<OpenH264EncoderImpl> impl_;
 };
 
 } // namespace video
