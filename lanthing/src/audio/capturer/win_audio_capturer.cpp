@@ -32,8 +32,6 @@
 
 #include <Functiondiscoverykeys_devpkey.h>
 
-#include <fstream>
-
 #include <ltlib/logging.h>
 
 // wasapi的用法参考了下面的链接：
