@@ -85,6 +85,7 @@ private:
     AVChannelLayout input_ch_layout_;
     AVChannelLayout output_ch_layout_;
     std::vector<uint8_t> resample_buffer_;
+    bool has_logged_ = false;
 };
 
 } // namespace audio

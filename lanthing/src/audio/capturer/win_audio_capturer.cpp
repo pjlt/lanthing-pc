@@ -32,6 +32,8 @@
 
 #include <Functiondiscoverykeys_devpkey.h>
 
+#include <fstream>
+
 #include <ltlib/logging.h>
 
 // wasapi的用法参考了下面的链接：
@@ -122,7 +124,7 @@ bool WinAudioCapturer::initPlatform() {
     if (!setAudioFormat()) {
         return false;
     }
-    if (fmt_from_.has_value()) {
+    if (fmt_to_.has_value()) {
         if (!createResampler()) {
             return false;
         }
@@ -213,8 +215,8 @@ void WinAudioCapturer::captureLoop(const std::function<void()>& i_am_alive) {
             }
             if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
                 // LOG(DEBUG) << "AUDCLNT_BUFFERFLAGS_SILENT";
-                if (slient_buffer_.size() < framesAvailable * bytesPerFrame()) {
-                    slient_buffer_.resize(framesAvailable * bytesPerFrame());
+                if (slient_buffer_.size() < framesAvailable * fmt_from_->Format.nBlockAlign) {
+                    slient_buffer_.resize(framesAvailable * fmt_from_->Format.nBlockAlign);
                     memset(slient_buffer_.data(), 0, slient_buffer_.size());
                 }
                 pData = slient_buffer_.data();
@@ -299,6 +301,7 @@ bool WinAudioCapturer::setAudioFormat() {
             hr = client_->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, (WAVEFORMATEX*)&wfmte,
                                             &pWfxClosestMatch);
             if (hr == S_OK) {
+                fmt_from_ = wfmte;
                 break;
             }
             else {
@@ -355,7 +358,7 @@ bool WinAudioCapturer::setAudioFormat() {
         setFramesPerSec(fmt_to_->nSamplesPerSec);
         setChannels(fmt_to_->nChannels);
         LOGF(WARNING,
-             "Using first cloest audio capture format: wFormatTag:%#x, nChannels:%u, "
+             "Using first closest audio capture format: wFormatTag:%#x, nChannels:%u, "
              "nSamplesPerSec:%lu, nAvgBytesPerSec:%lu, nBlockAlign:%u, "
              "wBitsPerSample:%u, cbSize:%u",
              fmt_from_->Format.wFormatTag, fmt_from_->Format.nChannels,
@@ -379,7 +382,17 @@ bool WinAudioCapturer::createResampler() {
     char strbuff[kBuffLen] = {0};
     int input_ch = fmt_from_->Format.nChannels;
     int output_ch = fmt_to_->nChannels;
-    AVSampleFormat input_format = AVSampleFormat::AV_SAMPLE_FMT_FLT;
+    AVSampleFormat input_format;
+    switch (fmt_from_->Format.wBitsPerSample) {
+    case 16:
+        input_format = AVSampleFormat::AV_SAMPLE_FMT_S16;
+        break;
+    case 32:
+        input_format = AVSampleFormat::AV_SAMPLE_FMT_S32;
+        break;
+    default:
+        return false;
+    }
     AVSampleFormat output_format = AVSampleFormat::AV_SAMPLE_FMT_S16;
     av_channel_layout_default(&input_ch_layout_, input_ch);
     av_channel_layout_default(&output_ch_layout_, output_ch);
@@ -413,10 +426,13 @@ void WinAudioCapturer::resample(const uint8_t* data, uint32_t frames) {
     auto output_data = resample_buffer_.data();
     int ret = swr_convert(swr_context_, &output_data, eframes, &data, frames);
     if (ret < 0) {
-        constexpr size_t kBuffLen = 1024;
-        char strbuff[kBuffLen] = {0};
-        int ret2 = av_strerror(ret, strbuff, kBuffLen);
-        LOG(ERR) << "swr_convert failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
+        if (!has_logged_) {
+            has_logged_ = true;
+            constexpr size_t kBuffLen = 1024;
+            char strbuff[kBuffLen] = {0};
+            int ret2 = av_strerror(ret, strbuff, kBuffLen);
+            LOG(ERR) << "swr_convert failed: " << (ret2 == 0 ? strbuff : std::to_string(ret));
+        }
     }
     else {
         onCapturedData(resample_buffer_.data(), static_cast<uint32_t>(ret));
