@@ -279,6 +279,10 @@ void OpenH264Encoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
+CaptureFormat OpenH264Encoder::captureFormat() const {
+    return CaptureFormat::MEM_I420;
+}
+
 std::shared_ptr<ltproto::client2worker::VideoFrame>
 OpenH264Encoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());

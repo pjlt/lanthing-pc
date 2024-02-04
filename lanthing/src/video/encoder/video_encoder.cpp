@@ -154,8 +154,8 @@ auto create_d3d11(std::optional<int64_t> luid)
     }
 }
 
-std::unique_ptr<lt::video::Encoder> doCreateEncoder(const lt::video::Encoder::InitParams& params,
-                                                    void* d3d11_dev, void* d3d11_ctx) {
+std::unique_ptr<lt::video::Encoder> doCreateHard(const lt::video::Encoder::InitParams& params,
+                                                 void* d3d11_dev, void* d3d11_ctx) {
     using namespace lt::video;
     EncodeParamsHelper params_helper{
         params.codec_type,         params.width, params.height, params.freq,
@@ -294,16 +294,20 @@ namespace lt {
 
 namespace video {
 
-std::unique_ptr<Encoder> Encoder::create(const InitParams& params) {
+std::unique_ptr<Encoder> Encoder::createHard(const InitParams& params) {
     if (!params.validate()) {
-        LOG(ERR) << "Create VideoEncoder failed: invalid parameters";
+        LOG(ERR) << "Create Hard VideoEncoder failed: invalid parameters";
         return nullptr;
     }
     // auto [device, context, vendor_id, luid] = create_d3d11(params.luid);
     // if (device == nullptr || context == nullptr) {
     //     return nullptr;
     // }
-    return doCreateEncoder(params, params.device, params.context);
+    return doCreateHard(params, params.device, params.context);
+}
+
+std::unique_ptr<Encoder> Encoder::createSoft(const InitParams& params) {
+    return std::unique_ptr<Encoder>();
 }
 
 Encoder::Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)

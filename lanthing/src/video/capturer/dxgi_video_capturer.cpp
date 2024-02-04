@@ -141,11 +141,20 @@ std::optional<Capturer::Frame> DxgiVideoCapturer::capture() {
     if (hr == DUPL_RETURN::DUPL_RETURN_SUCCESS && !timeout) {
         RECORD_T(point2);
         Capturer::Frame out_frame{};
-        out_frame.data = frame.Frame;
+        if (capture_foramt_ == CaptureFormat::D3D11_BGRA) {
+            out_frame.data = frame.Frame;
+        }
+        else {
+            out_frame.data = toI420(frame.Frame);
+        }
         out_frame.capture_timestamp_us = ltlib::steady_now_us();
         return out_frame;
     }
     return {};
+}
+
+uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
+    return nullptr;
 }
 
 void DxgiVideoCapturer::doneWithFrame() {
@@ -178,6 +187,27 @@ uint32_t DxgiVideoCapturer::vendorID() {
 
 bool DxgiVideoCapturer::defaultOutput() {
     return impl_->DefaultOutput();
+}
+
+bool DxgiVideoCapturer::setCaptureFormat(CaptureFormat format) {
+    if (format == capture_foramt_) {
+        return true;
+    }
+    capture_foramt_ = format;
+    switch (format) {
+    case CaptureFormat::D3D11_BGRA:
+        return true;
+    case CaptureFormat::MEM_I420:
+        createI420Converter();
+        return true;
+    default:
+        LOG(ERR) << "DxgiVideoCapturer: Unknown CaptureFormat " << (int)format;
+        return false;
+    }
+}
+
+void DxgiVideoCapturer::createI420Converter() {
+    //
 }
 
 } // namespace video

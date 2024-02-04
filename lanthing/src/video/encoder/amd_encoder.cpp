@@ -493,6 +493,10 @@ void AmdEncoder::reconfigure(const Encoder::ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
+CaptureFormat AmdEncoder::captureFormat() const {
+    return CaptureFormat::D3D11_BGRA;
+}
+
 std::shared_ptr<ltproto::client2worker::VideoFrame> AmdEncoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }

@@ -41,6 +41,11 @@ namespace lt {
 
 namespace video {
 
+enum class CaptureFormat {
+    D3D11_BGRA,
+    MEM_I420,
+};
+
 class Capturer {
 public:
     enum class Backend {
@@ -64,6 +69,7 @@ public:
     virtual void waitForVBlank() = 0;
     virtual uint32_t vendorID() = 0;
     virtual bool defaultOutput() = 0;
+    virtual bool setCaptureFormat(CaptureFormat format) = 0;
 
 protected:
     Capturer();

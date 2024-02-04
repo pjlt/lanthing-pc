@@ -530,6 +530,10 @@ void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
+CaptureFormat NvD3d11Encoder::captureFormat() const {
+    return CaptureFormat::D3D11_BGRA;
+}
+
 std::shared_ptr<ltproto::client2worker::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }

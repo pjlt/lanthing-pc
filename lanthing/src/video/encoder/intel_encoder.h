@@ -47,6 +47,7 @@ public:
     ~IntelEncoder() override {}
     bool init(const EncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
+    CaptureFormat captureFormat() const override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:

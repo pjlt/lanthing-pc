@@ -80,11 +80,11 @@ VideoCodecType VCEPipeline2::codec() const {
 bool VCEPipeline2::defaultOutput() {
     return true;
 }
-//#if !defined(LT_WINDOWS)
+// #if !defined(LT_WINDOWS)
 std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params&) {
     return nullptr;
 }
-//#endif // LT_WINDOWS
+// #endif // LT_WINDOWS
 
 class VCEPipeline : public CaptureEncodePipeline {
 public:
@@ -188,18 +188,34 @@ bool VCEPipeline::init() {
     std::unique_ptr<Encoder> encoder;
     for (auto codec : client_supported_codecs_) {
         encode_params.codec_type = codec;
-        encoder = Encoder::create(encode_params);
+        encoder = Encoder::createHard(encode_params);
         if (encoder) {
             codec_type_ = codec;
             break;
         }
     }
-    if (encoder == nullptr) {
-        return false;
+    if (encoder != nullptr) {
+        encoder_ = std::move(encoder);
+        capturer_ = std::move(capturer);
+        return true;
     }
-    encoder_ = std::move(encoder);
-    capturer_ = std::move(capturer);
-    return true;
+    for (auto codec : client_supported_codecs_) {
+        encode_params.codec_type = codec;
+        encoder = Encoder::createSoft(encode_params);
+        if (encoder) {
+            codec_type_ = codec;
+            break;
+        }
+    }
+    if (encoder != nullptr) {
+        if (!capturer->setCaptureFormat(encoder->captureFormat())) {
+            return false;
+        }
+        encoder_ = std::move(encoder);
+        capturer_ = std::move(capturer);
+        return true;
+    }
+    return false;
 }
 
 bool VCEPipeline::start() {

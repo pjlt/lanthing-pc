@@ -59,9 +59,12 @@ public:
     void* deviceContext() override;
     uint32_t vendorID() override;
     bool defaultOutput() override;
+    bool setCaptureFormat(CaptureFormat format) override;
 
 private:
     bool initD3D11();
+    uint8_t* toI420(ID3D11Texture2D* frame);
+    void createI420Converter();
 
 private:
     std::unique_ptr<DUPLICATIONMANAGER> impl_;
@@ -71,6 +74,8 @@ private:
     int64_t luid_ = 0;
     uint32_t vendor_id_ = 0;
     ltlib::Monitor monitor_;
+    CaptureFormat capture_foramt_ = CaptureFormat::D3D11_BGRA;
+    std::vector<uint8_t> mem_buff_;
 };
 
 } // namespace video

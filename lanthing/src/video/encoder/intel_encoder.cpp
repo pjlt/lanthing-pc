@@ -745,6 +745,10 @@ void IntelEncoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
 }
 
+CaptureFormat IntelEncoder::captureFormat() const {
+    return CaptureFormat::D3D11_BGRA;
+}
+
 std::shared_ptr<ltproto::client2worker::VideoFrame> IntelEncoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
