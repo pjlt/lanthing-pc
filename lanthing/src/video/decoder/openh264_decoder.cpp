@@ -98,9 +98,17 @@ DecodedFrame OpenH264Decoder::decode(const uint8_t* data, uint32_t size) {
         return frame;
     }
     if (info.iBufferStatus != 1) {
-        LOG(ERR) << "ISVCDecoder::DecodeFrame2 ret iBufferStatus with " << info.iBufferStatus;
-        frame.status = DecodeStatus::Failed;
-        return frame;
+        state = ctx_->decoder->DecodeFrame2(nullptr, 0, outputs, &info);
+        if (state != DECODING_STATE::dsErrorFree) {
+            LOG(ERR) << "ISVCDecoder::DecodeFrame2 failed with " << (int)state;
+            frame.status = DecodeStatus::Failed;
+            return frame;
+        }
+        if (info.iBufferStatus != 1) {
+            LOG(ERR) << "ISVCDecoder::DecodeFrame2 ret iBufferStatus with " << info.iBufferStatus;
+            frame.status = DecodeStatus::Failed;
+            return frame;
+        }
     }
     auto w = static_cast<int>(width());
     auto h = static_cast<int>(height());

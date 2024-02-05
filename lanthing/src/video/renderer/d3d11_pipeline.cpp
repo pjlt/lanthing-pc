@@ -209,8 +209,8 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
     else if (decoded_foramt_ == DecodedFormat::MEM_NV12) {
         // BindFlags = D3D11_BIND_SHADER_RESOURCE;
         D3D11_TEXTURE2D_DESC desc{};
-        desc.Width = displayWidth();
-        desc.Height = displayHeight();
+        desc.Width = video_width_;
+        desc.Height = video_height_;
         desc.Format = DXGI_FORMAT_NV12;
         desc.ArraySize = 1;
         desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -219,7 +219,7 @@ bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
         desc.SampleDesc.Quality = 0;
         desc.MipLevels = 1;
         desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-        desc.Usage = D3D11_USAGE_STAGING;
+        desc.Usage = D3D11_USAGE_DYNAMIC;
         HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, nullptr, stage_texture_.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(ERR, "Create staging texture2d failed: %#x", hr);
@@ -361,12 +361,13 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
     if (decoded_foramt_ == DecodedFormat::MEM_NV12) {
         D3D11_MAPPED_SUBRESOURCE mapped{};
         UINT subres = D3D11CalcSubresource(0, 0, 0);
-        HRESULT hr = d3d11_ctx_->Map(stage_texture_.Get(), subres, D3D11_MAP_WRITE, 0, &mapped);
+        HRESULT hr =
+            d3d11_ctx_->Map(stage_texture_.Get(), subres, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
         if (FAILED(hr)) {
             LOGF(ERR, "ID3D11DeviceContext::Map failed %#x", hr);
             return RenderResult::Failed;
         }
-        memcpy(mapped.pData, (const void*)frame, displayWidth() * displayHeight() * 3 / 2);
+        memcpy(mapped.pData, (const void*)frame, video_width_ * video_height_ * 3 / 2);
         d3d11_ctx_->Unmap(stage_texture_.Get(), subres);
         index = 0;
     }
