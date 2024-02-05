@@ -37,12 +37,15 @@
 #include <ltlib/times.h>
 
 namespace {
+
+constexpr int kMaxFPS = 30;
+
 class OpenH264ParamsHelper {
 public:
     OpenH264ParamsHelper(const lt::video::EncodeParamsHelper& params)
         : params_{params} {}
 
-    int fps() const { return params_.fps(); }
+    int fps() const { return std::min(params_.fps(), kMaxFPS); }
     uint32_t width() const { return params_.width(); }
     uint32_t height() const { return params_.height(); }
     uint32_t bitrate() const { return params_.bitrate(); }
@@ -138,10 +141,10 @@ void OpenH264EncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) 
         }
     }
     if (params.fps.has_value()) {
-        float option = static_cast<float>(params.fps.value());
+        float option = static_cast<float>(std::min(params.fps.value(), (uint32_t)kMaxFPS));
         int ret = encoder_->SetOption(ENCODER_OPTION_FRAME_RATE, &option);
         if (ret != 0) {
-            LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_FRAME_RATE, " << params.fps.value()
+            LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_FRAME_RATE, " << option
                      << ") failed " << ret;
         }
     }

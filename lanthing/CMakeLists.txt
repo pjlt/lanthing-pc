@@ -85,6 +85,8 @@ set(LT_VIDEO_DECODER_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_hard_decoder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_soft_decoder.h
     #${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_soft_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.cpp
 )
 
 set(LT_VIDEO_RENDERER_SRCS

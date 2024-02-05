@@ -198,10 +198,41 @@ D3D11Pipeline::~D3D11Pipeline() {
 }
 
 bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
+    // NOTE: bindTextures之后不允许调用setDecodedFormat
     std::vector<ID3D11Texture2D*> textures;
-    textures.resize(_textures.size());
-    for (size_t i = 0; i < textures.size(); i++) {
-        textures[i] = reinterpret_cast<ID3D11Texture2D*>(_textures[i]);
+    if (decoded_foramt_ == DecodedFormat::D3D11_NV12) {
+        textures.resize(_textures.size());
+        for (size_t i = 0; i < textures.size(); i++) {
+            textures[i] = reinterpret_cast<ID3D11Texture2D*>(_textures[i]);
+        }
+    }
+    else if (decoded_foramt_ == DecodedFormat::MEM_NV12) {
+        // BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        D3D11_TEXTURE2D_DESC desc{};
+        desc.Width = displayWidth();
+        desc.Height = displayHeight();
+        desc.Format = DXGI_FORMAT_NV12;
+        desc.ArraySize = 1;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        desc.MiscFlags = 0;
+        desc.SampleDesc.Count = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.MipLevels = 1;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        desc.Usage = D3D11_USAGE_STAGING;
+        HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, nullptr, stage_texture_.GetAddressOf());
+        if (FAILED(hr)) {
+            LOGF(ERR, "Create staging texture2d failed: %#x", hr);
+            return false;
+        }
+        if (stage_texture_ == nullptr) {
+            LOG(ERR) << "Create staging texture2d failed, texture == nullptr";
+            return false;
+        }
+        textures.push_back(stage_texture_.Get());
+    }
+    else {
+        return false;
     }
     return initShaderResources(textures);
 }
@@ -326,11 +357,26 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
     ID3D11Buffer* cbarray[] = {video_pixel_buffer_.Get()};
     d3d11_ctx_->PSSetConstantBuffers(0, 1, cbarray);
     d3d11_ctx_->PSSetSamplers(0, 1, video_sampler_.GetAddressOf());
-    if (frame >= static_cast<int64_t>(video_shader_views_.size())) {
-        LOG(ERR) << "Can not find shader view for texutre " << frame;
-        return RenderResult::Failed;
+    size_t index;
+    if (decoded_foramt_ == DecodedFormat::MEM_NV12) {
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        UINT subres = D3D11CalcSubresource(0, 0, 0);
+        HRESULT hr = d3d11_ctx_->Map(stage_texture_.Get(), subres, D3D11_MAP_WRITE, 0, &mapped);
+        if (FAILED(hr)) {
+            LOGF(ERR, "ID3D11DeviceContext::Map failed %#x", hr);
+            return RenderResult::Failed;
+        }
+        memcpy(mapped.pData, (const void*)frame, displayWidth() * displayHeight() * 3 / 2);
+        d3d11_ctx_->Unmap(stage_texture_.Get(), subres);
+        index = 0;
     }
-    size_t index = static_cast<size_t>(frame);
+    else {
+        if (frame >= static_cast<int64_t>(video_shader_views_.size())) {
+            LOG(ERR) << "Can not find shader view for texutre " << frame;
+            return RenderResult::Failed;
+        }
+        index = static_cast<size_t>(frame);
+    }
     ID3D11ShaderResourceView* const shader_views[2] = {video_shader_views_[index].y.Get(),
                                                        video_shader_views_[index].uv.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 2, shader_views);
@@ -414,6 +460,20 @@ uint32_t D3D11Pipeline::displayWidth() {
 
 uint32_t D3D11Pipeline::displayHeight() {
     return display_height_;
+}
+
+bool D3D11Pipeline::setDecodedFormat(DecodedFormat format) {
+    // NOTE: bindTextures之后不允许调用setDecodedFormat
+    switch (format) {
+    case lt::video::DecodedFormat::MEM_NV12:
+        decoded_foramt_ = format;
+        return true;
+    case lt::video::DecodedFormat::D3D11_NV12:
+        decoded_foramt_ = format;
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool D3D11Pipeline::init() {

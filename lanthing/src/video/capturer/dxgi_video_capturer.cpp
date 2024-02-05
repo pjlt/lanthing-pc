@@ -172,7 +172,7 @@ uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
         desc2.SampleDesc.Count = 1;
         desc2.SampleDesc.Quality = 0;
         desc2.MipLevels = 1;
-        desc2.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+        desc2.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
         desc2.Usage = D3D11_USAGE_STAGING;
         HRESULT hr = d3d11_dev_->CreateTexture2D(&desc2, nullptr, stage_texture_.GetAddressOf());
         if (FAILED(hr)) {
@@ -187,7 +187,7 @@ uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
     d3d11_ctx_->CopyResource(stage_texture_.Get(), frame);
     D3D11_MAPPED_SUBRESOURCE mapped{};
     UINT subres = D3D11CalcSubresource(0, 0, 0);
-    HRESULT hr = d3d11_ctx_->Map(stage_texture_.Get(), subres, D3D11_MAP_READ_WRITE, 0, &mapped);
+    HRESULT hr = d3d11_ctx_->Map(stage_texture_.Get(), subres, D3D11_MAP_READ, 0, &mapped);
     if (FAILED(hr)) {
         LOGF(ERR, "ID3D11DeviceContext::Map failed %#x", hr);
         return nullptr;
@@ -203,6 +203,7 @@ uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
                               mem_buff_.data(), width, mem_buff_.data() + width * height, width / 2,
                               mem_buff_.data() + width * height + width * height / 4, width / 2,
                               width, height);
+    d3d11_ctx_->Unmap(stage_texture_.Get(), subres);
     if (ret != 0) {
         LOG(ERR) << "rtc::ARGBToI420 failed " << ret;
         return nullptr;

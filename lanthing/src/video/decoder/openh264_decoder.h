@@ -29,49 +29,36 @@
  */
 
 #pragma once
-#include <memory>
-#include <vector>
+
+#include <ltlib/load_library.h>
 
 #include <video/decoder/video_decoder.h>
+#include <video/types.h>
 
 namespace lt {
 
 namespace video {
 
-class Renderer {
+struct OpenH264DecoderContext;
+class OpenH264Decoder : public Decoder {
 public:
-    struct Params {
-        void* window;
-        uint64_t device;
-        uint32_t video_width;
-        uint32_t video_height;
-        uint32_t align;
-        uint32_t rotation;
-        bool stretch;
-    };
+    OpenH264Decoder(const Params& params);
+    ~OpenH264Decoder() override;
 
-    enum class RenderResult { Success2, Failed, Reset };
+    bool init();
+    DecodedFrame decode(const uint8_t* data, uint32_t size) override;
+    std::vector<void*> textures() override;
+    DecodedFormat decodedFormat() const;
 
-public:
-    static std::unique_ptr<Renderer> create(const Params& params);
-    virtual ~Renderer() = default;
-    // NOTE: bindTextures之后不允许调用setDecodedFormat
-    virtual bool bindTextures(const std::vector<void*>& textures) = 0;
-    virtual RenderResult render(int64_t frame) = 0;
-    virtual void updateCursor(int32_t cursor_id, float x, float y, bool visible) = 0;
-    virtual void switchMouseMode(bool absolute) = 0;
-    virtual void switchStretchMode(bool stretch) = 0;
-    virtual void resetRenderTarget() = 0;
-    virtual bool present() = 0;
-    virtual bool waitForPipeline(int64_t max_wait_ms) = 0;
-    virtual void* hwDevice() = 0;
-    virtual void* hwContext() = 0;
-    virtual uint32_t displayWidth() = 0;
-    virtual uint32_t displayHeight() = 0;
-    // NOTE: bindTextures之后不允许调用setDecodedFormat
-    virtual bool setDecodedFormat(DecodedFormat format) = 0;
+private:
+    bool loadApi();
+
+private:
+    std::unique_ptr<ltlib::DynamicLibrary> openh264_lib_;
+    std::shared_ptr<OpenH264DecoderContext> ctx_;
+    bool openh264_init_success_ = false;
+    std::vector<uint8_t> frame_;
 };
 
 } // namespace video
-
 } // namespace lt

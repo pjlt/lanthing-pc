@@ -94,6 +94,7 @@ public:
     void* hwContext() override;
     uint32_t displayWidth() override;
     uint32_t displayHeight() override;
+    bool setDecodedFormat(DecodedFormat format) override;
 
 private:
     bool createD3D();
@@ -125,6 +126,7 @@ private:
     const uint32_t rotation_;
     const uint32_t align_;
     int refresh_rate_ = 60;
+    DecodedFormat decoded_foramt_ = DecodedFormat::D3D11_NV12;
 
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_ = nullptr;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_ = nullptr;
@@ -133,6 +135,7 @@ private:
     Microsoft::WRL::ComPtr<IDXGISwapChain2> swap_chain_ = nullptr;
     HANDLE waitable_obj_ = NULL;
     bool pipeline_ready_ = false;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> stage_texture_;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> render_view_ = nullptr;
     std::vector<ShaderView> video_shader_views_;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> video_vertex_shader_;

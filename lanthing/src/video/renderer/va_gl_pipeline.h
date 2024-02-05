@@ -72,6 +72,7 @@ public:
     void* hwContext() override;
     uint32_t displayWidth() override;
     uint32_t displayHeight() override;
+    bool setDecodedFormat(DecodedFormat format) override;
 
 private:
     bool loadFuncs();
