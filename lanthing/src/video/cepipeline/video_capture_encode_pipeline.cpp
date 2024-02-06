@@ -125,7 +125,6 @@ private:
     uint64_t frame_no_ = 0;
     std::atomic<bool> stoped_{true};
     std::unique_ptr<std::promise<void>> stop_promise_;
-    VideoCodecType codec_type_ = VideoCodecType::Unknown;
     std::mutex mutex_;
     std::vector<std::function<void()>> tasks_;
     bool manual_bitrate_ = false;
@@ -191,7 +190,6 @@ bool VCEPipeline::init() {
         encode_params.codec_type = codec;
         encoder = Encoder::createHard(encode_params);
         if (encoder) {
-            codec_type_ = codec;
             break;
         }
     }
@@ -201,7 +199,6 @@ bool VCEPipeline::init() {
             encode_params.codec_type = codec;
             encoder = Encoder::createSoft(encode_params);
             if (encoder) {
-                codec_type_ = codec;
                 break;
             }
         }
@@ -235,7 +232,7 @@ void VCEPipeline::stop() {
 }
 
 VideoCodecType VCEPipeline::codec() const {
-    return codec_type_;
+    return encoder_->codecType();
 }
 
 bool VCEPipeline::defaultOutput() {
@@ -471,13 +468,30 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
     Params params444 = params;
     std::vector<VideoCodecType> yuv420;
     std::vector<VideoCodecType> yuv444;
+    bool h264_420_inserted = false;
     for (auto codec : params.codecs) {
-        if (codec == lt::VideoCodecType::H264_420 || codec == lt::VideoCodecType::H265_420 ||
-            codec == lt::VideoCodecType::H264_420_SOFT) {
+        switch (codec) {
+        case VideoCodecType::H264_420:
+            if (!h264_420_inserted) {
+                h264_420_inserted = true;
+            }
             yuv420.push_back(codec);
-        }
-        else if (codec == lt::VideoCodecType::H264_444 || codec == lt::VideoCodecType::H265_444) {
+            break;
+        case VideoCodecType::H264_420_SOFT:
+            if (!h264_420_inserted) {
+                h264_420_inserted = true;
+            }
+            yuv420.push_back(codec);
+            break;
+        case VideoCodecType::H265_420:
+            yuv420.push_back(codec);
+            break;
+        case VideoCodecType::H264_444:
+        case VideoCodecType::H265_444:
             yuv444.push_back(codec);
+            break;
+        default:
+            break;
         }
     }
     params420.codecs = yuv420;

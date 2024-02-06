@@ -129,6 +129,9 @@ bool GpuInfo::init(bool hard_decode) {
                 ability.codecs.push_back(lt::VideoCodecType::H265);
             }
         }
+        else {
+            ability.codecs.push_back(lt::VideoCodecType::H264_420_SOFT);
+        }
         if (!ability.codecs.empty()) {
             abilities_.push_back(ability);
         }

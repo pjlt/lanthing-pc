@@ -148,6 +148,7 @@ public:
     ~NvD3d11EncoderImpl();
     bool init(const EncodeParamsHelper& params);
     void reconfigure(const Encoder::ReconfigureParams& params);
+    VideoCodecType codecType() const;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -279,6 +280,10 @@ void NvD3d11EncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     if (status != NV_ENC_SUCCESS) {
         LOG(ERR) << "nvEncReconfigureEncoder failed with " << status;
     }
+}
+
+VideoCodecType NvD3d11EncoderImpl::codecType() const {
+    return codec_type_;
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>
@@ -532,6 +537,10 @@ void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
 
 CaptureFormat NvD3d11Encoder::captureFormat() const {
     return CaptureFormat::D3D11_BGRA;
+}
+
+VideoCodecType NvD3d11Encoder::codecType() const {
+    return impl_->codecType();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {

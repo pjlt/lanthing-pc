@@ -94,7 +94,8 @@ OpenH264EncoderImpl::~OpenH264EncoderImpl() {
 }
 
 bool OpenH264EncoderImpl::init(const EncodeParamsHelper& params) {
-    if (params.codec() != VideoCodecType::H264_420) {
+    if (params.codec() != VideoCodecType::H264_420 &&
+        params.codec() != VideoCodecType::H264_420_SOFT) {
         LOG(ERR) << "OpenH264 encoder only support H264_420";
         return false;
     }
@@ -282,6 +283,10 @@ void OpenH264Encoder::reconfigure(const ReconfigureParams& params) {
 
 CaptureFormat OpenH264Encoder::captureFormat() const {
     return CaptureFormat::MEM_I420;
+}
+
+VideoCodecType OpenH264Encoder::codecType() const {
+    return VideoCodecType::H264_420_SOFT;
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>

@@ -163,7 +163,6 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         return nullptr;
     }
     params.rotation = static_cast<uint32_t>(rotation);
-
     std::unique_ptr<Client> client{new Client{params}};
     if (!client->init()) {
         return nullptr;
@@ -188,7 +187,12 @@ Client::Client(const Params& params)
                     std::bind(&Client::onUserSwitchStretch, this),
                     std::bind_front(&Client::resetVideoPipeline, this)}
     , audio_params_{atype(), params.audio_freq, params.audio_channels}
-    , reflex_servers_{params.reflex_servers} {}
+    , reflex_servers_{params.reflex_servers} {
+    encode_codec_ = video_params_.codec_type;
+    if (encode_codec_ == VideoCodecType::H264_420_SOFT) {
+        video_params_.codec_type = VideoCodecType::H264_420; // 都转换成H264_420方便写代码
+    }
+}
 
 Client::~Client() {
     {
@@ -604,7 +608,8 @@ tp::Client* Client::createTcpClient() {
     params.on_failed = &Client::onTpFailed;
     params.on_disconnected = &Client::onTpDisconnected;
     params.on_signaling_message = &Client::onTpSignalingMessage;
-    params.video_codec_type = video_params_.codec_type;
+    params.video_codec_type =
+        encode_codec_ == VideoCodecType::H264_420_SOFT ? VideoCodecType::H264_420 : encode_codec_;
     // FIXME: 修改TCP接口
     auto client = lt::tp::ClientTCP::create(params);
     return client.release();
@@ -647,7 +652,8 @@ tp::Client* Client::createRtcClient() {
     params.on_failed = &Client::onTpFailed;
     params.on_disconnected = &Client::onTpDisconnected;
     params.on_signaling_message = &Client::onTpSignalingMessage;
-    params.video_codec_type = video_params_.codec_type;
+    params.video_codec_type =
+        encode_codec_ == VideoCodecType::H264_420_SOFT ? VideoCodecType::H264_420 : encode_codec_;
     params.audio_channels = audio_params_.channels;
     params.audio_sample_rate = audio_params_.frames_per_second;
     return rtc::Client::create(std::move(params));
@@ -731,6 +737,12 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     auto that = reinterpret_cast<Client*>(user_data);
     that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
     if (that->video_pipeline_ == nullptr) {
+        if (that->video_params_.codec_type == VideoCodecType::H264_420) {
+            that->video_params_.codec_type = VideoCodecType::H264_420_SOFT;
+            that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
+        }
+    }
+    if (that->video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
         return;
     }
@@ -768,9 +780,14 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
 
     // setTitle
     that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
+    auto codec_type = that->video_params_.codec_type;
+    if (codec_type == VideoCodecType::H264_420_SOFT) {
+        codec_type = VideoCodecType::H264_420;
+    }
     std::ostringstream oss;
-    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ")
-        << toString(that->video_params_.codec_type) << " GPU:GPU"; // 暂时只支持硬件编解码.
+    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ") << toString(codec_type) << " "
+        << (isHard(that->video_params_.codec_type) ? "GPU" : "CPU")
+        << (isHard(that->encode_codec_) ? ":GPU" : ":CPU");
     that->sdl_->setTitle(oss.str());
 }
 
@@ -779,9 +796,14 @@ void Client::onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkTyp
     LOG(INFO) << "Transport LinkType changed: " << toString(old_type) << " => "
               << toString(new_type);
     that->is_p2p_ = new_type != lt::LinkType::RelayUDP;
+    auto codec_type = that->video_params_.codec_type;
+    if (codec_type == VideoCodecType::H264_420_SOFT) {
+        codec_type = VideoCodecType::H264_420;
+    }
     std::ostringstream oss;
-    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ")
-        << toString(that->video_params_.codec_type) << " GPU:GPU"; // 暂时只支持硬件编解码.
+    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ") << toString(codec_type) << " "
+        << (isHard(that->video_params_.codec_type) ? "GPU" : "CPU")
+        << (isHard(that->encode_codec_) ? ":GPU" : ":CPU");
     that->sdl_->setTitle(oss.str());
 }
 

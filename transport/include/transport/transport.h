@@ -118,22 +118,22 @@ inline constexpr const char* toString(VideoCodecType type) {
 }
 
 inline VideoCodecType videoCodecType(const char* type) {
-    if (std::strncmp(type, "AVC", 3) == 0) {
+    if (std::strcmp(type, "AVC") == 0) {
         return VideoCodecType::H264_420;
     }
-    else if (std::strncmp(type, "HEVC", 4) == 0) {
+    else if (std::strcmp(type, "HEVC") == 0) {
         return VideoCodecType::H265_420;
     }
-    else if (std::strncmp(type, "AVC444", 6) == 0) {
+    else if (std::strcmp(type, "AVC444") == 0) {
         return VideoCodecType::H264_444;
     }
-    else if (std::strncmp(type, "HEVC444", 7) == 0) {
+    else if (std::strcmp(type, "HEVC444") == 0) {
         return VideoCodecType::H265_444;
     }
-    else if (std::strncmp(type, "AV1", 3) == 0) {
+    else if (std::strcmp(type, "AV1") == 0) {
         return VideoCodecType::AV1;
     }
-    else if (std::strncmp(type, "AVC_SOFT", 8) == 0) {
+    else if (std::strcmp(type, "AVC_SOFT") == 0) {
         return VideoCodecType::H264_420_SOFT;
     }
     else {

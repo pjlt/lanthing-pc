@@ -56,6 +56,8 @@ lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
         return lt::VideoCodecType::H265_444;
     case ltproto::common::AV1:
         return lt::VideoCodecType::AV1;
+    case ltproto::common::AVC_SOFT:
+        return lt::VideoCodecType::H264_420_SOFT;
     default:
         return lt::VideoCodecType::Unknown;
     }
