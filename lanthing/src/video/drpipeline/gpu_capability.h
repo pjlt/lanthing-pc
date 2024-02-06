@@ -55,7 +55,7 @@ public:
     };
 
 public:
-    bool init();
+    bool init(bool hard_decode);
 
     std::vector<Ability>& get() { return abilities_; }
 

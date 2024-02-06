@@ -259,7 +259,13 @@ uint32_t VaGlPipeline::displayHeight() {
 }
 
 bool VaGlPipeline::setDecodedFormat(DecodedFormat format) {
-    return format == DecodedFormat::VA_NV12;
+    if (format == DecodedFormat::VA_NV12) {
+        return true;
+    }
+    else {
+        LOG(ERR) << "VaGlPipeline doesn't support DecodedFormat " << (int)format;
+        return false;
+    }
 }
 
 bool VaGlPipeline::loadFuncs() {

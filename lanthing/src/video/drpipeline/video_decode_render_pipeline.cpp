@@ -229,7 +229,7 @@ bool VDRPipeline::init() {
     LOGF(INFO, "w:%u, h:%u, r:%u", width_, height_, rotation_);
     Renderer::Params render_params{};
 #if LT_WINDOWS
-    if (!gpu_info_.init()) {
+    if (!gpu_info_.init(isHard(codec_type_))) {
         return false;
     }
     std::map<uint32_t, GpuInfo::Ability> sorted_by_memory;
@@ -280,11 +280,11 @@ bool VDRPipeline::init() {
     if (video_decoder_ == nullptr) {
         return false;
     }
-    if (for_test_) {
-        return true;
-    }
     if (!video_renderer_->setDecodedFormat(video_decoder_->decodedFormat())) {
         return false;
+    }
+    if (for_test_) {
+        return true;
     }
     if (!video_renderer_->bindTextures(video_decoder_->textures())) {
         return false;
@@ -595,7 +595,8 @@ std::unique_ptr<DecodeRenderPipeline> DecodeRenderPipeline::create(const Params&
         return nullptr;
     }
     if (params.codec_type == VideoCodecType::H264_420 ||
-        params.codec_type == VideoCodecType::H265_420) {
+        params.codec_type == VideoCodecType::H265_420 ||
+        params.codec_type == VideoCodecType::H264_420_SOFT) {
         return VDRPipeline::create(params);
     }
     else if (params.codec_type == VideoCodecType::H264_444 ||

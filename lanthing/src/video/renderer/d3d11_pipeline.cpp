@@ -473,6 +473,7 @@ bool D3D11Pipeline::setDecodedFormat(DecodedFormat format) {
         decoded_foramt_ = format;
         return true;
     default:
+        LOG(ERR) << "D3D11Pipeline doesn't support DecodedFormat " << (int)format;
         return false;
     }
 }

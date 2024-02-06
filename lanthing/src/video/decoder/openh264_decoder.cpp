@@ -61,8 +61,8 @@ OpenH264Decoder::~OpenH264Decoder() {
 }
 
 bool OpenH264Decoder::init() {
-    if (codecType() != VideoCodecType::H264_420) {
-        LOG(ERR) << "OpenH264 decoder only support H264_420";
+    if (codecType() != VideoCodecType::H264_420_SOFT) {
+        LOG(ERR) << "OpenH264 decoder only support H264_420_SOFT";
         return false;
     }
     if (!loadApi()) {
@@ -75,7 +75,7 @@ bool OpenH264Decoder::init() {
     }
     SDecodingParam init_params{};
     init_params.eEcActiveIdc = ERROR_CON_DISABLE;
-    init_params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_DEFAULT;
+    init_params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
     ret = ctx_->decoder->Initialize(&init_params);
     if (ret != 0) {
         LOG(ERR) << "ISVCDecoder::Initialize failed with " << ret;

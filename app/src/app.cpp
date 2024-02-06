@@ -110,6 +110,7 @@ bool App::init() {
     status_color_ = settings_->getInteger("status_color").value_or(-1);
     rel_mouse_accel_ = settings_->getInteger("rel_mouse_accel").value_or(0);
     ignored_nic_ = settings_->getString("ignored_nic").value_or("");
+    enable_444_ = settings_->getBoolean("enable_444").value_or(false);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -126,12 +127,12 @@ bool App::init() {
     if (!initTcpClient()) {
         return false;
     }
-    hard_decode_abilities_ = checkDecodeAbility();
-    if (hard_decode_abilities_ == 0) {
-        LOG(WARNING) << "This machine has no hard decode ability!";
+    decode_abilities_ = checkDecodeAbility();
+    if (decode_abilities_ == 0) {
+        LOG(WARNING) << "This machine has no decode ability!";
     }
     else {
-        LOG(INFO) << "Hard decode ability: " << hard_decode_abilities_;
+        LOG(INFO) << "Decode ability: " << decode_abilities_;
     }
 #if LT_WINDOWS
     if (!initServiceManager()) {
@@ -187,7 +188,7 @@ int App::exec(int argc, char** argv) {
 
 // 跑在UI线程
 void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
-    if (hard_decode_abilities_ == 0) {
+    if (decode_abilities_ == 0) {
         gui_.errorCode(ltproto::ErrorCode::NoDecodeAbility);
         return;
     }
@@ -753,7 +754,16 @@ void App::onServiceStatus(ServiceManager::ServiceStatus status) {
 
 bool App::initClientManager() {
     ClientManager::Params params{};
-    params.decode_abilities = hard_decode_abilities_;
+    params.decode_abilities = decode_abilities_;
+    if (enable_444_) {
+        params.codec_priority = {VideoCodecType::H265_444, VideoCodecType::H264_444,
+                                 VideoCodecType::H265_420, VideoCodecType::H264_420,
+                                 VideoCodecType::H264_420_SOFT};
+    }
+    else {
+        params.codec_priority = {VideoCodecType::H265_420, VideoCodecType::H264_420,
+                                 VideoCodecType::H264_420_SOFT};
+    }
     params.ioloop = ioloop_.get();
     params.on_launch_client_success =
         std::bind(&App::onLaunchClientSuccess, this, std::placeholders::_1);
@@ -767,7 +777,7 @@ bool App::initClientManager() {
     params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
     params.close_connection = std::bind(&App::closeConnectionByRoomID, this, std::placeholders::_1);
     client_manager_ = ClientManager::create(params);
-    return client_manager_ != NULL;
+    return client_manager_ != nullptr;
 }
 
 void App::onClientStatus(int32_t err_code) {

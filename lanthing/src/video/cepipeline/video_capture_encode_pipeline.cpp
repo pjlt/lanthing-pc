@@ -186,6 +186,7 @@ bool VCEPipeline::init() {
     encode_params.context = capturer->deviceContext();
     encode_params.vendor_id = capturer->vendorID();
     std::unique_ptr<Encoder> encoder;
+    // try hard first
     for (auto codec : client_supported_codecs_) {
         encode_params.codec_type = codec;
         encoder = Encoder::createHard(encode_params);
@@ -194,17 +195,15 @@ bool VCEPipeline::init() {
             break;
         }
     }
-    if (encoder != nullptr) {
-        encoder_ = std::move(encoder);
-        capturer_ = std::move(capturer);
-        return true;
-    }
-    for (auto codec : client_supported_codecs_) {
-        encode_params.codec_type = codec;
-        encoder = Encoder::createSoft(encode_params);
-        if (encoder) {
-            codec_type_ = codec;
-            break;
+    // fallback
+    if (encoder == nullptr) {
+        for (auto codec : client_supported_codecs_) {
+            encode_params.codec_type = codec;
+            encoder = Encoder::createSoft(encode_params);
+            if (encoder) {
+                codec_type_ = codec;
+                break;
+            }
         }
     }
     if (encoder != nullptr) {
@@ -473,7 +472,8 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
     std::vector<VideoCodecType> yuv420;
     std::vector<VideoCodecType> yuv444;
     for (auto codec : params.codecs) {
-        if (codec == lt::VideoCodecType::H264_420 || codec == lt::VideoCodecType::H265_420) {
+        if (codec == lt::VideoCodecType::H264_420 || codec == lt::VideoCodecType::H265_420 ||
+            codec == lt::VideoCodecType::H264_420_SOFT) {
             yuv420.push_back(codec);
         }
         else if (codec == lt::VideoCodecType::H264_444 || codec == lt::VideoCodecType::H265_444) {

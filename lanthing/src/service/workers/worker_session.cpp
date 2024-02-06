@@ -235,6 +235,15 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
         case ltproto::common::VideoCodecType::HEVC:
             client_codecs.push_back(lt::VideoCodecType::H265);
             break;
+        case ltproto::common::VideoCodecType::AVC_444:
+            client_codecs.push_back(lt::VideoCodecType::H264_444);
+            break;
+        case ltproto::common::VideoCodecType::HEVC_444:
+            client_codecs.push_back(lt::VideoCodecType::H265_444);
+            break;
+        case ltproto::common::VideoCodecType::AVC_SOFT:
+            client_codecs.push_back(lt::VideoCodecType::H264_420_SOFT);
+            break;
         default:
             break;
         }

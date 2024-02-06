@@ -38,15 +38,23 @@ namespace lt {
 namespace video {
 
 std::unique_ptr<Decoder> Decoder::create(const Params& params) {
-    // auto decoder = std::make_unique<FFmpegHardDecoder>(params);
-    // if (!decoder->init()) {
-    //     return nullptr;
-    // }
-    auto decoder = std::make_unique<OpenH264Decoder>(params);
-    if (!decoder->init()) {
+    if (isHard(params.codec_type)) {
+        auto decoder = std::make_unique<FFmpegHardDecoder>(params);
+        if (!decoder->init()) {
+            return nullptr;
+        }
+        return decoder;
+    }
+    else if (params.codec_type == VideoCodecType::H264_420_SOFT) {
+        auto decoder = std::make_unique<OpenH264Decoder>(params);
+        if (!decoder->init()) {
+            return nullptr;
+        }
+        return decoder;
+    }
+    else {
         return nullptr;
     }
-    return decoder;
 }
 
 uint32_t Decoder::align(lt::VideoCodecType type) {
