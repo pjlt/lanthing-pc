@@ -207,6 +207,7 @@ bool WorkerProcess::launchWorkerProcess() {
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.cb = sizeof(STARTUPINFO);
     si.wShowWindow = SW_SHOW;
+    LOG(INFO) << "Launching worker: " << ss.str();
     ret = CreateProcessAsUserW(user_token, NULL, const_cast<LPWSTR>(cmd.c_str()), &sa, &sa, FALSE,
                                NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
     CloseHandle(token);

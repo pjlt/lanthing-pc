@@ -75,7 +75,7 @@ bool OpenH264Decoder::init() {
     }
     SDecodingParam init_params{};
     init_params.eEcActiveIdc = ERROR_CON_DISABLE;
-    init_params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
+    init_params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_DEFAULT;
     ret = ctx_->decoder->Initialize(&init_params);
     if (ret != 0) {
         LOG(ERR) << "ISVCDecoder::Initialize failed with " << ret;

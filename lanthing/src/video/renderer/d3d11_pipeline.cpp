@@ -31,6 +31,7 @@
 #include "d3d11_pipeline.h"
 
 #include <cassert>
+#include <fstream>
 
 #include <d3dcompiler.h>
 #include <dwmapi.h>
@@ -369,6 +370,9 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
         }
         memcpy(mapped.pData, (const void*)frame, video_width_ * video_height_ * 3 / 2);
         d3d11_ctx_->Unmap(stage_texture_.Get(), subres);
+        // static std::ofstream out{"./xxx.nv12", std::ios::trunc | std::ios::binary};
+        // out.write((const char*)frame, video_width_ * video_height_ * 3 / 2);
+        // out.flush();
         index = 0;
     }
     else {

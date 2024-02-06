@@ -187,7 +187,8 @@ bool VCEPipeline::init() {
     std::unique_ptr<Encoder> encoder;
     // try hard first
     for (auto codec : client_supported_codecs_) {
-        encode_params.codec_type = codec;
+        encode_params.codec_type =
+            codec == VideoCodecType::H264_420_SOFT ? VideoCodecType::H264_420 : codec;
         encoder = Encoder::createHard(encode_params);
         if (encoder) {
             break;
@@ -196,7 +197,8 @@ bool VCEPipeline::init() {
     // fallback
     if (encoder == nullptr) {
         for (auto codec : client_supported_codecs_) {
-            encode_params.codec_type = codec;
+            encode_params.codec_type =
+                codec == VideoCodecType::H264_420_SOFT ? VideoCodecType::H264_420 : codec;
             encoder = Encoder::createSoft(encode_params);
             if (encoder) {
                 break;
@@ -481,7 +483,7 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
             if (!h264_420_inserted) {
                 h264_420_inserted = true;
             }
-            yuv420.push_back(codec);
+            yuv420.push_back(VideoCodecType::H264_420);
             break;
         case VideoCodecType::H265_420:
             yuv420.push_back(codec);
