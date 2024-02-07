@@ -30,6 +30,8 @@
 
 #include "video_decoder.h"
 
+#include <ltlib/logging.h>
+
 #include "ffmpeg_hard_decoder.h"
 #include "openh264_decoder.h"
 
@@ -62,12 +64,14 @@ uint32_t Decoder::align(lt::VideoCodecType type) {
     switch (type) {
     case lt::VideoCodecType::H264_420:
     case lt::VideoCodecType::H264_444:
+    case lt::VideoCodecType::H264_420_SOFT:
         return 16;
     case lt::VideoCodecType::H265_420:
     case lt::VideoCodecType::H265_444:
         return 128;
     default:
-        return 0;
+        LOG(ERR) << "Decoder::align unknown codec " << (int)type;
+        return 16;
     }
 }
 

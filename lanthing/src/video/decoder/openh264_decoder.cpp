@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -84,6 +84,8 @@ bool OpenH264Decoder::init() {
     openh264_init_success_ = true;
     auto size = width() * height() * 3 / 2;
     frame_.resize(size);
+    LOGF(INFO, "OpenH264Decoder initialized with w:%u, h:%u, framesize:%llu", width(), height(),
+         frame_.size());
     return true;
 }
 

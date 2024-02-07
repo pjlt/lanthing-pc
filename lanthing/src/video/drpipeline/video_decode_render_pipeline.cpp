@@ -226,7 +226,8 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
-    LOGF(INFO, "w:%u, h:%u, r:%u", width_, height_, rotation_);
+    LOGF(INFO, "VDRPipeline w:%u, h:%u, r:%u codec:%s", width_, height_, rotation_,
+         toString(codec_type_));
     Renderer::Params render_params{};
 #if LT_WINDOWS
     if (!gpu_info_.init(isHard(codec_type_))) {
@@ -242,6 +243,7 @@ bool VDRPipeline::init() {
     }
     uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
     render_params.device = target_adapter;
+    LOG(INFO) << "Using adapter " << sorted_by_memory.rbegin()->second.to_str();
 #elif LT_LINUX
     render_params.device = 0;
 #else
