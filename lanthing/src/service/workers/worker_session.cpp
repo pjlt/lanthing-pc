@@ -70,12 +70,20 @@
 
 namespace {
 
-lt::VideoCodecType to_ltrtc(ltproto::common::VideoCodecType type) {
-    switch (type) {
-    case ltproto::common::VideoCodecType::AVC:
-        return lt::VideoCodecType::H264;
-    case ltproto::common::VideoCodecType::HEVC:
-        return lt::VideoCodecType::H265;
+lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
+    switch (codec) {
+    case ltproto::common::AVC:
+        return lt::VideoCodecType::H264_420;
+    case ltproto::common::HEVC:
+        return lt::VideoCodecType::H265_420;
+    case ltproto::common::AVC_444:
+        return lt::VideoCodecType::H264_444;
+    case ltproto::common::HEVC_444:
+        return lt::VideoCodecType::H265_444;
+    case ltproto::common::AV1:
+        return lt::VideoCodecType::AV1;
+    case ltproto::common::AVC_SOFT:
+        return lt::VideoCodecType::H264_420_SOFT;
     default:
         return lt::VideoCodecType::Unknown;
     }
@@ -235,6 +243,15 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
         case ltproto::common::VideoCodecType::HEVC:
             client_codecs.push_back(lt::VideoCodecType::H265);
             break;
+        case ltproto::common::VideoCodecType::AVC_444:
+            client_codecs.push_back(lt::VideoCodecType::H264_444);
+            break;
+        case ltproto::common::VideoCodecType::HEVC_444:
+            client_codecs.push_back(lt::VideoCodecType::H265_444);
+            break;
+        case ltproto::common::VideoCodecType::AVC_SOFT:
+            client_codecs.push_back(lt::VideoCodecType::H264_420_SOFT);
+            break;
         default:
             break;
         }
@@ -243,7 +260,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
         LOG(WARNING) << "Client doesn't supports any valid video codec";
         return false;
     }
-
+    client_video_codecs_ = client_codecs;
     if (!initSignlingClient(ioloop)) {
         LOG(WARNING) << "Init signaling client failed";
         return false;
@@ -284,8 +301,11 @@ tp::Server* WorkerSession::createTcpServer() {
         std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
     lt::tp::ServerTCP::Params params{};
     params.user_data = this;
-    params.video_codec_type = ::to_ltrtc(
+    params.video_codec_type = ::toLtrtc(
         static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
+    if (params.video_codec_type == VideoCodecType::H264_420_SOFT) {
+        params.video_codec_type = VideoCodecType::H264_420;
+    }
     params.on_failed = &WorkerSession::onTpFailed;
     params.on_disconnected = &WorkerSession::onTpDisconnected;
     params.on_accepted = &WorkerSession::onTpAccepted;
@@ -332,8 +352,11 @@ tp::Server* WorkerSession::createRtcServer() {
     params.audio_channels = negotiated_params->audio_channels();
     params.audio_sample_rate = negotiated_params->audio_sample_rate();
     // negotiated_params->video_codecs()的类型居然不是枚举数组
-    params.video_codec_type = ::to_ltrtc(
+    params.video_codec_type = ::toLtrtc(
         static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
+    if (params.video_codec_type == VideoCodecType::H264_420_SOFT) {
+        params.video_codec_type = VideoCodecType::H264_420;
+    }
     params.on_failed = &WorkerSession::onTpFailed;
     params.on_disconnected = &WorkerSession::onTpDisconnected;
     params.on_accepted = &WorkerSession::onTpAccepted;
@@ -1023,18 +1046,33 @@ void WorkerSession::syncTime() {
 }
 
 void WorkerSession::tellAppAccpetedConnection() {
+    auto negotiated_params =
+        std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
+    auto encode_codec =
+        static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0));
     auto msg = std::make_shared<ltproto::service2app::AcceptedConnection>();
     msg->set_device_id(client_device_id_);
     msg->set_enable_gamepad(enable_gamepad_);
     msg->set_enable_keyboard(enable_keyboard_);
     msg->set_enable_mouse(enable_mouse_);
     msg->set_enable_audio(enable_audio_);
+    for (auto client_codec : client_video_codecs_) {
+        if ((encode_codec == ltproto::common::VideoCodecType::AVC ||
+             encode_codec == ltproto::common::VideoCodecType::AVC_SOFT) &&
+            (client_codec == lt::VideoCodecType::H264_420 ||
+             client_codec == lt::VideoCodecType::H264_420_SOFT)) {
+            msg->set_gpu_decode(isHard(client_codec));
+            break;
+        }
+        else if (toLtrtc(encode_codec) == client_codec) {
+            msg->set_gpu_decode(isHard(client_codec));
+            break;
+        }
+    }
     msg->set_gpu_decode(true); // 当前只支持硬编硬解
-    msg->set_gpu_encode(true);
+    msg->set_gpu_encode(isHard(toLtrtc(encode_codec)));
     msg->set_p2p(is_p2p_);
-    auto negotiated_params =
-        std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
-    msg->set_video_codec((ltproto::common::VideoCodecType)negotiated_params->video_codecs().Get(0));
+    msg->set_video_codec(encode_codec);
     on_accepted_connection_(msg);
 }
 

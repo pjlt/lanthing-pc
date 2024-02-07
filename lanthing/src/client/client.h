@@ -202,6 +202,7 @@ private:
     int64_t last_received_keepalive_;
     bool connected_to_app_ = false;
     std::string ignored_nic_;
+    VideoCodecType encode_codec_;
 };
 
 } // namespace cli

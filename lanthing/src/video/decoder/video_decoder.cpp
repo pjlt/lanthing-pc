@@ -30,18 +30,37 @@
 
 #include "video_decoder.h"
 
+#include <ltlib/logging.h>
+
 #include "ffmpeg_hard_decoder.h"
+#if defined(LT_WINDOWS)
+#include "openh264_decoder.h"
+#endif // defined(LT_WINDOWS)
 
 namespace lt {
 
 namespace video {
 
 std::unique_ptr<Decoder> Decoder::create(const Params& params) {
-    auto decoder = std::make_unique<FFmpegHardDecoder>(params);
-    if (!decoder->init()) {
+    if (isHard(params.codec_type)) {
+        auto decoder = std::make_unique<FFmpegHardDecoder>(params);
+        if (!decoder->init()) {
+            return nullptr;
+        }
+        return decoder;
+    }
+#if defined(LT_WINDOWS)
+    else if (params.codec_type == VideoCodecType::H264_420_SOFT) {
+        auto decoder = std::make_unique<OpenH264Decoder>(params);
+        if (!decoder->init()) {
+            return nullptr;
+        }
+        return decoder;
+    }
+#endif // defined(LT_WINDOWS)
+    else {
         return nullptr;
     }
-    return decoder;
 }
 
 uint32_t Decoder::align(lt::VideoCodecType type) {
@@ -49,12 +68,14 @@ uint32_t Decoder::align(lt::VideoCodecType type) {
     switch (type) {
     case lt::VideoCodecType::H264_420:
     case lt::VideoCodecType::H264_444:
+    case lt::VideoCodecType::H264_420_SOFT:
         return 16;
     case lt::VideoCodecType::H265_420:
     case lt::VideoCodecType::H265_444:
         return 128;
     default:
-        return 0;
+        LOG(ERR) << "Decoder::align unknown codec " << (int)type;
+        return 16;
     }
 }
 

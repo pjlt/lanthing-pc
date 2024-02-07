@@ -133,6 +133,7 @@ public:
     ~AmdEncoderImpl();
     bool init(const EncodeParamsHelper& params);
     void reconfigure(const Encoder::ReconfigureParams& params);
+    VideoCodecType codecType() const;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -241,6 +242,10 @@ void AmdEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
                     "with "
                  << result2;
     }
+}
+
+VideoCodecType AmdEncoderImpl::codecType() const {
+    return codec_type_;
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>
@@ -491,6 +496,14 @@ bool AmdEncoder::init(const EncodeParamsHelper& params) {
 
 void AmdEncoder::reconfigure(const Encoder::ReconfigureParams& params) {
     impl_->reconfigure(params);
+}
+
+CaptureFormat AmdEncoder::captureFormat() const {
+    return CaptureFormat::D3D11_BGRA;
+}
+
+VideoCodecType AmdEncoder::codecType() const {
+    return impl_->codecType();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> AmdEncoder::encodeFrame(void* input_frame) {

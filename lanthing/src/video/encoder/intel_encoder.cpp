@@ -242,6 +242,7 @@ public:
     ~IntelEncoderImpl();
     bool init(const EncodeParamsHelper& params);
     void reconfigure(const Encoder::ReconfigureParams& params);
+    VideoCodecType codecType() const;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -386,6 +387,10 @@ void IntelEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     if (status != MFX_ERR_NONE) {
         LOG(ERR) << "MFXVideoENCODE_Reset failed with " << status;
     }
+}
+
+VideoCodecType IntelEncoderImpl::codecType() const {
+    return codec_type_;
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>
@@ -743,6 +748,14 @@ bool IntelEncoder::init(const EncodeParamsHelper& params) {
 
 void IntelEncoder::reconfigure(const ReconfigureParams& params) {
     impl_->reconfigure(params);
+}
+
+CaptureFormat IntelEncoder::captureFormat() const {
+    return CaptureFormat::D3D11_BGRA;
+}
+
+VideoCodecType IntelEncoder::codecType() const {
+    return impl_->codecType();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> IntelEncoder::encodeFrame(void* input_frame) {

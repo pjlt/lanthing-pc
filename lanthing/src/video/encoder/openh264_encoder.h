@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,53 +27,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 #pragma once
-#include <atomic>
-#include <functional>
-#include <future>
-#include <memory>
-#include <optional>
 
-#include <ltlib/system.h>
+#include <cstdint>
+#include <memory>
+
+#include <video/encoder/params_helper.h>
+#include <video/encoder/video_encoder.h>
 
 namespace lt {
 
 namespace video {
 
-enum class CaptureFormat {
-    D3D11_BGRA,
-    MEM_I420,
-};
-
-class Capturer {
+class OpenH264EncoderImpl;
+class OpenH264Encoder : public Encoder {
 public:
-    enum class Backend {
-        Dxgi,
-    };
-    struct Frame {
-        void* data;
-        int64_t capture_timestamp_us;
-    };
+    OpenH264Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
+    ~OpenH264Encoder() override;
 
-public:
-    static std::unique_ptr<Capturer> create(Backend backend, ltlib::Monitor monitor);
-    virtual ~Capturer();
-    virtual std::optional<Frame> capture() = 0;
-    virtual bool start() = 0;
-    virtual void doneWithFrame() = 0;
-    virtual Backend backend() const = 0;
-    virtual int64_t luid() { return -1; }
-    virtual void* device() = 0;
-    virtual void* deviceContext() = 0;
-    virtual void waitForVBlank() = 0;
-    virtual uint32_t vendorID() = 0;
-    virtual bool defaultOutput() = 0;
-    virtual bool setCaptureFormat(CaptureFormat format) = 0;
+    bool init(const EncodeParamsHelper& params);
+    void reconfigure(const ReconfigureParams& params) override;
+    CaptureFormat captureFormat() const override;
+    VideoCodecType codecType() const override;
+    std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
-protected:
-    Capturer();
-    virtual bool init() = 0;
+private:
+    std::shared_ptr<OpenH264EncoderImpl> impl_;
 };
 
 } // namespace video

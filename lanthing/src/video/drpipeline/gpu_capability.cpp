@@ -49,8 +49,8 @@ namespace video {
 
 std::string GpuInfo::Ability::to_str() const {
     char buf[1024] = {0};
-    snprintf(buf, sizeof(buf) - 1, "%04x-%s-%04x-%s-%uMB", vendor, desc.c_str(), device_id,
-             driver.c_str(), video_memory_mb);
+    snprintf(buf, sizeof(buf) - 1, "%04x-%s-%04x-%s-%uMB-%s", vendor, desc.c_str(), device_id,
+             driver.c_str(), video_memory_mb, std::to_string(luid).c_str());
     return buf;
 }
 
@@ -58,11 +58,10 @@ std::string GpuInfo::Ability::to_str() const {
 
 using namespace Microsoft::WRL;
 
-bool GpuInfo::init() {
-    HRESULT hr;
+bool GpuInfo::init(bool hard_decode) {
     // 用最高版本
     ComPtr<IDXGIFactory5> dxgi_factory;
-    hr = CreateDXGIFactory(__uuidof(IDXGIFactory5), (void**)dxgi_factory.GetAddressOf());
+    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory5), (void**)dxgi_factory.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(ERR, "Failed to create dxgi factory, er:%08x", hr);
         return false;
@@ -76,8 +75,10 @@ bool GpuInfo::init() {
         tmp_adapter = nullptr; // ??
         ++i;
     }
-    // IDXGISwapChain4* swap_chain = nullptr;
-    UINT flag = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+    UINT flag = 0;
+    if (hard_decode) {
+        flag = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+    }
 #ifdef _DEBUG
     flag |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -102,31 +103,35 @@ bool GpuInfo::init() {
                  hr);
             continue;
         }
-        ComPtr<ID3D11VideoDevice> video_device;
-        hr = d3d11_dev->QueryInterface(__uuidof(ID3D11VideoDevice),
-                                       (void**)video_device.GetAddressOf());
-        if (FAILED(hr)) {
-            LOGF(ERR, "Failed to get ID3D11VideoDevice on %s, hr:%08lx", ability.to_str().c_str(),
-                 hr);
-            continue;
+        if (hard_decode) {
+            ComPtr<ID3D11VideoDevice> video_device;
+            hr = d3d11_dev->QueryInterface(__uuidof(ID3D11VideoDevice),
+                                           (void**)video_device.GetAddressOf());
+            if (FAILED(hr)) {
+                LOGF(ERR, "Failed to get ID3D11VideoDevice on %s, hr:%08lx",
+                     ability.to_str().c_str(), hr);
+                continue;
+            }
+            GUID guid;
+            DXGI_FORMAT format;
+            guid = D3D11_DECODER_PROFILE_H264_VLD_NOFGT;
+            format = DXGI_FORMAT_NV12;
+            BOOL supported = false;
+            hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
+            if (!FAILED(hr) && supported) {
+                ability.codecs.push_back(lt::VideoCodecType::H264);
+            }
+            supported = false;
+            guid = D3D11_DECODER_PROFILE_HEVC_VLD_MAIN;
+            format = DXGI_FORMAT_NV12;
+            hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
+            if (!FAILED(hr) && supported) {
+                ability.codecs.push_back(lt::VideoCodecType::H265);
+            }
         }
-        GUID guid;
-        DXGI_FORMAT format;
-        guid = D3D11_DECODER_PROFILE_H264_VLD_NOFGT;
-        format = DXGI_FORMAT_NV12;
-        BOOL supported = false;
-        hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
-        if (!FAILED(hr) && supported) {
-            ability.codecs.push_back(lt::VideoCodecType::H264);
+        else {
+            ability.codecs.push_back(lt::VideoCodecType::H264_420_SOFT);
         }
-        supported = false;
-        guid = D3D11_DECODER_PROFILE_HEVC_VLD_MAIN;
-        format = DXGI_FORMAT_NV12;
-        hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
-        if (!FAILED(hr) && supported) {
-            ability.codecs.push_back(lt::VideoCodecType::H265);
-        }
-        // TODO: check DXGI_FORMAT_AYUV;
         if (!ability.codecs.empty()) {
             abilities_.push_back(ability);
         }
@@ -134,7 +139,7 @@ bool GpuInfo::init() {
     return true;
 }
 #else // LT_WINDOWS
-bool GpuInfo::init() {
+bool GpuInfo::init(bool) {
     return true;
 }
 #endif

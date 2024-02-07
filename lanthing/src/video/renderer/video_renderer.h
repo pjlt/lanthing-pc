@@ -32,6 +32,8 @@
 #include <memory>
 #include <vector>
 
+#include <video/decoder/video_decoder.h>
+
 namespace lt {
 
 namespace video {
@@ -53,6 +55,7 @@ public:
 public:
     static std::unique_ptr<Renderer> create(const Params& params);
     virtual ~Renderer() = default;
+    // NOTE: bindTextures之后不允许调用setDecodedFormat
     virtual bool bindTextures(const std::vector<void*>& textures) = 0;
     virtual RenderResult render(int64_t frame) = 0;
     virtual void updateCursor(int32_t cursor_id, float x, float y, bool visible) = 0;
@@ -65,6 +68,8 @@ public:
     virtual void* hwContext() = 0;
     virtual uint32_t displayWidth() = 0;
     virtual uint32_t displayHeight() = 0;
+    // NOTE: bindTextures之后不允许调用setDecodedFormat
+    virtual bool setDecodedFormat(DecodedFormat format) = 0;
 };
 
 } // namespace video

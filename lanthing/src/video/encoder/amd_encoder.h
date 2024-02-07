@@ -32,7 +32,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "params_helper.h"
+#include <video/encoder/params_helper.h>
 #include <video/encoder/video_encoder.h>
 
 namespace lt {
@@ -47,6 +47,8 @@ public:
     ~AmdEncoder() override {}
     bool init(const EncodeParamsHelper& params);
     void reconfigure(const ReconfigureParams& params) override;
+    CaptureFormat captureFormat() const override;
+    VideoCodecType codecType() const override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:

@@ -224,6 +224,7 @@ private:
     uint16_t max_port_ = 0;
     std::string ignored_nic_;
     bool first_start_working_ack_received_ = false;
+    std::vector<lt::VideoCodecType> client_video_codecs_;
 
     std::atomic<bool> enable_gamepad_;
     std::atomic<bool> enable_keyboard_;

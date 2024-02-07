@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,53 +29,36 @@
  */
 
 #pragma once
-#include <atomic>
-#include <functional>
-#include <future>
-#include <memory>
-#include <optional>
 
-#include <ltlib/system.h>
+#include <ltlib/load_library.h>
+
+#include <video/decoder/video_decoder.h>
+#include <video/types.h>
 
 namespace lt {
 
 namespace video {
 
-enum class CaptureFormat {
-    D3D11_BGRA,
-    MEM_I420,
-};
-
-class Capturer {
+struct OpenH264DecoderContext;
+class OpenH264Decoder : public Decoder {
 public:
-    enum class Backend {
-        Dxgi,
-    };
-    struct Frame {
-        void* data;
-        int64_t capture_timestamp_us;
-    };
+    OpenH264Decoder(const Params& params);
+    ~OpenH264Decoder() override;
 
-public:
-    static std::unique_ptr<Capturer> create(Backend backend, ltlib::Monitor monitor);
-    virtual ~Capturer();
-    virtual std::optional<Frame> capture() = 0;
-    virtual bool start() = 0;
-    virtual void doneWithFrame() = 0;
-    virtual Backend backend() const = 0;
-    virtual int64_t luid() { return -1; }
-    virtual void* device() = 0;
-    virtual void* deviceContext() = 0;
-    virtual void waitForVBlank() = 0;
-    virtual uint32_t vendorID() = 0;
-    virtual bool defaultOutput() = 0;
-    virtual bool setCaptureFormat(CaptureFormat format) = 0;
+    bool init();
+    DecodedFrame decode(const uint8_t* data, uint32_t size) override;
+    std::vector<void*> textures() override;
+    DecodedFormat decodedFormat() const;
 
-protected:
-    Capturer();
-    virtual bool init() = 0;
+private:
+    bool loadApi();
+
+private:
+    std::unique_ptr<ltlib::DynamicLibrary> openh264_lib_;
+    std::shared_ptr<OpenH264DecoderContext> ctx_;
+    bool openh264_init_success_ = false;
+    std::vector<uint8_t> frame_;
 };
 
 } // namespace video
-
 } // namespace lt

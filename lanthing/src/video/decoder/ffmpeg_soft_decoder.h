@@ -37,6 +37,7 @@ namespace lt {
 
 namespace video {
 
+// 编译ffmpeg的时候加了disable-gpl，没法用x264软解
 class FFmpegSoftDecoder : public Decoder {
 public:
     static std::unique_ptr<FFmpegSoftDecoder> create(const Params& params);

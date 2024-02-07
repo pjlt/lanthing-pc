@@ -146,13 +146,14 @@ private:
     int64_t status_color_ = -1;
     int64_t rel_mouse_accel_ = 0;
     std::string ignored_nic_;
+    bool enable_444_ = false;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;
     std::uniform_int_distribution<size_t> rand_distrib_;
     bool signaling_keepalive_inited_ = false;
     bool stoped_ = true;
-    uint32_t hard_decode_abilities_ = 0;
+    uint32_t decode_abilities_ = 0;
     bool service_started_ = false;
 };
 } // namespace lt

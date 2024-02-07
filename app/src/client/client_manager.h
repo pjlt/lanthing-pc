@@ -49,6 +49,7 @@ public:
     struct Params {
         ltlib::IOLoop* ioloop;
         uint32_t decode_abilities;
+        std::vector<VideoCodecType> codec_priority;
         std::function<void(const std::function<void()>&)> post_task;
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message;
@@ -81,6 +82,7 @@ private:
 
 private:
     const uint32_t decode_abilities_;
+    const std::vector<VideoCodecType> codec_priority_;
     std::function<void(const std::function<void()>&)> post_task_;
     std::function<void(int64_t, const std::function<void()>&)> post_delay_task_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>)> send_message_;

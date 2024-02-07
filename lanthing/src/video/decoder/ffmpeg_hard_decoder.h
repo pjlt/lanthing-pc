@@ -48,6 +48,7 @@ public:
     bool init();
     DecodedFrame decode(const uint8_t* data, uint32_t size) override;
     std::vector<void*> textures() override;
+    DecodedFormat decodedFormat() const override;
     int32_t getHwPixFormat() const;
     void* getHwFrameCtx();
 

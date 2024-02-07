@@ -94,11 +94,11 @@ void VDRPipeline2::resetRenderTarget() {}
 void VDRPipeline2::setCursorInfo(int32_t, float, float, bool) {}
 void VDRPipeline2::switchMouseMode(bool) {}
 void VDRPipeline2::switchStretchMode(bool) {}
-//#if !defined(LT_WINDOWS)
+// #if !defined(LT_WINDOWS)
 std::unique_ptr<VDRPipeline2> VDRPipeline2::create(const DecodeRenderPipeline::Params&) {
     return nullptr;
 }
-//#endif // LT_WINDOWS
+// #endif // LT_WINDOWS
 
 class VDRPipeline : public DecodeRenderPipeline {
 public:
@@ -226,10 +226,11 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
-    LOGF(INFO, "w:%u, h:%u, r:%u", width_, height_, rotation_);
+    LOGF(INFO, "VDRPipeline w:%u, h:%u, r:%u codec:%s", width_, height_, rotation_,
+         toString(codec_type_));
     Renderer::Params render_params{};
 #if LT_WINDOWS
-    if (!gpu_info_.init()) {
+    if (!gpu_info_.init(isHard(codec_type_))) {
         return false;
     }
     std::map<uint32_t, GpuInfo::Ability> sorted_by_memory;
@@ -242,6 +243,7 @@ bool VDRPipeline::init() {
     }
     uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
     render_params.device = target_adapter;
+    LOG(INFO) << "Using adapter " << sorted_by_memory.rbegin()->second.to_str();
 #elif LT_LINUX
     render_params.device = 0;
 #else
@@ -278,6 +280,9 @@ bool VDRPipeline::init() {
 
     video_decoder_ = Decoder::create(decode_params);
     if (video_decoder_ == nullptr) {
+        return false;
+    }
+    if (!video_renderer_->setDecodedFormat(video_decoder_->decodedFormat())) {
         return false;
     }
     if (for_test_) {
@@ -592,7 +597,8 @@ std::unique_ptr<DecodeRenderPipeline> DecodeRenderPipeline::create(const Params&
         return nullptr;
     }
     if (params.codec_type == VideoCodecType::H264_420 ||
-        params.codec_type == VideoCodecType::H265_420) {
+        params.codec_type == VideoCodecType::H265_420 ||
+        params.codec_type == VideoCodecType::H264_420_SOFT) {
         return VDRPipeline::create(params);
     }
     else if (params.codec_type == VideoCodecType::H264_444 ||

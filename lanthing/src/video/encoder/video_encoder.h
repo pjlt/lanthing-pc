@@ -68,9 +68,12 @@ public:
     };
 
 public:
-    static std::unique_ptr<Encoder> create(const InitParams& params);
+    static std::unique_ptr<Encoder> createHard(const InitParams& params);
+    static std::unique_ptr<Encoder> createSoft(const InitParams& params);
     virtual ~Encoder();
     virtual void reconfigure(const ReconfigureParams& params) = 0;
+    virtual CaptureFormat captureFormat() const = 0;
+    virtual VideoCodecType codecType() const = 0;
     void requestKeyframe();
     std::shared_ptr<ltproto::client2worker::VideoFrame> encode(const Capturer::Frame& input_frame);
 

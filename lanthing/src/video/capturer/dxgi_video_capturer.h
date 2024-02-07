@@ -59,18 +59,23 @@ public:
     void* deviceContext() override;
     uint32_t vendorID() override;
     bool defaultOutput() override;
+    bool setCaptureFormat(CaptureFormat format) override;
 
 private:
     bool initD3D11();
+    uint8_t* toI420(ID3D11Texture2D* frame);
 
 private:
     std::unique_ptr<DUPLICATIONMANAGER> impl_;
     Microsoft::WRL::ComPtr<IDXGIFactory1> dxgi_factory_;
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> stage_texture_;
+    std::vector<uint8_t> mem_buff_;
     int64_t luid_ = 0;
     uint32_t vendor_id_ = 0;
     ltlib::Monitor monitor_;
+    CaptureFormat capture_foramt_ = CaptureFormat::D3D11_BGRA;
 };
 
 } // namespace video

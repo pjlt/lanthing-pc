@@ -53,6 +53,15 @@ std::string to_string(std::vector<lt::VideoCodecType> codecs) {
         case lt::VideoCodecType::H265_420:
             str += lt::toString(lt::VideoCodecType::H265_420);
             break;
+        case lt::VideoCodecType::H264_444:
+            str += lt::toString(lt::VideoCodecType::H264_444);
+            break;
+        case lt::VideoCodecType::H265_444:
+            str += lt::toString(lt::VideoCodecType::H265_444);
+            break;
+        case lt::VideoCodecType::H264_420_SOFT:
+            str += lt::toString(lt::VideoCodecType::H264_420_SOFT);
+            break;
         default:
             str += lt::toString(lt::VideoCodecType::Unknown);
             break;
@@ -198,6 +207,7 @@ bool WorkerProcess::launchWorkerProcess() {
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.cb = sizeof(STARTUPINFO);
     si.wShowWindow = SW_SHOW;
+    LOG(INFO) << "Launching worker: " << ss.str();
     ret = CreateProcessAsUserW(user_token, NULL, const_cast<LPWSTR>(cmd.c_str()), &sa, &sa, FALSE,
                                NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
     CloseHandle(token);

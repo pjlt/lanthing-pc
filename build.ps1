@@ -36,7 +36,7 @@ function check_build_type() {
 }
 
 function rtc_fetch() {
-    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.6.3/rtc.win.zip"
+    $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.6.4/rtc.win.zip"
     New-Item -ItemType Directory -ErrorAction SilentlyContinue transport/rtc/win
     echo "Fetch $RtcUri"
     Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.win.zip
@@ -66,6 +66,7 @@ function prebuilt_fetch() {
         [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-9/ffmpeg.win.v5.1.3-9.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.win.v3.24.3-2.zip")
         [BuiltLib]::new("sqlite", "https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.win.v3.43.1-6.zip")
+        [BuiltLib]::new("openh264", "https://github.com/numbaa/openh264-prebuilt/releases/download/v2.4.0-1/openh264.win.v2.4.0-1.zip")
     )
 
     New-Item -ItemType Directory -ErrorAction SilentlyContinue third_party/prebuilt

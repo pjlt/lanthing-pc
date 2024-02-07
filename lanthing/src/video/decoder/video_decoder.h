@@ -42,6 +42,12 @@ namespace video {
 // Linux下不知道那个库似乎把'Success'变成常量
 enum class DecodeStatus { Success2, EAgain, Failed, NeedReset };
 
+enum class DecodedFormat {
+    MEM_NV12,
+    D3D11_NV12,
+    VA_NV12,
+};
+
 struct DecodedFrame {
     DecodeStatus status;
     int64_t frame;
@@ -65,6 +71,7 @@ public:
     virtual ~Decoder() = default;
     virtual DecodedFrame decode(const uint8_t* data, uint32_t size) = 0;
     virtual std::vector<void*> textures() = 0;
+    virtual DecodedFormat decodedFormat() const = 0;
 
     VideoCodecType codecType() const;
     uint32_t width() const;

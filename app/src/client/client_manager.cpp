@@ -44,11 +44,6 @@
 
 namespace {
 
-constexpr lt::VideoCodecType kCodecPriority[] = {
-    lt::VideoCodecType::H265_420, lt::VideoCodecType::H264_420, lt::VideoCodecType::H265_444,
-    lt::VideoCodecType::H264_444, lt::VideoCodecType::AV1,
-};
-
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
     case ltproto::common::AVC:
@@ -61,6 +56,8 @@ lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
         return lt::VideoCodecType::H265_444;
     case ltproto::common::AV1:
         return lt::VideoCodecType::AV1;
+    case ltproto::common::AVC_SOFT:
+        return lt::VideoCodecType::H264_420_SOFT;
     default:
         return lt::VideoCodecType::Unknown;
     }
@@ -72,6 +69,7 @@ namespace lt {
 
 ClientManager::ClientManager(const Params& params)
     : decode_abilities_{params.decode_abilities}
+    , codec_priority_{params.codec_priority}
     , post_task_{params.post_task}
     , post_delay_task_{params.post_delay_task}
     , send_message_{params.send_message}
@@ -153,7 +151,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     params->set_screen_refresh_rate(display_output_desc.frequency);
     params->set_video_width(display_output_desc.width);
     params->set_video_height(display_output_desc.height);
-    for (auto codec : kCodecPriority) {
+    for (auto codec : codec_priority_) {
         using CodecType = ltproto::common::VideoCodecType;
         switch (codec) {
         case VideoCodecType::H264_420:
@@ -179,6 +177,11 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
         case VideoCodecType::AV1:
             if (decode_abilities_ & VideoCodecType::AV1) {
                 params->add_video_codecs(CodecType::AV1);
+            }
+            break;
+        case VideoCodecType::H264_420_SOFT:
+            if (decode_abilities_ & VideoCodecType::H264_420_SOFT) {
+                params->add_video_codecs(CodecType::AVC_SOFT);
             }
             break;
         default:

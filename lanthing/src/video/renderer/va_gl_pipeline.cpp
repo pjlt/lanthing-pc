@@ -258,6 +258,16 @@ uint32_t VaGlPipeline::displayHeight() {
     return window_height_;
 }
 
+bool VaGlPipeline::setDecodedFormat(DecodedFormat format) {
+    if (format == DecodedFormat::VA_NV12) {
+        return true;
+    }
+    else {
+        LOG(ERR) << "VaGlPipeline doesn't support DecodedFormat " << (int)format;
+        return false;
+    }
+}
+
 bool VaGlPipeline::loadFuncs() {
     eglCreateImageKHR_ =
         reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));

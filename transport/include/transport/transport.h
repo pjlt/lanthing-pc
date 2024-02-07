@@ -51,35 +51,73 @@ enum class VideoCodecType : uint32_t {
     H264_444 = 0b0000'0100,
     H265_444 = 0b0000'1000,
     AV1 = 0b0001'0000,
+    H264_420_SOFT = 0b0010'0000,
     H264 = H264_420,
     H265 = H265_420,
 };
 
-constexpr uint32_t operator&(uint32_t value, VideoCodecType codec) {
+inline constexpr uint32_t operator&(uint32_t value, VideoCodecType codec) {
     return value & static_cast<uint32_t>(codec);
 }
 
-constexpr uint32_t operator&(VideoCodecType codec, uint32_t value) {
+inline constexpr uint32_t operator&(VideoCodecType codec, uint32_t value) {
     return value & codec;
 }
 
-constexpr uint32_t operator&(VideoCodecType left, VideoCodecType right) {
+inline constexpr uint32_t operator&(VideoCodecType left, VideoCodecType right) {
     return static_cast<uint32_t>(left) & static_cast<uint32_t>(right);
 }
 
-constexpr uint32_t operator|(uint32_t value, VideoCodecType codec) {
+inline constexpr uint32_t operator|(uint32_t value, VideoCodecType codec) {
     return value | static_cast<uint32_t>(codec);
 }
 
-constexpr uint32_t operator|(VideoCodecType codec, uint32_t value) {
+inline constexpr uint32_t operator|(VideoCodecType codec, uint32_t value) {
     return value | codec;
 }
 
-constexpr uint32_t operator|(VideoCodecType left, VideoCodecType right) {
+inline constexpr uint32_t operator|(VideoCodecType left, VideoCodecType right) {
     return static_cast<uint32_t>(left) | static_cast<uint32_t>(right);
 }
 
-constexpr const char* toString(VideoCodecType type) {
+inline constexpr bool isYUV444(VideoCodecType ct) {
+    return (ct == VideoCodecType::H264_444 || ct == VideoCodecType::H265_444);
+}
+
+inline constexpr bool isYUV420(VideoCodecType ct) {
+    return (ct == VideoCodecType::H264_420 || ct == VideoCodecType::H265_420 ||
+            ct == VideoCodecType::H264_420_SOFT);
+}
+
+inline constexpr bool isHard(VideoCodecType ct) {
+    return (ct == VideoCodecType::H264_420 || ct == VideoCodecType::H265_420 ||
+            ct == VideoCodecType::H264_444 || ct == VideoCodecType::H265_444);
+}
+
+inline constexpr bool isSoft(VideoCodecType ct) {
+    return ct == VideoCodecType::H264_420_SOFT;
+}
+
+inline constexpr bool isAVC(VideoCodecType ct) {
+    if (ct == VideoCodecType::H264_420 || ct == VideoCodecType::H264_444 ||
+        ct == VideoCodecType::H264_420_SOFT) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+inline constexpr bool isHEVC(VideoCodecType ct) {
+    if (ct == VideoCodecType::H265_420 || ct == VideoCodecType::H265_444) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+inline constexpr const char* toString(VideoCodecType type) {
     switch (type) {
     case VideoCodecType::H264_420:
         return "AVC";
@@ -91,26 +129,31 @@ constexpr const char* toString(VideoCodecType type) {
         return "HEVC444";
     case VideoCodecType::AV1:
         return "AV1";
+    case VideoCodecType::H264_420_SOFT:
+        return "AVC_SOFT";
     default:
         return "?";
     }
 }
 
 inline VideoCodecType videoCodecType(const char* type) {
-    if (std::strncmp(type, "AVC", 3) == 0) {
+    if (std::strcmp(type, "AVC") == 0) {
         return VideoCodecType::H264_420;
     }
-    else if (std::strncmp(type, "HEVC", 4) == 0) {
+    else if (std::strcmp(type, "HEVC") == 0) {
         return VideoCodecType::H265_420;
     }
-    else if (std::strncmp(type, "AVC444", 6) == 0) {
+    else if (std::strcmp(type, "AVC444") == 0) {
         return VideoCodecType::H264_444;
     }
-    else if (std::strncmp(type, "HEVC444", 7) == 0) {
+    else if (std::strcmp(type, "HEVC444") == 0) {
         return VideoCodecType::H265_444;
     }
-    else if (std::strncmp(type, "AV1", 3) == 0) {
+    else if (std::strcmp(type, "AV1") == 0) {
         return VideoCodecType::AV1;
+    }
+    else if (std::strcmp(type, "AVC_SOFT") == 0) {
+        return VideoCodecType::H264_420_SOFT;
     }
     else {
         return VideoCodecType::Unknown;

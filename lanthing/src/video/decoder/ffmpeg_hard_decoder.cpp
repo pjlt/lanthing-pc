@@ -28,6 +28,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
+
 // ffmpeg头文件的警告
 #include <ltlib/pragma_warning.h>
 WARNING_DISABLE(4244)
@@ -429,6 +431,19 @@ DecodedFrame FFmpegHardDecoder::decode(const uint8_t* data, uint32_t size) {
 
 std::vector<void*> FFmpegHardDecoder::textures() {
     return textures_;
+}
+
+DecodedFormat FFmpegHardDecoder::decodedFormat() const {
+    switch (va_type_) {
+    case VaType::D3D11:
+        return DecodedFormat::D3D11_NV12;
+    case VaType::VAAPI:
+        return DecodedFormat::VA_NV12;
+    default:
+        // client 在初始化阶段用FATAL没问题
+        LOG(FATAL) << "Unknown VaType " << (int)va_type_;
+        return DecodedFormat::D3D11_NV12;
+    }
 }
 
 } // namespace video
