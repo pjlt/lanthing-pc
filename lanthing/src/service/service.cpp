@@ -346,6 +346,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
+#if 0
+    // 暂时不做时间校验
     constexpr int64_t kSecondsPerWeek = int64_t(60) * 60 * 24 * 7;
     const int64_t now = ltlib::utc_now_ms() / 1000; // sqlite的时间戳是UTC+0
     auto update_at = settings_->getUpdateTime(cookie_name);
@@ -353,6 +355,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         letUserConfirm(msg->client_device_id());
         return;
     }
+#endif // if 0
     auto cookie = settings_->getString(cookie_name);
     if (!cookie.has_value() || cookie.value() != msg->cookie()) {
         letUserConfirm(msg->client_device_id());

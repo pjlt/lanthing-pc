@@ -337,8 +337,8 @@ void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLit
         std::ostringstream oss;
         oss << msg->device_id() << " " << delay_ms * 2 << "ms " << std::fixed
             << std::setprecision(1) << Mbps << "Mbps " << video_codec_ << " "
-            << (p2p_ ? "P2P " : "Relay ") << (gpu_encode_ ? "GPU:" : "CPU:")
-            << (gpu_decode_ ? "GPU " : "CPU ");
+            << (p2p_ ? "P2P " : "Relay ") << (gpu_decode_ ? "GPU:" : "CPU:")
+            << (gpu_encode_ ? "GPU " : "CPU ");
         ui->labelClient1->setToolTip(QString::fromStdString(oss.str()));
     });
 }
