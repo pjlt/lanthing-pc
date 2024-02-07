@@ -98,6 +98,25 @@ inline constexpr bool isSoft(VideoCodecType ct) {
     return ct == VideoCodecType::H264_420_SOFT;
 }
 
+inline constexpr bool isAVC(VideoCodecType ct) {
+    if (ct == VideoCodecType::H264_420 || ct == VideoCodecType::H264_444 ||
+        ct == VideoCodecType::H264_420_SOFT) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+inline constexpr bool isHEVC(VideoCodecType ct) {
+    if (ct == VideoCodecType::H265_420 || ct == VideoCodecType::H265_444) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 inline constexpr const char* toString(VideoCodecType type) {
     switch (type) {
     case VideoCodecType::H264_420:

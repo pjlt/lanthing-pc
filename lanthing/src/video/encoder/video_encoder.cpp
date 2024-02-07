@@ -40,9 +40,11 @@
 #include "amd_encoder.h"
 #include "intel_encoder.h"
 #include "nvidia_encoder.h"
-#include "openh264_encoder.h"
 #include "params_helper.h"
 #include "video_encoder.h"
+#if defined(LT_WINDOWS)
+#include "openh264_encoder.h"
+#endif // defined(LT_WINDOWS)
 
 // TODO: 由于之前用的是“Service和Worker之间共享Texture Shared
 // Handle”的模型，这个文件有很多针对性的代码，有空需重新整理。
@@ -308,6 +310,7 @@ std::unique_ptr<Encoder> Encoder::createHard(const InitParams& params) {
 }
 
 std::unique_ptr<Encoder> Encoder::createSoft(const InitParams& params) {
+#if defined(LT_WINDOWS)
     EncodeParamsHelper params_helper{
         params.codec_type,         params.width, params.height, params.freq,
         params.bitrate_bps / 1024, true};
@@ -317,6 +320,10 @@ std::unique_ptr<Encoder> Encoder::createSoft(const InitParams& params) {
         return nullptr;
     }
     return openh264_encoder;
+#else  // defined(LT_WINDOWS)
+    (void)params;
+    return nullptr;
+#endif // defined(LT_WINDOWS)
 }
 
 Encoder::Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)

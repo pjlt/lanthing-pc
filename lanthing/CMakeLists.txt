@@ -85,8 +85,6 @@ set(LT_VIDEO_DECODER_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_hard_decoder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_soft_decoder.h
     #${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/ffmpeg_soft_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.cpp
 )
 
 set(LT_VIDEO_RENDERER_SRCS
@@ -100,6 +98,10 @@ if (LT_WINDOWS)
     list(APPEND LT_VIDEO_RENDERER_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.cpp
+    )
+    list(APPEND LT_VIDEO_DECODER_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.cpp
     )
 elseif (LT_LINUX)
     list(APPEND LT_VIDEO_RENDERER_SRCS

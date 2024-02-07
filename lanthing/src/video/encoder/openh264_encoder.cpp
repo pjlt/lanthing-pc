@@ -221,7 +221,7 @@ OpenH264EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
 }
 
 bool OpenH264EncoderImpl::loadApi() {
-    const std::string kLibName = "openh264-2.4.1-win64.dll";
+    const std::string kLibName = "openh264-2.4.0-win64.dll";
     openh264_lib_ = ltlib::DynamicLibrary::load(kLibName);
     if (openh264_lib_ == nullptr) {
         LOG(ERR) << "Load library " << kLibName << " failed";

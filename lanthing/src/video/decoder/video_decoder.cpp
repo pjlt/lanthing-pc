@@ -33,7 +33,9 @@
 #include <ltlib/logging.h>
 
 #include "ffmpeg_hard_decoder.h"
+#if defined(LT_WINDOWS)
 #include "openh264_decoder.h"
+#endif // defined(LT_WINDOWS)
 
 namespace lt {
 
@@ -47,6 +49,7 @@ std::unique_ptr<Decoder> Decoder::create(const Params& params) {
         }
         return decoder;
     }
+#if defined(LT_WINDOWS)
     else if (params.codec_type == VideoCodecType::H264_420_SOFT) {
         auto decoder = std::make_unique<OpenH264Decoder>(params);
         if (!decoder->init()) {
@@ -54,6 +57,7 @@ std::unique_ptr<Decoder> Decoder::create(const Params& params) {
         }
         return decoder;
     }
+#endif // defined(LT_WINDOWS)
     else {
         return nullptr;
     }
