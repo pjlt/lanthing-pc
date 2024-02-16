@@ -406,8 +406,7 @@ bool Encoder::InitParams::validate() const {
         this->freq > 240) {
         return false;
     }
-    if (codec_type != lt::VideoCodecType::H264_420 && codec_type != lt::VideoCodecType::H265_420 &&
-        codec_type != lt::VideoCodecType::H264_420_SOFT) {
+    if (codec_type != lt::VideoCodecType::H264_420 && codec_type != lt::VideoCodecType::H265_420) {
         return false;
     }
     return true;

@@ -596,19 +596,11 @@ std::unique_ptr<DecodeRenderPipeline> DecodeRenderPipeline::create(const Params&
         LOG(FATAL) << "Create DecodeRenderPipeline failed: invalid parameter";
         return nullptr;
     }
-    if (params.codec_type == VideoCodecType::H264_420 ||
-        params.codec_type == VideoCodecType::H265_420 ||
-        params.codec_type == VideoCodecType::H264_420_SOFT) {
-        return VDRPipeline::create(params);
+    auto pipeline = VDRPipeline2::create(params);
+    if (pipeline != nullptr) {
+        return pipeline;
     }
-    else if (params.codec_type == VideoCodecType::H264_444 ||
-             params.codec_type == VideoCodecType::H265_444) {
-        return VDRPipeline2::create(params);
-    }
-    else {
-        LOG(ERR) << "Init VideoDecodeRenderPipeline failed: only support avc and hevc";
-        return nullptr;
-    }
+    return VDRPipeline::create(params);
 }
 
 } // namespace video

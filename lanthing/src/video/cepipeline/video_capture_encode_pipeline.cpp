@@ -466,10 +466,8 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
         LOG(FATAL) << "Create CaptureEncodePipeline failed, invalid parameters";
         return nullptr;
     }
-    Params params420 = params;
-    Params params444 = params;
-    std::vector<VideoCodecType> yuv420;
-    std::vector<VideoCodecType> yuv444;
+    Params params2 = params;
+    params2.codecs.clear();
     bool h264_420_inserted = false;
     for (auto codec : params.codecs) {
         switch (codec) {
@@ -477,44 +475,33 @@ std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Param
             if (!h264_420_inserted) {
                 h264_420_inserted = true;
             }
-            yuv420.push_back(codec);
+            params2.codecs.push_back(codec);
             break;
         case VideoCodecType::H264_420_SOFT:
             if (!h264_420_inserted) {
                 h264_420_inserted = true;
             }
-            yuv420.push_back(VideoCodecType::H264_420);
+            params2.codecs.push_back(VideoCodecType::H264_420);
             break;
         case VideoCodecType::H265_420:
-            yuv420.push_back(codec);
-            break;
         case VideoCodecType::H264_444:
         case VideoCodecType::H265_444:
-            yuv444.push_back(codec);
+            params2.codecs.push_back(codec);
             break;
         default:
             break;
         }
     }
-    params420.codecs = yuv420;
-    params444.codecs = yuv444;
-    if (yuv420.empty() && yuv444.empty()) {
+    if (params2.codecs.empty()) {
         // fatal error
         LOG(ERR) << "Init VideoCaptureEncodePipeline failed: only support avc and hevc";
         return nullptr;
     }
-    // try first
-    if (!yuv444.empty()) {
-        auto pipeline = VCEPipeline2::create(params444);
-        if (pipeline != nullptr) {
-            return pipeline;
-        }
+    auto pipeline = VCEPipeline2::create(params2);
+    if (pipeline != nullptr) {
+        return pipeline;
     }
-    // fallback
-    if (!yuv420.empty()) {
-        return VCEPipeline::create(params420);
-    }
-    return nullptr;
+    return VCEPipeline::create(params2);
 }
 
 } // namespace video
