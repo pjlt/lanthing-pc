@@ -258,15 +258,11 @@ private:
     bool findImplIndex();
     void printAllImpls();
     bool initEncoder(const VplParamsHelper& params_helper);
-
-    ComPtr<ID3D11Texture2D> allocEncodeTexture();
     mfxVideoParam genEncodeParams(const VplParamsHelper& params_helper);
-
 
 private:
     ComPtr<ID3D11Device> d3d11_dev_;
     ComPtr<ID3D11DeviceContext> d3d11_ctx_;
-    ComPtr<ID3D11Texture2D> encode_texture_;
     const int64_t luid_;
     int32_t impl_index_ = -1;
 
@@ -274,13 +270,10 @@ private:
     mfxLoader mfxloader_ = nullptr;
     mfxSession mfxsession_ = nullptr;
     mfxVideoParam encode_param_{};
-    mfxVideoParam vpp_param_{};
     std::unique_ptr<MfxEncoderFrameAllocator> allocator_;
-    mfxExtVPPVideoSignalInfo vpp_signal_{};
-    std::vector<mfxExtBuffer*> vpp_ext_buffers_;
-
-    std::vector<mfxExtBuffer*> enc_ext_buffers_;
     std::vector<uint8_t> bitstream_;
+    mfxExtCodingOption enc_coding_opt_{};
+    std::vector<mfxExtBuffer*> enc_ext_buffers_;
     VplParamsHelper params_;
 };
 
@@ -346,10 +339,7 @@ void IntelEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
         // vsize.target = std::max(old8, target_kbps);
         vsize.target = params_.bitrate_kbps();
         vsize.max = params_.maxbitrate_kbps();
-        vsize.init_delay = static_cast<uint32_t>(encode_param_.mfx.InitialDelayInKB) *
-                           encode_param_.mfx.BRCParamMultiplier;
-        vsize.buffer_size = static_cast<uint32_t>(encode_param_.mfx.BufferSizeInKB) *
-                            encode_param_.mfx.BRCParamMultiplier;
+        vsize.buffer_size = 512;
         vsize = calcSize(vsize);
         encode_param_.mfx.TargetKbps = static_cast<mfxU16>(vsize.target);
         encode_param_.mfx.MaxKbps = static_cast<mfxU16>(vsize.max);
@@ -413,17 +403,14 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
         ctrl.FrameType = MFX_FRAMETYPE_I | MFX_FRAMETYPE_IDR;
         pctrl = &ctrl;
     }
-    mfxFrameSurface1 vpp_surface{};
-    vpp_surface.Data.MemId = input_frame;
-    vpp_surface.Info = vpp_param_.mfx.FrameInfo;
     mfxFrameSurface1 encode_surface{};
-    encode_surface.Data.MemId = encode_texture_.Get();
+    encode_surface.Data.MemId = input_frame;
     encode_surface.Info = encode_param_.mfx.FrameInfo;
     mfxStatus status = MFX_ERR_NONE;
 
     while (true) {
-        status = MFXVideoENCODE_EncodeFrameAsync(mfxsession_, pctrl,
-                                                 &vpp_surface /*encode_surface*/, &bs, &sync_point);
+        status =
+            MFXVideoENCODE_EncodeFrameAsync(mfxsession_, pctrl, &encode_surface, &bs, &sync_point);
         if (status == MFX_WRN_DEVICE_BUSY) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
             continue;
@@ -588,30 +575,6 @@ bool IntelEncoderImpl::initEncoder(const VplParamsHelper& params_helper) {
     return true;
 }
 
-
-
-Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::allocEncodeTexture() {
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> frame;
-    D3D11_TEXTURE2D_DESC desc{};
-    desc.Width = MSDK_ALIGN16(static_cast<mfxU16>(params_.width()));
-    desc.Height = MSDK_ALIGN16(static_cast<mfxU16>(params_.height()));
-    desc.MipLevels = 1;
-    desc.ArraySize = 1;
-    desc.SampleDesc.Count = 1;
-    desc.Usage = D3D11_USAGE_DEFAULT;
-    desc.Format = DXGI_FORMAT_NV12;
-    desc.BindFlags = D3D11_BIND_RENDER_TARGET;
-    desc.MiscFlags = 0;
-    // desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-    HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, nullptr, frame.GetAddressOf());
-    if (FAILED(hr)) {
-        // assert(false);
-        LOG(ERR) << "D3D11Device::CreateTexture2D failed with " << GetLastError();
-        return nullptr;
-    }
-    return frame;
-}
-
 mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_helper) {
     VplSize vsize;
     vsize.buffer_size = 512;
@@ -661,6 +624,14 @@ mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_he
     params.mfx.FrameInfo.Width = MSDK_ALIGN16(static_cast<mfxU16>(params_.width()));
     params.mfx.FrameInfo.Height = MSDK_ALIGN16(static_cast<mfxU16>(params_.height()));
     params.AsyncDepth = 1;
+    enc_coding_opt_.PicTimingSEI = MFX_CODINGOPTION_OFF;
+    enc_coding_opt_.NalHrdConformance = MFX_CODINGOPTION_OFF;
+    enc_coding_opt_.VuiNalHrdParameters = MFX_CODINGOPTION_OFF;
+    enc_coding_opt_.Header.BufferId = MFX_EXTBUFF_CODING_OPTION;
+    enc_coding_opt_.Header.BufferSz = sizeof(mfxExtCodingOption);
+    enc_ext_buffers_.push_back(reinterpret_cast<mfxExtBuffer*>(&enc_coding_opt_));
+    params.ExtParam = enc_ext_buffers_.data();
+    params.NumExtParam = 1;
 
     return params;
 }
