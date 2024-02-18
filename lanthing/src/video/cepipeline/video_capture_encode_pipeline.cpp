@@ -216,10 +216,20 @@ bool VCEPipeline::init() {
     std::unique_ptr<Encoder> encoder;
     // try hard first
     for (auto codec : client_supported_codecs_) {
-        encode_params.codec_type =
-            codec == VideoCodecType::H264_420_SOFT ? VideoCodecType::H264_420 : codec;
+        if (codec == VideoCodecType::H264_420_SOFT) {
+            encode_params.codec_type = VideoCodecType::H264_420;
+            encode_params.freq = k30FPS;
+        }
+        else {
+            encode_params.freq = max_fps_;
+            encode_params.codec_type = codec;
+        }
         encoder = Encoder::createHard(encode_params);
         if (encoder) {
+            if (codec == VideoCodecType::H264_420_SOFT) {
+                max_fps_ = k30FPS;
+                target_fps_ = max_fps_;
+            }
             break;
         }
     }
