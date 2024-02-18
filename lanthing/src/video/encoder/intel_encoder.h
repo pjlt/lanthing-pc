@@ -43,12 +43,14 @@ class IntelEncoderImpl;
 
 class IntelEncoder : public Encoder {
 public:
-    IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid, uint32_t width, uint32_t height);
+    static std::unique_ptr<IntelEncoder> create(const EncodeParamsHelper& params);
     ~IntelEncoder() override {}
-    bool init(const EncodeParamsHelper& params);
+
     void reconfigure(const ReconfigureParams& params) override;
     CaptureFormat captureFormat() const override;
     VideoCodecType codecType() const override;
+    uint32_t width() const override;
+    uint32_t height() const override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:

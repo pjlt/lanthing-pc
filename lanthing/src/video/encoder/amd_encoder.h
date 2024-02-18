@@ -43,12 +43,14 @@ class AmdEncoderImpl;
 
 class AmdEncoder : public Encoder {
 public:
-    AmdEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
+    static std::unique_ptr<AmdEncoder> create(const EncodeParamsHelper& params);
     ~AmdEncoder() override {}
-    bool init(const EncodeParamsHelper& params);
+
     void reconfigure(const ReconfigureParams& params) override;
     CaptureFormat captureFormat() const override;
     VideoCodecType codecType() const override;
+    uint32_t width() const override;
+    uint32_t height() const override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:

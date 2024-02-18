@@ -80,9 +80,10 @@ uint32_t checkDecodeAbility() {
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
     }};
-    DWORD ret = WaitForSingleObject(pi.hProcess, 3000);
+    DWORD ret = WaitForSingleObject(pi.hProcess, 10000);
     if (ret != WAIT_OBJECT_0) {
-        LOGF(ERR, "Check decode ability WaitForSingleObject failed with %#x", GetLastError());
+        LOGF(ERR, "Check decode ability WaitForSingleObject failed with ret:%u err:%#x", ret,
+             GetLastError());
         return 0;
     }
     DWORD exit_code = 0;

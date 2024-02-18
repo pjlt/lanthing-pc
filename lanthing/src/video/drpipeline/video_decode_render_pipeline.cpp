@@ -48,9 +48,9 @@
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
 
-#include "ct_smoother.h"
-#include "gpu_capability.h"
 #include <video/decoder/video_decoder.h>
+#include <video/drpipeline/ct_smoother.h>
+#include <video/drpipeline/gpu_capability.h>
 #include <video/drpipeline/video_statistics.h>
 #include <video/renderer/video_renderer.h>
 #include <video/widgets/widgets_manager.h>
@@ -143,7 +143,8 @@ private:
     const uint32_t height_;
     const uint32_t screen_refresh_rate_;
     const uint32_t rotation_;
-    const lt::VideoCodecType codec_type_;
+    const lt::VideoCodecType encode_codec_type_;
+    const lt::VideoCodecType decode_codec_type_;
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message_to_host_;
     std::function<void()> switch_stretch_;
@@ -196,7 +197,8 @@ VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     , height_{params.height}
     , screen_refresh_rate_{params.screen_refresh_rate}
     , rotation_{params.rotation}
-    , codec_type_{params.codec_type}
+    , encode_codec_type_{params.encode_codec}
+    , decode_codec_type_{params.decode_codec}
     , send_message_to_host_{params.send_message_to_host}
     , switch_stretch_{params.switch_stretch}
     , reset_pipeline_{params.reset_pipeline}
@@ -227,10 +229,10 @@ VDRPipeline::~VDRPipeline() {
 
 bool VDRPipeline::init() {
     LOGF(INFO, "VDRPipeline w:%u, h:%u, r:%u codec:%s", width_, height_, rotation_,
-         toString(codec_type_));
+         toString(decode_codec_type_));
     Renderer::Params render_params{};
 #if LT_WINDOWS
-    if (!gpu_info_.init(isHard(codec_type_))) {
+    if (!gpu_info_.init(isHard(decode_codec_type_))) {
         return false;
     }
     std::map<uint32_t, GpuInfo::Ability> sorted_by_memory;
@@ -259,13 +261,13 @@ bool VDRPipeline::init() {
     render_params.video_height = video_height;
     render_params.rotation = rotation_;
     render_params.stretch = is_stretch_;
-    render_params.align = Decoder::align(codec_type_);
+    render_params.align = Decoder::align(decode_codec_type_);
     video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {
         return false;
     }
     Decoder::Params decode_params{};
-    decode_params.codec_type = codec_type_;
+    decode_params.codec_type = decode_codec_type_;
     decode_params.hw_device = video_renderer_->hwDevice();
     decode_params.hw_context = video_renderer_->hwContext();
 #if LT_WINDOWS
@@ -564,12 +566,13 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
 }
 
 DecodeRenderPipeline::Params::Params(
-    lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
+    lt::VideoCodecType encode, lt::VideoCodecType decode, uint32_t _width, uint32_t _height,
     uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message,
     std::function<void()> _switch_stretch, std::function<void()> _reset_pipeline)
-    : codec_type(_codec_type)
+    : encode_codec(encode)
+    , decode_codec(decode)
     , width(_width)
     , height(_height)
     , screen_refresh_rate(_screen_refresh_rate)
@@ -582,7 +585,8 @@ DecodeRenderPipeline::Params::Params(
 }
 
 bool DecodeRenderPipeline::Params::validate() const {
-    if (codec_type == lt::VideoCodecType::Unknown || sdl == nullptr ||
+    if (encode_codec == lt::VideoCodecType::Unknown ||
+        decode_codec == lt::VideoCodecType::Unknown || sdl == nullptr ||
         send_message_to_host == nullptr) {
         return false;
     }

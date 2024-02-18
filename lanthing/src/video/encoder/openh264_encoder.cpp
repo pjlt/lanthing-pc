@@ -50,9 +50,11 @@ public:
     uint32_t height() const { return params_.height(); }
     uint32_t bitrate() const { return params_.bitrate(); }
     uint32_t maxbitrate() const { return params_.maxbitrate(); }
+    void set_bitrate(uint32_t bps) { params_.set_bitrate(bps); }
+    void set_fps(int f) { params_.set_fps(f); }
 
 private:
-    const lt::video::EncodeParamsHelper params_;
+    lt::video::EncodeParamsHelper params_;
 };
 } // namespace
 
@@ -62,10 +64,12 @@ namespace video {
 
 class OpenH264EncoderImpl {
 public:
-    OpenH264EncoderImpl();
+    OpenH264EncoderImpl(const EncodeParamsHelper& params);
     ~OpenH264EncoderImpl();
-    bool init(const EncodeParamsHelper& params);
+    bool init();
     void reconfigure(const Encoder::ReconfigureParams& params);
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -74,15 +78,19 @@ private:
     void generateEncodeParams(const OpenH264ParamsHelper& helper, SEncParamExt& params);
 
 private:
+    VideoCodecType codec_type_;
     std::unique_ptr<ltlib::DynamicLibrary> openh264_lib_;
     ISVCEncoder* encoder_ = nullptr;
     SEncParamExt init_params_{};
     decltype(&WelsCreateSVCEncoder) create_encoder_ = nullptr;
     decltype(&WelsDestroySVCEncoder) destroy_encoder_ = nullptr;
     bool encoder_init_success_ = false;
+    OpenH264ParamsHelper params_;
 };
 
-OpenH264EncoderImpl::OpenH264EncoderImpl() {}
+OpenH264EncoderImpl::OpenH264EncoderImpl(const EncodeParamsHelper& params)
+    : codec_type_{params.codec()}
+    , params_{params} {}
 
 OpenH264EncoderImpl::~OpenH264EncoderImpl() {
     if (encoder_ != nullptr) {
@@ -93,16 +101,15 @@ OpenH264EncoderImpl::~OpenH264EncoderImpl() {
     }
 }
 
-bool OpenH264EncoderImpl::init(const EncodeParamsHelper& params) {
-    if (params.codec() != VideoCodecType::H264_420 &&
-        params.codec() != VideoCodecType::H264_420_SOFT) {
+bool OpenH264EncoderImpl::init() {
+    if (codec_type_ != VideoCodecType::H264_420 && codec_type_ != VideoCodecType::H264_420_SOFT) {
         LOG(ERR) << "OpenH264 encoder only support H264_420";
         return false;
     }
     if (!loadApi()) {
         return false;
     }
-    OpenH264ParamsHelper params_helper{params};
+
     int ret = create_encoder_(&encoder_);
     if (ret != 0) {
         LOG(ERR) << "WelsCreateSVCEncoder failed " << ret;
@@ -113,7 +120,7 @@ bool OpenH264EncoderImpl::init(const EncodeParamsHelper& params) {
         LOG(ERR) << "ISVCEncoder::GetDefaultParams failed " << ret;
         return false;
     }
-    generateEncodeParams(params_helper, init_params_);
+    generateEncodeParams(params_, init_params_);
     ret = encoder_->InitializeExt(&init_params_);
     if (ret != 0) {
         LOG(ERR) << "ISVCEncoder::InitializeExt failed " << ret;
@@ -132,17 +139,19 @@ bool OpenH264EncoderImpl::init(const EncodeParamsHelper& params) {
 
 void OpenH264EncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     if (params.bitrate_bps.has_value()) {
+        params_.set_bitrate(params.bitrate_bps.value());
         SBitrateInfo option{};
         option.iLayer = SPATIAL_LAYER_ALL;
-        option.iBitrate = params.bitrate_bps.value();
+        option.iBitrate = static_cast<int>(params_.bitrate());
         int ret = encoder_->SetOption(ENCODER_OPTION_BITRATE, &option);
         if (ret != 0) {
-            LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_BITRATE, "
-                     << params.bitrate_bps.value() << ") failed " << ret;
+            LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_BITRATE, " << params_.bitrate()
+                     << ") failed " << ret;
         }
     }
     if (params.fps.has_value()) {
-        float option = static_cast<float>(std::min(params.fps.value(), (uint32_t)kMaxFPS));
+        params_.set_fps(params.fps.value());
+        float option = static_cast<float>(params_.fps());
         int ret = encoder_->SetOption(ENCODER_OPTION_FRAME_RATE, &option);
         if (ret != 0) {
             LOG(ERR) << "ISVCEncoder::SetOption(ENCODER_OPTION_FRAME_RATE, " << option
@@ -250,7 +259,7 @@ void OpenH264EncoderImpl::generateEncodeParams(const OpenH264ParamsHelper& helpe
     params.iUsageType = CAMERA_VIDEO_REAL_TIME;
     params.iRCMode = RC_BITRATE_MODE;
     params.iTargetBitrate = helper.bitrate();
-    params.iMaxBitrate = helper.maxbitrate();
+    params.iMaxBitrate = UNSPECIFIED_BIT_RATE;
     params.bEnableFrameSkip = false;
     params.uiIntraPeriod = 0;
     params.uiMaxNalSize = 0;
@@ -266,15 +275,14 @@ void OpenH264EncoderImpl::generateEncodeParams(const OpenH264ParamsHelper& helpe
     params.sSpatialLayers[0].sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
 }
 
-video::OpenH264Encoder::OpenH264Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width,
-                                        uint32_t height)
-    : Encoder{d3d11_dev, d3d11_ctx, width, height}
-    , impl_{std::make_shared<OpenH264EncoderImpl>()} {}
-
-OpenH264Encoder::~OpenH264Encoder() {}
-
-bool OpenH264Encoder::init(const EncodeParamsHelper& params) {
-    return impl_->init(params);
+std::unique_ptr<OpenH264Encoder> OpenH264Encoder::create(const EncodeParamsHelper& params) {
+    auto encoder = std::make_unique<OpenH264Encoder>();
+    auto impl = std::make_shared<OpenH264EncoderImpl>(params);
+    if (!impl->init()) {
+        return nullptr;
+    }
+    encoder->impl_ = impl;
+    return encoder;
 }
 
 void OpenH264Encoder::reconfigure(const ReconfigureParams& params) {
@@ -287,6 +295,14 @@ CaptureFormat OpenH264Encoder::captureFormat() const {
 
 VideoCodecType OpenH264Encoder::codecType() const {
     return VideoCodecType::H264_420_SOFT;
+}
+
+uint32_t OpenH264Encoder::width() const {
+    return impl_->width();
+}
+
+uint32_t OpenH264Encoder::height() const {
+    return impl_->height();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame>

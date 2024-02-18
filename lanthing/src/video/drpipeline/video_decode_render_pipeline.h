@@ -45,15 +45,16 @@ namespace video {
 class DecodeRenderPipeline {
 public:
     struct Params {
-        Params(lt::VideoCodecType _codec_type, uint32_t _width, uint32_t _height,
-               uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
+        Params(lt::VideoCodecType encode, lt::VideoCodecType decode, uint32_t _width,
+               uint32_t _height, uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
                std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
                    send_message,
                std::function<void()> switch_stretch, std::function<void()> reset_pipeline);
         bool validate() const;
 
         bool for_test = false;
-        lt::VideoCodecType codec_type;
+        lt::VideoCodecType encode_codec;
+        lt::VideoCodecType decode_codec;
         uint32_t width;
         uint32_t height;
         uint32_t screen_refresh_rate;
