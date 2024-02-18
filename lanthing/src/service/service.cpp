@@ -32,9 +32,10 @@
 #include <cassert>
 
 #include <ltlib/logging.h>
+#include <ltlib/strings.h>
+#include <ltlib/versions.h>
 #include <ltlib/win_service.h>
 
-#include <ltlib/strings.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/close_connection.pb.h>
@@ -281,6 +282,21 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     // 1. 校验参数
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+    int64_t client_version = msg->client_version();
+    int64_t client_required_version = msg->required_version();
+    int64_t my_version =
+        ltlib::combineVersion(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
+    int64_t my_required_version = ltlib::combineVersion(0, 0, 0);
+    if (client_version < my_required_version) {
+        ack->set_err_code(ltproto::ErrorCode::ClientVresionTooLow);
+        tcp_client_->send(ltproto::id(ack), ack);
+        LOG(ERR) << "Client version too low";
+    }
+    else if (my_version < client_required_version) {
+        ack->set_err_code(ltproto::ErrorCode::HostVersionTooLow);
+        tcp_client_->send(ltproto::id(ack), ack);
+        LOG(ERR) << "Host version too low";
+    }
     if (msg->client_device_id() <= 0) {
         ack->set_err_code(ltproto::ErrorCode::InvalidParameter);
         tcp_client_->send(ltproto::id(ack), ack);

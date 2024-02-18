@@ -32,6 +32,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/logging.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/singleton_process.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/transform.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/versions.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/client.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/server.h

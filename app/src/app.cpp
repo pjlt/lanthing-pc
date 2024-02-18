@@ -51,6 +51,7 @@
 #include <ltlib/pragma_warning.h>
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
+#include <ltlib/versions.h>
 #if defined(LT_WINDOWS)
 #include <ltlib/win_service.h>
 #endif // LT_WINDOWS
@@ -204,6 +205,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         return;
     }
     WARNING_ENABLE(4127)
+    WARNING_ENABLE(6239)
     postTask([peerDeviceID, accessToken, this]() {
         std::string cookie_name = "to_" + std::to_string(peerDeviceID);
         auto cookie = settings_->getString(cookie_name);
@@ -686,8 +688,9 @@ void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLi
 
 void App::handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
-    int64_t new_version = msg->major() * 1'000'000 + msg->minor() * 1'000 + msg->patch();
-    int64_t my_version = LT_VERSION_MAJOR * 1'000'000 + LT_VERSION_MINOR * 1'000 + LT_VERSION_PATCH;
+    int64_t new_version = ltlib::combineVersion(msg->major(), msg->minor(), msg->patch());
+    int64_t my_version =
+        ltlib::combineVersion(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
     if (my_version == new_version) {
         return;
     }

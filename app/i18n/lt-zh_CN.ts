@@ -43,78 +43,78 @@
         <translation type="vanished">连接已断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="284"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="285"/>
         <source>New Connection</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="286"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="287"/>
         <source>Device %s is requesting connection</source>
         <translation>设备 %s 正在请求连接</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="290"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="291"/>
         <source>Accept</source>
         <translation>同意</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="292"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="293"/>
         <source>Accept, as well as next time</source>
         <translation>同意，下次不再提醒</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="293"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="294"/>
         <source>Reject</source>
         <translation>拒绝</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="458"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="459"/>
         <source>The new version %s has been released, please download it&lt;br&gt;from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="466"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="467"/>
         <source>Version: </source>
         <translation>版本： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="468"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="469"/>
         <source>Released date: </source>
         <translation>发布日期： </translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="469"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="470"/>
         <source>New features:</source>
         <translation>新特性：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="475"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="476"/>
         <source>Bug fix:</source>
         <translation>修复：</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="452"/>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="483"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="453"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="484"/>
         <source>New Version</source>
         <translation>新版本</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="444"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="445"/>
         <source>The new version %s has been released, this is a force update version, please download it from &lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;.</source>
         <translation type="unfinished">新版本%s已经发布，该版本与旧版不兼容，请到&lt;a href=&apos;%s&apos;&gt;Github&lt;/a&gt;或QQ群89746161下载。</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="669"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="670"/>
         <source>🟢Connected to server</source>
         <translation>🟢已连接服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="681"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="682"/>
         <source>🔴Disconnected from server</source>
         <translation>🔴与服务器断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="692"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="693"/>
         <source>🟢Controlled module up</source>
         <translation>🟢被控模块正常</translation>
     </message>
@@ -123,42 +123,42 @@
         <translation type="vanished">🟡正在启动被控模块</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="696"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="697"/>
         <source>🔴Controlled module down</source>
         <translation>🔴被控模块掉线</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="715"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="716"/>
         <source>gamepad</source>
         <translation>手柄</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="716"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="717"/>
         <source>keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="717"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="718"/>
         <source>mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="718"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="719"/>
         <source>audio</source>
         <translation>声音</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="719"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="720"/>
         <source>kick</source>
         <translation>断开</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="841"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="842"/>
         <source>DeviceID or AccessToken invalid</source>
         <translation>设备码或验证码错误</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="981"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="982"/>
         <source>delete</source>
         <translation>删除</translation>
     </message>
@@ -276,7 +276,7 @@
         <translation type="vanished">鼠标模式（暂不生效）</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.cpp" line="675"/>
+        <location filename="../src/views/mainwindow/mainwindow.cpp" line="676"/>
         <source>🟡Connecting...</source>
         <translation>🟡正在连接服务器</translation>
     </message>
@@ -635,89 +635,99 @@
         <translation>启动服务失败，请关闭杀软或添加白名单</translation>
     </message>
     <message>
+        <location filename="../src/views/friendly_error_code.cpp" line="54"/>
+        <source>Client version too low</source>
+        <translation>主控端版本太低</translation>
+    </message>
+    <message>
         <location filename="../src/views/friendly_error_code.cpp" line="55"/>
+        <source>Host version too low</source>
+        <translation>被控端版本太低</translation>
+    </message>
+    <message>
+        <location filename="../src/views/friendly_error_code.cpp" line="57"/>
         <source>Decode failed</source>
         <translation>解码失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="56"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="58"/>
         <source>Render failed</source>
         <translation>渲染失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="57"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="59"/>
         <source>No decode ability</source>
         <translation>显卡没有检测到硬解能力</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="59"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="61"/>
         <source>Initialize decode-render pipeline failed</source>
         <translation>初始化解码渲染管线失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="61"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="63"/>
         <source>Controlled side initialize video capture or video encoder failed</source>
         <translation>捕捉画面失败，或是编码失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="63"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="65"/>
         <source>Controlled side initialize audio capture or audio encoder failed</source>
         <translation>捕获音频失败，或是编码失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="65"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="67"/>
         <source>Controlled side initialize input executor failed</source>
         <translation>模拟输入失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="67"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="69"/>
         <source>Controlled side initialize failed</source>
         <translation>被控初始化失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="68"/>
-        <location filename="../src/views/friendly_error_code.cpp" line="101"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="70"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="103"/>
         <source>KeepAlive timeout</source>
         <translation>心跳超时</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="69"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="71"/>
         <source>Target is serving another client</source>
         <translation>目标正在为其它客户端服务</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="70"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="72"/>
         <source>Initialize transport failed</source>
         <translation>初始化传输模块失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="71"/>
-        <location filename="../src/views/friendly_error_code.cpp" line="82"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="73"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="84"/>
         <source>Peer user rejected you request</source>
         <translation>对方拒绝你的连接请求</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="74"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="76"/>
         <source>Request for allocating Device ID failed, server has no available ID, pleaese contact the server owner to fix it</source>
         <translation>向服务器申请设备码失败，服务器没有剩余设备码可供分配，请联系服务器管理员修复这个问题</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="77"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="79"/>
         <source>Login device failed, invalid device ID</source>
         <translation>登录设备失败，原因是设备码不正确</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="79"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="81"/>
         <source>Login device failed, server has invalid status</source>
         <translation>登录设备失败，服务器内部产生没有考虑到的状态</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="84"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="86"/>
         <source>Request connection failed, server has invalid status</source>
         <translation>请求连接失败，服务器内部产生没有考虑到的状态</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="86"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="88"/>
         <source>Request connection failed, probably controlled side is serving another clinet</source>
         <translation>请求连接失败，可能是被控端正在服务其它客户端</translation>
     </message>
@@ -734,27 +744,27 @@
         <translation type="vanished">请求连接失败，服务器未能为这次连接创建订单，可能是被控端正在服务其它客户端，也可能是被控端的&apos;lanthing.exe&apos;进程卡住了。如果是后者，请尝试杀掉所有的&apos;lanthing.exe&apos;和&apos;app.exe&apos;进程，再启动试试</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="89"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="91"/>
         <source>Request connection failed, peer not online</source>
         <translation>请求连接失败，对方不在线</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="90"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="92"/>
         <source>Request connection timeout</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="93"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="95"/>
         <source>Signaling server error, join room failed</source>
         <translation>信令服务器错误，加入房间失败</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="98"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="100"/>
         <source>Controlled module disconnected from server</source>
         <translation>被控模块与服务器断开连接</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="100"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="102"/>
         <source>Connect timeout</source>
         <translation>连接超时</translation>
     </message>
@@ -775,7 +785,7 @@
         <translation type="vanished">信令服务器错误，加入房间失败，可能是bug导致的</translation>
     </message>
     <message>
-        <location filename="../src/views/friendly_error_code.cpp" line="95"/>
+        <location filename="../src/views/friendly_error_code.cpp" line="97"/>
         <source>Send signaling message failed, peer not online</source>
         <translation>发送信令消息失败，对方未连接信令服务器</translation>
     </message>

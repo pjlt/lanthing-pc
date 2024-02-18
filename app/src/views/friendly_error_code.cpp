@@ -51,6 +51,8 @@ QString errorCode2FriendlyMessage(int32_t code) {
         {ltproto::ErrorCode::AuthFailed, QObject::tr("Auth failed")},
         {ltproto::ErrorCode::CreateServiceFailed, QObject::tr("Create service failed")},
         {ltproto::ErrorCode::StartServiceFailed, QObject::tr("Start service failed")},
+        {ltproto::ErrorCode::ClientVresionTooLow, QObject::tr("Client version too low")},
+        {ltproto::ErrorCode::HostVersionTooLow, QObject::tr("Host version too low")},
         // 10000~ *******************************************
         {ltproto::ErrorCode::DecodeFailed, QObject::tr("Decode failed")},
         {ltproto::ErrorCode::RenderFailed, QObject::tr("Render failed")},

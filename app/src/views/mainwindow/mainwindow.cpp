@@ -51,6 +51,7 @@
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 #include <ltlib/times.h>
+#include <ltlib/versions.h>
 #include <ltproto/server/new_version.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/connection_status.pb.h>
@@ -437,7 +438,7 @@ void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _ms
     dispatchToUiThread([this, _msg]() {
         auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
         std::ostringstream oss;
-        int64_t version = msg->major() * 1'000'000 + msg->minor() * 1'000 + msg->patch();
+        int64_t version = ltlib::combineVersion(msg->major(), msg->minor(), msg->patch());
         oss << "v" << msg->major() << "." << msg->minor() << "." << msg->patch();
         if (msg->force()) {
             // 强制更新
