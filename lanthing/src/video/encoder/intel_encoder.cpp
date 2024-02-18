@@ -272,6 +272,8 @@ private:
     mfxVideoParam encode_param_{};
     std::unique_ptr<MfxEncoderFrameAllocator> allocator_;
     std::vector<uint8_t> bitstream_;
+    mfxExtCodingOption enc_coding_opt_{};
+    std::vector<mfxExtBuffer*> enc_ext_buffers_;
     VplParamsHelper params_;
 };
 
@@ -622,6 +624,14 @@ mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_he
     params.mfx.FrameInfo.Width = MSDK_ALIGN16(static_cast<mfxU16>(params_.width()));
     params.mfx.FrameInfo.Height = MSDK_ALIGN16(static_cast<mfxU16>(params_.height()));
     params.AsyncDepth = 1;
+    enc_coding_opt_.PicTimingSEI = MFX_CODINGOPTION_OFF;
+    enc_coding_opt_.NalHrdConformance = MFX_CODINGOPTION_OFF;
+    enc_coding_opt_.VuiNalHrdParameters = MFX_CODINGOPTION_OFF;
+    enc_coding_opt_.Header.BufferId = MFX_EXTBUFF_CODING_OPTION;
+    enc_coding_opt_.Header.BufferSz = sizeof(mfxExtCodingOption);
+    enc_ext_buffers_.push_back(reinterpret_cast<mfxExtBuffer*>(&enc_coding_opt_));
+    params.ExtParam = enc_ext_buffers_.data();
+    params.NumExtParam = 1;
 
     return params;
 }
