@@ -37,26 +37,20 @@ namespace lt {
 
 namespace video {
 
-EncodeParamsHelper::EncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uint32_t height,
-                                       uint32_t fps, uint32_t bitrate_kbps, bool enable_vbv)
-    : codec_type_{c}
+EncodeParamsHelper::EncodeParamsHelper(void* d3d11_dev, void* d3d11_ctx, int64_t luid,
+                                       lt::VideoCodecType c, uint32_t width, uint32_t height,
+                                       uint32_t fps, uint32_t bitrate, bool enable_vbv)
+    : d3d11_dev_{d3d11_dev}
+    , d3d11_ctx_{d3d11_ctx}
+    , luid_{luid}
+    , codec_type_{c}
     , width_{width}
     , height_{height}
     , fps_{static_cast<int>(fps)} // 为什么用int？忘了
-    , bitrate_kbps_{bitrate_kbps}
+    , bitrate_{bitrate}
     , enable_vbv_{enable_vbv}
-    , profile_{c == lt::VideoCodecType::H264 ? Profile::AvcMain : Profile::HevcMain} {
-    assert(c == lt::VideoCodecType::H264 || c == lt::VideoCodecType::H265);
-    uint32_t bitrate_bps = bitrate_kbps_ * 1024;
-    if (enable_vbv) {
-        float vbv = 1.3f;
-        int bitrate_vbv = static_cast<int>(bitrate_bps * vbv + 0.5f);
-        int vbv_buf = static_cast<int>(bitrate_vbv * 1.0f / fps_ + 0.5f);
-        vbvbufsize_ = vbv_buf;
-        vbvinit_ = vbv_buf;
-        params_["-vbvbufsize"] = std::to_string(vbv_buf);
-        params_["-vbvinit"] = std::to_string(vbv_buf);
-    }
+    , profile_{codecToProfile(c)} {
+    calc_vbv();
     std::stringstream ssQmin;
     std::stringstream ssQmax;
     ssQmin << qmin_[0] << ',' << qmin_[1] << ',' << qmin_[2];
@@ -64,15 +58,37 @@ EncodeParamsHelper::EncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uin
     params_["-width"] = std::to_string(width_);
     params_["-height"] = std::to_string(width_);
     params_["-fps"] = std::to_string(fps);
-    params_["-bitrate"] = std::to_string(bitrate_bps);
+    params_["-bitrate"] = std::to_string(bitrate_);
     params_["-maxbitrate"] = std::to_string(maxbitrate());
-    params_["-codec"] = c == lt::VideoCodecType::H264 ? "h264" : "hevc";
     params_["-gop"] = std::to_string(gop_);
     params_["-rc"] = std::to_string((int)rc_);
     params_["-preset"] = std::to_string((int)preset_);
     params_["-profile"] = std::to_string((int)profile_);
     params_["-qmin"] = ssQmin.str();
     params_["-qmax"] = ssQmax.str();
+    switch (codec_type_) {
+    case VideoCodecType::H264_420:
+    case VideoCodecType::H264_444:
+        params_["-codec"] = "h264";
+        break;
+    case VideoCodecType::H265_420:
+    case VideoCodecType::H265_444:
+        params_["-codec"] = "hevc";
+        break;
+    default:
+        params_["-codec"] = "unknown";
+        break;
+    }
+}
+
+void EncodeParamsHelper::set_bitrate(uint32_t bps) {
+    bitrate_ = bps;
+    calc_vbv();
+}
+
+void EncodeParamsHelper::set_fps(int _fps) {
+    fps_ = _fps;
+    calc_vbv();
 }
 
 std::string EncodeParamsHelper::params() const {
@@ -84,6 +100,29 @@ std::string EncodeParamsHelper::params() const {
         oss << param.first << " " << param.second << " ";
     }
     return oss.str();
+}
+
+EncodeParamsHelper::Profile EncodeParamsHelper::codecToProfile(lt::VideoCodecType codec) {
+    switch (codec) {
+    case lt::VideoCodecType::H264_420:
+        return Profile::AvcMain;
+    case lt::VideoCodecType::H265_420:
+        return Profile::HevcMain;
+    default:
+        return Profile::AvcMain;
+    }
+}
+
+void EncodeParamsHelper::calc_vbv() {
+    if (enable_vbv_) {
+        float vbv = 1.3f;
+        int bitrate_vbv = static_cast<int>(bitrate_ * vbv + 0.5f);
+        int vbv_buf = static_cast<int>(bitrate_vbv * 1.0f / fps_ + 0.5f);
+        vbvbufsize_ = vbv_buf;
+        vbvinit_ = vbv_buf;
+        params_["-vbvbufsize"] = std::to_string(vbv_buf);
+        params_["-vbvinit"] = std::to_string(vbv_buf);
+    }
 }
 
 } // namespace video

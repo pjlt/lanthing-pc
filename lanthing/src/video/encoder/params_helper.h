@@ -61,16 +61,19 @@ public:
     };
 
 public:
-    EncodeParamsHelper(lt::VideoCodecType c, uint32_t width, uint32_t height, uint32_t fps,
-                       uint32_t bitrate_kbps, bool enable_vbv);
-
+    EncodeParamsHelper(void* d3d11_dev, void* d3d11_ctx, int64_t luid, lt::VideoCodecType c,
+                       uint32_t width, uint32_t height, uint32_t fps, uint32_t bitrate,
+                       bool enable_vbv);
+    void* d3d11_dev() const { return d3d11_dev_; }
+    void* d3d11_ctx() const { return d3d11_ctx_; }
+    int64_t luid() const { return luid_; }
     uint32_t width() const { return width_; }
     uint32_t height() const { return height_; }
     int fps() const { return fps_; }
-    uint32_t bitrate() const { return bitrate_kbps_ * 1024; }
-    uint32_t bitrate_kbps() const { return bitrate_kbps_; }
-    uint32_t maxbitrate_kbps() const { return static_cast<uint32_t>(bitrate_kbps_ * 1.1f); }
-    uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate_kbps_ * 1024 * 1.1f); }
+    uint32_t bitrate() const { return bitrate_; }
+    uint32_t bitrate_kbps() const { return bitrate_ / 1024; }
+    uint32_t maxbitrate_kbps() const { return maxbitrate() / 1024; }
+    uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate_ * 1.15f); }
     std::array<uint32_t, 3> qmin() const { return qmin_; }
     std::array<uint32_t, 3> qmax() const { return qmax_; }
     std::optional<int> vbvbufsize() const { return vbvbufsize_; }
@@ -80,22 +83,32 @@ public:
     Preset preset() const { return preset_; }
     lt::VideoCodecType codec() const { return codec_type_; }
     Profile profile() const { return profile_; }
+    void set_bitrate(uint32_t bps);
+    void set_bitrate_kbps(uint32_t kbps) { set_bitrate(kbps * 1024); }
+    void set_fps(int _fps);
 
     std::string params() const;
 
 private:
+    static Profile codecToProfile(lt::VideoCodecType codec);
+    void calc_vbv();
+
+private:
+    void* d3d11_dev_; // not-ref
+    void* d3d11_ctx_; // not-ref
+    const int64_t luid_;
     const lt::VideoCodecType codec_type_;
     const uint32_t width_;
     const uint32_t height_;
-    const int fps_;
-    const uint32_t bitrate_kbps_;
+    int fps_;
+    uint32_t bitrate_;
     const bool enable_vbv_;
     const int gop_ = -1;
     const RcMode rc_ = RcMode::VBR;
     const Preset preset_ = Preset::Speed;
     const Profile profile_;
-    std::array<uint32_t, 3> qmin_ = {6, 6, 25};
-    std::array<uint32_t, 3> qmax_ = {40, 40, 50};
+    std::array<uint32_t, 3> qmin_ = {6, 8, 25};
+    std::array<uint32_t, 3> qmax_ = {40, 42, 50};
     std::optional<int> vbvbufsize_;
     std::optional<int> vbvinit_;
     std::map<std::string, std::string> params_;

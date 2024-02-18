@@ -48,9 +48,9 @@
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
 
-#include "ct_smoother.h"
-#include "gpu_capability.h"
 #include <video/decoder/video_decoder.h>
+#include <video/drpipeline/ct_smoother.h>
+#include <video/drpipeline/gpu_capability.h>
 #include <video/drpipeline/video_statistics.h>
 #include <video/renderer/video_renderer.h>
 #include <video/widgets/widgets_manager.h>

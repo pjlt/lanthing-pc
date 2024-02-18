@@ -145,6 +145,8 @@ public:
     VplParamsHelper(const lt::video::EncodeParamsHelper& params)
         : params_{params} {}
 
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     mfxU32 codec() const;
     int fps() const { return params_.fps(); }
     int64_t gop() const { return params_.gop() < 0 ? 0 : params_.gop(); }
@@ -156,9 +158,11 @@ public:
     mfxU16 rc() const;
     mfxU16 preset() const;
     mfxU16 profile() const;
+    void set_bitrate(uint32_t bps) { params_.set_bitrate(bps); }
+    void set_fps(int f) { params_.set_fps(f); }
 
 private:
-    const lt::video::EncodeParamsHelper params_;
+    lt::video::EncodeParamsHelper params_;
 };
 
 mfxU32 VplParamsHelper::codec() const {
@@ -238,10 +242,12 @@ namespace video {
 
 class IntelEncoderImpl {
 public:
-    IntelEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx, int64_t luid);
+    IntelEncoderImpl(const EncodeParamsHelper& params);
     ~IntelEncoderImpl();
-    bool init(const EncodeParamsHelper& params);
+    bool init();
     void reconfigure(const Encoder::ReconfigureParams& params);
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     VideoCodecType codecType() const;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
@@ -252,10 +258,10 @@ private:
     bool findImplIndex();
     void printAllImpls();
     bool initEncoder(const VplParamsHelper& params_helper);
-    bool initVpp(const VplParamsHelper& params_helper);
+
     ComPtr<ID3D11Texture2D> allocEncodeTexture();
     mfxVideoParam genEncodeParams(const VplParamsHelper& params_helper);
-    mfxVideoParam genVppParams(const VplParamsHelper& params_helper);
+
 
 private:
     ComPtr<ID3D11Device> d3d11_dev_;
@@ -263,8 +269,7 @@ private:
     ComPtr<ID3D11Texture2D> encode_texture_;
     const int64_t luid_;
     int32_t impl_index_ = -1;
-    uint32_t width_;
-    uint32_t height_;
+
     lt::VideoCodecType codec_type_;
     mfxLoader mfxloader_ = nullptr;
     mfxSession mfxsession_ = nullptr;
@@ -273,16 +278,18 @@ private:
     std::unique_ptr<MfxEncoderFrameAllocator> allocator_;
     mfxExtVPPVideoSignalInfo vpp_signal_{};
     std::vector<mfxExtBuffer*> vpp_ext_buffers_;
-    mfxExtCodingOption enc_coding_opt_{};
+
     std::vector<mfxExtBuffer*> enc_ext_buffers_;
     std::vector<uint8_t> bitstream_;
+    VplParamsHelper params_;
 };
 
-IntelEncoderImpl::IntelEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx,
-                                   int64_t luid)
-    : d3d11_dev_{d3d11_dev}
-    , d3d11_ctx_{d3d11_ctx}
-    , luid_{luid} {}
+IntelEncoderImpl::IntelEncoderImpl(const EncodeParamsHelper& params)
+    : d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.d3d11_dev())}
+    , d3d11_ctx_{reinterpret_cast<ID3D11DeviceContext*>(params.d3d11_ctx())}
+    , luid_{params.luid()}
+    , codec_type_{params.codec()}
+    , params_{params} {}
 
 IntelEncoderImpl::~IntelEncoderImpl() {
     if (mfxloader_ != nullptr) {
@@ -290,10 +297,7 @@ IntelEncoderImpl::~IntelEncoderImpl() {
     }
 }
 
-bool IntelEncoderImpl::init(const EncodeParamsHelper& params) {
-    width_ = params.width();
-    height_ = params.height();
-    codec_type_ = params.codec();
+bool IntelEncoderImpl::init() {
     Microsoft::WRL::ComPtr<ID3D10Multithread> tmp10;
     auto hr = d3d11_ctx_.As(&tmp10);
     if (FAILED(hr)) {
@@ -324,11 +328,7 @@ bool IntelEncoderImpl::init(const EncodeParamsHelper& params) {
         return false;
     }
 
-    VplParamsHelper params_helper{params};
-    if (!initEncoder(params_helper)) {
-        return false;
-    }
-    if (!initVpp(params_helper)) {
+    if (!initEncoder(params_)) {
         return false;
     }
     return true;
@@ -339,13 +339,13 @@ void IntelEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
         return;
     }
     if (params.bitrate_bps.has_value()) {
-        uint32_t target_kbps = params.bitrate_bps.value() / 1024;
+        params_.set_bitrate(params.bitrate_bps.value());
         VplSize vsize;
         // uint32_t old8 = static_cast<uint32_t>(static_cast<uint32_t>(encode_param_.mfx.TargetKbps)
         //                                      encode_param_.mfx.BRCParamMultiplier * 0.8);
         // vsize.target = std::max(old8, target_kbps);
-        vsize.target = target_kbps;
-        vsize.max = static_cast<uint32_t>(vsize.target * 1.1f);
+        vsize.target = params_.bitrate_kbps();
+        vsize.max = params_.maxbitrate_kbps();
         vsize.init_delay = static_cast<uint32_t>(encode_param_.mfx.InitialDelayInKB) *
                            encode_param_.mfx.BRCParamMultiplier;
         vsize.buffer_size = static_cast<uint32_t>(encode_param_.mfx.BufferSizeInKB) *
@@ -362,6 +362,7 @@ void IntelEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
                    << ", BufferSizeInKB:" << encode_param_.mfx.BufferSizeInKB;
     }
     if (params.fps.has_value()) {
+        params_.set_fps(params.fps.value());
         ConvertFrameRate(params.fps.value(), &encode_param_.mfx.FrameInfo.FrameRateExtN,
                          &encode_param_.mfx.FrameInfo.FrameRateExtD);
     }
@@ -419,24 +420,7 @@ IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     encode_surface.Data.MemId = encode_texture_.Get();
     encode_surface.Info = encode_param_.mfx.FrameInfo;
     mfxStatus status = MFX_ERR_NONE;
-    /*
-    * FIXME: 有bug，会导致sync时返回错误，先注释，后面再改
-    while (true) {
-        status = MFXVideoVPP_RunFrameVPPAsync(mfxsession_, &vpp_surface, &encode_surface, nullptr,
-                                              &sync_point);
-        if (status == MFX_WRN_DEVICE_BUSY) {
-            std::this_thread::sleep_for(std::chrono::milliseconds{1});
-            continue;
-        }
-        else if (status >= MFX_ERR_NONE) {
-            break;
-        }
-        else {
-            LOG(ERR) << "MFXVideoVPP_RunFrameVPPAsync failed with " << status;
-            return nullptr;
-        }
-    }
-    */
+
     while (true) {
         status = MFXVideoENCODE_EncodeFrameAsync(mfxsession_, pctrl,
                                                  &vpp_surface /*encode_surface*/, &bs, &sync_point);
@@ -604,33 +588,13 @@ bool IntelEncoderImpl::initEncoder(const VplParamsHelper& params_helper) {
     return true;
 }
 
-bool IntelEncoderImpl::initVpp(const VplParamsHelper& params_helper) {
-    mfxVideoParam params = genVppParams(params_helper);
-    LOG(INFO) << "Generated VPL vpp params";
-    printMfxVideoParamVPP(params);
-    encode_texture_ = allocEncodeTexture();
-    mfxStatus status = MFXVideoVPP_Init(mfxsession_, &params);
-    if (status != MFX_ERR_NONE) {
-        LOG(ERR) << "MFXVideoVPP_Init failed with " << status;
-        return false;
-    }
-    mfxVideoParam param_out{};
-    status = MFXVideoVPP_GetVideoParam(mfxsession_, &param_out);
-    if (status != MFX_ERR_NONE) {
-        LOG(ERR) << "MFXVideoVPP_GetVideoParam failed with " << status;
-        return false;
-    }
-    LOG(INFO) << "GetVideoParam vpp";
-    printMfxVideoParamVPP(param_out);
-    vpp_param_ = param_out;
-    return true;
-}
+
 
 Microsoft::WRL::ComPtr<ID3D11Texture2D> IntelEncoderImpl::allocEncodeTexture() {
     Microsoft::WRL::ComPtr<ID3D11Texture2D> frame;
     D3D11_TEXTURE2D_DESC desc{};
-    desc.Width = MSDK_ALIGN16(static_cast<mfxU16>(width_));
-    desc.Height = MSDK_ALIGN16(static_cast<mfxU16>(height_));
+    desc.Width = MSDK_ALIGN16(static_cast<mfxU16>(params_.width()));
+    desc.Height = MSDK_ALIGN16(static_cast<mfxU16>(params_.height()));
     desc.MipLevels = 1;
     desc.ArraySize = 1;
     desc.SampleDesc.Count = 1;
@@ -664,14 +628,22 @@ mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_he
     params.mfx.GopRefDist = 1;
     params.mfx.GopPicSize = 0;
     params.mfx.NumRefFrame = 1;
-    params.mfx.IdrInterval = 0; // TODO: 让avc和hevc行为一致
+    if (isAVC(codec_type_)) {
+        params.mfx.IdrInterval = 0;
+        params.mfx.NumSlice = 1;
+    }
+    else {
+        params.mfx.IdrInterval = 1;
+        params.mfx.NumSlice = 0;
+    }
+
     params.mfx.CodecProfile = params_helper.profile();
     params.mfx.CodecLevel = 0; // 未填
     params.mfx.MaxKbps = static_cast<mfxU16>(vsize.max);
     params.mfx.InitialDelayInKB = static_cast<mfxU16>(vsize.init_delay);
     params.mfx.GopOptFlag = MFX_GOP_CLOSED;
     params.mfx.BufferSizeInKB = static_cast<mfxU16>(vsize.buffer_size);
-    params.mfx.NumSlice = 0; // 未填值
+
     params.mfx.EncodedOrder = 0;
     params.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY;
 
@@ -684,66 +656,23 @@ mfxVideoParam IntelEncoderImpl::genEncodeParams(const VplParamsHelper& params_he
     params.mfx.FrameInfo.Shift = 0;
     params.mfx.FrameInfo.CropX = 0;
     params.mfx.FrameInfo.CropY = 0;
-    params.mfx.FrameInfo.CropW = static_cast<mfxU16>(width_);
-    params.mfx.FrameInfo.CropH = static_cast<mfxU16>(height_);
-    params.mfx.FrameInfo.Width = MSDK_ALIGN16(static_cast<mfxU16>(width_));
-    params.mfx.FrameInfo.Height = MSDK_ALIGN16(static_cast<mfxU16>(height_));
+    params.mfx.FrameInfo.CropW = static_cast<mfxU16>(params_.width());
+    params.mfx.FrameInfo.CropH = static_cast<mfxU16>(params_.height());
+    params.mfx.FrameInfo.Width = MSDK_ALIGN16(static_cast<mfxU16>(params_.width()));
+    params.mfx.FrameInfo.Height = MSDK_ALIGN16(static_cast<mfxU16>(params_.height()));
     params.AsyncDepth = 1;
-    enc_coding_opt_.PicTimingSEI = MFX_CODINGOPTION_OFF;
-    enc_coding_opt_.NalHrdConformance = MFX_CODINGOPTION_OFF;
-    enc_coding_opt_.VuiNalHrdParameters = MFX_CODINGOPTION_OFF;
-    enc_coding_opt_.Header.BufferId = MFX_EXTBUFF_CODING_OPTION;
-    enc_coding_opt_.Header.BufferSz = sizeof(mfxExtCodingOption);
-    enc_ext_buffers_.push_back(reinterpret_cast<mfxExtBuffer*>(&enc_coding_opt_));
-    params.ExtParam = enc_ext_buffers_.data();
-    params.NumExtParam = 1;
+
     return params;
 }
 
-mfxVideoParam IntelEncoderImpl::genVppParams(const VplParamsHelper& params_helper) {
-    mfxVideoParam params{};
-    params.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY | MFX_IOPATTERN_OUT_VIDEO_MEMORY;
-    params.vpp.In.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
-    ConvertFrameRate(params_helper.fps(), &params.mfx.FrameInfo.FrameRateExtN,
-                     &params.mfx.FrameInfo.FrameRateExtD);
-    params.vpp.In.AspectRatioW = 1;
-    params.vpp.In.AspectRatioH = 1;
-    params.vpp.In.FourCC = MFX_FOURCC_RGB4;
-    params.vpp.In.ChromaFormat = FourCCToChroma(MFX_FOURCC_RGB4);
-    params.vpp.In.CropX = 0;
-    params.vpp.In.CropY = 0;
-    params.vpp.In.CropW = static_cast<mfxU16>(width_);
-    params.vpp.In.CropH = static_cast<mfxU16>(height_);
-    params.vpp.In.Width = MSDK_ALIGN16(static_cast<mfxU16>(width_));
-    params.vpp.In.Height = MSDK_ALIGN16(static_cast<mfxU16>(height_));
-    params.vpp.In.Shift = 0;
-    // Output data
-    memcpy(&params.vpp.Out, &params.vpp.In, sizeof(params.vpp.In));
-    params.vpp.Out.FourCC = MFX_FOURCC_NV12;
-    params.vpp.Out.ChromaFormat = FourCCToChroma(MFX_FOURCC_NV12);
-    params.AsyncDepth = 1;
-    vpp_signal_.Header.BufferId = MFX_EXTBUFF_VPP_VIDEO_SIGNAL_INFO;
-    vpp_signal_.Header.BufferSz = sizeof(mfxExtVPPVideoSignalInfo);
-    vpp_signal_.In.NominalRange = MFX_NOMINALRANGE_0_255;
-    vpp_signal_.Out.NominalRange = MFX_NOMINALRANGE_16_235;
-    // TransferMatrix描述一个转换过程，为什么还要区分In和Out，我无法理解
-    vpp_signal_.In.TransferMatrix = MFX_TRANSFERMATRIX_BT709;
-    vpp_signal_.Out.TransferMatrix = MFX_TRANSFERMATRIX_BT709;
-    vpp_ext_buffers_.push_back(reinterpret_cast<mfxExtBuffer*>(&vpp_signal_));
-    params.ExtParam = vpp_ext_buffers_.data();
-    params.NumExtParam = 1;
-    return params;
-}
-
-IntelEncoder::IntelEncoder(void* d3d11_dev, void* d3d11_ctx, int64_t luid, uint32_t width,
-                           uint32_t height)
-    : Encoder{d3d11_dev, d3d11_ctx, width, height}
-    , impl_{std::make_shared<IntelEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
-                                               reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx),
-                                               luid)} {}
-
-bool IntelEncoder::init(const EncodeParamsHelper& params) {
-    return impl_->init(params);
+std::unique_ptr<IntelEncoder> IntelEncoder::create(const EncodeParamsHelper& params) {
+    auto encoder = std::make_unique<IntelEncoder>();
+    auto impl = std::make_shared<IntelEncoderImpl>(params);
+    if (!impl->init()) {
+        return nullptr;
+    }
+    encoder->impl_ = impl;
+    return encoder;
 }
 
 void IntelEncoder::reconfigure(const ReconfigureParams& params) {
@@ -756,6 +685,14 @@ CaptureFormat IntelEncoder::captureFormat() const {
 
 VideoCodecType IntelEncoder::codecType() const {
     return impl_->codecType();
+}
+
+uint32_t IntelEncoder::width() const {
+    return impl_->width();
+}
+
+uint32_t IntelEncoder::height() const {
+    return impl_->height();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> IntelEncoder::encodeFrame(void* input_frame) {

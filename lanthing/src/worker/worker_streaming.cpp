@@ -370,6 +370,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     // video_params.height = negotiated_display_setting_.height;
     video_params.width = static_cast<uint32_t>(monitors_[monitor_index_].width);
     video_params.height = static_cast<uint32_t>(monitors_[monitor_index_].height);
+    video_params.client_refresh_rate = client_refresh_rate_;
     video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
@@ -383,10 +384,8 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     }
     negotiated_params->set_enable_driver_input(false);
     negotiated_params->set_enable_gamepad(false);
-    // negotiated_params->set_screen_refresh_rate(negotiated_display_setting_.refrash_rate);
-    // negotiated_params->set_video_width(negotiated_display_setting_.width);
-    // negotiated_params->set_video_height(negotiated_display_setting_.height);
-    negotiated_params->set_screen_refresh_rate(60); // 假的
+    negotiated_params->set_screen_refresh_rate(
+        std::min(static_cast<int32_t>(client_refresh_rate_), video_params.monitor.frequency));
     negotiated_params->set_video_width(video_params.width);
     negotiated_params->set_video_height(video_params.height);
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));

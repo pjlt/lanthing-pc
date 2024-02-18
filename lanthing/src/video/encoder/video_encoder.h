@@ -70,10 +70,12 @@ public:
 public:
     static std::unique_ptr<Encoder> createHard(const InitParams& params);
     static std::unique_ptr<Encoder> createSoft(const InitParams& params);
-    virtual ~Encoder();
+    virtual ~Encoder() {}
     virtual void reconfigure(const ReconfigureParams& params) = 0;
     virtual CaptureFormat captureFormat() const = 0;
     virtual VideoCodecType codecType() const = 0;
+    virtual uint32_t width() const = 0;
+    virtual uint32_t height() const = 0;
     void requestKeyframe();
     std::shared_ptr<ltproto::client2worker::VideoFrame> encode(const Capturer::Frame& input_frame);
 
@@ -82,15 +84,12 @@ public:
     //                                                                 uint32_t height);
 
 protected:
-    Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height);
+
     bool needKeyframe();
     virtual std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) = 0;
 
 private:
-    void* d3d11_dev_ = nullptr;
-    void* d3d11_ctx_ = nullptr;
-    const uint32_t width_;
-    const uint32_t height_;
+
     uint64_t frame_id_ = 0;
     std::atomic<bool> request_keyframe_{false};
     bool first_frame_ = false;

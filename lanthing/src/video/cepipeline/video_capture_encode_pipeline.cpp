@@ -35,6 +35,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <deque>
 #include <future>
 
 #include <google/protobuf/message_lite.h>
@@ -51,6 +52,25 @@
 
 #include <video/capturer/video_capturer.h>
 #include <video/encoder/video_encoder.h>
+
+namespace {
+
+void addHistory(std::deque<int64_t>& history) {
+    int64_t now = ltlib::steady_now_us();
+    const int64_t kOneSecond = 1'000'000;
+    const int64_t kOneSecondBefore = now - kOneSecond;
+    history.push_back(now);
+    while (!history.empty()) {
+        if (history.front() < kOneSecondBefore) {
+            history.pop_front();
+        }
+        else {
+            break;
+        }
+    }
+}
+
+} // namespace
 
 namespace lt {
 
@@ -106,6 +126,7 @@ private:
     void captureAndSendVideoFrame();
     auto resolutionChanged() -> std::optional<ltlib::DisplayOutputDesc>;
     void sendChangeStreamingParams(ltlib::DisplayOutputDesc desc);
+    bool shouldEncodeFrame();
 
     // 从service收到的消息
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -114,6 +135,9 @@ private:
 private:
     uint32_t width_;
     uint32_t height_;
+    uint32_t client_refresh_rate_;
+    uint32_t max_fps_;
+    uint32_t target_fps_;
     ltlib::Monitor monitor_;
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
@@ -130,11 +154,16 @@ private:
     bool manual_bitrate_ = false;
     std::map<HCURSOR, int32_t> cursors_;
     bool get_cursor_failed_ = false;
+    std::deque<int64_t> capture_history_;
+    int64_t last_encode_time_us_ = 0;
 };
 
 VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
     : width_{params.width}
     , height_{params.height}
+    , client_refresh_rate_{params.client_refresh_rate}
+    , max_fps_{params.client_refresh_rate}
+    , target_fps_{params.client_refresh_rate}
     , monitor_{params.monitor}
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
@@ -155,6 +184,8 @@ VCEPipeline::~VCEPipeline() {
 }
 
 bool VCEPipeline::init() {
+    constexpr uint32_t k144FPS = 144;
+    constexpr uint32_t k30FPS = 30;
     loadSystemCursor();
     if (!registerHandlers()) {
         return false;
@@ -163,14 +194,12 @@ bool VCEPipeline::init() {
     if (capturer == nullptr) {
         return false;
     }
+    max_fps_ = std::max(
+        std::min({static_cast<uint32_t>(monitor_.frequency), client_refresh_rate_, k144FPS}),
+        k30FPS);
+    target_fps_ = max_fps_;
     Encoder::InitParams encode_params{};
-    encode_params.freq = static_cast<uint32_t>(monitor_.frequency);
-    if (encode_params.freq == 0) {
-        encode_params.freq = 60;
-    }
-    else if (encode_params.freq > 240) {
-        encode_params.freq = 240;
-    }
+    encode_params.freq = max_fps_;
     encode_params.bitrate_bps = 4 * 1024 * 1024;
     if (monitor_.rotation == 90 || monitor_.rotation == 270) {
         encode_params.width = height_;
@@ -196,6 +225,9 @@ bool VCEPipeline::init() {
     }
     // fallback
     if (encoder == nullptr) {
+        max_fps_ = k30FPS;
+        target_fps_ = max_fps_;
+        encode_params.freq = max_fps_;
         for (auto codec : client_supported_codecs_) {
             encode_params.codec_type =
                 codec == VideoCodecType::H264_420_SOFT ? VideoCodecType::H264_420 : codec;
@@ -383,6 +415,9 @@ void VCEPipeline::captureAndSendVideoFrame() {
         return;
     }
     capturer_->doneWithFrame();
+    if (!shouldEncodeFrame()) {
+        return;
+    }
     auto encoded_frame = encoder_->encode(captured_frame.value());
     if (encoded_frame == nullptr) {
         return;
@@ -411,6 +446,21 @@ void VCEPipeline::sendChangeStreamingParams(ltlib::DisplayOutputDesc desc) {
     params->set_screen_refresh_rate(desc.frequency);
     params->set_rotation(desc.rotation);
     send_message_(ltproto::id(msg), msg);
+}
+
+bool VCEPipeline::shouldEncodeFrame() {
+    addHistory(capture_history_);
+    const size_t capture_fps = capture_history_.size();
+    const uint32_t interval_us = 1'000'000 / target_fps_;
+    const int64_t now_us = ltlib::steady_now_us();
+    if (capture_fps > target_fps_ + 2) {
+        int64_t last_target_encode_time_us = now_us - now_us % interval_us;
+        if (last_encode_time_us_ >= last_target_encode_time_us) {
+            return false;
+        }
+    }
+    last_encode_time_us_ = now_us;
+    return true;
 }
 
 void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -462,7 +512,8 @@ void VCEPipeline::onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLit
 
 std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Params& params) {
     if (params.send_message == nullptr || params.register_message_handler == nullptr ||
-        params.width == 0 || params.height == 0 || params.codecs.empty()) {
+        params.width == 0 || params.height == 0 || params.codecs.empty() ||
+        params.client_refresh_rate == 0) {
         LOG(FATAL) << "Create CaptureEncodePipeline failed, invalid parameters";
         return nullptr;
     }

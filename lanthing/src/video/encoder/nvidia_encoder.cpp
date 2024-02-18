@@ -70,6 +70,8 @@ public:
 
     int fps() const { return params_.fps(); }
 
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     uint32_t bitrate() const { return params_.bitrate(); }
     uint32_t maxbitrate() const { return params_.maxbitrate(); }
     NV_ENC_QP qmin() const { return {params_.qmin()[0], params_.qmin()[1], params_.qmin()[2]}; }
@@ -81,9 +83,11 @@ public:
     GUID preset() const;
     GUID codec() const;
     GUID profile() const;
+    void set_bitrate(uint32_t bps) { params_.set_bitrate(bps); }
+    void set_fps(int f) { params_.set_fps(f); }
 
 private:
-    const lt::video::EncodeParamsHelper params_;
+    lt::video::EncodeParamsHelper params_;
 };
 
 NV_ENC_PARAMS_RC_MODE NvEncParamsHelper::rc() const {
@@ -144,18 +148,19 @@ namespace video {
 
 class NvD3d11EncoderImpl {
 public:
-    NvD3d11EncoderImpl(ID3D11Device* d3d11_dev);
+    NvD3d11EncoderImpl(const EncodeParamsHelper& params);
     ~NvD3d11EncoderImpl();
-    bool init(const EncodeParamsHelper& params);
+    bool init();
     void reconfigure(const Encoder::ReconfigureParams& params);
     VideoCodecType codecType() const;
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
 private:
     bool loadNvApi();
-    NV_ENC_INITIALIZE_PARAMS generateEncodeParams(const NvEncParamsHelper& helper,
-                                                  NV_ENC_CONFIG& config);
+    NV_ENC_INITIALIZE_PARAMS generateEncodeParams(NV_ENC_CONFIG& config);
     bool initBuffers();
     std::optional<NV_ENC_MAP_INPUT_RESOURCE> initInputFrame(void* frame);
     bool uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource);
@@ -163,8 +168,7 @@ private:
 
 private:
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
-    uint32_t width_;
-    uint32_t height_;
+
     lt::VideoCodecType codec_type_;
     std::unique_ptr<ltlib::DynamicLibrary> nvapi_;
     NV_ENCODE_API_FUNCTION_LIST nvfuncs_;
@@ -181,23 +185,21 @@ private:
         NV_ENC_MAP_INPUT_RESOURCE mapped = {NV_ENC_MAP_INPUT_RESOURCE_VER};
     };
     std::vector<EncodeResource> resources_;
+    NvEncParamsHelper params_;
 };
 
-NvD3d11EncoderImpl::NvD3d11EncoderImpl(ID3D11Device* dev)
-    : d3d11_dev_{dev} {}
+NvD3d11EncoderImpl::NvD3d11EncoderImpl(const EncodeParamsHelper& params)
+    : d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.d3d11_dev())}
+    , codec_type_{params.codec()}
+    , params_{params} {}
 
 NvD3d11EncoderImpl::~NvD3d11EncoderImpl() {
     releaseResources();
 }
 
-bool NvD3d11EncoderImpl::init(const EncodeParamsHelper& params) {
-    NvEncParamsHelper params_helper{params};
-    width_ = params.width();
-    height_ = params.height();
-    codec_type_ = params.codec();
-    if (codec_type_ == lt::VideoCodecType::H264 &&
-        (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV420_10BIT ||
-         buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT)) {
+bool NvD3d11EncoderImpl::init() {
+    if (isAVC(codec_type_) && (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV420_10BIT ||
+                               buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT)) {
         LOG(ERR) << "Unsupported buffer format " << buffer_format_ << " when using h264";
         return false;
     }
@@ -220,7 +222,7 @@ bool NvD3d11EncoderImpl::init(const EncodeParamsHelper& params) {
     }
     nvencoder_ = encoder;
 
-    init_params_ = generateEncodeParams(params_helper, encode_config_);
+    init_params_ = generateEncodeParams(encode_config_);
 
     status = nvfuncs_.nvEncInitializeEncoder(nvencoder_, &init_params_);
     if (status != NV_ENC_SUCCESS) {
@@ -263,17 +265,24 @@ void NvD3d11EncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     NV_ENC_RECONFIGURE_PARAMS reconfigure_params{NV_ENC_RECONFIGURE_PARAMS_VER};
     bool changed = false;
     if (params.bitrate_bps.has_value()) {
-        encode_config_.rcParams.averageBitRate = params.bitrate_bps.value();
-        encode_config_.rcParams.maxBitRate =
-            static_cast<uint32_t>(params.bitrate_bps.value() * 1.1f);
+        params_.set_bitrate(params.bitrate_bps.value());
+        encode_config_.rcParams.averageBitRate = params_.bitrate();
+        encode_config_.rcParams.maxBitRate = params_.maxbitrate();
         changed = true;
     }
     if (params.fps.has_value()) {
         init_params_.frameRateNum = params.fps.value();
+        params_.set_fps(params.fps.value());
         changed = true;
     }
     if (!changed) {
         return;
+    }
+    if (params_.vbvbufsize().has_value()) {
+        init_params_.encodeConfig->rcParams.vbvBufferSize = params_.vbvbufsize().value();
+    }
+    if (params_.vbvinit().has_value()) {
+        init_params_.encodeConfig->rcParams.vbvInitialDelay = params_.vbvinit().value();
     }
     reconfigure_params.reInitEncodeParams = init_params_;
     NVENCSTATUS status = nvfuncs_.nvEncReconfigureEncoder(nvencoder_, &reconfigure_params);
@@ -300,8 +309,8 @@ NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     params.pictureStruct = NV_ENC_PIC_STRUCT_FRAME;
     params.inputBuffer = mapped_resource->mappedResource;
     params.bufferFmt = buffer_format_;
-    params.inputWidth = width_;
-    params.inputHeight = height_;
+    params.inputWidth = params_.width();
+    params.inputHeight = params_.height();
     params.outputBitstream = bitstream_output_buffer_;
     params.completionEvent = event_;
     NVENCSTATUS status = nvfuncs_.nvEncEncodePicture(nvencoder_, &params);
@@ -393,22 +402,21 @@ bool NvD3d11EncoderImpl::loadNvApi() {
 }
 
 NV_ENC_INITIALIZE_PARAMS
-NvD3d11EncoderImpl::generateEncodeParams(const NvEncParamsHelper& helper,
-                                         NV_ENC_CONFIG& encode_config) {
+NvD3d11EncoderImpl::generateEncodeParams(NV_ENC_CONFIG& encode_config) {
     NV_ENC_INITIALIZE_PARAMS params{};
     ::memset(&encode_config, 0, sizeof(NV_ENC_CONFIG));
     encode_config.version = NV_ENC_CONFIG_VER;
     params.encodeConfig = &encode_config;
     params.version = NV_ENC_INITIALIZE_PARAMS_VER;
-    params.encodeGUID = helper.codec();
-    params.presetGUID = helper.preset();
-    params.encodeWidth = width_;
-    params.encodeHeight = height_;
-    params.darWidth = width_;
-    params.darHeight = height_;
-    params.maxEncodeWidth = width_;
-    params.maxEncodeHeight = height_;
-    params.frameRateNum = helper.fps();
+    params.encodeGUID = params_.codec();
+    params.presetGUID = params_.preset();
+    params.encodeWidth = params_.width();
+    params.encodeHeight = params_.height();
+    params.darWidth = params_.width();
+    params.darHeight = params_.height();
+    params.maxEncodeWidth = params_.width();
+    params.maxEncodeHeight = params_.height();
+    params.frameRateNum = params_.fps();
     params.frameRateDen = 1;
     params.enablePTD = 1;
     params.reportSliceOffsets = 0;
@@ -418,21 +426,21 @@ NvD3d11EncoderImpl::generateEncodeParams(const NvEncParamsHelper& helper,
     NV_ENC_PRESET_CONFIG preset_config = {NV_ENC_PRESET_CONFIG_VER, {NV_ENC_CONFIG_VER}};
     nvfuncs_.nvEncGetEncodePresetConfig(nvencoder_, params.encodeGUID, params.presetGUID,
                                         &preset_config);
-    ::memcpy(params.encodeConfig, &preset_config.presetCfg, sizeof(NV_ENC_CONFIG)); //???
+    ::memcpy(params.encodeConfig, &preset_config.presetCfg, sizeof(NV_ENC_CONFIG));
     params.encodeConfig->frameIntervalP = 1;
     params.encodeConfig->gopLength = NVENC_INFINITE_GOPLENGTH;
-    params.encodeConfig->rcParams.rateControlMode = helper.rc();
-    params.encodeConfig->rcParams.averageBitRate = helper.bitrate();
-    params.encodeConfig->rcParams.maxBitRate = helper.maxbitrate();
-    params.encodeConfig->rcParams.minQP = helper.qmin();
+    params.encodeConfig->rcParams.rateControlMode = params_.rc();
+    params.encodeConfig->rcParams.averageBitRate = params_.bitrate();
+    params.encodeConfig->rcParams.maxBitRate = params_.maxbitrate();
+    params.encodeConfig->rcParams.minQP = params_.qmin();
     params.encodeConfig->rcParams.enableMinQP = true;
-    params.encodeConfig->rcParams.maxQP = helper.qmax();
+    params.encodeConfig->rcParams.maxQP = params_.qmax();
     params.encodeConfig->rcParams.enableMaxQP = true;
-    if (helper.vbvbufsize().has_value()) {
-        params.encodeConfig->rcParams.vbvBufferSize = helper.vbvbufsize().value();
+    if (params_.vbvbufsize().has_value()) {
+        params.encodeConfig->rcParams.vbvBufferSize = params_.vbvbufsize().value();
     }
-    if (helper.vbvinit().has_value()) {
-        params.encodeConfig->rcParams.vbvInitialDelay = helper.vbvinit().value();
+    if (params_.vbvinit().has_value()) {
+        params.encodeConfig->rcParams.vbvInitialDelay = params_.vbvinit().value();
     }
 
     if (params.presetGUID != NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID &&
@@ -521,14 +529,14 @@ bool NvD3d11EncoderImpl::uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource) {
     return true;
 }
 
-NvD3d11Encoder::NvD3d11Encoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
-    : Encoder{d3d11_dev, d3d11_ctx, width, height}
-    , impl_{std::make_shared<NvD3d11EncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev))} {}
-
-NvD3d11Encoder::~NvD3d11Encoder() {}
-
-bool NvD3d11Encoder::init(const EncodeParamsHelper& params) {
-    return impl_->init(params);
+std::unique_ptr<NvD3d11Encoder> NvD3d11Encoder::create(const EncodeParamsHelper& params) {
+    auto encoder = std::make_unique<NvD3d11Encoder>();
+    auto impl = std::make_shared<NvD3d11EncoderImpl>(params);
+    if (!impl->init()) {
+        return nullptr;
+    }
+    encoder->impl_ = impl;
+    return encoder;
 }
 
 void NvD3d11Encoder::reconfigure(const ReconfigureParams& params) {
@@ -541,6 +549,14 @@ CaptureFormat NvD3d11Encoder::captureFormat() const {
 
 VideoCodecType NvD3d11Encoder::codecType() const {
     return impl_->codecType();
+}
+
+uint32_t NvD3d11Encoder::width() const {
+    return impl_->width();
+}
+
+uint32_t NvD3d11Encoder::height() const {
+    return impl_->height();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {

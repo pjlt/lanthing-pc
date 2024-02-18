@@ -53,7 +53,8 @@ class AmfParamsHelper {
 public:
     AmfParamsHelper(const lt::video::EncodeParamsHelper& params)
         : params_{params} {}
-
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     std::wstring codec() const;
     int fps() const { return params_.fps(); }
     int64_t gop() const { return params_.gop() < 0 ? 0 : params_.gop(); }
@@ -64,9 +65,11 @@ public:
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM rc() const;
     AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM presetAvc() const;
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM presetHevc() const;
+    void set_bitrate(uint32_t bps) { params_.set_bitrate(bps); }
+    void set_fps(int f) { params_.set_fps(f); }
 
 private:
-    const lt::video::EncodeParamsHelper params_;
+    lt::video::EncodeParamsHelper params_;
 };
 
 std::wstring AmfParamsHelper::codec() const {
@@ -129,11 +132,13 @@ namespace video {
 
 class AmdEncoderImpl {
 public:
-    AmdEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx);
+    AmdEncoderImpl(const EncodeParamsHelper& params);
     ~AmdEncoderImpl();
-    bool init(const EncodeParamsHelper& params);
+    bool init();
     void reconfigure(const Encoder::ReconfigureParams& params);
     VideoCodecType codecType() const;
+    uint32_t width() const { return params_.width(); }
+    uint32_t height() const { return params_.height(); }
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
 
@@ -146,31 +151,30 @@ private:
 private:
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_;
-    uint32_t width_;
-    uint32_t height_;
+
     lt::VideoCodecType codec_type_;
     std::unique_ptr<ltlib::DynamicLibrary> amdapi_;
     amf::AMFFactory* factory_ = nullptr;
     amf::AMFContextPtr context_ = nullptr;
     amf::AMFComponentPtr encoder_ = nullptr;
     AMF_RESULT last_submit_error_ = AMF_OK;
+    AmfParamsHelper params_;
 };
 
-AmdEncoderImpl::AmdEncoderImpl(ID3D11Device* d3d11_dev, ID3D11DeviceContext* d3d11_ctx)
-    : d3d11_dev_{d3d11_dev}
-    , d3d11_ctx_{d3d11_ctx} {}
+AmdEncoderImpl::AmdEncoderImpl(const EncodeParamsHelper& params)
+    : d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.d3d11_dev())}
+    , d3d11_ctx_{reinterpret_cast<ID3D11DeviceContext*>(params.d3d11_ctx())}
+    , codec_type_{params.codec()}
+    , params_{params} {}
 
 AmdEncoderImpl::~AmdEncoderImpl() {}
 
-bool AmdEncoderImpl::init(const EncodeParamsHelper& params) {
-    AmfParamsHelper params_helper{params};
-    if (params.codec() != lt::VideoCodecType::H264 && params.codec() != lt::VideoCodecType::H265) {
-        LOG(FATAL) << "Unknown video codec type " << (int)params.codec();
+bool AmdEncoderImpl::init() {
+    if (codec_type_ != lt::VideoCodecType::H264 && codec_type_ != lt::VideoCodecType::H265) {
+        LOG(FATAL) << "Unknown video codec type " << (int)codec_type_;
         return false;
     }
-    width_ = params.width();
-    height_ = params.height();
-    codec_type_ = params.codec();
+
     if (!loadAmdApi()) {
         return false;
     }
@@ -184,22 +188,22 @@ bool AmdEncoderImpl::init(const EncodeParamsHelper& params) {
         LOG(ERR) << "AMFFactory::InitDX11 failed with " << result;
         return false;
     }
-    result = factory_->CreateComponent(context_, params_helper.codec().c_str(), &encoder_);
+    result = factory_->CreateComponent(context_, params_.codec().c_str(), &encoder_);
     if (result != AMF_OK) {
         LOG(ERR) << "AMFFactory::CreateComponent failed with " << result;
         return false;
     }
     if (codec_type_ == lt::VideoCodecType::H264) {
-        if (!setAvcEncodeParams(params_helper)) {
+        if (!setAvcEncodeParams(params_)) {
             return false;
         }
     }
     else {
-        if (!setHevcEncodeParams(params_helper)) {
+        if (!setHevcEncodeParams(params_)) {
             return false;
         }
     }
-    result = encoder_->Init(amf::AMF_SURFACE_BGRA, width_, height_);
+    result = encoder_->Init(amf::AMF_SURFACE_BGRA, params_.width(), params_.height());
     if (result != AMF_OK) {
         LOG(ERR) << "AMFComponent::Init failed with " << result;
         return false;
@@ -212,19 +216,18 @@ void AmdEncoderImpl::reconfigure(const Encoder::ReconfigureParams& params) {
     AMF_RESULT result = AMF_OK;
     AMF_RESULT result2 = AMF_OK;
     if (params.bitrate_bps.has_value()) {
-        if (codec_type_ == lt::VideoCodecType::H264) {
-            result =
-                encoder_->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, params.bitrate_bps.value());
-            result2 =
-                encoder_->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE,
-                                      static_cast<int64_t>(params.bitrate_bps.value() * 1.1f));
+        params_.set_bitrate(params.bitrate_bps.value());
+        if (codec_type_ == lt::VideoCodecType::H264_420) {
+            result = encoder_->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE,
+                                           static_cast<int64_t>(params_.bitrate()));
+            result2 = encoder_->SetProperty(AMF_VIDEO_ENCODER_PEAK_BITRATE,
+                                            static_cast<int64_t>(params_.max_bitrate()));
         }
-        else if (codec_type_ == lt::VideoCodecType::H265) {
+        else if (codec_type_ == lt::VideoCodecType::H265_420) {
             result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE,
-                                           params.bitrate_bps.value());
-            result2 =
-                encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_PEAK_BITRATE,
-                                      static_cast<int64_t>(params.bitrate_bps.value() * 1.1f));
+                                           static_cast<int64_t>(params_.bitrate()));
+            result2 = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_PEAK_BITRATE,
+                                            static_cast<int64_t>(params_.max_bitrate()));
         }
         else {
             assert(false);
@@ -364,8 +367,8 @@ bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_B_PIC_PATTERN failed with " << result;
         return false;
     }
-    result =
-        encoder_->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(width_, height_));
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE,
+                                   ::AMFConstructSize(params.width(), params.height()));
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_FRAMESIZE failed with " << result;
         return false;
@@ -436,7 +439,7 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
     //     return false;
     // }
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE,
-                                   ::AMFConstructSize(width_, height_));
+                                   ::AMFConstructSize(params.width(), params.height()));
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_FRAMESIZE failed with " << result;
         return false;
@@ -485,13 +488,14 @@ bool AmdEncoderImpl::isKeyFrame(amf::AMFDataPtr data) {
     return false;
 }
 
-AmdEncoder::AmdEncoder(void* d3d11_dev, void* d3d11_ctx, uint32_t width, uint32_t height)
-    : Encoder{d3d11_dev, d3d11_ctx, width, height}
-    , impl_{std::make_shared<AmdEncoderImpl>(reinterpret_cast<ID3D11Device*>(d3d11_dev),
-                                             reinterpret_cast<ID3D11DeviceContext*>(d3d11_ctx))} {}
-
-bool AmdEncoder::init(const EncodeParamsHelper& params) {
-    return impl_->init(params);
+std::unique_ptr<AmdEncoder> AmdEncoder::create(const EncodeParamsHelper& params) {
+    auto encoder = std::make_unique<AmdEncoder>();
+    auto impl = std::make_shared<AmdEncoderImpl>(params);
+    if (!impl->init()) {
+        return nullptr;
+    }
+    encoder->impl_ = impl;
+    return encoder;
 }
 
 void AmdEncoder::reconfigure(const Encoder::ReconfigureParams& params) {
@@ -504,6 +508,14 @@ CaptureFormat AmdEncoder::captureFormat() const {
 
 VideoCodecType AmdEncoder::codecType() const {
     return impl_->codecType();
+}
+
+uint32_t AmdEncoder::width() const {
+    return impl_->width();
+}
+
+uint32_t AmdEncoder::height() const {
+    return impl_->height();
 }
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> AmdEncoder::encodeFrame(void* input_frame) {

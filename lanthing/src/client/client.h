@@ -199,7 +199,7 @@ private:
     std::optional<bool> is_p2p_;
     bool absolute_mouse_ = true;
     bool last_w_or_h_is_0_ = false;
-    int64_t last_received_keepalive_;
+    int64_t last_received_keepalive_ = 0;
     bool connected_to_app_ = false;
     std::string ignored_nic_;
 };
