@@ -29,7 +29,7 @@ jobs:
           echo ${{ github.sha }} > Release.txt
           $OP = "${{ github.workspace }}/install/RelWithDebInfo/bin"
           $PDB = "${{ github.workspace }}/install/RelWithDebInfo/pdb"
-          Compress-Archive -Path Release.txt,LICENSE,third-party-licenses.txt,$OP/platforms,$OP/styles,$OP/abseil_dll.dll,$OP/app.exe,$OP/avcodec-59.dll,$OP/avutil-57.dll,$OP/breakpad.dll,$OP/g3log.dll,$OP/lanthing.exe,$OP/libprotobuf-lite.dll,$OP/libvpl.dll,$OP/Qt6Core.dll,$OP/Qt6Gui.dll,$OP/Qt6Widgets.dll,$OP/rtc.dll,$OP/rtc2.dll,$OP/sdl2.dll,$OP/sqlite3.dll,$OP/uv.dll $OP/openh264-2.4.0-win64.dll -DestinationPath lanthing.win.${{ github.ref_name }}.zip
+          Compress-Archive -Path Release.txt,LICENSE,third-party-licenses.txt,$OP/platforms,$OP/styles,$OP/abseil_dll.dll,$OP/lanthing-app.exe,$OP/avcodec-59.dll,$OP/avutil-57.dll,$OP/breakpad.dll,$OP/g3log.dll,$OP/lanthing.exe,$OP/libprotobuf-lite.dll,$OP/libvpl.dll,$OP/Qt6Core.dll,$OP/Qt6Gui.dll,$OP/Qt6Widgets.dll,$OP/rtc.dll,$OP/rtc2.dll,$OP/sdl2.dll,$OP/sqlite3.dll,$OP/uv.dll $OP/openh264-2.4.0-win64.dll -DestinationPath lanthing.win.${{ github.ref_name }}.zip
           Compress-Archive -Path Release.txt,$PDB -DestinationPath pdb.${{ github.ref_name }}.zip
       - name: Release
         uses: softprops/action-gh-release@v1
