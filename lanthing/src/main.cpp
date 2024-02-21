@@ -53,9 +53,7 @@
 #include <service/service.h>
 #endif
 
-#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
 #include <rtc/rtc.h>
-#endif
 
 #include "firewall.h"
 #include "lt_constants.h"
@@ -158,9 +156,7 @@ void initLogAndMinidump(Role role) {
     g3::only_change_at_initialization::addLogLevel(ERR);
     g3::initializeLogging(g_log_worker.get());
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
-#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
         rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
-#endif
     }
     LOGF(INFO, "Lanthing Version: v%d.%d.%d, Build time: %s %s", LT_VERSION_MAJOR, LT_VERSION_MINOR,
          LT_VERSION_PATCH, __DATE__, __TIME__);

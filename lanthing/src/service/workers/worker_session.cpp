@@ -70,6 +70,20 @@
 
 namespace {
 
+lt::AudioCodecType atype(int32_t transport_type) {
+    switch (transport_type) {
+    case ltproto::common::TransportType::RTC:
+        return lt::AudioCodecType::PCM;
+    case ltproto::common::TransportType::RTC2:
+        return lt::AudioCodecType::PCM;
+    case ltproto::common::TransportType::TCP:
+        return lt::AudioCodecType::OPUS;
+    default:
+        LOG(FATAL) << "Unknown transport type";
+        return lt::AudioCodecType::OPUS;
+    }
+}
+
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
     case ltproto::common::AVC:
@@ -123,6 +137,7 @@ WorkerSession::WorkerSession(const Params& params)
     , enable_gamepad_(params.enable_gamepad)
     , enable_keyboard_(params.enable_keyboard)
     , enable_mouse_(params.enable_mouse)
+    , transport_type_(params.transport_type)
     , min_port_(params.min_port)
     , max_port_(params.max_port)
     , ignored_nic_(params.ignored_nic) {
@@ -136,19 +151,19 @@ WorkerSession::WorkerSession(const Params& params)
 
 WorkerSession::~WorkerSession() {
     if (tp_server_ != nullptr) {
-        switch (LT_TRANSPORT_TYPE) {
-        case LT_TRANSPORT_TCP:
+        switch (transport_type_) {
+        case ltproto::common::TransportType::TCP:
         {
             auto tcp_svr = static_cast<lt::tp::ServerTCP*>(tp_server_);
             delete tcp_svr;
             break;
         }
-        case LT_TRANSPORT_RTC:
+        case ltproto::common::TransportType::RTC:
         { // rtc.dll build on another machine!
             rtc::Server::destroy(tp_server_);
             break;
         }
-        case LT_TRANSPORT_RTC2:
+        case ltproto::common::TransportType::RTC2:
         {
             auto rtc2_svr = static_cast<rtc2::Server*>(tp_server_);
             delete rtc2_svr;
@@ -276,14 +291,14 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
 }
 
 bool WorkerSession::initTransport() {
-    switch (LT_TRANSPORT_TYPE) {
-    case LT_TRANSPORT_TCP:
+    switch (transport_type_) {
+    case ltproto::common::TransportType::TCP:
         tp_server_ = createTcpServer();
         break;
-    case LT_TRANSPORT_RTC:
+    case ltproto::common::TransportType::RTC:
         tp_server_ = createRtcServer();
         break;
-    case LT_TRANSPORT_RTC2:
+    case ltproto::common::TransportType::RTC2:
         tp_server_ = createRtc2Server();
         break;
     default:
@@ -301,17 +316,11 @@ tp::Server* WorkerSession::createTcpServer() {
         std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
     lt::tp::ServerTCP::Params params{};
     params.user_data = this;
-    params.video_codec_type = ::toLtrtc(
-        static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
-    if (params.video_codec_type == VideoCodecType::H264_420_SOFT) {
-        params.video_codec_type = VideoCodecType::H264_420;
-    }
     params.on_failed = &WorkerSession::onTpFailed;
     params.on_disconnected = &WorkerSession::onTpDisconnected;
     params.on_accepted = &WorkerSession::onTpAccepted;
     params.on_data = &WorkerSession::onTpData;
     params.on_signaling_message = &WorkerSession::onTpSignalingMessage;
-    // FIXME: 修改TCP接口
     auto server = lt::tp::ServerTCP::create(params);
     return server.release();
 }
@@ -403,7 +412,8 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_width = client_width;
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
-    params.client_codecs = client_codecs;
+    params.client_video_codecs = client_codecs;
+    params.audio_codec = atype(transport_type_);
     params.on_failed =
         std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this, std::placeholders::_1);
     worker_process_ = WorkerProcess::create(params);
@@ -452,20 +462,20 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
         return;
     }
     if (join_signaling_room_success_ == false) {
-        on_create_session_completed_(ltproto::ErrorCode::JoinRoomFailed, client_device_id_,
-                                     session_name_, empty_params);
+        on_create_session_completed_(ltproto::ErrorCode::JoinRoomFailed, transport_type_,
+                                     client_device_id_, session_name_, empty_params);
         return;
     }
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
     if (!initTransport()) {
-        on_create_session_completed_(ltproto::ErrorCode::TransportInitFailed, client_device_id_,
-                                     session_name_, empty_params);
+        on_create_session_completed_(ltproto::ErrorCode::TransportInitFailed, transport_type_,
+                                     client_device_id_, session_name_, empty_params);
         return;
     }
-    on_create_session_completed_(ltproto::ErrorCode::Success, client_device_id_, session_name_,
-                                 negotiated_streaming_params_);
+    on_create_session_completed_(ltproto::ErrorCode::Success, transport_type_, client_device_id_,
+                                 session_name_, negotiated_streaming_params_);
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
@@ -783,7 +793,8 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
 void WorkerSession::onWorkerFailedFromOtherThread(int32_t error_code) {
     postTask([this, error_code]() {
         auto empty_params = std::make_shared<ltproto::common::StreamingParams>();
-        on_create_session_completed_(error_code, client_device_id_, session_name_, empty_params);
+        on_create_session_completed_(error_code, transport_type_, client_device_id_, session_name_,
+                                     empty_params);
     });
 }
 
@@ -809,7 +820,7 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     auto that = reinterpret_cast<WorkerSession*>(user_data);
     that->postTask([that, link_type]() {
-        LOG(INFO) << "Accepted client";
+        LOG(INFO) << "Accepted client, LinkType " << toString(link_type);
         that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
         that->updateLastRecvTime();
         that->syncTime();

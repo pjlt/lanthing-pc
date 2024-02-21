@@ -63,13 +63,13 @@
 
 namespace {
 
-lt::AudioCodecType atype() {
-    switch (LT_TRANSPORT_TYPE) {
-    case LT_TRANSPORT_RTC:
+lt::AudioCodecType atype(int32_t transport_type) {
+    switch (transport_type) {
+    case ltproto::common::TransportType::RTC:
         return lt::AudioCodecType::PCM;
-    case LT_TRANSPORT_RTC2:
+    case ltproto::common::TransportType::RTC2:
         return lt::AudioCodecType::PCM;
-    case LT_TRANSPORT_TCP:
+    case ltproto::common::TransportType::TCP:
         return lt::AudioCodecType::OPUS;
     default:
         LOG(FATAL) << "Unknown transport type";
@@ -91,7 +91,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-dinput") == options.end() ||
         options.find("-gamepad") == options.end() || options.find("-chans") == options.end() ||
-        options.find("-afreq") == options.end() || options.find("-rotation") == options.end()) {
+        options.find("-afreq") == options.end() || options.find("-rotation") == options.end() ||
+        options.find("-trans") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
@@ -102,6 +103,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     params.signaling_addr = options["-addr"];
     params.user = options["-user"];
     params.pwd = options["-pwd"];
+    int32_t transport_type = std::atoi(options["-trans"].c_str());
     int32_t signaling_port = std::atoi(options["-port"].c_str());
     params.codec = options["-codec"];
     int32_t width = std::atoi(options["-width"].c_str());
@@ -121,6 +123,12 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
             params.reflex_servers.push_back(out);
         }
     }
+    if (transport_type != ltproto::common::TransportType::RTC &&
+        transport_type != ltproto::common::TransportType::TCP) {
+        LOG(ERR) << "Invalid parameter: trans " << transport_type;
+        return nullptr;
+    }
+    params.transport_type = transport_type;
 
     if (signaling_port <= 0 || signaling_port > 65535) {
         LOG(ERR) << "Invalid parameter: port " << signaling_port;
@@ -187,8 +195,9 @@ Client::Client(const Params& params)
                               std::placeholders::_2, std::placeholders::_3),
                     std::bind(&Client::onUserSwitchStretch, this),
                     std::bind_front(&Client::resetVideoPipeline, this)}
-    , audio_params_{atype(), params.audio_freq, params.audio_channels}
-    , reflex_servers_{params.reflex_servers} {
+    , audio_params_{atype(params.transport_type), params.audio_freq, params.audio_channels}
+    , reflex_servers_{params.reflex_servers}
+    , transport_type_{params.transport_type} {
     if (video_params_.decode_codec == VideoCodecType::H264_420_SOFT) {
         video_params_.decode_codec = VideoCodecType::H264_420;
     }
@@ -201,19 +210,19 @@ Client::~Client() {
         ioloop_.reset();
     }
     if (tp_client_ != nullptr) {
-        switch (LT_TRANSPORT_TYPE) {
-        case LT_TRANSPORT_TCP:
+        switch (transport_type_) {
+        case ltproto::common::TransportType::TCP:
         {
             auto tcp_cli = static_cast<lt::tp::ClientTCP*>(tp_client_);
             delete tcp_cli;
             break;
         }
-        case LT_TRANSPORT_RTC:
+        case ltproto::common::TransportType::RTC:
         { // rtc.dll build on another machine!
             rtc::Client::destroy(tp_client_);
             break;
         }
-        case LT_TRANSPORT_RTC2:
+        case ltproto::common::TransportType::RTC2:
         {
             auto rtc2_cli = static_cast<rtc2::Client*>(tp_client_);
             delete rtc2_cli;
@@ -572,17 +581,18 @@ void Client::sendKeepaliveToSignalingServer() {
 }
 
 bool Client::initTransport() {
-    switch (LT_TRANSPORT_TYPE) {
-    case LT_TRANSPORT_TCP:
+    switch (transport_type_) {
+    case ltproto::common::TransportType::TCP:
         tp_client_ = createTcpClient();
         break;
-    case LT_TRANSPORT_RTC:
+    case ltproto::common::TransportType::RTC:
         tp_client_ = createRtcClient();
         break;
-    case LT_TRANSPORT_RTC2:
+    case ltproto::common::TransportType::RTC2:
         tp_client_ = createRtc2Client();
         break;
     default:
+        LOG(ERR) << "initTransport failed: Unknown transport type " << transport_type_;
         break;
     }
     if (tp_client_ == nullptr) {
@@ -608,8 +618,6 @@ tp::Client* Client::createTcpClient() {
     params.on_failed = &Client::onTpFailed;
     params.on_disconnected = &Client::onTpDisconnected;
     params.on_signaling_message = &Client::onTpSignalingMessage;
-    params.video_codec_type = video_params_.decode_codec;
-    // FIXME: 修改TCP接口
     auto client = lt::tp::ClientTCP::create(params);
     return client.release();
 }
@@ -732,6 +740,7 @@ void Client::onTpAudioData(void* user_data, const lt::AudioData& audio_data) {
 
 void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
+    LOG(INFO) << "Connected, LinkType " << toString(link_type);
     auto that = reinterpret_cast<Client*>(user_data);
     that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
     if (that->video_pipeline_ == nullptr) {

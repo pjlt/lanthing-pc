@@ -68,6 +68,7 @@ bool ClientSession::start() {
        << " -token " << params_.auth_token
        << " -user " << params_.p2p_username
        << " -pwd " << params_.p2p_password
+       << " -trans " << params_.transport_type
        << " -addr " << params_.signaling_addr
        << " -port " << params_.signaling_port
        << " -codec " << toString(params_.video_codec_type)
@@ -197,6 +198,8 @@ bool ClientSession::start() {
         args.push_back(params_.p2p_username);
         args.push_back("-pwd");
         args.push_back(params_.p2p_password);
+        args.push_back("-trans");
+        args.push_back(std::to_string(params_.transport_type));
         args.push_back("-addr");
         args.push_back(params_.signaling_addr);
         args.push_back("-port");

@@ -136,10 +136,12 @@ void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
 
 // 跑在IOLoop线程
 void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken,
-                            const std::string& cookie) {
+                            const std::string& cookie, bool use_tcp) {
     // TODO: 先创建进程，从进程中获取一定信息才向服务器发请求
     int64_t request_id = last_request_id_.fetch_add(1);
     auto req = std::make_shared<ltproto::server::RequestConnection>();
+    req->set_transport_type(use_tcp ? ltproto::common::TransportType::TCP
+                                    : ltproto::common::TransportType::RTC);
     req->set_request_id(request_id);
     req->set_conn_type(ltproto::server::ConnectionType::Control);
     req->set_device_id(peerDeviceID);
@@ -223,6 +225,7 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
         return;
     }
     ClientSession::Params params{};
+    params.transport_type = ack->transport_type();
     params.client_id = ack->client_id();
     params.room_id = ack->room_id();
     params.auth_token = ack->auth_token();

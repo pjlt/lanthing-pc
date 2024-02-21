@@ -30,14 +30,7 @@
 
 #include <transport/transport_tcp.h>
 
-#ifdef LT_WINDOWS
-#include <WinSock2.h>
-#include <iphlpapi.h>
-#include <ws2tcpip.h>
-#else // LT_WINDOWS
-#include <sys/socket.h>
-#include <netinet/ip.h>
-#endif // LT_WINDOWS
+#include <uv.h>
 
 #include <ltlib/logging.h>
 
@@ -57,9 +50,6 @@ namespace lt {
 namespace tp { // transport
 
 bool ClientTCP::Params::validate() const {
-    if (video_codec_type != VideoCodecType::H264 && video_codec_type != VideoCodecType::H265) {
-        return false;
-    }
     return !(on_data == nullptr || on_video == nullptr || on_audio == nullptr ||
              on_connected == nullptr || on_failed == nullptr || on_disconnected == nullptr ||
              on_signaling_message == nullptr);
@@ -284,9 +274,6 @@ void ClientTCP::invokeInternal(const std::function<void()>& task) {
 //*****************************************************************************
 
 bool ServerTCP::Params::validate() const {
-    if (video_codec_type != VideoCodecType::H264 && video_codec_type != VideoCodecType::H265) {
-        return false;
-    }
     return !(on_data == nullptr || on_accepted == nullptr || on_failed == nullptr ||
              on_disconnected == nullptr || on_signaling_message == nullptr);
 }
@@ -490,61 +477,42 @@ void ServerTCP::onSignalingMessage2(const std::string& key, const std::string& v
 }
 
 void ServerTCP::handleSigConnect() {
-    // if (!initTcpServer()) {
-    //     params_.on_failed();
-    //     return;
-    // }
     if (!gatherIP()) {
         params_.on_failed(params_.user_data);
     }
 }
 
-#ifdef LT_WINDOWS
-// 仅取第一个非loopback的IPv4地址
 bool ServerTCP::gatherIP() {
-    ULONG flags = (GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
-                   GAA_FLAG_INCLUDE_PREFIX);
-    ULONG buffer_size = 16 * 16384;
-    std::vector<uint8_t> buffer;
-    PIP_ADAPTER_ADDRESSES adapters = nullptr;
-    ULONG ret = 0;
-    do {
-        buffer.resize(buffer_size);
-        adapters = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buffer.data());
-        ret = GetAdaptersAddresses(AF_INET, flags, nullptr, adapters, &buffer_size);
-    } while (ret == ERROR_BUFFER_OVERFLOW);
-    if (ret != ERROR_SUCCESS) {
-        return false;
+    char addr_buff[512] = {0};
+    uv_interface_address_t* info;
+    int count, i;
+    uv_interface_addresses(&info, &count);
+    i = count;
+    LOG(INFO) << "ServerTCP gathered " << count << " ip addresses";
+    while (i--) {
+        uv_interface_address_t ifa = info[i];
+        printf("Name: %s\n", ifa.name);
+        if (ifa.address.address4.sin_family == AF_INET) {
+            uv_ip4_name(&ifa.address.address4, addr_buff, sizeof(addr_buff));
+            LOGF(INFO, "interface(%d) internal:%d addr:%s", i, ifa.is_internal, addr_buff);
+            if (!ifa.is_internal) {
+                uint16_t port = tcp_server_->port();
+                std::string value = std::string(addr_buff) + ":" + std::to_string(port);
+                params_.on_signaling_message(params_.user_data, kKeyAddress, value.c_str());
+                uv_free_interface_addresses(info, count);
+                return true;
+            }
+        }
+        else if (ifa.address.address4.sin_family == AF_INET6) {
+            LOGF(INFO, "interface(%d) is IPv6", i);
+        }
+        else {
+            LOGF(INFO, "interface(%d) unkonwn family %d", i, ifa.address.address4.sin_family);
+        }
     }
-    while (adapters != nullptr) {
-        if (adapters->OperStatus != IfOperStatusUp) {
-            adapters = adapters->Next;
-            continue;
-        }
-        if (adapters->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
-            adapters = adapters->Next;
-            continue;
-        }
-        PIP_ADAPTER_UNICAST_ADDRESS address = adapters->FirstUnicastAddress;
-        if (address != nullptr) {
-            sockaddr_in* v4_addr = reinterpret_cast<sockaddr_in*>(address->Address.lpSockaddr);
-            char addr_buff[64] = {0};
-            inet_ntop(v4_addr->sin_family, &v4_addr->sin_addr, addr_buff, 64);
-            uint16_t port = tcp_server_->port();
-            std::string value = std::string(addr_buff) + ":" + std::to_string(port);
-            params_.on_signaling_message(params_.user_data, kKeyAddress, value.c_str());
-            return true;
-        }
-        adapters = adapters->Next;
-    }
+    uv_free_interface_addresses(info, count);
     return false;
 }
-#else // LT_WINDOWS
-bool ServerTCP::gatherIP() {
-    //TODO: linux implementation
-    return false;
-}
-#endif // LT_WINDOWS
 
 void ServerTCP::invokeInternal(const std::function<void()>& task) {
     std::promise<void> promise;

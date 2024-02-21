@@ -331,6 +331,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     std::string id_str = std::to_string(msg->client_device_id());
     uint16_t min_port = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     uint16_t max_port = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
+
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
     worker_params.enable_gamepad =
@@ -339,6 +340,18 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         settings_->getBoolean("enable_keyboard_for_" + id_str).value_or(false);
     worker_params.enable_mouse =
         settings_->getBoolean("enable_mouse_for_" + id_str).value_or(false);
+    // NOTE: 这种写法会把RTC2擦除
+    bool host_enable_tcp = settings_->getBoolean("enable_tcp").value_or(false);
+    bool client_enable_tcp = msg->transport_type() == ltproto::common::TCP;
+    if (msg->transport_type() == ltproto::common::TransportType::ForceRTC) {
+        worker_params.transport_type = ltproto::common::TransportType::RTC;
+    }
+    else if (host_enable_tcp || client_enable_tcp) {
+        worker_params.transport_type = ltproto::common::TransportType::TCP;
+    }
+    else {
+        worker_params.transport_type = ltproto::common::TransportType::RTC;
+    }
     worker_params.min_port = min_port;
     worker_params.max_port = max_port;
     worker_params.ignored_nic =
@@ -349,9 +362,9 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         std::bind(&Service::postDelayTask, this, std::placeholders::_1, std::placeholders::_2);
     worker_params.user_defined_relay_server = settings_->getString("relay").value_or("");
     worker_params.msg = msg;
-    worker_params.on_create_completed =
-        std::bind(&Service::onCreateSessionCompletedThreadSafe, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    worker_params.on_create_completed = std::bind(
+        &Service::onCreateSessionCompletedThreadSafe, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
     worker_params.on_closed =
         std::bind(&Service::onSessionClosedThreadSafe, this, std::placeholders::_1,
                   std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
@@ -408,17 +421,24 @@ void Service::sendKeepAliveToServer() {
 }
 
 void Service::onCreateSessionCompletedThreadSafe(
-    int32_t error_code, int64_t device_id, const std::string& session_name,
+    int32_t error_code, int32_t transport_type, int64_t device_id, const std::string& session_name,
     std::shared_ptr<google::protobuf::MessageLite> params) {
-    postTask(std::bind(&Service::onCreateSessionCompleted, this, error_code, device_id,
-                       session_name, params));
+    postTask(std::bind(&Service::onCreateSessionCompleted, this, error_code, transport_type,
+                       device_id, session_name, params));
 }
 
-void Service::onCreateSessionCompleted(int32_t error_code, int64_t device_id,
-                                       const std::string& session_name,
+void Service::onCreateSessionCompleted(int32_t error_code, int32_t transport_type,
+                                       int64_t device_id, const std::string& session_name,
                                        std::shared_ptr<google::protobuf::MessageLite> params) {
     (void)session_name;
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
+    if (ltproto::common::TransportType_IsValid(transport_type)) {
+        ack->set_transport_type(static_cast<ltproto::common::TransportType>(transport_type));
+    }
+    else {
+        LOG(ERR) << "onCreateSessionCompleted with unknown transport type " << transport_type;
+        ack->set_transport_type(ltproto::common::TransportType::RTC);
+    }
     if (error_code == ltproto::ErrorCode::Success) {
         ack->set_err_code(ltproto::ErrorCode::Success);
         auto streaming_params = ack->mutable_streaming_params();
