@@ -91,7 +91,8 @@ WorkerProcess::WorkerProcess(const Params& params)
     , client_width_{params.client_width}
     , client_height_{params.client_height}
     , client_refresh_rate_{params.client_refresh_rate}
-    , client_codecs_{params.client_codecs}
+    , client_video_codecs_{params.client_video_codecs}
+    , audio_codec_{params.audio_codec}
     , on_failed_{params.on_failed}
     , run_as_win_service_{ltlib::isRunAsService()} {}
 
@@ -147,8 +148,8 @@ bool WorkerProcess::launchWorkerProcess() {
     std::stringstream ss;
     ss << path_ << " -type worker "
        << " -name " << pipe_name_ << " -width " << client_width_ << " -height " << client_height_
-       << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_codecs_)
-       << " -action streaming "
+       << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_video_codecs_)
+       << " -atype " << static_cast<int32_t>(audio_codec_) << " -action streaming "
        << " -mindex " << monitor_index_;
     if (first_launch_) {
         first_launch_ = false;

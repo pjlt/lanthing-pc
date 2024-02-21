@@ -65,7 +65,8 @@ public:
         uint32_t refresh_rate;
         uint32_t monitor_index;
         bool need_negotiate;
-        std::vector<lt::VideoCodecType> codecs;
+        std::vector<lt::VideoCodecType> video_codecs;
+        lt::AudioCodecType audio_codec;
     };
 
 public:
@@ -117,6 +118,7 @@ private:
     uint32_t monitor_index_;
     const std::vector<lt::VideoCodecType> client_codec_types_;
     const std::string pipe_name_;
+    const AudioCodecType audio_codec_type_;
     bool connected_to_service_ = false;
     std::shared_mutex mutex_;
     std::unique_ptr<SessionChangeObserver> session_observer_;

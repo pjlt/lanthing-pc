@@ -6,9 +6,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/code_analysis.cmake)
 
-set(LT_TRANSPORT_RTC 1)
-set(LT_TRANSPORT_RTC2 2)
-set(LT_TRANSPORT_TCP 3)
+
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/options-user.cmake)
     include(${CMAKE_CURRENT_SOURCE_DIR}/options-user.cmake)
 else()

@@ -70,6 +70,20 @@
 
 namespace {
 
+lt::AudioCodecType atype(int32_t transport_type) {
+    switch (transport_type) {
+    case ltproto::common::TransportType::RTC:
+        return lt::AudioCodecType::PCM;
+    case ltproto::common::TransportType::RTC2:
+        return lt::AudioCodecType::PCM;
+    case ltproto::common::TransportType::TCP:
+        return lt::AudioCodecType::OPUS;
+    default:
+        LOG(FATAL) << "Unknown transport type";
+        return lt::AudioCodecType::OPUS;
+    }
+}
+
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
     switch (codec) {
     case ltproto::common::AVC:
@@ -398,7 +412,8 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_width = client_width;
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
-    params.client_codecs = client_codecs;
+    params.client_video_codecs = client_codecs;
+    params.audio_codec = atype(transport_type_);
     params.on_failed =
         std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this, std::placeholders::_1);
     worker_process_ = WorkerProcess::create(params);
@@ -447,20 +462,20 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
         return;
     }
     if (join_signaling_room_success_ == false) {
-        on_create_session_completed_(ltproto::ErrorCode::JoinRoomFailed, client_device_id_,
-                                     session_name_, empty_params);
+        on_create_session_completed_(ltproto::ErrorCode::JoinRoomFailed, transport_type_,
+                                     client_device_id_, session_name_, empty_params);
         return;
     }
     if (negotiated_streaming_params_ == nullptr) {
         return;
     }
     if (!initTransport()) {
-        on_create_session_completed_(ltproto::ErrorCode::TransportInitFailed, client_device_id_,
-                                     session_name_, empty_params);
+        on_create_session_completed_(ltproto::ErrorCode::TransportInitFailed, transport_type_,
+                                     client_device_id_, session_name_, empty_params);
         return;
     }
-    on_create_session_completed_(ltproto::ErrorCode::Success, client_device_id_, session_name_,
-                                 negotiated_streaming_params_);
+    on_create_session_completed_(ltproto::ErrorCode::Success, transport_type_, client_device_id_,
+                                 session_name_, negotiated_streaming_params_);
 }
 
 void WorkerSession::postTask(const std::function<void()>& task) {
@@ -778,7 +793,8 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
 void WorkerSession::onWorkerFailedFromOtherThread(int32_t error_code) {
     postTask([this, error_code]() {
         auto empty_params = std::make_shared<ltproto::common::StreamingParams>();
-        on_create_session_completed_(error_code, client_device_id_, session_name_, empty_params);
+        on_create_session_completed_(error_code, transport_type_, client_device_id_, session_name_,
+                                     empty_params);
     });
 }
 

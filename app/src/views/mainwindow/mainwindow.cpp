@@ -165,7 +165,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->radioRealFullscreen->setChecked(false);
         ui->radioWindowedFullscreen->setChecked(false);
     }
-    ui->checkBoxTCP->setEnabled(settings.tcp);
+    ui->checkBoxTCP->setChecked(settings.tcp);
     ui->btnPortRange->setEnabled(false);
     ui->leditMinPort->setValidator(new QIntValidator(1025, 65536, this));
     ui->leditMaxPort->setValidator(new QIntValidator(1025, 65536, this));

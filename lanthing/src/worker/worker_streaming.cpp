@@ -95,7 +95,7 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
         options.find("-name") == options.end() || options.find("-negotiate") == options.end() ||
-        options.find("-mindex") == options.end()) {
+        options.find("-mindex") == options.end() || options.find("-atype") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return {nullptr, kExitCodeInvalidParameters};
     }
@@ -104,6 +104,7 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     int32_t height = std::atoi(options["-height"].c_str());
     int32_t freq = std::atoi(options["-freq"].c_str());
     int32_t monitor_index = std::atoi(options["-mindex"].c_str());
+    int32_t atype = std::atoi(options["-atype"].c_str());
     std::stringstream ss(options["-codecs"]);
 
     params.need_negotiate = std::atoi(options["-negotiate"].c_str()) != 0;
@@ -112,6 +113,11 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
         LOG(ERR) << "Parameter invalid: name";
         return {nullptr, kExitCodeInvalidParameters};
     }
+    if (atype != (int)lt::AudioCodecType::OPUS && atype != (int)lt::AudioCodecType::PCM) {
+        LOG(ERR) << "Parameter invalid: atype";
+        return {nullptr, kExitCodeInvalidParameters};
+    }
+    params.audio_codec = static_cast<lt::AudioCodecType>(atype);
     if (width <= 0) {
         LOG(ERR) << "Parameter invalid: width " << width;
         return {nullptr, kExitCodeInvalidParameters};
@@ -136,10 +142,10 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     while (std::getline(ss, codec_str, ',')) {
         VideoCodecType codec = videoCodecType(codec_str.c_str());
         if (codec != VideoCodecType::Unknown) {
-            params.codecs.push_back(codec);
+            params.video_codecs.push_back(codec);
         }
     }
-    if (params.codecs.empty()) {
+    if (params.video_codecs.empty()) {
         LOG(ERR) << "Parameter invalid: codecs";
         return {nullptr, kExitCodeInvalidParameters};
     }
@@ -160,8 +166,9 @@ WorkerStreaming::WorkerStreaming(const Params& params)
     , client_height_{params.height}
     , client_refresh_rate_{params.refresh_rate}
     , monitor_index_{params.monitor_index}
-    , client_codec_types_{params.codecs}
+    , client_codec_types_{params.video_codecs}
     , pipe_name_{params.name}
+    , audio_codec_type_{params.audio_codec}
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
 
 WorkerStreaming::~WorkerStreaming() {
@@ -350,11 +357,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     auto negotiated_params = std::make_shared<ltproto::common::StreamingParams>();
 
     lt::audio::Capturer::Params audio_params{};
-#if LT_TRANSPORT_TYPE == LT_TRANSPORT_RTC
-    audio_params.type = AudioCodecType::PCM;
-#else
-    audio_params.type = AudioCodecType::OPUS;
-#endif
+    audio_params.type = audio_codec_type_;
     audio_params.on_audio_data =
         std::bind(&WorkerStreaming::onCapturedAudioData, this, std::placeholders::_1);
     auto audio = lt::audio::Capturer::create(audio_params);

@@ -592,6 +592,7 @@ bool Client::initTransport() {
         tp_client_ = createRtc2Client();
         break;
     default:
+        LOG(ERR) << "initTransport failed: Unknown transport type " << transport_type_;
         break;
     }
     if (tp_client_ == nullptr) {
