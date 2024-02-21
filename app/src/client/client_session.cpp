@@ -199,7 +199,7 @@ bool ClientSession::start() {
         args.push_back("-pwd");
         args.push_back(params_.p2p_password);
         args.push_back("-trans");
-        args.push_back(params_.transport_type);
+        args.push_back(std::to_string(params_.transport_type));
         args.push_back("-addr");
         args.push_back(params_.signaling_addr);
         args.push_back("-port");
