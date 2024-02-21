@@ -79,6 +79,7 @@ public:
         bool enable_gamepad;
         bool enable_keyboard;
         bool enable_mouse;
+        int32_t transport_type;
         uint16_t min_port;
         uint16_t max_port;
         std::string ignored_nic;
@@ -220,6 +221,7 @@ private:
     bool signaling_keepalive_inited_ = false;
     std::deque<SpeedEntry> video_send_history_;
     int64_t video_send_bps_ = 0;
+    const int32_t transport_type_;
     uint16_t min_port_ = 0;
     uint16_t max_port_ = 0;
     std::string ignored_nic_;

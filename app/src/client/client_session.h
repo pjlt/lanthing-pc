@@ -59,6 +59,7 @@ public:
         uint32_t audio_freq;
         uint32_t rotation;
         std::vector<std::string> reflex_servers;
+        int32_t transport_type;
         std::function<void()> on_exited;
     };
 

@@ -123,6 +123,7 @@ WorkerSession::WorkerSession(const Params& params)
     , enable_gamepad_(params.enable_gamepad)
     , enable_keyboard_(params.enable_keyboard)
     , enable_mouse_(params.enable_mouse)
+    , transport_type_(params.transport_type)
     , min_port_(params.min_port)
     , max_port_(params.max_port)
     , ignored_nic_(params.ignored_nic) {
@@ -136,19 +137,19 @@ WorkerSession::WorkerSession(const Params& params)
 
 WorkerSession::~WorkerSession() {
     if (tp_server_ != nullptr) {
-        switch (LT_TRANSPORT_TYPE) {
-        case LT_TRANSPORT_TCP:
+        switch (transport_type_) {
+        case ltproto::common::TransportType::TCP:
         {
             auto tcp_svr = static_cast<lt::tp::ServerTCP*>(tp_server_);
             delete tcp_svr;
             break;
         }
-        case LT_TRANSPORT_RTC:
+        case ltproto::common::TransportType::RTC:
         { // rtc.dll build on another machine!
             rtc::Server::destroy(tp_server_);
             break;
         }
-        case LT_TRANSPORT_RTC2:
+        case ltproto::common::TransportType::RTC2:
         {
             auto rtc2_svr = static_cast<rtc2::Server*>(tp_server_);
             delete rtc2_svr;
@@ -276,14 +277,14 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
 }
 
 bool WorkerSession::initTransport() {
-    switch (LT_TRANSPORT_TYPE) {
-    case LT_TRANSPORT_TCP:
+    switch (transport_type_) {
+    case ltproto::common::TransportType::TCP:
         tp_server_ = createTcpServer();
         break;
-    case LT_TRANSPORT_RTC:
+    case ltproto::common::TransportType::RTC:
         tp_server_ = createRtcServer();
         break;
-    case LT_TRANSPORT_RTC2:
+    case ltproto::common::TransportType::RTC2:
         tp_server_ = createRtc2Server();
         break;
     default:
@@ -803,7 +804,7 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     auto that = reinterpret_cast<WorkerSession*>(user_data);
     that->postTask([that, link_type]() {
-        LOG(INFO) << "Accepted client";
+        LOG(INFO) << "Accepted client, LinkType " << toString(link_type);
         that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
         that->updateLastRecvTime();
         that->syncTime();

@@ -81,6 +81,7 @@ private:
     void setStatusColor(int64_t color);
     void setRelMouseAccel(int64_t accel);
     void setIgnoredNIC(const std::string& nic_list);
+    void enableTCP(bool enable);
 
     void createAndStartService();
     void stopService();
@@ -147,6 +148,7 @@ private:
     int64_t rel_mouse_accel_ = 0;
     std::string ignored_nic_;
     bool enable_444_ = false;
+    bool enable_tcp_ = false;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;

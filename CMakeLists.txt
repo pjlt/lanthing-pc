@@ -63,11 +63,6 @@ add_definitions(-DLT_SERVER_USE_SSL=$<IF:$<BOOL:${LT_SERVER_USE_SSL}>,true,false
 add_definitions(-DLT_RUN_AS_SERVICE=$<IF:$<BOOL:${LT_RUN_AS_SERVICE}>,true,false>)
 add_definitions(-DLT_WIN_SERVICE_NAME=${LT_WIN_SERVICE_NAME})
 add_definitions(-DLT_WIN_SERVICE_DISPLAY_NAME=${LT_WIN_SERVICE_DISPLAY_NAME})
-#transport
-add_definitions(-DLT_TRANSPORT_RTC=${LT_TRANSPORT_RTC})
-add_definitions(-DLT_TRANSPORT_RTC2=${LT_TRANSPORT_RTC2})
-add_definitions(-DLT_TRANSPORT_TCP=${LT_TRANSPORT_TCP})
-add_definitions(-DLT_TRANSPORT_TYPE=${LT_TRANSPORT_TYPE})
 #version
 add_definitions(-DLT_VERSION_MAJOR=${LT_VERSION_MAJOR})
 add_definitions(-DLT_VERSION_MINOR=${LT_VERSION_MINOR})

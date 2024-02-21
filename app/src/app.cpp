@@ -112,6 +112,7 @@ bool App::init() {
     rel_mouse_accel_ = settings_->getInteger("rel_mouse_accel").value_or(0);
     ignored_nic_ = settings_->getString("ignored_nic").value_or("");
     enable_444_ = settings_->getBoolean("enable_444").value_or(false);
+    enable_tcp_ = settings_->getBoolean("enable_tcp").value_or(false);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -180,6 +181,7 @@ int App::exec(int argc, char** argv) {
     params.set_status_color = std::bind(&App::setStatusColor, this, std::placeholders::_1);
     params.set_rel_mouse_accel = std::bind(&App::setRelMouseAccel, this, std::placeholders::_1);
     params.set_ignored_nic = std::bind(&App::setIgnoredNIC, this, std::placeholders::_1);
+    params.enable_tcp = std::bind(&App::enableTCP, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -213,7 +215,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
             cookie = ltlib::randomStr(24);
             settings_->setString(cookie_name, cookie.value());
         }
-        client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""));
+        client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""), enable_tcp_);
     });
 }
 
@@ -234,6 +236,7 @@ GUI::Settings App::getSettings() const {
     }
     settings.rel_mouse_accel = rel_mouse_accel_;
     settings.ignored_nic = ignored_nic_;
+    settings.tcp = enable_tcp_;
 
     return settings;
 }
@@ -372,6 +375,11 @@ void App::setIgnoredNIC(const std::string& nic_list) {
     else {
         settings_->setString("ignored_nic", nic_list);
     }
+}
+
+void App::enableTCP(bool enable) {
+    enable_tcp_ = enable;
+    settings_->setBoolean("enable_tcp", enable);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

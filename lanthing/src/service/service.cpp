@@ -331,6 +331,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     std::string id_str = std::to_string(msg->client_device_id());
     uint16_t min_port = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     uint16_t max_port = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
+
     WorkerSession::Params worker_params{};
     worker_params.name = session_name;
     worker_params.enable_gamepad =
@@ -339,6 +340,15 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         settings_->getBoolean("enable_keyboard_for_" + id_str).value_or(false);
     worker_params.enable_mouse =
         settings_->getBoolean("enable_mouse_for_" + id_str).value_or(false);
+    // NOTE: 这种写法会把RTC2擦除
+    bool host_enable_tcp = settings_->getBoolean("enable_tcp").value_or(false);
+    bool client_enable_tcp = msg->transport_type() == ltproto::common::TCP;
+    if (host_enable_tcp || client_enable_tcp) {
+        worker_params.transport_type = ltproto::common::TransportType::TCP;
+    }
+    else {
+        worker_params.transport_type = ltproto::common::TransportType::RTC;
+    }
     worker_params.min_port = min_port;
     worker_params.max_port = max_port;
     worker_params.ignored_nic =

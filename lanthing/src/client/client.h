@@ -85,6 +85,7 @@ public:
         uint32_t audio_freq;
         uint32_t audio_channels;
         uint32_t rotation;
+        int32_t transport_type;
         bool enable_driver_input;
         bool enable_gamepad;
         std::vector<std::string> reflex_servers;
@@ -175,6 +176,7 @@ private:
     video::DecodeRenderPipeline::Params video_params_;
     audio::Player::Params audio_params_{};
     std::vector<std::string> reflex_servers_;
+    int32_t transport_type_;
     std::mutex dr_mutex_;
     std::unique_ptr<video::DecodeRenderPipeline> video_pipeline_;
     std::unique_ptr<input::Capturer> input_capturer_;

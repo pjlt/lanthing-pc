@@ -62,7 +62,8 @@ public:
 
 public:
     static std::unique_ptr<ClientManager> create(const Params& params);
-    void connect(int64_t peerDeviceID, const std::string& accessToken, const std::string& cookie);
+    void connect(int64_t peerDeviceID, const std::string& accessToken, const std::string& cookie,
+                 bool use_tcp);
     void onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg);
 
 private:

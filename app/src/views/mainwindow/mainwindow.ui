@@ -1613,18 +1613,18 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>-120</y>
+                      <y>0</y>
                       <width>527</width>
-                      <height>600</height>
+                      <height>650</height>
                      </rect>
                     </property>
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>600</height>
+                      <height>650</height>
                      </size>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,3,1">
+                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,4,1">
                      <property name="sizeConstraint">
                       <enum>QLayout::SetDefaultConstraint</enum>
                      </property>
@@ -1698,6 +1698,25 @@ QHeaderView::section:vertical
                         <property name="bottomMargin">
                          <number>30</number>
                         </property>
+                        <item>
+                         <widget class="QFrame" name="frame_6">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QHBoxLayout" name="horizontalLayout_17">
+                           <item>
+                            <widget class="QCheckBox" name="checkBoxTCP">
+                             <property name="text">
+                              <string>TCP (LAN)</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
                         <item>
                          <widget class="QFrame" name="setRowRelay">
                           <property name="frameShape">

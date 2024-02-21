@@ -165,6 +165,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         ui->radioRealFullscreen->setChecked(false);
         ui->radioWindowedFullscreen->setChecked(false);
     }
+    ui->checkBoxTCP->setEnabled(settings.tcp);
     ui->btnPortRange->setEnabled(false);
     ui->leditMinPort->setValidator(new QIntValidator(1025, 65536, this));
     ui->leditMaxPort->setValidator(new QIntValidator(1025, 65536, this));
@@ -535,6 +536,8 @@ void MainWindow::setupOtherCallbacks() {
     });
     connect(ui->radioWindowedFullscreen, &QRadioButton::toggled,
             [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
+    connect(ui->checkBoxTCP, &QCheckBox::stateChanged,
+            [this](int) { params_.enable_tcp(ui->checkBoxTCP->isChecked()); });
     connect(ui->leditRelay, &QLineEdit::textChanged, [this](const QString& _text) {
         if (_text.isEmpty()) {
             ui->btnRelay->setEnabled(true);

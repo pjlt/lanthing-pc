@@ -63,6 +63,7 @@ public:
     struct Settings {
         bool run_as_daemon;
         bool auto_refresh_access_token;
+        bool tcp;
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
         uint16_t min_port;
@@ -98,6 +99,7 @@ public:
         std::function<void(int64_t)> set_status_color;
         std::function<void(int64_t)> set_rel_mouse_accel;
         std::function<void(const std::string&)> set_ignored_nic;
+        std::function<void(bool)> enable_tcp;
     };
 
 public:
