@@ -18,6 +18,7 @@ target_link_libraries(${PROJECT_NAME}
 	PRIVATE
 		protobuf::libprotobuf-lite
 		g3log
+		uv
 		ltlib
 		ltproto
 )

@@ -301,17 +301,11 @@ tp::Server* WorkerSession::createTcpServer() {
         std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_streaming_params_);
     lt::tp::ServerTCP::Params params{};
     params.user_data = this;
-    params.video_codec_type = ::toLtrtc(
-        static_cast<ltproto::common::VideoCodecType>(negotiated_params->video_codecs().Get(0)));
-    if (params.video_codec_type == VideoCodecType::H264_420_SOFT) {
-        params.video_codec_type = VideoCodecType::H264_420;
-    }
     params.on_failed = &WorkerSession::onTpFailed;
     params.on_disconnected = &WorkerSession::onTpDisconnected;
     params.on_accepted = &WorkerSession::onTpAccepted;
     params.on_data = &WorkerSession::onTpData;
     params.on_signaling_message = &WorkerSession::onTpSignalingMessage;
-    // FIXME: 修改TCP接口
     auto server = lt::tp::ServerTCP::create(params);
     return server.release();
 }

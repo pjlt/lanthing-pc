@@ -56,7 +56,6 @@ class ClientTCP : public Client {
 public:
     struct Params {
         void* user_data;
-        VideoCodecType video_codec_type;
         OnData on_data;
         OnVideo on_video;
         OnAudio on_audio;
@@ -114,7 +113,6 @@ class ServerTCP : public Server {
 public:
     struct Params {
         void* user_data;
-        VideoCodecType video_codec_type;
         OnData on_data;
         OnConnected on_accepted;
         OnFailed on_failed;

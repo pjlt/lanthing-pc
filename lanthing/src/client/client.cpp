@@ -608,8 +608,6 @@ tp::Client* Client::createTcpClient() {
     params.on_failed = &Client::onTpFailed;
     params.on_disconnected = &Client::onTpDisconnected;
     params.on_signaling_message = &Client::onTpSignalingMessage;
-    params.video_codec_type = video_params_.decode_codec;
-    // FIXME: 修改TCP接口
     auto client = lt::tp::ClientTCP::create(params);
     return client.release();
 }
