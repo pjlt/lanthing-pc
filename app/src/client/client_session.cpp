@@ -128,7 +128,7 @@ bool ClientSession::start() {
         std::promise<void> promise;
         auto future = promise.get_future();
         thread_ = ltlib::BlockingThread::create(
-            "client_session", [&promise, this](const std::function<void()>& i_am_alive) {
+            "lt_client_session", [&promise, this](const std::function<void()>& i_am_alive) {
                 promise.set_value();
                 mainLoop(i_am_alive);
             });

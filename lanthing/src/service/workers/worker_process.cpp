@@ -126,7 +126,7 @@ void WorkerProcess::start() {
     }
     stoped_ = false;
     thread_ = ltlib::BlockingThread::create(
-        "worker_process",
+        "lt_worker_process",
         [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
 }
 

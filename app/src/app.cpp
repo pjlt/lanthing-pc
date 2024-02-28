@@ -185,7 +185,7 @@ int App::exec(int argc, char** argv) {
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
-        "io_thread", [this](const std::function<void()>& i_am_alive) { ioLoop(i_am_alive); });
+        "lt_io_thread", [this](const std::function<void()>& i_am_alive) { ioLoop(i_am_alive); });
     return gui_.exec();
 }
 

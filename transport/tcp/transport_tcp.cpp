@@ -111,7 +111,7 @@ bool ClientTCP::init() {
         LOG(ERR) << "Init ClientTCP IOLoop failed";
         return false;
     }
-    task_thread_ = ltlib::TaskThread::create("ClientTCP_task");
+    task_thread_ = ltlib::TaskThread::create("lt_ClientTCP_task");
     if (task_thread_ == nullptr) {
         return false;
     }
@@ -136,7 +136,8 @@ bool ClientTCP::initTcpClient(const std::string& ip, uint16_t port) {
         return false;
     }
     net_thread_ = ltlib::BlockingThread::create(
-        "ClientTCP_net", [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
+        "lt_ClientTCP_net",
+        [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
     return true;
 }
 
@@ -367,8 +368,9 @@ bool ServerTCP::init() {
         return false;
     }
     net_thread_ = ltlib::BlockingThread::create(
-        "ServerTCP_net", [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
-    task_thread_ = ltlib::TaskThread::create("ServerTCP_task");
+        "lt_ServerTCP_net",
+        [this](const std::function<void()>& i_am_alive) { netLoop(i_am_alive); });
+    task_thread_ = ltlib::TaskThread::create("lt_ServerTCP_task");
     if (task_thread_ == nullptr) {
         return false;
     }

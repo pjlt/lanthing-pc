@@ -68,7 +68,7 @@ Capturer::~Capturer() {
 void Capturer::start() {
     stoped_ = false;
     capture_thread_ = ltlib::BlockingThread::create(
-        "audio_capture",
+        "lt_audio_capture",
         [this](const std::function<void()>& i_am_alive) { captureLoop(i_am_alive); });
 }
 

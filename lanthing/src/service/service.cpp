@@ -89,7 +89,7 @@ bool Service::init() {
     std::promise<void> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
-        "main_thread", [this, &promise](const std::function<void()>& i_am_alive) {
+        "lt_main_thread", [this, &promise](const std::function<void()>& i_am_alive) {
             promise.set_value();
             mainLoop(i_am_alive);
         });

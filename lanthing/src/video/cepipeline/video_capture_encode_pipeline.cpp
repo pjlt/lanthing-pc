@@ -261,7 +261,7 @@ bool VCEPipeline::init() {
 bool VCEPipeline::start() {
     std::promise<bool> start_promise;
     thread_ = ltlib::BlockingThread::create(
-        "video_capture_encode", [this, &start_promise](const std::function<void()>& i_am_alive) {
+        "lt_video_capture_encode", [this, &start_promise](const std::function<void()>& i_am_alive) {
             mainLoop(i_am_alive, start_promise);
         });
     return start_promise.get_future().get();

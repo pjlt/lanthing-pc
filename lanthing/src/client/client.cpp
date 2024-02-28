@@ -258,9 +258,10 @@ bool Client::init() {
         LOG(ERR) << "Create app client failed";
         return false;
     }
-    hb_thread_ = ltlib::TaskThread::create("heart_beat");
+    hb_thread_ = ltlib::TaskThread::create("lt_heart_beat");
     main_thread_ = ltlib::BlockingThread::create(
-        "main_thread", [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
+        "lt_main_thread",
+        [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
     should_exit_ = false;
     return true;
 }

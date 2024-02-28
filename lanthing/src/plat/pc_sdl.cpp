@@ -159,7 +159,7 @@ bool PcSdlImpl::init() {
     std::promise<bool> promise;
     auto future = promise.get_future();
     thread_ = ltlib::BlockingThread::create(
-        "sdl_loop",
+        "lt_sdl_loop",
         [&promise, this](const std::function<void()>& i_am_alive) { loop(promise, i_am_alive); });
     return future.get();
 }

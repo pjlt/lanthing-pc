@@ -311,12 +311,12 @@ bool VDRPipeline::init() {
     smoother_.clear();
     stoped_ = false;
     decode_thread_ = ltlib::BlockingThread::create(
-        "video_decode",
+        "lt_video_decode",
         [this](const std::function<void()>& i_am_alive) { decodeLoop(i_am_alive); });
     render_thread_ = ltlib::BlockingThread::create(
-        "video_render",
+        "lt_video_render",
         [this](const std::function<void()>& i_am_alive) { renderLoop(i_am_alive); });
-    stat_thread_ = ltlib::TaskThread::create("stat_task");
+    stat_thread_ = ltlib::TaskThread::create("lt_stat_task");
     stat_thread_->post_delay(ltlib::TimeDelta{1'000'00}, std::bind(&VDRPipeline::onStat, this));
     return true;
 }
