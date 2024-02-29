@@ -52,7 +52,8 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
 #if LT_WINDOWS
     D3D11Pipeline::Params d3d11_params{};
     d3d11_params.window = info.info.win.window;
-    d3d11_params.luid = params.device;
+    d3d11_params.device = params.device;
+    d3d11_params.context = params.context;
     d3d11_params.widht = params.video_width;
     d3d11_params.height = params.video_height;
     d3d11_params.rotation = params.rotation;
@@ -65,7 +66,7 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     return renderer;
 #elif LT_LINUX
     VaGlPipeline::Params va_gl_params{};
-    va_gl_params.card = static_cast<uint32_t>(params.device);
+    va_gl_params.card = 0; // static_cast<uint32_t>(params.device);
     va_gl_params.window = sdl_window;
     va_gl_params.width = params.video_width;
     va_gl_params.height = params.video_height;

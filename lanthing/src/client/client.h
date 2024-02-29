@@ -49,6 +49,7 @@
 #include <audio/player/audio_player.h>
 #include <inputs/capturer/input_capturer.h>
 #include <plat/pc_sdl.h>
+#include <plat/video_device.h>
 #include <video/drpipeline/video_decode_render_pipeline.h>
 
 namespace lt {
@@ -177,6 +178,7 @@ private:
     audio::Player::Params audio_params_{};
     std::vector<std::string> reflex_servers_;
     int32_t transport_type_;
+    std::unique_ptr<plat::VideoDevice> video_device_;
     std::mutex dr_mutex_;
     std::unique_ptr<video::DecodeRenderPipeline> video_pipeline_;
     std::unique_ptr<input::Capturer> input_capturer_;

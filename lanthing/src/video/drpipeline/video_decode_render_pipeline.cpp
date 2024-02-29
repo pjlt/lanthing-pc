@@ -50,7 +50,6 @@
 
 #include <video/decoder/video_decoder.h>
 #include <video/drpipeline/ct_smoother.h>
-#include <video/drpipeline/gpu_capability.h>
 #include <video/drpipeline/video_statistics.h>
 #include <video/renderer/video_renderer.h>
 #include <video/widgets/widgets_manager.h>
@@ -163,7 +162,6 @@ private:
     std::mutex render_mtx_;
     std::condition_variable waiting_for_render_;
 
-    GpuInfo gpu_info_;
     std::unique_ptr<Renderer> video_renderer_;
     std::unique_ptr<Decoder> video_decoder_;
     CTSmoother smoother_;
@@ -189,6 +187,8 @@ private:
     bool absolute_mouse_ = true;
     bool is_stretch_;
     int64_t status_color_;
+    void* device_;  // not ref
+    void* context_; // not ref
 };
 
 VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
@@ -205,7 +205,9 @@ VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     , sdl_{params.sdl}
     , statistics_{new VideoStatistics}
     , is_stretch_{params.stretch}
-    , status_color_{params.status_color} {
+    , status_color_{params.status_color}
+    , device_{params.device}
+    , context_{params.context} {
     window_ = params.sdl->window();
 }
 
@@ -232,20 +234,7 @@ bool VDRPipeline::init() {
          toString(decode_codec_type_));
     Renderer::Params render_params{};
 #if LT_WINDOWS
-    if (!gpu_info_.init(isHard(decode_codec_type_))) {
-        return false;
-    }
-    std::map<uint32_t, GpuInfo::Ability> sorted_by_memory;
-    for (auto& ability : gpu_info_.get()) {
-        sorted_by_memory.emplace(ability.video_memory_mb, ability);
-    }
-    if (sorted_by_memory.empty()) {
-        LOG(ERR) << "No hardware video decode ability!";
-        return false;
-    }
-    uint64_t target_adapter = sorted_by_memory.rbegin()->second.luid;
-    render_params.device = target_adapter;
-    LOG(INFO) << "Using adapter " << sorted_by_memory.rbegin()->second.to_str();
+//
 #elif LT_LINUX
     render_params.device = 0;
 #else
@@ -257,6 +246,8 @@ bool VDRPipeline::init() {
         video_height = width_;
     }
     render_params.window = window_;
+    render_params.device = device_;
+    render_params.context = context_;
     render_params.video_width = video_width;
     render_params.video_height = video_height;
     render_params.rotation = rotation_;

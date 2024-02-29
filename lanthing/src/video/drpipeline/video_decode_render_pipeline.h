@@ -62,6 +62,8 @@ public:
         bool stretch;
         int64_t status_color;
         lt::plat::PcSdl* sdl = nullptr;
+        void* device = nullptr;
+        void* context = nullptr;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;
         std::function<void()> switch_stretch;
