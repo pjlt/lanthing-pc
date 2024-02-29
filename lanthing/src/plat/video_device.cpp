@@ -28,8 +28,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <plat/d3d11_video_device.h>
 #include <plat/video_device.h>
+
+#if LT_WINDOWS
+#include <plat/d3d11_video_device.h>
+#endif // LT_WINDOWS
 
 namespace lt {
 
