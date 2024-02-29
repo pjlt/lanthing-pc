@@ -183,7 +183,16 @@ set(LT_PLAT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl_input.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/video_device.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/video_device.cpp
 )
+
+if (LT_WINDOWS)
+    list(APPEND LT_PLAT_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/d3d11_video_device.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/d3d11_video_device.cpp
+    )
+endif(LT_WINDOWS)
 
 if(LT_WINDOWS)
     set(LT_DAEMON_SRCS

@@ -743,13 +743,21 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     LOG(INFO) << "Connected, LinkType " << toString(link_type);
     auto that = reinterpret_cast<Client*>(user_data);
-    that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
-    if (that->video_pipeline_ == nullptr) {
-        if (that->video_params_.decode_codec == VideoCodecType::H264_420) {
+    if (that->video_device_ == nullptr) {
+        that->video_device_ = plat::VideoDevice::create(that->video_params_.decode_codec);
+        if (that->video_device_ == nullptr &&
+            that->video_params_.decode_codec == VideoCodecType::H264_420) {
             that->video_params_.decode_codec = VideoCodecType::H264_420_SOFT;
-            that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
+            that->video_device_ = plat::VideoDevice::create(VideoCodecType::H264_420_SOFT);
         }
     }
+    if (that->video_device_ == nullptr) {
+        LOG(ERR) << "Create VideoDevice failed";
+        return;
+    }
+    that->video_params_.device = that->video_device_->device();
+    that->video_params_.context = that->video_device_->context();
+    that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
     if (that->video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
         return;

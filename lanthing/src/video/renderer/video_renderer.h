@@ -42,7 +42,8 @@ class Renderer {
 public:
     struct Params {
         void* window;
-        uint64_t device;
+        void* device;
+        void* context;
         uint32_t video_width;
         uint32_t video_height;
         uint32_t align;

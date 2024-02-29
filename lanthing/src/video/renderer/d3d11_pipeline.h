@@ -70,7 +70,8 @@ class D3D11Pipeline : public Renderer {
 public:
     struct Params {
         void* window;
-        uint64_t luid;
+        void* device;
+        void* context;
         uint32_t widht;
         uint32_t height;
         uint32_t rotation;
@@ -120,7 +121,6 @@ private:
 
 private:
     HWND hwnd_;
-    const uint64_t luid_;
     const uint32_t video_width_;
     const uint32_t video_height_;
     const uint32_t rotation_;
@@ -128,8 +128,8 @@ private:
     int refresh_rate_ = 60;
     DecodedFormat decoded_foramt_ = DecodedFormat::D3D11_NV12;
 
-    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_ = nullptr;
-    Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
+    Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11_ctx_;
 
     Microsoft::WRL::ComPtr<IDXGIFactory3> dxgi_factory_ = nullptr;
     Microsoft::WRL::ComPtr<IDXGISwapChain2> swap_chain_ = nullptr;

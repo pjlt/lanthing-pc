@@ -182,12 +182,13 @@ namespace video {
 
 D3D11Pipeline::D3D11Pipeline(const Params& params)
     : hwnd_{reinterpret_cast<HWND>(params.window)}
-    , luid_{params.luid}
     , video_width_{params.widht}
     , video_height_{params.height}
     , rotation_{params.rotation}
     , align_{params.align}
-    , stretch_{params.stretch} {
+    , stretch_{params.stretch}
+    , d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.device)}
+    , d3d11_ctx_{reinterpret_cast<ID3D11DeviceContext*>(params.context)} {
     DwmEnableMMCSS(TRUE);
 }
 
@@ -483,7 +484,7 @@ bool D3D11Pipeline::setDecodedFormat(DecodedFormat format) {
 }
 
 bool D3D11Pipeline::init() {
-    DWM_TIMING_INFO info;
+    DWM_TIMING_INFO info{};
     info.cbSize = sizeof(DWM_TIMING_INFO);
     HRESULT hr = DwmGetCompositionTimingInfo(nullptr, &info);
 
@@ -506,40 +507,21 @@ bool D3D11Pipeline::init() {
 }
 
 bool D3D11Pipeline::createD3D() {
-    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory3), (void**)&dxgi_factory_);
+    ComPtr<IDXGIDevice1> dxgi_device;
+    HRESULT hr = d3d11_dev_.As(&dxgi_device);
     if (FAILED(hr)) {
-        LOGF(ERR, "Failed to create dxgi factory, err:%08lx", hr);
+        LOGF(ERR, "D3D11Device cast to IDXGIDevice1 failed, err:%#x", hr);
         return false;
     }
-
-    ComPtr<IDXGIAdapter1> adapter;
-    for (UINT i = 0;; i++) {
-        DXGI_ADAPTER_DESC1 desc;
-        hr = dxgi_factory_->EnumAdapters1(i, adapter.GetAddressOf());
-        if (hr == DXGI_ERROR_NOT_FOUND) {
-            break;
-        }
-        hr = adapter->GetDesc1(&desc);
-        if (FAILED(hr)) {
-            continue;
-        }
-        if (luid_ ==
-            (((uint64_t)(desc.AdapterLuid.HighPart) << 32) + (uint64_t)desc.AdapterLuid.LowPart)) {
-            break;
-        }
-    }
-    if (adapter == NULL) {
-        dxgi_factory_->EnumAdapters1(0, &adapter);
-    }
-    UINT flag = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
-#ifdef _DEBUG
-    flag |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-    hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, flag, nullptr, 0,
-                           D3D11_SDK_VERSION, d3d11_dev_.GetAddressOf(), nullptr,
-                           d3d11_ctx_.GetAddressOf());
+    ComPtr<IDXGIAdapter> dxgi_adapter;
+    hr = dxgi_device->GetAdapter(dxgi_adapter.GetAddressOf());
     if (FAILED(hr)) {
-        LOGF(ERR, "Failed to create d3d11 device, err:%08lx", hr);
+        LOGF(ERR, "IDXGIDevice1.GetAdapter() failed, err:%#x", hr);
+        return false;
+    }
+    hr = dxgi_adapter->GetParent(__uuidof(IDXGIFactory3), &dxgi_factory_);
+    if (FAILED(hr)) {
+        LOGF(ERR, "IDXGIAdapter.GetParent(IDXGIFactory3) failed, err:%#x", hr);
         return false;
     }
     ComPtr<ID3D10Multithread> d3d10_mt;
