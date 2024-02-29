@@ -233,12 +233,6 @@ bool VDRPipeline::init() {
     LOGF(INFO, "VDRPipeline w:%u, h:%u, r:%u codec:%s", width_, height_, rotation_,
          toString(decode_codec_type_));
     Renderer::Params render_params{};
-#if LT_WINDOWS
-//
-#elif LT_LINUX
-    render_params.device = 0;
-#else
-#endif
     uint32_t video_width = width_;
     uint32_t video_height = height_;
     if (rotation_ == 90 || rotation_ == 270) {
@@ -259,6 +253,8 @@ bool VDRPipeline::init() {
     }
     Decoder::Params decode_params{};
     decode_params.codec_type = decode_codec_type_;
+    // 这里的device和context理论上用device_和context_就行了，但是Linux下还没有将这两个东西转移到VideoDevice生成
+    // 依旧是Renderer里生成，所以从Renderer里取
     decode_params.hw_device = video_renderer_->hwDevice();
     decode_params.hw_context = video_renderer_->hwContext();
 #if LT_WINDOWS

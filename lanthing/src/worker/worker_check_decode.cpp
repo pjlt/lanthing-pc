@@ -33,6 +33,7 @@
 #include <future>
 
 #include <lt_constants.h>
+#include <plat/video_device.h>
 #include <video/drpipeline/video_decode_render_pipeline.h>
 
 namespace lt {
@@ -57,9 +58,15 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     for (auto codec :
          {VideoCodecType::H265_420, VideoCodecType::H264_420, VideoCodecType::H264_420_SOFT}) {
         auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
+        auto video_device = plat::VideoDevice::create(codec);
+        if (video_device == nullptr) {
+            continue;
+        }
         lt::video::DecodeRenderPipeline::Params params{
             codec, codec, 1920, 1080, 60, 0, true, empty_func2, empty_func, empty_func};
         params.sdl = sdl.get();
+        params.device = video_device->device();
+        params.context = video_device->context();
         params.for_test = true;
         auto pipeline = lt::video::DecodeRenderPipeline::create(params);
         if (pipeline != nullptr) {

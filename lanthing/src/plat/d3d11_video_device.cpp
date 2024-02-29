@@ -58,6 +58,13 @@ struct Ability {
     std::string to_str() const;
 };
 
+std::string Ability::to_str() const {
+    char buf[1024] = {0};
+    snprintf(buf, sizeof(buf) - 1, "%04x-%s-%04x-%s-%uMB-%s", vendor, desc.c_str(), device_id,
+             driver.c_str(), video_memory_mb, std::to_string(luid).c_str());
+    return buf;
+}
+
 } // namespace
 
 namespace lt {
