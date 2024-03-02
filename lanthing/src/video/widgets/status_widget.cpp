@@ -86,7 +86,7 @@ void StatusWidget::render() {
     ImGui::Begin("status", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                      ImGuiWindowFlags_NoBackground);
-    ImGui::TextColored(ImVec4{red_, green_, blue_, 1.f}, buff);
+    ImGui::TextColored(ImVec4{red_, green_, blue_, 1.f}, "%s", buff);
     ImGui::End();
 }
 
