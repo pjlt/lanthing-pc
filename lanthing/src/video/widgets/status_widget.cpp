@@ -30,6 +30,8 @@
 
 #include "status_widget.h"
 
+#include <cstdio>
+
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <imgui.h>
@@ -70,18 +72,21 @@ void StatusWidget::setTaskBarPos(uint32_t direction, uint32_t left, uint32_t rig
 }
 
 void StatusWidget::render() {
-    const char* kFormat = "RTT:%u  FPS:%u  LOSS:%.1f%%";
-    auto kTextSize = ImGui::CalcTextSize(kFormat);
+    char buff[64] = {0};
+    // const char* kFormat = "RTT:%u  FPS:%u  LOSS:%2.1f%%";
+    sprintf(buff, "RTT:%u  FPS:%u  LOSS:%2.1f  ", rtt_ms_, fps_, loss_ * 100.f);
+    auto kTextSize = ImGui::CalcTextSize(buff);
     auto& io = ImGui::GetIO();
     display_width_ = static_cast<uint32_t>(io.DisplaySize.x);
     display_height_ = static_cast<uint32_t>(io.DisplaySize.y);
     float x = static_cast<float>(display_width_ - kTextSize.x - right_margin_);
     float y = static_cast<float>(display_height_ - kTextSize.y - bottom_margin_);
     ImGui::SetNextWindowPos(ImVec2{x, y});
+    ImGui::SetNextWindowSize(ImVec2{kTextSize.x + 10, kTextSize.y});
     ImGui::Begin("status", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                      ImGuiWindowFlags_NoBackground);
-    ImGui::TextColored(ImVec4{red_, green_, blue_, 1.f}, kFormat, rtt_ms_, fps_, loss_);
+    ImGui::TextColored(ImVec4{red_, green_, blue_, 1.f}, buff);
     ImGui::End();
 }
 

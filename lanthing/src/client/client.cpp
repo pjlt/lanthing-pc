@@ -933,6 +933,7 @@ void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg)
     if (video_pipeline_) {
         video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));
         video_pipeline_->setBWE(static_cast<uint32_t>(msg->bwe()));
+        video_pipeline_->setLossRate(msg->loss_rate());
     }
 }
 
