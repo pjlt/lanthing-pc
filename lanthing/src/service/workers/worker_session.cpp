@@ -869,10 +869,8 @@ void WorkerSession::onTpRequestKeyframe(void* user_data) {
 
 void WorkerSession::onTpLossRateUpdate(void* user_data, float rate) {
     auto that = reinterpret_cast<WorkerSession*>(user_data);
-    that->postTask([that, rate]() {
-        that->loss_rate_ = rate;
-        LOG(DEBUG) << "loss rate " << rate;
-    });
+    that->loss_rate_ = rate;
+    LOG(DEBUG) << "loss rate " << rate;
 }
 
 void WorkerSession::onTpEesimatedVideoBitreateUpdate(void* user_data, uint32_t bps) {

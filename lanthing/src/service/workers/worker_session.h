@@ -216,7 +216,7 @@ private:
     int64_t rtt_ = 0;
     uint32_t bwe_bps_ = 0;
     int64_t time_diff_ = 0;
-    float loss_rate_ = .0f;
+    std::atomic<float> loss_rate_{.0f};
     bool is_p2p_ = false;
     bool signaling_keepalive_inited_ = false;
     std::deque<SpeedEntry> video_send_history_;
