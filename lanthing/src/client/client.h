@@ -200,7 +200,7 @@ private:
     bool windowed_fullscreen_ = true;
     int64_t status_color_ = -1;
     bool signaling_keepalive_inited_ = false;
-    std::optional<bool> is_p2p_;
+    lt::LinkType link_type_ = LinkType::Unknown;
     bool absolute_mouse_ = true;
     bool last_w_or_h_is_0_ = false;
     int64_t last_received_keepalive_ = 0;

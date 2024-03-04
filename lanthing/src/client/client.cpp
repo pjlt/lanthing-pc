@@ -77,6 +77,23 @@ lt::AudioCodecType atype(int32_t transport_type) {
     }
 }
 
+std::string toTitle(lt::LinkType type) {
+    switch (type) {
+    case lt::LinkType::UDP:
+    case lt::LinkType::LanUDP:
+    case lt::LinkType::WanUDP:
+    case lt::LinkType::IPv6UDP:
+        return "P2P";
+    case lt::LinkType::RelayUDP:
+        return "Relay";
+    case lt::LinkType::TCP:
+        return "TCP";
+    case lt::LinkType::Unknown:
+    default:
+        return "?";
+    }
+}
+
 } // namespace
 
 namespace lt {
@@ -795,13 +812,13 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     that->postTask(std::bind(&Client::syncTime, that));
 
     // setTitle
-    that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
+    that->link_type_ = link_type;
     auto codec_type = that->video_params_.decode_codec;
     if (codec_type == VideoCodecType::H264_420_SOFT) {
         codec_type = VideoCodecType::H264_420;
     }
     std::ostringstream oss;
-    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ") << toString(codec_type) << " "
+    oss << "Lanthing " << toTitle(link_type) << " " << toString(codec_type) << " "
         << (isHard(that->video_params_.decode_codec) ? "GPU" : "CPU")
         << (isHard(that->video_params_.encode_codec) ? ":GPU" : ":CPU");
     that->sdl_->setTitle(oss.str());
@@ -811,13 +828,13 @@ void Client::onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkTyp
     auto that = reinterpret_cast<Client*>(user_data);
     LOG(INFO) << "Transport LinkType changed: " << toString(old_type) << " => "
               << toString(new_type);
-    that->is_p2p_ = new_type != lt::LinkType::RelayUDP;
+    that->link_type_ = new_type;
     auto codec_type = that->video_params_.decode_codec;
     if (codec_type == VideoCodecType::H264_420_SOFT) {
         codec_type = VideoCodecType::H264_420;
     }
     std::ostringstream oss;
-    oss << "Lanthing " << (that->is_p2p_.value() ? "P2P " : "Relay ") << toString(codec_type) << " "
+    oss << "Lanthing " << toTitle(new_type) << " " << toString(codec_type) << " "
         << (isHard(that->video_params_.decode_codec) ? "GPU" : "CPU")
         << (isHard(that->video_params_.encode_codec) ? ":GPU" : ":CPU");
     that->sdl_->setTitle(oss.str());
