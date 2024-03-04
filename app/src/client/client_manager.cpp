@@ -149,7 +149,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     req->set_cookie(cookie);
     req->set_client_version(
         ltlib::combineVersion(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH));
-    req->set_required_version(ltlib::combineVersion(0, 0, 0));
+    req->set_required_version(ltlib::combineVersion(0, 3, 3));
     ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc("");
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);

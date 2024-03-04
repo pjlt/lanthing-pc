@@ -286,7 +286,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     int64_t client_required_version = msg->required_version();
     int64_t my_version =
         ltlib::combineVersion(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
-    int64_t my_required_version = ltlib::combineVersion(0, 0, 0);
+    int64_t my_required_version = ltlib::combineVersion(0, 3, 3);
     if (client_version < my_required_version) {
         ack->set_err_code(ltproto::ErrorCode::ClientVresionTooLow);
         tcp_client_->send(ltproto::id(ack), ack);

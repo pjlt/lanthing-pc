@@ -1,5 +1,5 @@
-#define            LT_VERSION               0,3,2
-#define            LT_VERSION_STR           "0.3.2"
+#define            LT_VERSION               0,3,3
+#define            LT_VERSION_STR           "0.3.3"
 
 #include "winres.h"
 
