@@ -652,7 +652,7 @@ tp::Client* Client::createRtcClient() {
     }
     uint16_t min_port = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
     uint16_t max_port = static_cast<uint16_t>(settings_->getInteger("max_port").value_or(0));
-    ignored_nic_ = settings_->getString("ignored_nic").value_or(kIgnoredNetworkAdapters);
+    ignored_nic_ = settings_->getString("ignored_nic").value_or("");
     if (params.use_nbp2p) {
         params.nbp2p_params.disable_ipv6 = false;
         params.nbp2p_params.disable_lan_udp = false;

@@ -37,7 +37,7 @@ inline const char kSigCoreClose[] = "close";
 
 // xxxx
 inline const char kIgnoredNetworkAdapters[] =
-    "Tailscale;Netease;Virtual;TAP-Windows;Sangfor;OpenVPN;";
+    "Tailscale;Netease;Virtual;TAP-Windows;Sangfor;OpenVPN;ZeroTier";
 
 // Worker Exit Code
 constexpr int kExitCodeNeedRestart = 256;

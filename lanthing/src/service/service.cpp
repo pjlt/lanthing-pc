@@ -354,8 +354,7 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     worker_params.min_port = min_port;
     worker_params.max_port = max_port;
-    worker_params.ignored_nic =
-        settings_->getString("ignored_nic").value_or(kIgnoredNetworkAdapters);
+    worker_params.ignored_nic = settings_->getString("ignored_nic").value_or("");
     worker_params.ioloop = ioloop_.get();
     worker_params.post_task = std::bind(&Service::postTask, this, std::placeholders::_1);
     worker_params.post_delay_task =
