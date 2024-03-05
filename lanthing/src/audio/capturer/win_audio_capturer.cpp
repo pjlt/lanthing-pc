@@ -105,12 +105,21 @@ bool WinAudioCapturer::initPlatform() {
         return false;
     }
     IMMDevice* mmdevice = nullptr;
-    hr = enumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole, &mmdevice);
-    if (FAILED(hr)) {
-        LOG(ERR) << "IMMDeviceEnumerator::GetDefaultAudioEndpoint failed with " << toHex(hr);
+    for (int i = 0; i < ERole::ERole_enum_count; i++) {
+        hr = enumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender, static_cast<ERole>(i),
+                                                  &mmdevice);
+        if (FAILED(hr)) {
+            LOG(WARNING) << "IMMDeviceEnumerator::GetDefaultAudioEndpoint failed with "
+                         << toHex(hr);
+            continue;
+        }
+        device_ = mmdevice;
+        break;
+    }
+    if (device_ == nullptr) {
+        LOG(ERR) << "There is no default audio render device";
         return false;
     }
-    device_ = mmdevice;
     getDeviceName();
     hr = device_->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr,
                            reinterpret_cast<void**>(client_.GetAddressOf()));
