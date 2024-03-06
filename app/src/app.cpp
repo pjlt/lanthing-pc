@@ -53,11 +53,11 @@
 #include <ltlib/system.h>
 #include <ltlib/versions.h>
 #if defined(LT_WINDOWS)
+#include "select_gpu.h"
 #include <ltlib/win_service.h>
 #endif // LT_WINDOWS
 
 #include "check_decode_ability.h"
-#include "select_gpu.h"
 
 using namespace ltlib::time;
 
@@ -137,8 +137,8 @@ bool App::init() {
     else {
         LOG(INFO) << "Decode ability: " << decode_abilities_;
     }
-    selectGPU();
 #if LT_WINDOWS
+    selectGPU();
     if (!initServiceManager()) {
         return false;
     }

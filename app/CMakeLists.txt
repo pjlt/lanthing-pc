@@ -22,8 +22,6 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/check_decode_ability.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/check_decode_ability.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_session.cpp
@@ -52,10 +50,13 @@ set(APP_UI_VIEWS
 )
 
 if (LT_WINDOWS)
-configure_file(
+    configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/app.rc.in
         ${CMAKE_CURRENT_SOURCE_DIR}/app.rc
         @ONLY)
+    list(APPEND APP_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.cpp)
 endif()
 
 add_executable(${PROJECT_NAME} 
