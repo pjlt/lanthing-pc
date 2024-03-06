@@ -22,6 +22,8 @@ set(APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/check_decode_ability.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/check_decode_ability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_session.cpp
