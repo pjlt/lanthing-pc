@@ -31,6 +31,7 @@
 #include "worker.h"
 #include "worker_check_decode.h"
 #if LT_WINDOWS
+#include "worker_check_dupl.h"
 #include "worker_setting.h"
 #include "worker_streaming.h"
 #endif // LT_WINDOWS
@@ -57,6 +58,10 @@ Worker::create(std::map<std::string, std::string> options) {
     else if (iter->second == "setting") {
         LOG(INFO) << "Launch worker for setting";
         return WorkerSetting::create(options);
+    }
+    else if (iter->second == "check_dupl") {
+        LOG(INFO) << "Launch worker for setting";
+        return WorkerCheckDupl::create(options);
     }
 #endif // LT_WINDOWS
     else if (iter->second == "check_decode") {

@@ -28,6 +28,8 @@ set(LT_WORKER_WIN_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_dupl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_dupl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h

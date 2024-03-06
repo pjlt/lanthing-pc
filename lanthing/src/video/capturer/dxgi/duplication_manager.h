@@ -7,6 +7,8 @@
 
 #include <optional>
 
+#include <wrl/client.h>
+
 #include <ltlib/system.h>
 
 #include <video/capturer/dxgi/common_types.h>
@@ -30,16 +32,17 @@ public:
 
 private:
     DUPL_RETURN ResetDulp();
+    bool InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdapter, ltlib::Monitor monitor);
 
 private:
     // vars
-    IDXGIOutputDuplication* m_DeskDupl;
-    ID3D11Texture2D* m_AcquiredDesktopImage;
+    Microsoft::WRL::ComPtr<IDXGIOutputDuplication> m_DeskDupl;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> m_AcquiredDesktopImage;
     _Field_size_bytes_(m_MetaDataSize) BYTE* m_MetaDataBuffer;
     UINT m_MetaDataSize;
     UINT m_OutputNumber;
     DXGI_OUTPUT_DESC m_OutputDesc;
-    ID3D11Device* m_Device;
-    IDXGIOutput* m_DxgiOutput;
-    bool default_output_;
+    Microsoft::WRL::ComPtr<ID3D11Device> m_Device;
+    Microsoft::WRL::ComPtr<IDXGIOutput> m_DxgiOutput;
+    bool default_output_ = false;
 };
