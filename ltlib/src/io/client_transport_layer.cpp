@@ -362,6 +362,7 @@ void LibuvCTransport::on_dns_resolve(uv_getaddrinfo_t* req, int status, addrinfo
         that->reconnect(); // 这个状态下，程序重试也无法继续进行下去，是否应该on_close?
         return;
     }
+    uv_tcp_nodelay(that->tcp_.get(), 1);
     that->tcp_->data = that;
     that->conn_req_ = std::make_unique<uv_connect_t>();
     that->conn_req_->data = that;

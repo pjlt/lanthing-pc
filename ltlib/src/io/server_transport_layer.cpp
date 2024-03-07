@@ -336,6 +336,7 @@ std::shared_ptr<LibuvSTransport::Conn> LibuvSTransport::Conn::create(StreamType 
         if (ret != 0) {
             return nullptr;
         }
+        uv_tcp_nodelay(reinterpret_cast<uv_tcp_t*>(conn->handle), 1);
         return conn;
     }
 }
