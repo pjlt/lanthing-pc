@@ -293,12 +293,15 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
 bool WorkerSession::initTransport() {
     switch (transport_type_) {
     case ltproto::common::TransportType::TCP:
+        LOG(INFO) << "Init transport using TCP";
         tp_server_ = createTcpServer();
         break;
     case ltproto::common::TransportType::RTC:
+        LOG(INFO) << "Init transport using RTC";
         tp_server_ = createRtcServer();
         break;
     case ltproto::common::TransportType::RTC2:
+        LOG(INFO) << "Init transport using RTC2";
         tp_server_ = createRtc2Server();
         break;
     default:
@@ -574,6 +577,7 @@ void WorkerSession::onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::Mes
         join_signaling_room_success_ = false;
     }
     else {
+        LOG(INFO) << "Join signaling room success, room:" << room_id_;
         join_signaling_room_success_ = true;
     }
     maybeOnCreateSessionCompleted();
