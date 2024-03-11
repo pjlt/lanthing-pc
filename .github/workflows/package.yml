@@ -81,5 +81,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
+          prerelease: true
           files: |
             lanthing.linux-${{ env.VERSION }}-x86_64.AppImage
