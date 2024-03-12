@@ -5,6 +5,7 @@ jobs:
     permissions:
       contents: write
     runs-on: windows-2022
+    environment: package
     steps:
       - name: Checkout
         with:
