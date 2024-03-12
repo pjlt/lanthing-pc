@@ -161,7 +161,7 @@ namespace ltlib {
 
 #if defined(LT_WINDOWS)
 
-bool getProgramFilename(std::wstring& filename) {
+bool getProgramFullpathInternal(std::wstring& filename) {
     const int kMaxPath = UNICODE_STRING_MAX_CHARS;
     std::vector<wchar_t> the_filename(kMaxPath);
     DWORD length = ::GetModuleFileNameW(nullptr, the_filename.data(), kMaxPath);
@@ -174,7 +174,7 @@ bool getProgramFilename(std::wstring& filename) {
 
 bool getProgramPath(std::wstring& path) {
     std::wstring filename;
-    if (getProgramFilename(filename)) {
+    if (getProgramFullpathInternal(filename)) {
         std::wstring::size_type pos = filename.rfind(L'\\');
         if (pos != std::wstring::npos) {
             path = filename.substr(0, pos);
@@ -192,8 +192,19 @@ std::string getProgramPath() {
 
 std::string getProgramFullpath() {
     std::wstring path;
-    getProgramFilename(path);
+    getProgramFullpathInternal(path);
     return utf16To8(path);
+}
+
+std::string getProgramName() {
+    std::wstring fullpath;
+    if (getProgramFullpathInternal(fullpath)) {
+        std::wstring::size_type pos = fullpath.rfind(L'\\');
+        if (pos != std::wstring::npos) {
+            return utf16To8(fullpath.substr(pos + 1));
+        }
+    }
+    return "";
 }
 
 std::string getConfigPath(bool is_service) {
@@ -517,6 +528,18 @@ std::string getProgramPath() {
     auto pos = fullpath.rfind('/');
     if (pos != std::string::npos) {
         return fullpath.substr(0, pos);
+    }
+    return "";
+}
+
+std::string getProgramName() {
+    std::string fullpath = getProgramFullpath();
+    if (fullpath.empty()) {
+        return "";
+    }
+    auto pos = fullpath.rfind('/');
+    if (pos != std::string::npos) {
+        return fullpath.substr(pos + 1);
     }
     return "";
 }

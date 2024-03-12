@@ -15,6 +15,7 @@ if (LT_WINDOWS)
         ${BREAKPAD_SRC_FOLDER}/client/windows/handler/exception_handler.cc
         ${BREAKPAD_SRC_FOLDER}/common/windows/guid_string.cc
         ${BREAKPAD_SRC_FOLDER}/common/windows/string_utils.cc
+        ${BREAKPAD_SRC_FOLDER}/common/windows/http_upload.cc
     )
     # 按照原始目录结构展开
     source_group(breakpad TREE ${BREAKPAD_SRC_FOLDER} FILES ${BREAKPAD_SOURCES})
@@ -25,7 +26,7 @@ else()
     set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/linux/handler)
 endif()
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME}
     ${BREAKPAD_SOURCES}
     ${API_SOURCES}
 )
@@ -45,6 +46,8 @@ target_compile_definitions(${PROJECT_NAME}
         UNICODE
         BUILDING_MINIDUMP=1
 )
+
+target_link_libraries(${PROJECT_NAME} wininet)
 
 install(
     TARGETS ${PROJECT_NAME}

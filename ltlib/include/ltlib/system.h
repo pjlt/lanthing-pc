@@ -39,6 +39,8 @@ std::string getProgramFullpath();
 
 std::string getProgramPath();
 
+std::string getProgramName();
+
 std::string getConfigPath(bool is_service = false);
 
 bool isRunasLocalSystem();

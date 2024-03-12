@@ -63,6 +63,12 @@
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #endif
 
+static std::wstring g_program_name;
+
+const wchar_t* ltGetProgramName() {
+    return g_program_name.c_str();
+}
+
 namespace {
 
 enum class Role {
@@ -129,7 +135,7 @@ void initLogAndMinidump(Role role) {
         std::cout << "Unknown process role " << static_cast<int>(role) << std::endl;
         return;
     }
-
+    g_program_name = ltlib::utf8To16(ltlib::getProgramName());
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(true);
