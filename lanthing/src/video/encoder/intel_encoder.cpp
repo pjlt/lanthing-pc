@@ -255,7 +255,7 @@ public:
 private:
     bool createMfxSession();
     bool setConfigFilter();
-    bool findImplIndex();
+    void findImplIndex();
     void printAllImpls();
     bool initEncoder(const VplParamsHelper& params_helper);
     mfxVideoParam genEncodeParams(const VplParamsHelper& params_helper);
@@ -454,9 +454,7 @@ bool IntelEncoderImpl::createMfxSession() {
         return false;
     }
     // printAllImpls();
-    if (!findImplIndex()) {
-        return false;
-    }
+    findImplIndex();
     mfxStatus status = MFXCreateSession(mfxloader_, impl_index_, &mfxsession_);
     if (status != MFX_ERR_NONE) {
         LOG(ERR) << "MFXCreateSession failed with " << status;
@@ -495,7 +493,7 @@ bool IntelEncoderImpl::setConfigFilter() {
     return true;
 }
 
-bool IntelEncoderImpl::findImplIndex() {
+void IntelEncoderImpl::findImplIndex() {
     mfxStatus status = MFX_ERR_NONE;
     mfxExtendedDeviceId* ext_devid = nullptr;
     for (int index = 0; status == MFX_ERR_NONE; index++) {
@@ -522,7 +520,10 @@ bool IntelEncoderImpl::findImplIndex() {
         MFXDispReleaseImplDescription(mfxloader_, ext_devid);
         ext_devid = nullptr;
     }
-    return impl_index_ >= 0;
+    if (impl_index_ < 0) {
+        impl_index_ = 0;
+        LOG(ERR) << "IntelEncoder find impl failed, default 0";
+    }
 }
 
 void IntelEncoderImpl::printAllImpls() {
