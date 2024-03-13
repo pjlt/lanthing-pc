@@ -24,7 +24,9 @@ jobs:
       - name: Fetch prebuilt
         run: ./build.ps1 prebuilt fetch
       - name: Build lanthing-pc
-        run: ./build.ps1 build Release
+        run: |
+          $LT_DUMP_URL = "${{ vars.LT_DUMP_URL }}"
+          ./build.ps1 build Release
       - name: Generate Zip
         run: |
           echo ${{ github.sha }} > Release.txt

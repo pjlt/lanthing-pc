@@ -8,8 +8,8 @@ function exit_if_fail {
 }
 
 function cmake_configure() {
-    if ($Env:LT_DUMP_URL) {
-        Invoke-Expression "cmake -B build/$script:build_type -DLT_DUMP=ON -DLT_DUMP_URL=$Env:LT_DUMP_URL -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
+    if ($LT_DUMP_URL) {
+        Invoke-Expression "cmake -B build/$script:build_type -DLT_DUMP=ON -DLT_DUMP_URL=`"$LT_DUMP_URL`" -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     } else {
         Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     }
