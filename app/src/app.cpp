@@ -386,7 +386,6 @@ void App::enableTCP(bool enable) {
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
     LOG(INFO) << "App enter io loop";
-    std::this_thread::sleep_for(std::chrono::seconds{10});
     ioloop_->run(i_am_alive);
     LOG(INFO) << "App exit io loop";
 }
