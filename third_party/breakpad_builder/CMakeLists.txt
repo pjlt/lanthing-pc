@@ -47,7 +47,9 @@ target_compile_definitions(${PROJECT_NAME}
         BUILDING_MINIDUMP=1
 )
 
-target_link_libraries(${PROJECT_NAME} wininet)
+if (LT_WINDOWS)
+    target_link_libraries(${PROJECT_NAME} wininet)
+endif(LT_WINDOWS)
 
 install(
     TARGETS ${PROJECT_NAME}
