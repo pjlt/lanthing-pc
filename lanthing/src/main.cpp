@@ -63,28 +63,6 @@
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #endif
 
-#if LT_WINDOWS
-static std::wstring g_program_name;
-const wchar_t* ltGetProgramName() {
-    if (g_program_name.empty()) {
-        return L"unknown";
-    }
-    else {
-        return g_program_name.c_str();
-    }
-}
-#else
-static std::string g_program_name;
-const char* ltGetProgramName() {
-    if (g_program_name.empty()) {
-        return "unknown";
-    }
-    else {
-        return g_program_name.c_str();
-    }
-}
-#endif
-
 namespace {
 
 enum class Role {
@@ -150,11 +128,7 @@ void initLogAndMinidump(Role role) {
         std::cout << "Unknown process role " << static_cast<int>(role) << std::endl;
         return;
     }
-#if LT_WINDOWS
-    g_program_name = ltlib::utf8To16(ltlib::getProgramName());
-#else
-    g_program_name = ltlib::getProgramName();
-#endif
+
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(true);
@@ -190,7 +164,13 @@ void initLogAndMinidump(Role role) {
     cleanup_dumps.detach();
 
     // g3log必须再minidump前初始化
-    g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
+#if LT_WINDOWS
+    g_minidump_genertator = std::make_unique<LTMinidumpGenerator>(
+        ltlib::utf8To16(log_dir.string()), ltlib::utf8To16(ltlib::getProgramName()));
+#else
+    g_minidump_genertator =
+        std::make_unique<LTMinidumpGenerator>(log_dir.string(), ltlib::getProgramName());
+#endif
     g_minidump_genertator->addCallback([]() { rtc::flushLogs(); });
     signal(SIGINT, sigint_handler);
     if (LT_CRASH_ON_THREAD_HANGS) {

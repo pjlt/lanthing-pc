@@ -53,28 +53,6 @@ std::unique_ptr<g3::LogWorker> g_logWorker;
 std::unique_ptr<g3::FileSinkHandle> g_logsSink;
 std::unique_ptr<LTMinidumpGenerator> g_minidumpGenertator;
 
-#if LT_WINDOWS
-static std::wstring g_program_name;
-const wchar_t* ltGetProgramName() {
-    if (g_program_name.empty()) {
-        return L"unknown";
-    }
-    else {
-        return g_program_name.c_str();
-    }
-}
-#else
-static std::string g_program_name;
-const char* ltGetProgramName() {
-    if (g_program_name.empty()) {
-        return "unknown";
-    }
-    else {
-        return g_program_name.c_str();
-    }
-}
-#endif
-
 namespace {
 
 void sigint_handler(int) {
@@ -111,11 +89,6 @@ void cleanupDumps(const std::filesystem::path& path) {
 }
 
 void initLoggingAndDumps() {
-#if LT_WINDOWS
-    g_program_name = ltlib::utf8To16(ltlib::getProgramName());
-#else
-    g_program_name = ltlib::getProgramName();
-#endif
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
@@ -149,7 +122,13 @@ void initLoggingAndDumps() {
     std::thread cleanup_dumps([log_dir]() { cleanupDumps(log_dir); });
     cleanup_dumps.detach();
 
-    g_minidumpGenertator = std::make_unique<LTMinidumpGenerator>(log_dir.string());
+#if LT_WINDOWS
+    g_minidumpGenertator = std::make_unique<LTMinidumpGenerator>(
+        ltlib::utf8To16(log_dir.string()), ltlib::utf8To16(ltlib::getProgramName()));
+#else
+    g_minidumpGenertator =
+        std::make_unique<LTMinidumpGenerator>(log_dir.string(), ltlib::getProgramName());
+#endif
     signal(SIGINT, sigint_handler);
     if (LT_CRASH_ON_THREAD_HANGS) {
         ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
