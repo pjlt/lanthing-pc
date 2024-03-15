@@ -1,15 +1,14 @@
 #include <iostream>
 #include "lt_minidump_generator.h"
 
-#if defined(LT_WINDOWS)
-#include <exception_handler.h>
-#include <common/windows/http_upload.h>
-
 #define STR_HELPER(str) #str
-#define VERSTR(a, b, c) L"v" STR_HELPER(a) "." STR_HELPER(b) "." STR_HELPER(c)
+#define VERWSTR(a, b, c) L"v" STR_HELPER(a) "." STR_HELPER(b) "." STR_HELPER(c)
+#define VERSTR(a, b, c) "v" STR_HELPER(a) "." STR_HELPER(b) "." STR_HELPER(c)
 #define TOSTR(str) STR_HELPER(str)
 
-const wchar_t* ltGetProgramName();
+#ifdef LT_WINDOWS
+#include <exception_handler.h>
+#include <common/windows/http_upload.h>
 
 static bool minidump_callback(const wchar_t* dump_path,
 	const wchar_t* minidump_id,
@@ -25,6 +24,7 @@ static bool minidump_callback(const wchar_t* dump_path,
 	(void)assertion;
 	(void)succeeded;
 	std::cout << "dump written" << std::endl;
+	auto that = reinterpret_cast<LTMinidumpGenerator*>(context);
 	if constexpr (LT_DUMP) {
 		std::map<std::wstring, std::wstring> parameters;
 		std::map<std::wstring, std::wstring> files;
@@ -32,25 +32,27 @@ static bool minidump_callback(const wchar_t* dump_path,
 		int response_code = 0;
 		std::wstring response_body;
 		parameters[L"build"] = L"" __DATE__ " " __TIME__;
-		parameters[L"program"] = ltGetProgramName();
-		parameters[L"version"] = VERSTR(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
+		parameters[L"os"] = L"Windows";
+		parameters[L"program"] = that->programWName();
+		parameters[L"version"] = VERWSTR(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
 		std::wstring fullpath;
 		fullpath = fullpath + dump_path + L"/" + minidump_id + L".dmp";
 		files[L"file"] = fullpath;
 		google_breakpad::HTTPUpload::SendMultipartPostRequest(L"http://" TOSTR(LT_DUMP_URL), parameters, files, &timeout, &response_body, &response_code);
 	}
-	auto that = reinterpret_cast<LTMinidumpGenerator*>(context);
 	that->invokeCallbacks();
 	return false;
 }
 
+LTMinidumpGenerator::LTMinidumpGenerator(const std::string&, const std::string&) {
+	std::abort();
+}
 
-LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path)
+LTMinidumpGenerator::LTMinidumpGenerator(const std::wstring& path, const std::wstring& program_name)
+	:program_wname_{program_name}
 {
-	std::wstring wpath;
-	google_breakpad::WindowsStringUtils::safe_mbstowcs(path, &wpath);
 	auto handler = new google_breakpad::ExceptionHandler{
-		wpath,
+		path,
 		nullptr, /*filter*/
 		minidump_callback,
 		this, /*context*/
@@ -58,6 +60,53 @@ LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path)
 	};
 	impl_ = handler;
 }
+
+#else
+
+#include <exception_handler.h>
+#include <common/linux/http_upload.h>
+
+static bool minidump_callback(const google_breakpad::MinidumpDescriptor& md, void* context, bool b)
+{
+	(void)md;
+	(void)b;
+	std::cout << "dump written" << std::endl;
+	auto that = reinterpret_cast<LTMinidumpGenerator*>(context);
+	if constexpr (LT_DUMP) {
+		std::map<std::string, std::string> parameters;
+		std::map<std::string, std::string> files;
+		long response_code = 0;
+		std::string response_body;
+		std::string error_description;
+		parameters["build"] = __DATE__ " " __TIME__;
+		parameters["os"] = "Linux";
+		parameters["program"] = that->programName();
+		parameters["version"] = VERSTR(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
+		files["file"] = md.path();
+		google_breakpad::HTTPUpload::SendRequest("http://" TOSTR(LT_DUMP_URL), parameters, files, "", "", "", &response_body, &response_code, &error_description);
+	}
+	that->invokeCallbacks();
+	return false;
+}
+
+LTMinidumpGenerator::LTMinidumpGenerator(const std::wstring& path, const std::wstring& program_name) {
+	(void)path;
+	(void)program_name;
+	std::abort();
+}
+
+LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path, const std::string& program_name)
+	: program_name_{program_name}
+{
+	if (program_name_.empty()) {
+		program_name_ = "unknown";
+	}
+	google_breakpad::MinidumpDescriptor descriptor(path);
+	auto handler = new google_breakpad::ExceptionHandler(descriptor, nullptr, minidump_callback, this, true, -1);
+	impl_ = handler;
+}
+
+#endif
 
 LTMinidumpGenerator::~LTMinidumpGenerator()
 {
@@ -77,14 +126,10 @@ void LTMinidumpGenerator::invokeCallbacks()
 	}
 }
 
-#else
+std::string LTMinidumpGenerator::programName() const {
+	return program_name_;
+}
 
-LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path) { (void)path; }
-
-LTMinidumpGenerator::~LTMinidumpGenerator() {}
-
-void LTMinidumpGenerator::addCallback(const std::function<void()>& callback) { (void)callback; }
-
-void LTMinidumpGenerator::invokeCallbacks() {}
-
-#endif
+std::wstring LTMinidumpGenerator::programWName() const {
+	return program_wname_;
+}

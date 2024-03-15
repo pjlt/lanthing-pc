@@ -7,7 +7,11 @@ exit_if_fail() {
 }
 
 cmake_configure() {
-    cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
+    if [ -z "$LT_DUMP_URL" ]; then
+        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
+    else
+        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DLT_DUMP=ON -DLT_DUMP_URL="$LT_DUMP_URL" -DCMAKE_INSTALL_PREFIX=install/$build_type
+    fi
 }
 
 cmake_build() {
@@ -89,7 +93,6 @@ make_appimage() {
     cp third_party/prebuilt/sdl/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/mbedtls/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp install/$build_type/bin/librtc* install/$build_type/appdir/usr/lib/
-    cp install/$build_type/bin/libbreakpad.so install/$build_type/appdir/usr/lib/
     ./third_party/prebuilt/linuxdeployqt install/$build_type/appdir/usr/share/applications/lanthing.desktop -appimage -executable=install/$build_type/appdir/usr/bin/lanthing
 }
 
