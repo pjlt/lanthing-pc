@@ -44,6 +44,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-20.04
+    environment: package
     steps:
       - name: Checkout
         with:
@@ -70,6 +71,7 @@ jobs:
           alias g++='g++-10'
           export CC=`which gcc-10`
           export CXX=`which g++-10`
+          export LT_DUMP_URL="${{ vars.LT_DUMP_URL }}"
           bash build.sh build Release
       - name: Set version
         run: |
