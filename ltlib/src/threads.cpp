@@ -34,13 +34,13 @@
 #include <sys/prctl.h>
 #endif
 
-#include <sstream>
 #include <atomic>
+#include <sstream>
 
 #include <ltlib/logging.h>
+#include <ltlib/pragma_warning.h>
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
-#include <ltlib/pragma_warning.h>
 
 namespace {
 
@@ -93,10 +93,11 @@ void set_current_thread_name(const char* name) {
 }
 
 void crash_me() {
-WARNING_DISABLE(6011)
+    WARNING_DISABLE(6011)
     int* a = 0;
     *a = 123;
-WARNING_ENABLE(6011)
+    WARNING_ENABLE(6011)
+    std::abort();
 }
 
 } // namespace
@@ -335,9 +336,8 @@ void TaskThread::main_loop(std::promise<void>& promise) {
         if (old_tasks.empty() && delay_tasks.empty()) { // && proactor_tasks.empty())
             std::unique_lock lock{mutex_};
             wakeup_.store(false, std::memory_order_relaxed);
-            cv_.wait_for(lock, std::chrono::microseconds{sleep_for.value()}, [this]() {
-                return wakeup_.load(std::memory_order_relaxed);
-            });
+            cv_.wait_for(lock, std::chrono::microseconds{sleep_for.value()},
+                         [this]() { return wakeup_.load(std::memory_order_relaxed); });
             continue;
         }
 
