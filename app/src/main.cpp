@@ -53,11 +53,27 @@ std::unique_ptr<g3::LogWorker> g_logWorker;
 std::unique_ptr<g3::FileSinkHandle> g_logsSink;
 std::unique_ptr<LTMinidumpGenerator> g_minidumpGenertator;
 
+#if LT_WINDOWS
 static std::wstring g_program_name;
-
 const wchar_t* ltGetProgramName() {
-    return g_program_name.c_str();
+    if (g_program_name.empty()) {
+        return L"unknown";
+    }
+    else {
+        return g_program_name.c_str();
+    }
 }
+#else
+static std::string g_program_name;
+const char* ltGetProgramName() {
+    if (g_program_name.empty()) {
+        return "unknown";
+    }
+    else {
+        return g_program_name.c_str();
+    }
+}
+#endif
 
 namespace {
 
@@ -95,7 +111,11 @@ void cleanupDumps(const std::filesystem::path& path) {
 }
 
 void initLoggingAndDumps() {
+#if LT_WINDOWS
     g_program_name = ltlib::utf8To16(ltlib::getProgramName());
+#else
+    g_program_name = ltlib::getProgramName();
+#endif
     std::string bin_path = ltlib::getProgramFullpath();
     std::string bin_dir = ltlib::getProgramPath();
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
