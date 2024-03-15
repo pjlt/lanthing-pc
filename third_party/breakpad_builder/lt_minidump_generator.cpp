@@ -70,7 +70,7 @@ const char* ltGetProgramName();
 
 static bool minidump_callback(const google_breakpad::MinidumpDescriptor& md, void* context, bool b)
 {
-	(void)context;
+	(void)md;
 	(void)b;
 	std::cout << "dump written" << std::endl;
 	if constexpr (LT_DUMP) {
@@ -93,7 +93,7 @@ static bool minidump_callback(const google_breakpad::MinidumpDescriptor& md, voi
 
 LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path) { 
 	google_breakpad::MinidumpDescriptor descriptor(path);
-	auto handler = new google_breakpad::ExceptionHandler(descriptor, nullptr, minidump_callback, nullptr, true, -1);
+	auto handler = new google_breakpad::ExceptionHandler(descriptor, nullptr, minidump_callback, this, true, -1);
 	impl_ = handler;
 }
 
