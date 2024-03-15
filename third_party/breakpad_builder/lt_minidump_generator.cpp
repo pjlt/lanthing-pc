@@ -89,7 +89,7 @@ static bool minidump_callback(const google_breakpad::MinidumpDescriptor& md, voi
 	return false;
 }
 
-LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path, const std::wstring& program_name) {
+LTMinidumpGenerator::LTMinidumpGenerator(const std::wstring& path, const std::wstring& program_name) {
 	(void)path;
 	(void)program_name;
 	std::abort();
