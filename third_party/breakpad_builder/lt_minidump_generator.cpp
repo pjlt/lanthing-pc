@@ -32,7 +32,7 @@ static bool minidump_callback(const wchar_t* dump_path,
 		int response_code = 0;
 		std::wstring response_body;
 		parameters[L"build"] = L"" __DATE__ " " __TIME__;
-		parameters[L"system"] = L"Windows";
+		parameters[L"os"] = L"Windows";
 		parameters[L"program"] = that->programWName();
 		parameters[L"version"] = VERWSTR(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
 		std::wstring fullpath;
@@ -79,7 +79,7 @@ static bool minidump_callback(const google_breakpad::MinidumpDescriptor& md, voi
 		std::string response_body;
 		std::string error_description;
 		parameters["build"] = __DATE__ " " __TIME__;
-		parameters["system"] = "Linux";
+		parameters["os"] = "Linux";
 		parameters["program"] = that->programName();
 		parameters["version"] = VERSTR(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH);
 		files["file"] = md.path();
