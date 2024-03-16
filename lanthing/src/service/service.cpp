@@ -304,13 +304,13 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (!access_token.has_value() || access_token.value().empty()) {
-        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
+        ack->set_err_code(ltproto::ErrorCode::AccessCodeInvalid);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Get access_token from local settings failed";
         return;
     }
     if (msg->access_token() != access_token.value()) {
-        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
+        ack->set_err_code(ltproto::ErrorCode::AccessCodeInvalid);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Received connection with invalid access_token: " << msg->access_token();
         return;
