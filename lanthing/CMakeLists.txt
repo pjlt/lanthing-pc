@@ -143,6 +143,8 @@ set(LT_AUDIO_CAPTURER_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/fake_audio_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/fake_audio_capturer.cpp
 )
 
 set(LT_AUDIO_PLAYER_SRCS

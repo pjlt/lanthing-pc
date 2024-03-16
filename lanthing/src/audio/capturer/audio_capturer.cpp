@@ -39,6 +39,7 @@
 #include <ltproto/client2worker/audio_data.pb.h>
 #include <ltproto/ltproto.h>
 
+#include "fake_audio_capturer.h"
 #include "win_audio_capturer.h"
 
 namespace lt {
@@ -46,14 +47,15 @@ namespace lt {
 namespace audio {
 
 std::unique_ptr<Capturer> Capturer::create(const Params& params) {
+    auto fake_capturer = std::make_unique<FakeAudioCapturer>(params);
 #if LT_WINDOWS
     std::unique_ptr<Capturer> capturer{new WinAudioCapturer{params}};
     if (!capturer->init()) {
-        return nullptr;
+        return fake_capturer;
     }
     return capturer;
 #else
-    return nullptr;
+    return fake_capturer;
 #endif
 }
 
