@@ -88,6 +88,10 @@ WinAudioCapturer::~WinAudioCapturer() {
         CloseHandle(read_ev_);
         read_ev_ = nullptr;
     }
+    capturer_ = nullptr;
+    client_ = nullptr;
+    device_ = nullptr;
+    enumerator_ = nullptr;
     if (need_co_uninit_) {
         CoUninitialize();
     }
