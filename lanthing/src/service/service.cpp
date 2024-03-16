@@ -304,13 +304,13 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (!access_token.has_value() || access_token.value().empty()) {
-        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
+        ack->set_err_code(ltproto::ErrorCode::AccessCodeInvalid);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Get access_token from local settings failed";
         return;
     }
     if (msg->access_token() != access_token.value()) {
-        ack->set_err_code(ltproto::ErrorCode::AuthFailed);
+        ack->set_err_code(ltproto::ErrorCode::AccessCodeInvalid);
         tcp_client_->send(ltproto::id(ack), ack);
         LOG(ERR) << "Received connection with invalid access_token: " << msg->access_token();
         return;
@@ -414,9 +414,9 @@ void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg)
 void Service::sendKeepAliveToServer() {
     auto msg = std::make_shared<ltproto::common::KeepAlive>();
     sendMessageToServer(ltproto::id(msg), msg);
-    // 10秒发一个心跳包，当前服务端不会检测超时
+    // 5秒发一个心跳包，当前服务端不会检测超时
     // 但是反向代理比如nginx可能设置了proxy_timeout，超过这个时间没有包就会被断链
-    postDelayTask(10'000, std::bind(&Service::sendKeepAliveToServer, this));
+    postDelayTask(5'000, std::bind(&Service::sendKeepAliveToServer, this));
 }
 
 void Service::onCreateSessionCompletedThreadSafe(
