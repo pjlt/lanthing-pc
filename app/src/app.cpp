@@ -619,9 +619,9 @@ void App::sendKeepAlive() {
     }
     auto msg = std::make_shared<ltproto::common::KeepAlive>();
     sendMessage(ltproto::id(msg), msg);
-    // 10秒发一个心跳包，当前服务端不会检测超时
+    // 5秒发一个心跳包，当前服务端不会检测超时
     // 但是反向代理比如nginx可能设置了proxy_timeout，超过这个时间没有包就会被断链
-    postDelayTask(10'000, std::bind(&App::sendKeepAlive, this));
+    postDelayTask(5'000, std::bind(&App::sendKeepAlive, this));
 }
 
 void App::handleAllocateDeviceIdAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
