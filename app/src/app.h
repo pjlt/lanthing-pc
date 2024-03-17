@@ -82,6 +82,7 @@ private:
     void setRelMouseAccel(int64_t accel);
     void setIgnoredNIC(const std::string& nic_list);
     void enableTCP(bool enable);
+    void syncClipboardText(const std::string& text);
 
     void createAndStartService();
     void stopService();
@@ -116,6 +117,7 @@ private:
     void onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onDisconnectedConnection(int64_t device_id);
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onServiceStatus(ServiceManager::ServiceStatus status);
 
     // client manager

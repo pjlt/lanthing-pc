@@ -45,6 +45,7 @@
 #include <qclipboard.h>
 #include <qdatetime.h>
 #include <qmenu.h>
+#include <qmimedata.h>
 #include <qstringbuilder.h>
 
 #include <ltlib/logging.h>
@@ -210,6 +211,9 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     // 客户端表格
     addOrUpdateTrustedDevices();
+
+    // 剪切板
+    setupClipboard();
 
     // 其它回调
     setupOtherCallbacks();
@@ -497,6 +501,13 @@ void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _ms
     });
 }
 
+void MainWindow::setClipboardText(const std::string& text) {
+    dispatchToUiThread([this, text]() {
+        auto clipboard = QApplication::clipboard();
+        clipboard->setText(QString::fromStdString(text));
+    });
+}
+
 bool MainWindow::eventFilter(QObject* obj, QEvent* evt) {
     if (obj == ui->windowBar && evt->type() == QEvent::MouseButtonPress) {
         QMouseEvent* ev = static_cast<QMouseEvent*>(evt);
@@ -781,6 +792,38 @@ void MainWindow::setupClientIndicators() {
         menu->addAction(kick);
 
         menu->exec(ui->labelClient1->mapToGlobal(pos));
+    });
+}
+
+void MainWindow::setupClipboard() {
+    auto clipboard = QApplication::clipboard();
+    connect(clipboard, &QClipboard::dataChanged, [clipboard, this]() {
+        auto md = clipboard->mimeData();
+        if (md == nullptr) {
+            LOG(WARNING) << "Clipboard::mimeData is null";
+            return;
+        }
+        bool is_plain_text = false;
+        for (auto& f : md->formats()) {
+            if (f == "text/plain") {
+                is_plain_text = true;
+                break;
+            }
+        }
+        if (!is_plain_text) {
+            return;
+        }
+        if (clipboard->text().isEmpty()) {
+            return;
+        }
+        constexpr size_t kMaxSize = 128 * 1024;
+        auto text = clipboard->text().toStdString();
+        if (text.size() > kMaxSize) {
+            LOG(INFO) << "Detected clipboard text change, but too large to send. size:"
+                      << text.size();
+            return;
+        }
+        params_.on_clipboard_text(text);
     });
 }
 

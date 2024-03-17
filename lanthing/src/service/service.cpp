@@ -371,6 +371,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         std::bind(&Service::onAcceptedConnection, this, std::placeholders::_1);
     worker_params.on_connection_status =
         std::bind(&Service::onConnectionStatus, this, std::placeholders::_1);
+    worker_params.on_client_clipboard =
+        std::bind(&Service::onClientClipboard, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
@@ -672,6 +674,10 @@ void Service::onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite
 
 void Service::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
     sendMessageToApp(ltproto::type::kConnectionStatus, msg);
+}
+
+void Service::onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kClipboard, msg);
 }
 
 } // namespace svc

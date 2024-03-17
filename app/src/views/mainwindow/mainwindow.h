@@ -86,6 +86,8 @@ public:
 
     void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
+    void setClipboardText(const std::string& text);
+
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override; // override?
 
@@ -97,6 +99,8 @@ private:
     void setServiceStatusInUIThread(lt::GUI::ServiceStatus status);
 
     void setupClientIndicators();
+
+    void setupClipboard();
 
     void loadPixmap();
 

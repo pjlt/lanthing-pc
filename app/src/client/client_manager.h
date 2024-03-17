@@ -65,6 +65,7 @@ public:
     void connect(int64_t peerDeviceID, const std::string& accessToken, const std::string& cookie,
                  bool use_tcp);
     void onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg);
+    void syncClipboardText(const std::string& text);
 
 private:
     ClientManager(const Params& params);

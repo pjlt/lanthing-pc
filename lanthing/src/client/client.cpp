@@ -465,13 +465,16 @@ void Client::onAppReconnecting() {
 }
 
 void Client::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    (void)type;
-    (void)msg;
-    // switch (type) {
-    // default:
-    //     LOG(WARNING) << "Received unkonwn message from app: " << type;
-    //     break;
-    // }
+    namespace ltype = ltproto::type;
+    switch (type) {
+    case ltype::kClipboard:
+        // TODO: 考虑一下会不会死锁
+        sendMessageToHost(type, msg, true);
+        break;
+    default:
+        LOG(WARNING) << "Received unknown message from app, type " << type;
+        break;
+    }
 }
 
 void Client::onSignalingNetMessage(uint32_t type,

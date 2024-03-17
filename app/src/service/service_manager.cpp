@@ -55,6 +55,7 @@ ServiceManager::ServiceManager(const Params& params)
     , on_accepted_connection_{params.on_accepted_connection}
     , on_disconnected_connection_{params.on_disconnected_connection}
     , on_connection_status_{params.on_connection_status}
+    , on_client_clipboard_{params.on_client_clipboard}
     , on_service_status_{params.on_service_status} {}
 
 bool ServiceManager::init(ltlib::IOLoop* ioloop) {
@@ -105,6 +106,9 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
     case ltproto::type::kServiceStatus:
         onServiceStatus(msg);
         break;
+    case ltproto::type::kClipboard:
+        onClientClipboard(msg);
+        break;
     default:
         LOG(WARNING) << "ServiceManager received unknown messge type " << type;
         break;
@@ -137,6 +141,10 @@ void ServiceManager::onServiceStatus(std::shared_ptr<google::protobuf::MessageLi
     else {
         on_service_status_(ServiceStatus::Down);
     }
+}
+
+void ServiceManager::onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_client_clipboard_(msg);
 }
 
 void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {

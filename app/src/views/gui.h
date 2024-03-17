@@ -100,6 +100,7 @@ public:
         std::function<void(int64_t)> set_rel_mouse_accel;
         std::function<void(const std::string&)> set_ignored_nic;
         std::function<void(bool)> enable_tcp;
+        std::function<void(const std::string&)> on_clipboard_text;
     };
 
 public:
@@ -132,6 +133,8 @@ public:
     void errorCode(int32_t code);
 
     void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void setClipboardText(const std::string& text);
 
 private:
     std::shared_ptr<GUIImpl> impl_;

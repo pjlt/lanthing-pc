@@ -34,6 +34,7 @@
 #include <system_error>
 
 #include <ltproto/client2app/client_status.pb.h>
+#include <ltproto/common/clipboard.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
@@ -284,6 +285,13 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
         return;
     }
     on_launch_client_success_(ack->device_id());
+}
+
+void ClientManager::syncClipboardText(const std::string& text) {
+    auto msg = std::make_shared<ltproto::common::Clipboard>();
+    msg->set_type(ltproto::common::Clipboard_ClipboardType_Text);
+    msg->set_text(text);
+    postTask([msg, this]() { sendMessage(ltproto::id(msg), msg); });
 }
 
 void ClientManager::postTask(const std::function<void()>& task) {

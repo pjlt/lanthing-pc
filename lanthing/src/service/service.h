@@ -91,6 +91,8 @@ private:
 
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
+    void onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+
     void onCreateSessionCompletedThreadSafe(int32_t error_code, int32_t transport_type,
                                             int64_t device_id, const std::string& session_name,
                                             std::shared_ptr<google::protobuf::MessageLite> msg);

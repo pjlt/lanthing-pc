@@ -125,6 +125,8 @@ public:
 
     void onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
+    void setClipboardText(const std::string& text);
+
 private:
     void setLanguage();
 
@@ -274,6 +276,10 @@ void GUIImpl::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg) {
     main_window_->onNewVersion(msg);
 }
 
+void GUIImpl::setClipboardText(const std::string& text) {
+    main_window_->setClipboardText(text);
+}
+
 void GUIImpl::setLanguage() {
     QLocale locale;
     switch (locale.language()) {
@@ -350,6 +356,10 @@ void GUI::errorCode(int32_t code) {
 
 void GUI::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg) {
     impl_->onNewVersion(msg);
+}
+
+void GUI::setClipboardText(const std::string& text) {
+    impl_->setClipboardText(text);
 }
 
 } // namespace lt

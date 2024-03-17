@@ -131,6 +131,7 @@ WorkerSession::WorkerSession(const Params& params)
     , post_delay_task_(params.post_delay_task)
     , on_accepted_connection_(params.on_accepted_connection)
     , on_connection_status_(params.on_connection_status)
+    , on_client_clipboard_(params.on_client_clipboard)
     , user_defined_relay_server_(params.user_defined_relay_server)
     , on_create_session_completed_(params.on_create_completed)
     , on_closed_(params.on_closed)
@@ -953,6 +954,9 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     case ltype::kKeepAlive:
         onKeepAlive(msg);
         return;
+    case ltype::kClipboard:
+        onClientClipboard(msg);
+        return;
     case ltype::kStartTransmission:
         onStartTransmission(msg);
         return;
@@ -1022,6 +1026,10 @@ void WorkerSession::onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> m
     // 是否需给client要回ack
     // 转发给worker
     postTask([this, msg]() { sendToWorker(ltproto::type::kKeepAlive, msg); });
+}
+
+void WorkerSession::onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { on_client_clipboard_(msg); });
 }
 
 void WorkerSession::updateLastRecvTime() {
