@@ -608,6 +608,15 @@ void App::loginDevice() {
     msg->set_version_minor(LT_VERSION_MINOR);
     msg->set_version_patch(LT_VERSION_PATCH);
     msg->set_cookie(settings_->getString("device_cookie").value_or(""));
+#if defined(LT_WINDOWS)
+    msg->set_os_type(ltproto::common::Windows);
+#elif defined(LT_LINUX)
+    msg->set_os_type(ltproto::common::Linux);
+#elif defined(LT_MAC)
+    msg->set_os_type(ltproto::common::macOS);
+#else
+    msg->set_os_type(ltproto::common::UnknownOS);
+#endif
     sendMessage(ltproto::id(msg), msg);
 }
 

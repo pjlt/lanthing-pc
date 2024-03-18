@@ -493,6 +493,15 @@ void Service::loginDevice() {
         msg->set_allow_control(false);
     }
     msg->set_cookie(settings_->getString("device_cookie").value_or(""));
+#if defined(LT_WINDOWS)
+    msg->set_os_type(ltproto::common::Windows);
+#elif defined(LT_LINUX)
+    msg->set_os_type(ltproto::common::Linux);
+#elif defined(LT_MAC)
+    msg->set_os_type(ltproto::common::macOS);
+#else
+    msg->set_os_type(ltproto::common::UnknownOS);
+#endif
 
     tcp_client_->send(ltproto::id(msg), msg);
 }
