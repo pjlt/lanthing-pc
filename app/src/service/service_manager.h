@@ -69,6 +69,7 @@ private:
     void onPipeDisconnected(uint32_t fd);
     void onPipeMessage(uint32_t fd, uint32_t type,
                        std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);

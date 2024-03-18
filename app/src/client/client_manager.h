@@ -75,9 +75,10 @@ private:
     void onPipeDisconnected(uint32_t fd);
     void onPipeMessage(uint32_t fd, uint32_t type,
                        std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendMessageToClient(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t, const std::function<void()>& task);
-    void sendMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void sendMessageToServer(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void tryRemoveSessionAfter10s(int64_t request_id);
     void tryRemoveSession(int64_t request_id);
     void onClientExited(int64_t request_id);

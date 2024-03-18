@@ -116,6 +116,13 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
     }
 }
 
+void ServiceManager::sendMessage(uint32_t type,
+                                 std::shared_ptr<google::protobuf::MessageLite> msg) {
+    if (fd_ != std::numeric_limits<uint32_t>::max()) {
+        pipe_server_->send(fd_, type, msg);
+    }
+}
+
 void ServiceManager::onConfirmConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::service2app::ConfirmConnection>(_msg);
     on_confirm_connection_(msg->device_id());
@@ -164,18 +171,18 @@ void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmRe
         ack->set_result(ltproto::service2app::ConfirmConnectionAck_ConfirmResult_Reject);
         break;
     }
-    pipe_server_->send(fd_, ltproto::id(ack), ack);
+    sendMessage(ltproto::id(ack), ack);
 }
 
 void ServiceManager::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    pipe_server_->send(fd_, ltproto::type::kOperateConnection, msg);
+    sendMessage(ltproto::type::kOperateConnection, msg);
 }
 
 void ServiceManager::syncClipboardText(const std::string& text) {
     auto msg = std::make_shared<ltproto::common::Clipboard>();
     msg->set_type(ltproto::common::Clipboard_ClipboardType_Text);
     msg->set_text(text);
-    pipe_server_->send(fd_, ltproto::type::kClipboard, msg);
+    sendMessage(ltproto::id(msg), msg);
 }
 
 } // namespace lt

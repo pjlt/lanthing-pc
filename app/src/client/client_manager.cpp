@@ -141,6 +141,13 @@ void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
     }
 }
 
+void ClientManager::sendMessageToClient(uint32_t type,
+                                        std::shared_ptr<google::protobuf::MessageLite> msg) {
+    if (fd_ != std::numeric_limits<uint32_t>::max()) {
+        pipe_server_->send(fd_, type, msg);
+    }
+}
+
 // 跑在IOLoop线程
 void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken,
                             const std::string& cookie, bool use_tcp) {
@@ -212,7 +219,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
         return;
     }
 
-    sendMessage(ltproto::id(req), req);
+    sendMessageToServer(ltproto::id(req), req);
     LOGF(INFO, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") sent",
          peerDeviceID, request_id);
     tryRemoveSessionAfter10s(request_id);
@@ -297,7 +304,7 @@ void ClientManager::syncClipboardText(const std::string& text) {
     auto msg = std::make_shared<ltproto::common::Clipboard>();
     msg->set_type(ltproto::common::Clipboard_ClipboardType_Text);
     msg->set_text(text);
-    pipe_server_->send(fd_, ltproto::id(msg), msg);
+    sendMessageToClient(ltproto::id(msg), msg);
 }
 
 void ClientManager::postTask(const std::function<void()>& task) {
@@ -308,7 +315,8 @@ void ClientManager::postDelayTask(int64_t ms, const std::function<void()>& task)
     post_delay_task_(ms, task);
 }
 
-void ClientManager::sendMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
+void ClientManager::sendMessageToServer(uint32_t type,
+                                        std::shared_ptr<google::protobuf::MessageLite> msg) {
     send_message_(type, msg);
 }
 
