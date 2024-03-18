@@ -98,6 +98,7 @@ private:
     std::atomic<int64_t> last_request_id_{0};
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;
     std::unique_ptr<ltlib::Server> pipe_server_;
+    uint32_t fd_ = std::numeric_limits<uint32_t>::max();
 };
 
 } // namespace lt

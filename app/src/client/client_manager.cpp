@@ -118,10 +118,12 @@ bool ClientManager::init(ltlib::IOLoop* ioloop) {
 
 void ClientManager::onPipeAccepted(uint32_t fd) {
     LOG(INFO) << "Local client accepted " << fd;
+    fd_ = fd;
 }
 
 void ClientManager::onPipeDisconnected(uint32_t fd) {
     LOG(INFO) << "Local client disconnected " << fd;
+    fd_ = std::numeric_limits<uint32_t>::max();
 }
 
 void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
@@ -295,7 +297,7 @@ void ClientManager::syncClipboardText(const std::string& text) {
     auto msg = std::make_shared<ltproto::common::Clipboard>();
     msg->set_type(ltproto::common::Clipboard_ClipboardType_Text);
     msg->set_text(text);
-    sendMessage(ltproto::id(msg), msg);
+    pipe_server_->send(fd_, ltproto::id(msg), msg);
 }
 
 void ClientManager::postTask(const std::function<void()>& task) {
