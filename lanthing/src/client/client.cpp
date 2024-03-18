@@ -1011,12 +1011,14 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
 }
 
 void Client::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    if (connected_to_app_) {
-        app_client_->send(ltproto::type::kClipboard, msg);
-    }
-    else {
-        LOG(WARNING) << "Not connected to app, won't send Clipboard";
-    }
+    postTask([this, msg]() {
+        if (connected_to_app_) {
+            app_client_->send(ltproto::type::kClipboard, msg);
+        }
+        else {
+            LOG(WARNING) << "Not connected to app, won't send Clipboard";
+        }
+    });
 }
 
 void Client::onUserSwitchStretch() {

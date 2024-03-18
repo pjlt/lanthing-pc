@@ -504,6 +504,10 @@ void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _ms
 void MainWindow::setClipboardText(const std::string& text) {
     dispatchToUiThread([this, text]() {
         auto clipboard = QApplication::clipboard();
+        auto text2 = QString::fromStdString(text);
+        if (clipboard->text() == text2) {
+            return;
+        }
         clipboard->setText(QString::fromStdString(text));
     });
 }
