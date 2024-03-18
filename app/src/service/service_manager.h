@@ -52,7 +52,7 @@ public:
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
         std::function<void(int64_t)> on_disconnected_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
-        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_client_clipboard;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard;
         std::function<void(ServiceStatus)> on_service_status;
     };
 
@@ -60,6 +60,7 @@ public:
     static std::unique_ptr<ServiceManager> create(const Params& params);
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void syncClipboardText(const std::string& text);
 
 private:
     ServiceManager(const Params& params);
@@ -74,7 +75,7 @@ private:
     void onDisconnectedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onServiceStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
-    void onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::unique_ptr<ltlib::Server> pipe_server_;
@@ -83,7 +84,7 @@ private:
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection_;
     std::function<void(int64_t)> on_disconnected_connection_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
-    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_client_clipboard_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard_;
     std::function<void(ServiceStatus)> on_service_status_;
 };
 } // namespace lt

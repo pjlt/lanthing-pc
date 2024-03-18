@@ -885,6 +885,9 @@ void Client::dispatchRemoteMessage(uint32_t type,
     case ltproto::type::kChangeStreamingParams:
         onChangeStreamingParams(msg);
         break;
+    case ltproto::type::kClipboard:
+        onRemoteClipboard(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
         break;
@@ -1005,6 +1008,15 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
     ack->set_err_code(success ? ltproto::ErrorCode::Success
                               : ltproto::ErrorCode::InitDecodeRenderPipelineFailed);
     sendMessageToHost(ltproto::id(ack), ack, true);
+}
+
+void Client::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    if (connected_to_app_) {
+        app_client_->send(ltproto::type::kClipboard, msg);
+    }
+    else {
+        LOG(WARNING) << "Not connected to app, won't send Clipboard";
+    }
 }
 
 void Client::onUserSwitchStretch() {

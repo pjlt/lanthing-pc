@@ -57,6 +57,7 @@ public:
         // TODO: 理一下on_connect_failed、on_client_status、on_client_exit几个回调，考虑合并成一个
         std::function<void(int64_t /*device_id*/, int32_t /*error_code*/)> on_connect_failed;
         std::function<void(int32_t)> on_client_status;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard;
         std::function<void(const std::string& /*room_id*/)> close_connection;
     };
 
@@ -81,6 +82,7 @@ private:
     void tryRemoveSession(int64_t request_id);
     void onClientExited(int64_t request_id);
     void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     const uint32_t decode_abilities_;
@@ -91,6 +93,7 @@ private:
     std::function<void(int64_t)> on_launch_client_success_;
     std::function<void(int64_t, int32_t)> on_connect_failed_;
     std::function<void(int32_t)> on_client_status_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard_;
     std::function<void(const std::string&)> close_connection_;
     std::atomic<int64_t> last_request_id_{0};
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;

@@ -30,6 +30,7 @@
 
 #include "service_manager.h"
 
+#include <ltproto/common/clipboard.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
 #include <ltproto/service2app/confirm_connection.pb.h>
@@ -55,7 +56,7 @@ ServiceManager::ServiceManager(const Params& params)
     , on_accepted_connection_{params.on_accepted_connection}
     , on_disconnected_connection_{params.on_disconnected_connection}
     , on_connection_status_{params.on_connection_status}
-    , on_client_clipboard_{params.on_client_clipboard}
+    , on_remote_clipboard_{params.on_remote_clipboard}
     , on_service_status_{params.on_service_status} {}
 
 bool ServiceManager::init(ltlib::IOLoop* ioloop) {
@@ -107,7 +108,7 @@ void ServiceManager::onPipeMessage(uint32_t fd, uint32_t type,
         onServiceStatus(msg);
         break;
     case ltproto::type::kClipboard:
-        onClientClipboard(msg);
+        onRemoteClipboard(msg);
         break;
     default:
         LOG(WARNING) << "ServiceManager received unknown messge type " << type;
@@ -143,8 +144,8 @@ void ServiceManager::onServiceStatus(std::shared_ptr<google::protobuf::MessageLi
     }
 }
 
-void ServiceManager::onClientClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    on_client_clipboard_(msg);
+void ServiceManager::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_remote_clipboard_(msg);
 }
 
 void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
@@ -168,6 +169,13 @@ void ServiceManager::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmRe
 
 void ServiceManager::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
     pipe_server_->send(fd_, ltproto::type::kOperateConnection, msg);
+}
+
+void ServiceManager::syncClipboardText(const std::string& text) {
+    auto msg = std::make_shared<ltproto::common::Clipboard>();
+    msg->set_type(ltproto::common::Clipboard_ClipboardType_Text);
+    msg->set_text(text);
+    pipe_server_->send(fd_, ltproto::type::kClipboard, msg);
 }
 
 } // namespace lt
