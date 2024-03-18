@@ -763,7 +763,6 @@ void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg)
 }
 
 void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    LOG(INFO) << "onRemoteClipboard app";
     auto msg = std::static_pointer_cast<ltproto::common::Clipboard>(_msg);
     if (msg->type() != ltproto::common::Clipboard_ClipboardType_Text || msg->text().empty()) {
         LOG(WARNING) << "Received empty clipboard text";
