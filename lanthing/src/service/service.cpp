@@ -371,6 +371,8 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         std::bind(&Service::onAcceptedConnection, this, std::placeholders::_1);
     worker_params.on_connection_status =
         std::bind(&Service::onConnectionStatus, this, std::placeholders::_1);
+    worker_params.on_remote_clipboard =
+        std::bind(&Service::onRemoteClipboard, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
@@ -532,6 +534,9 @@ void Service::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::Mess
     case ltype::kOperateConnection:
         onOperateConnection(msg);
         break;
+    case ltype::kClipboard:
+        onAppClipboard(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message from app " << type;
         break;
@@ -660,6 +665,12 @@ void Service::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite>
     }
 }
 
+void Service::onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    for (auto& session : worker_sessions_) {
+        session.second->onAppClipboard(msg);
+    }
+}
+
 void Service::tellAppSessionClosed(int64_t device_id) {
     auto msg = std::make_shared<ltproto::service2app::DisconnectedConnection>();
     msg->set_device_id(device_id);
@@ -672,6 +683,10 @@ void Service::onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite
 
 void Service::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
     sendMessageToApp(ltproto::type::kConnectionStatus, msg);
+}
+
+void Service::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kClipboard, msg);
 }
 
 } // namespace svc

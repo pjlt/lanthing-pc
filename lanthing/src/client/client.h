@@ -120,6 +120,7 @@ private:
     void onAppDisconnected();
     void onAppReconnecting();
     void onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // 信令.
     void onSignalingNetMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -159,6 +160,7 @@ private:
     void onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onUserSwitchStretch();
     void resetVideoPipeline();
 

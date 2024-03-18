@@ -82,6 +82,7 @@ private:
     void setRelMouseAccel(int64_t accel);
     void setIgnoredNIC(const std::string& nic_list);
     void enableTCP(bool enable);
+    void syncClipboardText(const std::string& text);
 
     void createAndStartService();
     void stopService();
@@ -110,7 +111,7 @@ private:
     void handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
 
-    // service
+    // service manager
     bool initServiceManager();
     void onConfirmConnection(int64_t device_id);
     void onAccpetedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -124,6 +125,9 @@ private:
     void onConnectFailed(int64_t device_id, int32_t error_code);
     void onClientStatus(int32_t err_code);
     void closeConnectionByRoomID(const std::string& room_id);
+
+    // service manager + client manager
+    void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     size_t rand();
     std::string generateAccessToken();

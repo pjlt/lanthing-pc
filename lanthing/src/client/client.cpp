@@ -465,13 +465,16 @@ void Client::onAppReconnecting() {
 }
 
 void Client::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg) {
-    (void)type;
-    (void)msg;
-    // switch (type) {
-    // default:
-    //     LOG(WARNING) << "Received unkonwn message from app: " << type;
-    //     break;
-    // }
+    namespace ltype = ltproto::type;
+    switch (type) {
+    case ltype::kClipboard:
+        // TODO: 考虑一下会不会死锁
+        sendMessageToHost(type, msg, true);
+        break;
+    default:
+        LOG(WARNING) << "Received unknown message from app, type " << type;
+        break;
+    }
 }
 
 void Client::onSignalingNetMessage(uint32_t type,
@@ -882,6 +885,9 @@ void Client::dispatchRemoteMessage(uint32_t type,
     case ltproto::type::kChangeStreamingParams:
         onChangeStreamingParams(msg);
         break;
+    case ltproto::type::kClipboard:
+        onRemoteClipboard(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
         break;
@@ -1002,6 +1008,17 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
     ack->set_err_code(success ? ltproto::ErrorCode::Success
                               : ltproto::ErrorCode::InitDecodeRenderPipelineFailed);
     sendMessageToHost(ltproto::id(ack), ack, true);
+}
+
+void Client::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() {
+        if (connected_to_app_) {
+            app_client_->send(ltproto::type::kClipboard, msg);
+        }
+        else {
+            LOG(WARNING) << "Not connected to app, won't send Clipboard";
+        }
+    });
 }
 
 void Client::onUserSwitchStretch() {

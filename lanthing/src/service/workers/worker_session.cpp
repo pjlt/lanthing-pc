@@ -131,6 +131,7 @@ WorkerSession::WorkerSession(const Params& params)
     , post_delay_task_(params.post_delay_task)
     , on_accepted_connection_(params.on_accepted_connection)
     , on_connection_status_(params.on_connection_status)
+    , on_remote_clipboard_(params.on_remote_clipboard)
     , user_defined_relay_server_(params.user_defined_relay_server)
     , on_create_session_completed_(params.on_create_completed)
     , on_closed_(params.on_closed)
@@ -209,6 +210,10 @@ void WorkerSession::disableAudio() {
 
 void WorkerSession::close() {
     postTask(std::bind(&WorkerSession::onClosed, this, CloseReason::UserKick));
+}
+
+void WorkerSession::onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToRemoteClient(ltproto::type::kClipboard, msg, true);
 }
 
 bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
@@ -953,6 +958,9 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     case ltype::kKeepAlive:
         onKeepAlive(msg);
         return;
+    case ltype::kClipboard:
+        onRemoteClipboard(msg);
+        return;
     case ltype::kStartTransmission:
         onStartTransmission(msg);
         return;
@@ -1022,6 +1030,10 @@ void WorkerSession::onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> m
     // 是否需给client要回ack
     // 转发给worker
     postTask([this, msg]() { sendToWorker(ltproto::type::kKeepAlive, msg); });
+}
+
+void WorkerSession::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { on_remote_clipboard_(msg); });
 }
 
 void WorkerSession::updateLastRecvTime() {

@@ -84,12 +84,15 @@ private:
     void sendMessageToApp(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
     void onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void tellAppSessionClosed(int64_t device_id);
 
     void onAcceptedConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
+
+    void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onCreateSessionCompletedThreadSafe(int32_t error_code, int32_t transport_type,
                                             int64_t device_id, const std::string& session_name,

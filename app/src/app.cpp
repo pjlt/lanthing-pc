@@ -35,6 +35,7 @@
 #include <iostream>
 #include <thread>
 
+#include <ltproto/common/clipboard.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/allocate_device_id.pb.h>
@@ -184,6 +185,7 @@ int App::exec(int argc, char** argv) {
     params.set_rel_mouse_accel = std::bind(&App::setRelMouseAccel, this, std::placeholders::_1);
     params.set_ignored_nic = std::bind(&App::setIgnoredNIC, this, std::placeholders::_1);
     params.enable_tcp = std::bind(&App::enableTCP, this, std::placeholders::_1);
+    params.on_clipboard_text = std::bind(&App::syncClipboardText, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -382,6 +384,13 @@ void App::setIgnoredNIC(const std::string& nic_list) {
 void App::enableTCP(bool enable) {
     enable_tcp_ = enable;
     settings_->setBoolean("enable_tcp", enable);
+}
+
+void App::syncClipboardText(const std::string& text) {
+    postTask([this, text]() {
+        client_manager_->syncClipboardText(text);
+        service_manager_->syncClipboardText(text);
+    });
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {
@@ -729,6 +738,7 @@ bool App::initServiceManager() {
     params.on_disconnected_connection =
         std::bind(&App::onDisconnectedConnection, this, std::placeholders::_1);
     params.on_service_status = std::bind(&App::onServiceStatus, this, std::placeholders::_1);
+    params.on_remote_clipboard = std::bind(&App::onRemoteClipboard, this, std::placeholders::_1);
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }
@@ -750,6 +760,15 @@ void App::onDisconnectedConnection(int64_t device_id) {
 
 void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg) {
     gui_.onConnectionStatus(msg);
+}
+
+void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::common::Clipboard>(_msg);
+    if (msg->type() != ltproto::common::Clipboard_ClipboardType_Text || msg->text().empty()) {
+        LOG(WARNING) << "Received empty clipboard text";
+        return;
+    }
+    gui_.setClipboardText(msg->text());
 }
 
 void App::onServiceStatus(ServiceManager::ServiceStatus status) {
@@ -789,6 +808,7 @@ bool App::initClientManager() {
         std::bind(&App::onConnectFailed, this, std::placeholders::_1, std::placeholders ::_2);
     params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
     params.close_connection = std::bind(&App::closeConnectionByRoomID, this, std::placeholders::_1);
+    params.on_remote_clipboard = std::bind(&App::onRemoteClipboard, this, std::placeholders::_1);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != nullptr;
 }

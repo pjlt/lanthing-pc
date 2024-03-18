@@ -34,6 +34,7 @@
 #include <system_error>
 
 #include <ltproto/client2app/client_status.pb.h>
+#include <ltproto/common/clipboard.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
@@ -77,6 +78,7 @@ ClientManager::ClientManager(const Params& params)
     , on_launch_client_success_{params.on_launch_client_success}
     , on_connect_failed_{params.on_connect_failed}
     , on_client_status_{params.on_client_status}
+    , on_remote_clipboard_{params.on_remote_clipboard}
     , close_connection_{params.close_connection} {}
 
 std::unique_ptr<ClientManager> ClientManager::create(const Params& params) {
@@ -116,10 +118,12 @@ bool ClientManager::init(ltlib::IOLoop* ioloop) {
 
 void ClientManager::onPipeAccepted(uint32_t fd) {
     LOG(INFO) << "Local client accepted " << fd;
+    fd_ = fd;
 }
 
 void ClientManager::onPipeDisconnected(uint32_t fd) {
     LOG(INFO) << "Local client disconnected " << fd;
+    fd_ = std::numeric_limits<uint32_t>::max();
 }
 
 void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
@@ -128,6 +132,9 @@ void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
     switch (type) {
     case ltproto::type::kClientStatus:
         onClientStatus(msg);
+        break;
+    case ltproto::type::kClipboard:
+        onRemoteClipboard(msg);
         break;
     default:
         break;
@@ -286,6 +293,13 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
     on_launch_client_success_(ack->device_id());
 }
 
+void ClientManager::syncClipboardText(const std::string& text) {
+    auto msg = std::make_shared<ltproto::common::Clipboard>();
+    msg->set_type(ltproto::common::Clipboard_ClipboardType_Text);
+    msg->set_text(text);
+    pipe_server_->send(fd_, ltproto::id(msg), msg);
+}
+
 void ClientManager::postTask(const std::function<void()>& task) {
     post_task_(task);
 }
@@ -338,6 +352,10 @@ void ClientManager::onClientExited(int64_t request_id) {
 void ClientManager::onClientStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2app::ClientStatus>(_msg);
     on_client_status_(msg->status());
+}
+
+void ClientManager::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_remote_clipboard_(msg);
 }
 
 } // namespace lt

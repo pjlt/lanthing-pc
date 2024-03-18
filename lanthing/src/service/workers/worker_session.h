@@ -76,6 +76,7 @@ public:
         std::function<void(int64_t, const std::function<void()>&)> post_delay_task;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard;
         bool enable_gamepad;
         bool enable_keyboard;
         bool enable_mouse;
@@ -98,6 +99,7 @@ public:
     void enableAudio();
     void disableAudio();
     void close();
+    void onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     WorkerSession(const Params& params);
@@ -162,6 +164,7 @@ private:
                            const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onStartTransmission(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -185,6 +188,7 @@ private:
     std::function<void(int64_t, const std::function<void()>&)> post_delay_task_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard_;
     std::string user_defined_relay_server_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
