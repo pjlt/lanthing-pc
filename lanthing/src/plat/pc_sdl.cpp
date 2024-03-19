@@ -130,6 +130,7 @@ private:
     std::unique_ptr<ltlib::BlockingThread> thread_;
     std::string title_ = "Lanthing";
     std::map<int32_t, SDL_Cursor*> cursors_;
+    bool init_dummy_audio_ = false;
 };
 
 std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
@@ -296,14 +297,27 @@ CLEANUP:
 }
 
 bool PcSdlImpl::initSdlSubSystems() {
-    int ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
-    if (ret != 0) {
-        LOG(ERR) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
-        return false;
-    }
-    ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
+    int ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_AUDIO failed:" << SDL_GetError();
+        return false;
+    }
+    int audio_devices = SDL_GetNumAudioDevices(0);
+    if (audio_devices < 0) {
+        LOG(WARNING) << "SDL_GetNumAudioDevices return " << audio_devices;
+    }
+    else if (audio_devices == 0) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        ret = SDL_AudioInit("dummy");
+        if (ret != 0) {
+            LOG(ERR) << "SDL_AudioInit failed:" << SDL_GetError();
+            return false;
+        }
+        init_dummy_audio_ = true;
+    }
+    ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
+    if (ret != 0) {
+        LOG(ERR) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
         return false;
     }
     ret = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
@@ -316,8 +330,13 @@ bool PcSdlImpl::initSdlSubSystems() {
 
 void PcSdlImpl::quitSdlSubSystems() {
     SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    if (init_dummy_audio_) {
+        SDL_AudioQuit();
+    }
+    else {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
 }
 
 void PcSdlImpl::loadCursors() {
