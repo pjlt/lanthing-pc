@@ -664,33 +664,24 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
         gui_.errorCode(ack->err_code());
         return;
     case ltproto::ErrorCode::LoginDeviceInvalidID:
-        // ID错误，如果服务端下发了新ID，则使用新ID继续流程，否则当成错误直接返回
-        LOG(ERR) << "LoginDevice failed, LoginDeviceInvalidID";
-        if (ack->new_device_id() != 0) {
-            LOG(WARNING) << "Use the new device " << ack->new_device_id()
-                         << " to replace the old one " << device_id_;
-            device_id_ = ack->new_device_id();
-            settings_->setInteger("device_id", device_id_);
-        }
-        else {
-            gui_.errorCode(ack->err_code());
-            return;
-        }
-        break;
     case ltproto::ErrorCode::LoginDeviceInvalidCookie:
-        // cookie错误，可能在settings.db手写了别人的ID。如果服务端下发了新ID则使用新ID，否则当成错误返回
-        LOG(ERR) << "LoginDevice failed, LoginDeviceInvalidCookie " << ack->err_code();
-        if (ack->new_device_id() != 0) {
+        // cookie或ID错误
+        LOG(ERR) << "LoginDevice failed: " << ltproto::ErrorCode_Name(ack->err_code()) << " "
+                 << ack->err_code();
+        if (ack->new_device_id() == 0 || ack->new_cookie().empty()) {
+            // 服务器出错，没能成功为我们分配新ID
+            gui_.errorCode(ack->err_code());
+        }
+        else {
+            // 记录新ID和cookie，并重新登录
             LOG(WARNING) << "Use the new device " << ack->new_device_id()
                          << " to replace the old one " << device_id_;
             device_id_ = ack->new_device_id();
             settings_->setInteger("device_id", device_id_);
+            settings_->setString("device_cookie", ack->new_cookie());
+            loginDevice();
         }
-        else {
-            gui_.errorCode(ack->err_code());
-            return;
-        }
-        break;
+        return;
     default:
         // 未知错误
         LOG(ERR) << "LoginDevice failed, unknown error: " << static_cast<int>(ack->err_code());
