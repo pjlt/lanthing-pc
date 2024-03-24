@@ -146,6 +146,7 @@ private:
     void onKeepAliveAck();
     void onWorkerStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onWorkerFailedFromOtherThread(int32_t error_code);
+    void sendLinkTypeToWorker(lt::LinkType link_type);
 
     // rtc server
     static void onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable);

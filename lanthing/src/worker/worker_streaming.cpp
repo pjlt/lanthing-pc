@@ -36,6 +36,7 @@
 #include <ltproto/common/keep_alive_ack.pb.h>
 #include <ltproto/common/streaming_params.pb.h>
 #include <ltproto/ltproto.h>
+#include <ltproto/worker2service/network_changed.pb.h>
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
 

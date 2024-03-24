@@ -53,6 +53,7 @@
 #include <ltproto/signaling/join_room_ack.pb.h>
 #include <ltproto/signaling/signaling_message.pb.h>
 #include <ltproto/signaling/signaling_message_ack.pb.h>
+#include <ltproto/worker2service/network_changed.pb.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
@@ -807,6 +808,31 @@ void WorkerSession::onWorkerFailedFromOtherThread(int32_t error_code) {
     });
 }
 
+void WorkerSession::sendLinkTypeToWorker(lt::LinkType link_type) {
+    auto msg = std::make_shared<ltproto::worker2service::NetworkChanged>();
+    switch (link_type) {
+    case lt::LinkType::LanUDP:
+        msg->set_network_event(ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeLan);
+        break;
+    case lt::LinkType::UDP:
+    case lt::LinkType::WanUDP:
+    case lt::LinkType::IPv6UDP:
+        msg->set_network_event(ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeWan);
+        break;
+    case lt::LinkType::RelayUDP:
+        msg->set_network_event(ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeRelay);
+        break;
+    case lt::LinkType::TCP:
+        msg->set_network_event(ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeTCP);
+        break;
+    case lt::LinkType::Unknown:
+    default:
+        LOG(WARNING) << "Send unknown LinkType " << (int)link_type << " to worker failed";
+        return;
+    }
+    sendToWorker(ltproto::id(msg), msg);
+}
+
 void WorkerSession::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool reliable) {
     // 跑在数据通道线程
     auto that = reinterpret_cast<WorkerSession*>(user_data);
@@ -834,13 +860,15 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
         that->updateLastRecvTime();
         that->syncTime();
         that->postTask(std::bind(&WorkerSession::checkKeepAliveTimeout, that));
+        that->sendLinkTypeToWorker(link_type);
     });
 }
 
 void WorkerSession::onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkType new_type) {
-    (void)user_data;
     LOG(INFO) << "Transport LinkType changed: " << toString(old_type) << " => "
               << toString(new_type);
+    auto that = reinterpret_cast<WorkerSession*>(user_data);
+    that->sendLinkTypeToWorker(new_type);
 }
 
 void WorkerSession::onTpFailed(void* user_data) {

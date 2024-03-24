@@ -44,6 +44,7 @@
 #include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/ltproto.h>
+#include <ltproto/worker2service/network_changed.pb.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
 
 #include <ltlib/logging.h>
@@ -131,6 +132,7 @@ private:
     // 从service收到的消息
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onNetworkEvent(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     uint32_t width_;
@@ -156,6 +158,7 @@ private:
     bool get_cursor_failed_ = false;
     std::deque<int64_t> capture_history_;
     int64_t last_encode_time_us_ = 0;
+    bool half_fps_ = false;
 };
 
 VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
@@ -349,7 +352,8 @@ bool VCEPipeline::registerHandlers() {
     namespace ph = std::placeholders;
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kReconfigureVideoEncoder, std::bind(&VCEPipeline::onReconfigure, this, ph::_1)},
-        {ltype::kRequestKeyframe, std::bind(&VCEPipeline::onRequestKeyframe, this, ph::_1)}};
+        {ltype::kRequestKeyframe, std::bind(&VCEPipeline::onRequestKeyframe, this, ph::_1)},
+        {ltype::kNetworkChanged, std::bind(&VCEPipeline::onNetworkEvent, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler_(handler.first, handler.second)) {
             return false;
@@ -462,9 +466,10 @@ void VCEPipeline::sendChangeStreamingParams(ltlib::DisplayOutputDesc desc) {
 bool VCEPipeline::shouldEncodeFrame() {
     addHistory(capture_history_);
     const size_t capture_fps = capture_history_.size();
-    const uint32_t interval_us = 1'000'000 / target_fps_;
+    const uint32_t target_fps = half_fps_ ? (target_fps_ / 2) : target_fps_;
+    const uint32_t interval_us = 1'000'000 / target_fps;
     const int64_t now_us = ltlib::steady_now_us();
-    if (capture_fps > target_fps_ + 2) {
+    if (capture_fps > target_fps + 2) {
         int64_t last_target_encode_time_us = now_us - now_us % interval_us;
         if (last_encode_time_us_ >= last_target_encode_time_us) {
             return false;
@@ -519,6 +524,26 @@ void VCEPipeline::onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLit
     (void)msg;
     std::lock_guard lock{mutex_};
     tasks_.push_back([this] { encoder_->requestKeyframe(); });
+}
+
+void VCEPipeline::onNetworkEvent(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    std::lock_guard lock{mutex_};
+    tasks_.push_back([this, _msg] {
+        auto msg = std::static_pointer_cast<ltproto::worker2service::NetworkChanged>(_msg);
+        switch (msg->network_event()) {
+        case ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeRelay:
+            half_fps_ = true;
+            break;
+        case ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeLan:
+        case ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeWan:
+        case ltproto::worker2service::NetworkChanged_NetworkEvent_LinkTypeTCP:
+            half_fps_ = false;
+            break;
+        default:
+            LOG(WARNING) << "Received unknown NetworkEvent " << (int)msg->network_event();
+            break;
+        }
+    });
 }
 
 std::unique_ptr<CaptureEncodePipeline> CaptureEncodePipeline::create(const Params& params) {
