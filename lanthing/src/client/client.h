@@ -208,6 +208,7 @@ private:
     int64_t last_received_keepalive_ = 0;
     bool connected_to_app_ = false;
     std::string ignored_nic_;
+    bool stoped_ = false;
 };
 
 } // namespace cli

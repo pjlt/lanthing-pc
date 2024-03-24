@@ -60,7 +60,9 @@ Service::Service() = default;
 Service::~Service() {
     {
         std::lock_guard lock{mutex_};
+        stoped_ = true;
         tcp_client_.reset();
+        app_client_.reset();
         ioloop_.reset();
     }
 }
@@ -190,7 +192,18 @@ void Service::letUserConfirm(int64_t device_id) {
 }
 
 void Service::postTask(const std::function<void()>& task) {
-    mutex_.lock_shared();
+    // 不断尝试获取锁，获取失败有两种可能
+    // 1. ~Service获取了exclusive锁
+    // 2. 意外的失败
+    // 对于第一种可能，~Service获取锁后会赋值stoped_=true，在此处检测到stoped_==true，我们就退出
+    // 对于第二种可能，我们循环尝试获取锁
+    // 另外，~Service获取锁和赋值stoped_=true并不是原子，也就是说第一种情况下stoped_有可能是false
+    // 但是没关系，我们继续循环
+    while (!mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->post(task);
     }
@@ -198,7 +211,12 @@ void Service::postTask(const std::function<void()>& task) {
 }
 
 void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    mutex_.lock_shared();
+    // 同postTask
+    while (!mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }

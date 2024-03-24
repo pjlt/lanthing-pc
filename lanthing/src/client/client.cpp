@@ -223,6 +223,7 @@ Client::Client(const Params& params)
 Client::~Client() {
     {
         std::lock_guard lock{ioloop_mutex_};
+        stoped_ = true;
         signaling_client_.reset();
         app_client_.reset();
         ioloop_.reset();
@@ -377,7 +378,12 @@ void Client::stopWait() {
 }
 
 void Client::postTask(const std::function<void()>& task) {
-    ioloop_mutex_.lock_shared();
+    // 参考Service::postTask
+    while (!ioloop_mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->post(task);
     }
@@ -385,7 +391,12 @@ void Client::postTask(const std::function<void()>& task) {
 }
 
 void Client::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    ioloop_mutex_.lock_shared();
+    // 参考Service::postTask
+    while (!ioloop_mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }

@@ -119,6 +119,7 @@ private:
     std::optional<WorkerSession::Params> cached_worker_params_;
     bool keepalive_inited_ = false;
     bool server_logged_ = false;
+    bool stoped_ = false;
 };
 
 } // namespace svc
