@@ -226,6 +226,9 @@ DUPL_RETURN DUPLICATIONMANAGER::GetMouse(_Inout_ PTR_INFO* PtrInfo,
 //
 _Success_(*Timeout == false && return == DUPL_RETURN_SUCCESS)
     DUPL_RETURN DUPLICATIONMANAGER::GetFrame(_Out_ FRAME_DATA* Data, _Out_ bool* Timeout) {
+    if (m_DeskDupl == nullptr) {
+        return DUPL_RETURN::DUPL_RETURN_ERROR_UNEXPECTED;
+    }
     ComPtr<IDXGIResource> DesktopResource;
     DXGI_OUTDUPL_FRAME_INFO FrameInfo;
     // Get new frame
@@ -334,6 +337,9 @@ WARNING_ENABLE(6101)
 // Release frame
 //
 DUPL_RETURN DUPLICATIONMANAGER::DoneWithFrame() {
+    if (m_DeskDupl == nullptr) {
+        return DUPL_RETURN::DUPL_RETURN_ERROR_UNEXPECTED;
+    }
     HRESULT hr = m_DeskDupl->ReleaseFrame();
     if (FAILED(hr)) {
         // return ProcessFailure(m_Device, L"Failed to release frame in DUPLICATIONMANAGER",
