@@ -224,6 +224,7 @@ Client::~Client() {
     {
         std::lock_guard lock{ioloop_mutex_};
         signaling_client_.reset();
+        app_client_.reset();
         ioloop_.reset();
     }
     if (tp_client_ != nullptr) {
