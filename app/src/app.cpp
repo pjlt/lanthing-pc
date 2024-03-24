@@ -148,7 +148,6 @@ bool App::init() {
         return false;
     }
     loadHistoryIDs();
-    stoped_ = false;
     return true;
 }
 
@@ -505,7 +504,12 @@ void App::onConnectFailed(int64_t device_id, int32_t error_code) {
 }
 
 void App::postTask(const std::function<void()>& task) {
-    ioloop_mutex_.lock_shared();
+    // 参考Service::postTask
+    while (!ioloop_mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->post(task);
     }
@@ -513,7 +517,12 @@ void App::postTask(const std::function<void()>& task) {
 }
 
 void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    ioloop_mutex_.lock_shared();
+    // 参考Service::postTask
+    while (!ioloop_mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }
@@ -630,7 +639,7 @@ void App::sendKeepAlive() {
     bool stoped = false;
     {
         std::lock_guard lk{ioloop_mutex_};
-        stoped = stoped;
+        stoped = stoped_;
     }
     if (stoped) {
         return;

@@ -158,7 +158,7 @@ private:
     std::mt19937 rand_engine_;
     std::uniform_int_distribution<size_t> rand_distrib_;
     bool signaling_keepalive_inited_ = false;
-    bool stoped_ = true;
+    bool stoped_ = false;
     uint32_t decode_abilities_ = 0;
     bool service_started_ = false;
 };
