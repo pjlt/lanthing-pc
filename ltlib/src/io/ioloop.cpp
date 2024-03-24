@@ -166,12 +166,12 @@ void IOLoopImpl::stop() {
 }
 
 void IOLoopImpl::post(const std::function<void()>& task) {
-    {
-        std::lock_guard<std::mutex> lock{mutex_};
-        tasks_.push_back(task);
+    std::lock_guard<std::mutex> lock{mutex_};
+    tasks_.push_back(task);
+    if (!stoped_) {
+        // 对同一个uv_async_t多次调用uv_async_send是冇问题哒！
+        uv_async_send(&task_handle_);
     }
-    // 对同一个uv_async_t多次调用uv_async_send是冇问题哒！
-    uv_async_send(&task_handle_);
 }
 
 void IOLoopImpl::post_delay(int64_t delay_ms, const std::function<void()>& task) {
