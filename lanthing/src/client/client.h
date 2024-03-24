@@ -192,7 +192,6 @@ private:
     lt::tp::Client* tp_client_ = nullptr;
     std::unique_ptr<lt::plat::PcSdl> sdl_;
     std::unique_ptr<ltlib::BlockingThread> main_thread_;
-    std::unique_ptr<ltlib::TaskThread> hb_thread_;
     std::condition_variable exit_cv_;
     std::mutex exit_mutex_;
     bool should_exit_ = true;

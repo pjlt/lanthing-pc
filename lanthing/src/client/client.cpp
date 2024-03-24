@@ -277,7 +277,6 @@ bool Client::init() {
         LOG(ERR) << "Create app client failed";
         return false;
     }
-    hb_thread_ = ltlib::TaskThread::create("lt_heart_beat");
     main_thread_ = ltlib::BlockingThread::create(
         "lt_main_thread",
         [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
@@ -816,7 +815,7 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
         return;
     }
     // 心跳检测
-    that->hb_thread_->post(std::bind(&Client::sendKeepAlive, that));
+    that->postTask(std::bind(&Client::sendKeepAlive, that));
     that->last_received_keepalive_ = ltlib::steady_now_ms();
     that->postDelayTask(500, std::bind(&Client::checkWorkerTimeout, that));
     // 如果未来有“串流”以外的业务，在这个StartTransmission添加字段.
@@ -910,8 +909,8 @@ void Client::sendKeepAlive() {
     auto keep_alive = std::make_shared<ltproto::common::KeepAlive>();
     sendMessageToHost(ltproto::id(keep_alive), keep_alive, true);
 
-    const auto k500ms = ltlib::TimeDelta{500'000};
-    hb_thread_->post_delay(k500ms, std::bind(&Client::sendKeepAlive, this));
+    constexpr int64_t k500ms = 500;
+    postDelayTask(k500ms, std::bind(&Client::sendKeepAlive, this));
 }
 
 void Client::onKeepAliveAck() {
