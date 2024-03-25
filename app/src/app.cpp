@@ -115,6 +115,7 @@ bool App::init() {
     ignored_nic_ = settings_->getString("ignored_nic").value_or("");
     enable_444_ = settings_->getBoolean("enable_444").value_or(false);
     enable_tcp_ = settings_->getBoolean("enable_tcp").value_or(false);
+    max_mbps_ = static_cast<uint32_t>(settings_->getInteger("max_mbps").value_or(0));
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -185,6 +186,7 @@ int App::exec(int argc, char** argv) {
     params.set_ignored_nic = std::bind(&App::setIgnoredNIC, this, std::placeholders::_1);
     params.enable_tcp = std::bind(&App::enableTCP, this, std::placeholders::_1);
     params.on_clipboard_text = std::bind(&App::syncClipboardText, this, std::placeholders::_1);
+    params.set_max_mbps = std::bind(&App::setMaxMbps, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -240,6 +242,7 @@ GUI::Settings App::getSettings() const {
     settings.rel_mouse_accel = rel_mouse_accel_;
     settings.ignored_nic = ignored_nic_;
     settings.tcp = enable_tcp_;
+    settings.max_mbps = max_mbps_;
 
     return settings;
 }
@@ -390,6 +393,11 @@ void App::syncClipboardText(const std::string& text) {
         client_manager_->syncClipboardText(text);
         service_manager_->syncClipboardText(text);
     });
+}
+
+void App::setMaxMbps(uint32_t mbps) {
+    max_mbps_ = mbps;
+    settings_->setInteger("max_mbps", mbps);
 }
 
 void App::ioLoop(const std::function<void()>& i_am_alive) {

@@ -83,6 +83,7 @@ private:
     void setIgnoredNIC(const std::string& nic_list);
     void enableTCP(bool enable);
     void syncClipboardText(const std::string& text);
+    void setMaxMbps(uint32_t mbps);
 
     void createAndStartService();
     void stopService();
@@ -153,6 +154,7 @@ private:
     std::string ignored_nic_;
     bool enable_444_ = false;
     bool enable_tcp_ = false;
+    uint32_t max_mbps_ = 0;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;
     std::mt19937 rand_engine_;

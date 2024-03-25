@@ -178,6 +178,11 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     if (!settings.ignored_nic.empty()) {
         ui->leditIgnoredNIC->setText(QString::fromStdString(settings.ignored_nic));
     }
+    ui->btnMaxMbps->setEnabled(false);
+    ui->leditMaxMbps->setValidator(new QIntValidator(1, 100, this));
+    if (settings.max_mbps != 0) {
+        ui->leditMaxMbps->setText(QString::number(settings.max_mbps));
+    }
     ui->btnStatusColor->setEnabled(false);
     ui->leditRed->setValidator(new QIntValidator(0, 255, this));
     ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
@@ -620,6 +625,32 @@ void MainWindow::setupOtherCallbacks() {
             max_port <= 65536) {
             params_.set_port_range(min_port, max_port);
             ui->btnPortRange->setEnabled(false);
+        }
+    });
+    connect(ui->leditMaxMbps, &QLineEdit::textChanged, [this](const QString& _text) {
+        if (_text.trimmed().isEmpty()) {
+            ui->btnMaxMbps->setEnabled(true);
+            return;
+        }
+        int mbps = _text.trimmed().toInt();
+        if (mbps >= 1 && mbps <= 100) {
+            ui->btnMaxMbps->setEnabled(true);
+        }
+        else {
+            ui->btnMaxMbps->setEnabled(false);
+        }
+    });
+    connect(ui->btnMaxMbps, &QPushButton::clicked, [this]() {
+        if (ui->leditMaxMbps->text().trimmed().isEmpty()) {
+            params_.set_max_mbps(0);
+            ui->btnMaxMbps->setEnabled(false);
+        }
+        else {
+            int mbps = ui->leditMaxMbps->text().trimmed().toInt();
+            if (mbps >= 1 && mbps <= 100) {
+                params_.set_max_mbps(static_cast<uint32_t>(mbps));
+                ui->btnMaxMbps->setEnabled(false);
+            }
         }
     });
     connect(ui->leditIgnoredNIC, &QLineEdit::textChanged,

@@ -1613,18 +1613,18 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>0</y>
+                      <y>-275</y>
                       <width>527</width>
-                      <height>650</height>
+                      <height>700</height>
                      </rect>
                     </property>
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>650</height>
+                      <height>700</height>
                      </size>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,4,1">
+                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,5,1">
                      <property name="sizeConstraint">
                       <enum>QLayout::SetDefaultConstraint</enum>
                      </property>
@@ -1909,6 +1909,51 @@ QHeaderView::section:vertical
                            </item>
                            <item>
                             <widget class="QPushButton" name="btnIgnoredNIC">
+                             <property name="text">
+                              <string>Confirm</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_7">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QHBoxLayout" name="horizontalLayout_18">
+                           <item>
+                            <widget class="QLabel" name="labelMaxMbps">
+                             <property name="minimumSize">
+                              <size>
+                               <width>90</width>
+                               <height>0</height>
+                              </size>
+                             </property>
+                             <property name="maximumSize">
+                              <size>
+                               <width>90</width>
+                               <height>16777215</height>
+                              </size>
+                             </property>
+                             <property name="text">
+                              <string>Max Mbps</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLineEdit" name="leditMaxMbps">
+                             <property name="placeholderText">
+                              <string>1-100</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QPushButton" name="btnMaxMbps">
                              <property name="text">
                               <string>Confirm</string>
                              </property>

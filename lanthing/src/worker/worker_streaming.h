@@ -83,6 +83,7 @@ private:
     void recoverDisplaySettings();
     bool negotiateAllParameters();
     int32_t negotiateStreamParameters();
+    void getUserMaxMbps();
     void mainLoop(const std::function<void()>& i_am_alive);
     void stop(int exit_code);
     void postTask(const std::function<void()>& task);
@@ -135,6 +136,7 @@ private:
     std::unique_ptr<lt::audio::Capturer> audio_;
     std::unique_ptr<ltlib::Settings> settings_;
     std::vector<ltlib::Monitor> monitors_;
+    uint32_t max_mbps_ = 0;
 };
 } // namespace worker
 

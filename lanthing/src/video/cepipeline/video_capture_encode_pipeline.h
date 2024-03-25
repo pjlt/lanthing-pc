@@ -49,6 +49,7 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t client_refresh_rate;
+        uint32_t max_mbps;
         ltlib::Monitor monitor;
         std::function<bool(uint32_t, const MessageHandler&)> register_message_handler;
         std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>

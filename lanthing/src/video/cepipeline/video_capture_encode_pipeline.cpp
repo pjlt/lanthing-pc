@@ -140,6 +140,7 @@ private:
     uint32_t client_refresh_rate_;
     uint32_t max_fps_;
     uint32_t target_fps_;
+    uint32_t max_bps_;
     ltlib::Monitor monitor_;
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
@@ -167,6 +168,8 @@ VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
     , client_refresh_rate_{params.client_refresh_rate}
     , max_fps_{params.client_refresh_rate}
     , target_fps_{params.client_refresh_rate}
+    , max_bps_{(params.max_mbps == 0 || params.max_mbps > 100) ? (100 * 1024 * 1024)
+                                                               : (params.max_mbps * 1024 * 1024)}
     , monitor_{params.monitor}
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
@@ -204,6 +207,7 @@ bool VCEPipeline::init() {
     Encoder::InitParams encode_params{};
     encode_params.freq = max_fps_;
     encode_params.bitrate_bps = 4 * 1024 * 1024;
+    encode_params.bitrate_bps = std::min(encode_params.bitrate_bps, max_bps_);
     if (monitor_.rotation == 90 || monitor_.rotation == 270) {
         encode_params.width = height_;
         encode_params.height = width_;
@@ -508,6 +512,9 @@ void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _
         if (msg->has_bitrate_bps()) {
             LOG(DEBUG) << "Set bitrate " << msg->bitrate_bps();
             params.bitrate_bps = msg->bitrate_bps();
+            if (!manual_bitrate_) {
+                params.bitrate_bps = std::min(params.bitrate_bps.value(), max_bps_);
+            }
             changed = true;
         }
         if (msg->has_fps()) {

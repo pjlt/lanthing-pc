@@ -71,6 +71,7 @@ public:
         std::optional<uint32_t> status_color;
         uint8_t rel_mouse_accel;
         std::string ignored_nic;
+        uint32_t max_mbps;
     };
 
     struct TrustedDevice {
@@ -101,6 +102,7 @@ public:
         std::function<void(const std::string&)> set_ignored_nic;
         std::function<void(bool)> enable_tcp;
         std::function<void(const std::string&)> on_clipboard_text;
+        std::function<void(uint32_t)> set_max_mbps;
     };
 
 public:

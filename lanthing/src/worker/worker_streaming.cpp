@@ -213,6 +213,7 @@ int32_t WorkerStreaming::init() {
         LOG(ERR) << "Init pipe client failed";
         return kExitCodeInitWorkerFailed;
     }
+    getUserMaxMbps();
 #if 0 // 引入多屏支持后，协商变得很麻烦
     if (need_negotiate_) {
         if (!negotiateAllParameters()) {
@@ -375,6 +376,7 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     video_params.width = static_cast<uint32_t>(monitors_[monitor_index_].width);
     video_params.height = static_cast<uint32_t>(monitors_[monitor_index_].height);
     video_params.client_refresh_rate = client_refresh_rate_;
+    video_params.max_mbps = max_mbps_;
     video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
@@ -401,6 +403,16 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     video_ = std::move(video);
     audio_ = std::move(audio);
     return kExitCodeOK;
+}
+
+void WorkerStreaming::getUserMaxMbps() {
+    auto settings = ltlib::Settings::create(ltlib::Settings::Storage::Sqlite);
+    if (settings == nullptr) {
+        LOG(WARNING) << "Create Settings failed, we will not limit the bitrate";
+        return;
+    }
+    max_mbps_ = static_cast<uint32_t>(settings->getInteger("max_mbps").value_or(0));
+    LOG(INFO) << "Loaded max_mbps " << max_mbps_;
 }
 
 void WorkerStreaming::mainLoop(const std::function<void()>& i_am_alive) {
