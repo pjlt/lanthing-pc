@@ -176,6 +176,7 @@ WorkerStreaming::~WorkerStreaming() {
     recoverDisplaySettings();
     {
         std::lock_guard lock{mutex_};
+        stoped_ = true;
         pipe_client_.reset();
         ioloop_.reset();
     }
@@ -426,7 +427,12 @@ void WorkerStreaming::stop(int exit_code) {
 }
 
 void WorkerStreaming::postTask(const std::function<void()>& task) {
-    mutex_.lock_shared();
+    // 参考Service::postTask
+    while (!mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->post(task);
     }
@@ -434,7 +440,12 @@ void WorkerStreaming::postTask(const std::function<void()>& task) {
 }
 
 void WorkerStreaming::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
-    mutex_.lock_shared();
+    // 参考Service::postTask
+    while (!mutex_.try_lock_shared()) {
+        if (stoped_) {
+            return;
+        }
+    }
     if (ioloop_) {
         ioloop_->postDelay(delay_ms, task);
     }

@@ -137,6 +137,7 @@ private:
     std::unique_ptr<ltlib::Settings> settings_;
     std::vector<ltlib::Monitor> monitors_;
     uint32_t max_mbps_ = 0;
+    bool stoped_ = false;
 };
 } // namespace worker
 
