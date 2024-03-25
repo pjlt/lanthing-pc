@@ -78,18 +78,18 @@ public:
     virtual uint32_t height() const = 0;
     void requestKeyframe();
     std::shared_ptr<ltproto::client2worker::VideoFrame> encode(const Capturer::Frame& input_frame);
+    virtual bool doneFrame1() const;
+    virtual bool doneFrame2() const;
 
     // static std::vector<VideoCodecType> checkSupportedCodecs(uint32_t width, uint32_t height);
     // static std::vector<VideoCodecType> checkSupportedCodecsWithLuid(int64_t luid, uint32_t width,
     //                                                                 uint32_t height);
 
 protected:
-
     bool needKeyframe();
     virtual std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) = 0;
 
 private:
-
     uint64_t frame_id_ = 0;
     std::atomic<bool> request_keyframe_{false};
     bool first_frame_ = false;

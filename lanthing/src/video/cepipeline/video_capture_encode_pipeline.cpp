@@ -432,12 +432,19 @@ void VCEPipeline::captureAndSendVideoFrame() {
     if (!captured_frame.has_value()) {
         return;
     }
-    if (!shouldEncodeFrame()) {
+    if (encoder_->doneFrame1()) {
         capturer_->doneWithFrame();
+    }
+    if (!shouldEncodeFrame()) {
+        if (encoder_->doneFrame2()) {
+            capturer_->doneWithFrame();
+        }
         return;
     }
     auto encoded_frame = encoder_->encode(captured_frame.value());
-    capturer_->doneWithFrame();
+    if (encoder_->doneFrame2()) {
+        capturer_->doneWithFrame();
+    }
     if (encoded_frame == nullptr) {
         return;
     }

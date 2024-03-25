@@ -52,6 +52,8 @@ public:
     uint32_t width() const override;
     uint32_t height() const override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
+    bool doneFrame1() const override;
+    bool doneFrame2() const override;
 
 private:
     std::shared_ptr<AmdEncoderImpl> impl_;

@@ -522,6 +522,14 @@ std::shared_ptr<ltproto::client2worker::VideoFrame> AmdEncoder::encodeFrame(void
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 
+bool AmdEncoder::doneFrame1() const {
+    return false;
+}
+
+bool AmdEncoder::doneFrame2() const {
+    return true;
+}
+
 } // namespace video
 
 } // namespace lt

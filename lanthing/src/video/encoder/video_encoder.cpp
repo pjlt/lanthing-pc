@@ -264,6 +264,14 @@ Encoder::encode(const Capturer::Frame& input_frame) {
     return encoded_frame;
 }
 
+bool Encoder::doneFrame1() const {
+    return true;
+}
+
+bool Encoder::doneFrame2() const {
+    return false;
+}
+
 bool Encoder::InitParams::validate() const {
     if (this->width == 0 || this->height == 0 || this->bitrate_bps == 0 ||
         this->device == nullptr || this->context == nullptr || this->freq == 0 ||
