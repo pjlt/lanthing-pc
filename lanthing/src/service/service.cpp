@@ -694,7 +694,9 @@ void Service::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite>
 
 void Service::onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
     for (auto& session : worker_sessions_) {
-        session.second->onAppClipboard(msg);
+        if (session.second != nullptr) {
+            session.second->onAppClipboard(msg);
+        }
     }
 }
 
