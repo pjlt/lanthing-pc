@@ -482,6 +482,13 @@ void Client::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
         // TODO: 考虑一下会不会死锁
         sendMessageToHost(type, msg, true);
         break;
+    case ltype::kPullFile:
+    case ltype::kFileChunk:
+    case ltype::kFileChunkAck:
+        // TODO: 此处应验证msg的deviceid，但由于我们的Client没有记录对端的
+        // deviceid，暂时没法验证
+        sendMessageToHost(type, msg, true);
+        break;
     default:
         LOG(WARNING) << "Received unknown message from app, type " << type;
         break;
@@ -899,6 +906,15 @@ void Client::dispatchRemoteMessage(uint32_t type,
     case ltproto::type::kClipboard:
         onRemoteClipboard(msg);
         break;
+    case ltproto::type::kPullFile:
+        onRemotePullFile(msg);
+        break;
+    case ltproto::type::kFileChunk:
+        onRemoteFileChunk(msg);
+        break;
+    case ltproto::type::kFileChunkAck:
+        onRemoteFileChunkAck(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message type: " << type;
         break;
@@ -1028,6 +1044,39 @@ void Client::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> ms
         }
         else {
             LOG(WARNING) << "Not connected to app, won't send Clipboard";
+        }
+    });
+}
+
+void Client::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() {
+        if (connected_to_app_) {
+            app_client_->send(ltproto::type::kPullFile, msg);
+        }
+        else {
+            LOG(WARNING) << "Not connected to app, won't send PullFile";
+        }
+    });
+}
+
+void Client::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() {
+        if (connected_to_app_) {
+            app_client_->send(ltproto::type::kFileChunk, msg);
+        }
+        else {
+            LOG(WARNING) << "Not connected to app, won't send FileChunk";
+        }
+    });
+}
+
+void Client::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() {
+        if (connected_to_app_) {
+            app_client_->send(ltproto::type::kFileChunkAck, msg);
+        }
+        else {
+            LOG(WARNING) << "Not connected to app, won't send FileChunkAck";
         }
     });
 }

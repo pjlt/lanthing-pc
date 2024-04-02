@@ -53,6 +53,10 @@ public:
         std::function<void(int64_t)> on_disconnected_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_pullfile;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)>
+            on_remote_file_chunk_ack;
         std::function<void(ServiceStatus)> on_service_status;
     };
 
@@ -61,6 +65,12 @@ public:
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void syncClipboardText(const std::string& text);
+    void syncClipboardFile(int64_t my_device_id, uint32_t file_seq, const std::string& filename,
+                           uint64_t size);
+    void pullFileRequest(int64_t my_device_id, int64_t peer_device_id, uint32_t file_seq);
+    void sendFileChunk(int64_t peer_device_id, uint32_t file_seq, uint32_t chunk_seq,
+                       const uint8_t* data, uint16_t size);
+    void sendFileChunkAck(int64_t peer_device_id, uint32_t file_seq, uint32_t chunk_seq);
 
 private:
     ServiceManager(const Params& params);
@@ -77,6 +87,9 @@ private:
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onServiceStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     std::unique_ptr<ltlib::Server> pipe_server_;
@@ -86,6 +99,9 @@ private:
     std::function<void(int64_t)> on_disconnected_connection_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_pullfile_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk_ack_;
     std::function<void(ServiceStatus)> on_service_status_;
 };
 } // namespace lt

@@ -119,6 +119,7 @@ if (LT_WINDOWS)
     find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_THIRD_POSTFIX})
     add_subdirectory(third_party/wintoast)
     add_subdirectory(third_party/prebuilt/openh264/win)
+    add_subdirectory(third_party/prebuilt/nbclipboard/${LT_THIRD_POSTFIX})
 endif(LT_WINDOWS)
 
 if (LT_LINUX)

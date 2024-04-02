@@ -34,6 +34,9 @@
 
 #include <ltlib/logging.h>
 
+#include <ltproto/app/file_chunk.pb.h>
+#include <ltproto/app/file_chunk_ack.pb.h>
+#include <ltproto/app/pull_file.pb.h>
 #include <ltproto/client2service/time_sync.pb.h>
 #include <ltproto/client2worker/audio_data.pb.h>
 #include <ltproto/client2worker/change_streaming_params.pb.h>
@@ -133,6 +136,9 @@ WorkerSession::WorkerSession(const Params& params)
     , on_accepted_connection_(params.on_accepted_connection)
     , on_connection_status_(params.on_connection_status)
     , on_remote_clipboard_(params.on_remote_clipboard)
+    , on_remote_pullfile_(params.on_remote_pullfile)
+    , on_remote_file_chunk_(params.on_remote_file_chunk)
+    , on_remote_file_chunk_ack_(params.on_remote_file_chunk_ack)
     , user_defined_relay_server_(params.user_defined_relay_server)
     , on_create_session_completed_(params.on_create_completed)
     , on_closed_(params.on_closed)
@@ -215,6 +221,30 @@ void WorkerSession::close() {
 
 void WorkerSession::onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
     sendMessageToRemoteClient(ltproto::type::kClipboard, msg, true);
+}
+
+void WorkerSession::onAppPullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::app::PullFile>(_msg);
+    if (msg->response_device_id() != client_device_id_) {
+        return;
+    }
+    sendMessageToRemoteClient(ltproto::type::kPullFile, msg, true);
+}
+
+void WorkerSession::onAppFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::app::FileChunk>(_msg);
+    if (msg->device_id() != client_device_id_) {
+        return;
+    }
+    sendMessageToRemoteClient(ltproto::type::kFileChunk, msg, true);
+}
+
+void WorkerSession::onAppFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::app::FileChunkAck>(_msg);
+    if (msg->device_id() != client_device_id_) {
+        return;
+    }
+    sendMessageToRemoteClient(ltproto::type::kFileChunkAck, msg, true);
 }
 
 bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
@@ -989,6 +1019,15 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     case ltype::kClipboard:
         onRemoteClipboard(msg);
         return;
+    case ltype::kPullFile:
+        onRemotePullFile(msg);
+        return;
+    case ltype::kFileChunk:
+        onRemoteFileChunk(msg);
+        break;
+    case ltype::kFileChunkAck:
+        onRemoteFileChunkAck(msg);
+        break;
     case ltype::kStartTransmission:
         onStartTransmission(msg);
         return;
@@ -1062,6 +1101,18 @@ void WorkerSession::onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> m
 
 void WorkerSession::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
     postTask([this, msg]() { on_remote_clipboard_(msg); });
+}
+
+void WorkerSession::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { on_remote_pullfile_(msg); });
+}
+
+void WorkerSession::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { on_remote_file_chunk_(msg); });
+}
+
+void WorkerSession::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    postTask([this, msg]() { on_remote_file_chunk_ack_(msg); });
 }
 
 void WorkerSession::updateLastRecvTime() {

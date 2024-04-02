@@ -85,6 +85,9 @@ private:
     void onConfirmConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppPullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void tellAppSessionClosed(int64_t device_id);
 
@@ -93,6 +96,9 @@ private:
     void onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     void onCreateSessionCompletedThreadSafe(int32_t error_code, int32_t transport_type,
                                             int64_t device_id, const std::string& session_name,

@@ -102,6 +102,7 @@ public:
         std::function<void(const std::string&)> set_ignored_nic;
         std::function<void(bool)> enable_tcp;
         std::function<void(const std::string&)> on_clipboard_text;
+        std::function<void(const std::string&, uint64_t)> on_clipboard_file;
         std::function<void(uint32_t)> set_max_mbps;
     };
 

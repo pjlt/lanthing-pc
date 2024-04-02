@@ -45,6 +45,7 @@
 #include <ltlib/threads.h>
 
 #include <client/client_manager.h>
+#include <nbclipboard.h>
 #include <service/service_manager.h>
 #include <views/gui.h>
 
@@ -63,8 +64,8 @@ private:
     bool init();
     bool initSettings();
     void ioLoop(const std::function<void()>& i_am_alive);
-
     void connect(int64_t deviceID, const std::string& accessToken);
+    void initNbClipboard();
     std::vector<std::string> getHistoryDeviceIDs() const;
     GUI::Settings getSettings() const;
     void enableRefreshAccessToken(bool enable);
@@ -83,6 +84,7 @@ private:
     void setIgnoredNIC(const std::string& nic_list);
     void enableTCP(bool enable);
     void syncClipboardText(const std::string& text);
+    void syncClipboardFile(const std::string& fullpath, uint64_t size);
     void setMaxMbps(uint32_t mbps);
 
     void createAndStartService();
@@ -129,6 +131,9 @@ private:
 
     // service manager + client manager
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     size_t rand();
     std::string generateAccessToken();
@@ -142,6 +147,7 @@ private:
     std::unique_ptr<ClientManager> client_manager_;
     std::unique_ptr<ServiceManager> service_manager_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
+    NbClipboard* nb_clipboard_ = nullptr;
     int64_t device_id_ = 0;
     std::string access_token_;
     std::vector<std::string> history_ids_;

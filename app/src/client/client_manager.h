@@ -58,6 +58,10 @@ public:
         std::function<void(int64_t /*device_id*/, int32_t /*error_code*/)> on_connect_failed;
         std::function<void(int32_t)> on_client_status;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_pullfile;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)>
+            on_remote_file_chunk_ack;
         std::function<void(const std::string& /*room_id*/)> close_connection;
     };
 
@@ -67,6 +71,12 @@ public:
                  bool use_tcp);
     void onRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> _msg);
     void syncClipboardText(const std::string& text);
+    void syncClipboardFile(int64_t my_device_id, uint32_t file_seq, const std::string& filename,
+                           uint64_t size);
+    void pullFileRequest(int64_t my_device_id, int64_t peer_device_id, uint32_t file_seq);
+    void sendFileChunk(int64_t peer_device_id, uint32_t file_seq, uint32_t chunk_seq,
+                       const uint8_t* data, uint16_t size);
+    void sendFileChunkAck(int64_t peer_device_id, uint32_t file_seq, uint32_t chunk_seq);
 
 private:
     ClientManager(const Params& params);
@@ -84,6 +94,9 @@ private:
     void onClientExited(int64_t request_id);
     void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     const uint32_t decode_abilities_;
@@ -95,6 +108,9 @@ private:
     std::function<void(int64_t, int32_t)> on_connect_failed_;
     std::function<void(int32_t)> on_client_status_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_pullfile_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk_ack_;
     std::function<void(const std::string&)> close_connection_;
     std::atomic<int64_t> last_request_id_{0};
     std::map<int64_t /*request_id*/, std::shared_ptr<ClientSession>> sessions_;

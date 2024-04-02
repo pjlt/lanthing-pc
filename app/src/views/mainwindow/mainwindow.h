@@ -89,7 +89,7 @@ public:
     void setClipboardText(const std::string& text);
 
 protected:
-    bool eventFilter(QObject* obj, QEvent* ev) override; // override?
+    bool eventFilter(QObject* obj, QEvent* ev) override;
 
 private:
     void setupOtherCallbacks();
@@ -126,6 +126,10 @@ private:
                                   int64_t last_access_time);
 
     QWidget* makeWidgetHCentered(QWidget* widget);
+
+    void onClipboardPlainTextChanged();
+
+    void onClipboardFileChanged();
 
     static void setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,
                                       const QPixmap& white, const QPixmap& gray, const QPixmap& red,
@@ -170,6 +174,7 @@ private:
     bool gpu_decode_ = false;
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
+    int64_t device_id_ = -1;
 
     Ui_MainWindow* ui;
     QRegularExpressionValidator relay_validator_;
