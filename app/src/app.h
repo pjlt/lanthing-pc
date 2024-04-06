@@ -71,6 +71,7 @@ private:
     std::vector<std::string> getHistoryDeviceIDs() const;
     GUI::Settings getSettings() const;
     void enableRefreshAccessToken(bool enable);
+    void enableShareClipboard(bool enable);
     void enableRunAsDaemon(bool enable);
     void setRelayServer(const std::string& svr);
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
@@ -164,6 +165,7 @@ private:
     std::string ignored_nic_;
     bool enable_444_ = false;
     bool enable_tcp_ = false;
+    bool enable_share_clipboard_ = false;
     uint32_t max_mbps_ = 0;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;

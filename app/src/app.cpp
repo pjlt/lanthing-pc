@@ -145,6 +145,7 @@ bool App::init() {
     device_id_ = settings_->getInteger("device_id").value_or(0);
     // run_as_daemon_ = settings_->getBoolean("daemon").value_or(false);
     auto_refresh_access_token_ = settings_->getBoolean("auto_refresh").value_or(false);
+    enable_share_clipboard_ = settings_->getBoolean("share_clipboard").value_or(true);
     relay_server_ = settings_->getString("relay").value_or("");
     windowed_fullscreen_ = settings_->getBoolean("windowed_fullscreen");
     min_port_ = static_cast<uint16_t>(settings_->getInteger("min_port").value_or(0));
@@ -201,6 +202,8 @@ int App::exec(int argc, char** argv) {
     params.connect = std::bind(&App::connect, this, std::placeholders ::_1, std::placeholders::_2);
     params.enable_auto_refresh_access_token =
         std::bind(&App::enableRefreshAccessToken, this, std::placeholders::_1);
+    params.enable_share_clipboard =
+        std::bind(&App::enableShareClipboard, this, std::placeholders::_1);
     params.enable_run_as_service = std::bind(&App::enableRunAsDaemon, this, std::placeholders::_1);
     params.get_history_device_ids = std::bind(&App::getHistoryDeviceIDs, this);
     params.get_settings = std::bind(&App::getSettings, this);
@@ -272,6 +275,7 @@ std::vector<std::string> App::getHistoryDeviceIDs() const {
 GUI::Settings App::getSettings() const {
     GUI::Settings settings{};
     settings.auto_refresh_access_token = auto_refresh_access_token_;
+    settings.share_clipboard = enable_share_clipboard_;
     settings.run_as_daemon = run_as_daemon_;
     settings.relay_server = relay_server_;
     settings.windowed_fullscreen = windowed_fullscreen_;
@@ -291,6 +295,11 @@ GUI::Settings App::getSettings() const {
 void App::enableRefreshAccessToken(bool enable) {
     auto_refresh_access_token_ = enable;
     settings_->setBoolean("auto_refresh", enable);
+}
+
+void App::enableShareClipboard(bool enable) {
+    enable_share_clipboard_ = enable;
+    settings_->setBoolean("share_clipboard", enable);
 }
 
 void App::enableRunAsDaemon(bool enable) {
@@ -430,6 +439,9 @@ void App::enableTCP(bool enable) {
 }
 
 void App::syncClipboardText(const std::string& text) {
+    if (!enable_share_clipboard_) {
+        return;
+    }
     postTask([this, text]() {
         client_manager_->syncClipboardText(text);
         service_manager_->syncClipboardText(text);
@@ -439,6 +451,9 @@ void App::syncClipboardText(const std::string& text) {
 void App::syncClipboardFile(const std::string& fullpath, uint64_t file_size) {
     (void)fullpath;
     (void)file_size;
+    if (!enable_share_clipboard_) {
+        return;
+    }
 #if defined(LT_WINDOWS)
     postTask([this, fullpath, file_size]() {
         if (nb_clipboard_ == nullptr) {
@@ -861,6 +876,9 @@ void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg)
 }
 
 void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!enable_share_clipboard_) {
+        return;
+    }
     auto msg = std::static_pointer_cast<ltproto::common::Clipboard>(_msg);
     switch (msg->type()) {
     case ltproto::common::Clipboard_ClipboardType_Text:
@@ -897,6 +915,9 @@ void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg)
 }
 
 void App::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!enable_share_clipboard_) {
+        return;
+    }
     (void)_msg;
 #if defined(LT_WINDOWS)
     if (nb_clipboard_ == nullptr) {
@@ -912,6 +933,9 @@ void App::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) 
 }
 
 void App::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!enable_share_clipboard_) {
+        return;
+    }
     (void)_msg;
 #if defined(LT_WINDOWS)
     if (nb_clipboard_ == nullptr) {
@@ -929,6 +953,9 @@ void App::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg)
 }
 
 void App::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    if (!enable_share_clipboard_) {
+        return;
+    }
     (void)_msg;
 #if defined(LT_WINDOWS)
     if (nb_clipboard_ == nullptr) {

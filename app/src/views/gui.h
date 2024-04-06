@@ -63,6 +63,7 @@ public:
     struct Settings {
         bool run_as_daemon;
         bool auto_refresh_access_token;
+        bool share_clipboard;
         bool tcp;
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
@@ -87,6 +88,7 @@ public:
         std::function<std::vector<std::string>()> get_history_device_ids;
         std::function<Settings()> get_settings;
         std::function<void(bool)> enable_auto_refresh_access_token;
+        std::function<void(bool)> enable_share_clipboard;
         std::function<void(bool)> enable_run_as_service;
         std::function<void(bool /*is_windowed*/)> set_fullscreen_mode;
         std::function<void(const std::string&)> set_relay_server;

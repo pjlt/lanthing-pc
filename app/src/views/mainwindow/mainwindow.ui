@@ -1613,7 +1613,7 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>-275</y>
+                      <y>0</y>
                       <width>527</width>
                       <height>700</height>
                      </rect>
@@ -1624,7 +1624,7 @@ QHeaderView::section:vertical
                       <height>700</height>
                      </size>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="1,2,5,1">
+                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="2,2,5,1">
                      <property name="sizeConstraint">
                       <enum>QLayout::SetDefaultConstraint</enum>
                      </property>
@@ -1651,6 +1651,13 @@ QHeaderView::section:vertical
                          <widget class="QCheckBox" name="checkboxRefreshPassword">
                           <property name="text">
                            <string>Auto refresh access token</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QCheckBox" name="checkboxShareClipboard">
+                          <property name="text">
+                           <string>Share Clipboard</string>
                           </property>
                          </widget>
                         </item>

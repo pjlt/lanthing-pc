@@ -165,6 +165,11 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     // ui->checkboxService->setChecked(settings.run_as_daemon);
     ui->checkboxService->hide();
     ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
+#if defined(LT_WINDOWS)
+    ui->checkboxShareClipboard->setChecked(settings.share_clipboard);
+#else  // LT_WINDOWS
+    ui->checkboxShareClipboard->hide();
+#endif // LT_WINDOWS
     ui->leditRelay->setText(QString::fromStdString(settings.relay_server));
     ui->btnRelay->setEnabled(false);
     if (settings.windowed_fullscreen.has_value()) {
@@ -563,6 +568,9 @@ void MainWindow::setupOtherCallbacks() {
             [this](int) { params_.enable_run_as_service(ui->checkboxService->isChecked()); });
     connect(ui->checkboxRefreshPassword, &QCheckBox::stateChanged, [this](int) {
         params_.enable_auto_refresh_access_token(ui->checkboxRefreshPassword->isChecked());
+    });
+    connect(ui->checkboxShareClipboard, &QCheckBox::stateChanged, [this](int) {
+        params_.enable_share_clipboard(ui->checkboxShareClipboard->isChecked());
     });
     connect(ui->radioWindowedFullscreen, &QRadioButton::toggled,
             [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
