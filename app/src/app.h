@@ -133,11 +133,9 @@ private:
 
     // service manager + client manager
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
-#if defined(LT_WINDOWS)
     void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
-#endif // LT_WINDOWS
 
     size_t rand();
     std::string generateAccessToken();

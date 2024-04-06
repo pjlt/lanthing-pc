@@ -891,8 +891,9 @@ void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg)
     }
 }
 
-#if defined(LT_WINDOWS)
 void App::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    (void)_msg;
+#if defined(LT_WINDOWS)
     if (nb_clipboard_ == nullptr) {
         return;
     }
@@ -902,9 +903,12 @@ void App::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) 
         return;
     }
     nb_clipboard_->on_file_pull_request(nb_clipboard_, msg->request_device_id(), msg->file_seq());
+#endif // LT_WINDOWS
 }
 
 void App::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    (void)_msg;
+#if defined(LT_WINDOWS)
     if (nb_clipboard_ == nullptr) {
         return;
     }
@@ -916,9 +920,12 @@ void App::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg)
     nb_clipboard_->on_file_chunk(nb_clipboard_, msg->device_id(), msg->file_seq(), msg->chunk_seq(),
                                  reinterpret_cast<const uint8_t*>(msg->data().data()),
                                  static_cast<uint16_t>(msg->data().size()));
+#endif // LT_WINDOWS
 }
 
 void App::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    (void)_msg;
+#if defined(LT_WINDOWS)
     if (nb_clipboard_ == nullptr) {
         return;
     }
@@ -928,8 +935,8 @@ void App::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _m
         return;
     }
     nb_clipboard_->on_file_chunk_ack(nb_clipboard_, msg->file_seq(), msg->chunk_seq());
-}
 #endif // LT_WINDOWS
+}
 
 void App::onServiceStatus(ServiceManager::ServiceStatus status) {
     switch (status) {
