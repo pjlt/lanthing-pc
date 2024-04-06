@@ -36,6 +36,9 @@
 #include <ltlib/versions.h>
 #include <ltlib/win_service.h>
 
+#include <ltproto/app/file_chunk.pb.h>
+#include <ltproto/app/file_chunk_ack.pb.h>
+#include <ltproto/app/pull_file.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/server/close_connection.pb.h>
@@ -391,6 +394,12 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
         std::bind(&Service::onConnectionStatus, this, std::placeholders::_1);
     worker_params.on_remote_clipboard =
         std::bind(&Service::onRemoteClipboard, this, std::placeholders::_1);
+    worker_params.on_remote_pullfile =
+        std::bind(&Service::onRemotePullFile, this, std::placeholders::_1);
+    worker_params.on_remote_file_chunk =
+        std::bind(&Service::onRemoteFileChunk, this, std::placeholders::_1);
+    worker_params.on_remote_file_chunk_ack =
+        std::bind(&Service::onRemoteFileChunkAck, this, std::placeholders::_1);
     cached_worker_params_ = worker_params;
     // 3. 校验cookie，通过则直接启动worker，不通过则弹窗让用户确认
     std::string cookie_name = "from_" + std::to_string(msg->client_device_id());
@@ -564,6 +573,15 @@ void Service::onAppMessage(uint32_t type, std::shared_ptr<google::protobuf::Mess
     case ltype::kClipboard:
         onAppClipboard(msg);
         break;
+    case ltype::kPullFile:
+        onAppPullFile(msg);
+        break;
+    case ltype::kFileChunk:
+        onAppFileChunk(msg);
+        break;
+    case ltype::kFileChunkAck:
+        onAppFileChunkAck(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown message from app " << type;
         break;
@@ -700,6 +718,30 @@ void Service::onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg)
     }
 }
 
+void Service::onAppPullFile(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    for (auto& session : worker_sessions_) {
+        if (session.second != nullptr) {
+            session.second->onAppPullFile(msg);
+        }
+    }
+}
+
+void Service::onAppFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    for (auto& session : worker_sessions_) {
+        if (session.second != nullptr) {
+            session.second->onAppFileChunk(msg);
+        }
+    }
+}
+
+void Service::onAppFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    for (auto& session : worker_sessions_) {
+        if (session.second != nullptr) {
+            session.second->onAppFileChunkAck(msg);
+        }
+    }
+}
+
 void Service::tellAppSessionClosed(int64_t device_id) {
     auto msg = std::make_shared<ltproto::service2app::DisconnectedConnection>();
     msg->set_device_id(device_id);
@@ -716,6 +758,28 @@ void Service::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> 
 
 void Service::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
     sendMessageToApp(ltproto::type::kClipboard, msg);
+}
+
+void Service::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    sendMessageToApp(ltproto::type::kPullFile, msg);
+}
+
+void Service::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::app::FileChunk>(_msg);
+    if (msg->device_id() != device_id_) {
+        LOG(DEBUG) << "Received FileChunk with invalid device id";
+        return;
+    }
+    sendMessageToApp(ltproto::type::kFileChunk, msg);
+}
+
+void Service::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::app::FileChunkAck>(_msg);
+    if (msg->device_id() != device_id_) {
+        LOG(DEBUG) << "Received FileChunkAck with invalid device id";
+        return;
+    }
+    sendMessageToApp(ltproto::type::kFileChunkAck, msg);
 }
 
 } // namespace svc

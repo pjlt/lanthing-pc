@@ -35,6 +35,9 @@
 #include <iostream>
 #include <thread>
 
+#include <ltproto/app/file_chunk.pb.h>
+#include <ltproto/app/file_chunk_ack.pb.h>
+#include <ltproto/app/pull_file.pb.h>
 #include <ltproto/common/clipboard.pb.h>
 #include <ltproto/common/keep_alive.pb.h>
 #include <ltproto/ltproto.h>
@@ -66,6 +69,37 @@ namespace {
 
 const std::string kServiceName = "Lanthing";
 const std::string kDisplayName = "Lanthing Service";
+
+#if defined(LT_WINDOWS)
+void logFunc(NbClipLogLevel level, const char* format, ...) {
+    constexpr int kMaxMessageSize = 2048;
+    char buff[kMaxMessageSize];
+    va_list args;
+    va_start(args, format);
+    int ret = vsnprintf(buff, kMaxMessageSize, format, args);
+    if (ret < 0) {
+        LOG(WARNING) << "Failed to parse NbClip log message";
+        return;
+    }
+    switch (level) {
+    case NbClipLogLevel::Debug:
+        LOG(DEBUG) << buff;
+        break;
+    case NbClipLogLevel::Info:
+        LOG(INFO) << buff;
+        break;
+    case NbClipLogLevel::Warn:
+        LOG(WARNING) << buff;
+        break;
+    case NbClipLogLevel::Error:
+        LOG(ERR) << buff;
+        break;
+    default:
+        LOG(WARNING) << "Unknown NbClipLogLevel " << (int)level;
+        break;
+    }
+}
+#endif // LT_WINDOWS
 
 } // namespace
 
@@ -186,6 +220,8 @@ int App::exec(int argc, char** argv) {
     params.set_ignored_nic = std::bind(&App::setIgnoredNIC, this, std::placeholders::_1);
     params.enable_tcp = std::bind(&App::enableTCP, this, std::placeholders::_1);
     params.on_clipboard_text = std::bind(&App::syncClipboardText, this, std::placeholders::_1);
+    params.on_clipboard_file =
+        std::bind(&App::syncClipboardFile, this, std::placeholders::_1, std::placeholders::_2);
     params.set_max_mbps = std::bind(&App::setMaxMbps, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
@@ -393,6 +429,41 @@ void App::syncClipboardText(const std::string& text) {
         client_manager_->syncClipboardText(text);
         service_manager_->syncClipboardText(text);
     });
+}
+
+void App::syncClipboardFile(const std::string& fullpath, uint64_t file_size) {
+    (void)fullpath;
+    (void)file_size;
+#if defined(LT_WINDOWS)
+    postTask([this, fullpath, file_size]() {
+        if (nb_clipboard_ == nullptr) {
+            return;
+        }
+        auto pos = fullpath.rfind('\\');
+        if (pos == std::string::npos) {
+            pos = fullpath.rfind('/');
+            if (pos == std::string::npos) {
+                LOG(ERR) << "syncClipboardFile: fullpath.rfind('\\') and fullpath.rfind('/') "
+                            "return npos";
+                return;
+            }
+        }
+        std::string filename = fullpath.substr(pos + 1);
+        if (filename.empty()) {
+            LOG(ERR) << "syncClipboardFile: filename is empty";
+            return;
+        }
+        std::wstring wfullpath = ltlib::utf8To16(fullpath);
+        uint32_t file_seq = nb_clipboard_->update_local_file_info(nb_clipboard_, fullpath.c_str(),
+                                                                  wfullpath.c_str(), file_size);
+        if (file_seq == 0) {
+            LOG(WARNING) << "Update local clipboard file info failed";
+            return;
+        }
+        client_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
+        service_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
+    });
+#endif // LT_WINDOWS
 }
 
 void App::setMaxMbps(uint32_t mbps) {
@@ -716,6 +787,7 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
     gui_.setAccessToken(access_token_);
     gui_.setLoginStatus(GUI::LoginStatus::Connected);
     createAndStartService();
+    initNbClipboard();
 }
 
 void App::handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
@@ -756,6 +828,10 @@ bool App::initServiceManager() {
         std::bind(&App::onDisconnectedConnection, this, std::placeholders::_1);
     params.on_service_status = std::bind(&App::onServiceStatus, this, std::placeholders::_1);
     params.on_remote_clipboard = std::bind(&App::onRemoteClipboard, this, std::placeholders::_1);
+    params.on_remote_pullfile = std::bind(&App::onRemotePullFile, this, std::placeholders::_1);
+    params.on_remote_file_chunk = std::bind(&App::onRemoteFileChunk, this, std::placeholders::_1);
+    params.on_remote_file_chunk_ack =
+        std::bind(&App::onRemoteFileChunkAck, this, std::placeholders::_1);
     service_manager_ = ServiceManager::create(params);
     return service_manager_ != nullptr;
 }
@@ -781,11 +857,85 @@ void App::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> msg)
 
 void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::common::Clipboard>(_msg);
-    if (msg->type() != ltproto::common::Clipboard_ClipboardType_Text || msg->text().empty()) {
-        LOG(WARNING) << "Received empty clipboard text";
+    switch (msg->type()) {
+    case ltproto::common::Clipboard_ClipboardType_Text:
+        if (msg->text().empty()) {
+            LOG(WARNING) << "Received empty clipboard text";
+            return;
+        }
+        gui_.setClipboardText(msg->text());
+        break;
+    case ltproto::common::Clipboard_ClipboardType_File:
+#if defined(LT_WINDOWS)
+        if (msg->device_id() == 0 || msg->file_name().empty() || msg->file_size() == 0 ||
+            msg->file_seq() == 0) {
+            LOG(WARNING) << "Received clipboard file with invliad parameters";
+        }
+        else if (nb_clipboard_ == nullptr || msg->device_id() == device_id_) {
+        }
+        else {
+            std::wstring wfilename = ltlib::utf8To16(msg->file_name());
+            auto success = nb_clipboard_->update_remote_file_info(
+                nb_clipboard_, msg->device_id(), msg->file_seq(), msg->file_name().c_str(),
+                wfilename.c_str(), msg->file_size());
+            if (success == 0) {
+                LOG(WARNING) << "Set remote clipboard file '" << msg->file_name()
+                             << "' to local failed, maybe we are serving another file";
+            }
+        }
+#endif // LT_WINDOWS
+        break;
+    default:
+        LOG(WARNING) << "Received clipboard message with unkonwn type " << (int)msg->type();
+        break;
+    }
+}
+
+void App::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    (void)_msg;
+#if defined(LT_WINDOWS)
+    if (nb_clipboard_ == nullptr) {
         return;
     }
-    gui_.setClipboardText(msg->text());
+    auto msg = std::static_pointer_cast<ltproto::app::PullFile>(_msg);
+    if (msg->response_device_id() != device_id_) {
+        LOG(WARNING) << "Received PullFile with invalid 'response_device_id'";
+        return;
+    }
+    nb_clipboard_->on_file_pull_request(nb_clipboard_, msg->request_device_id(), msg->file_seq());
+#endif // LT_WINDOWS
+}
+
+void App::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    (void)_msg;
+#if defined(LT_WINDOWS)
+    if (nb_clipboard_ == nullptr) {
+        return;
+    }
+    auto msg = std::static_pointer_cast<ltproto::app::FileChunk>(_msg);
+    if (msg->device_id() != device_id_) {
+        LOG(WARNING) << "Received FileChunk with invalid 'device_id'";
+        return;
+    }
+    nb_clipboard_->on_file_chunk(nb_clipboard_, msg->device_id(), msg->file_seq(), msg->chunk_seq(),
+                                 reinterpret_cast<const uint8_t*>(msg->data().data()),
+                                 static_cast<uint16_t>(msg->data().size()));
+#endif // LT_WINDOWS
+}
+
+void App::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    (void)_msg;
+#if defined(LT_WINDOWS)
+    if (nb_clipboard_ == nullptr) {
+        return;
+    }
+    auto msg = std::static_pointer_cast<ltproto::app::FileChunkAck>(_msg);
+    if (msg->device_id() != device_id_) {
+        LOG(WARNING) << "Received FileChunkAck with invalid 'device_id'";
+        return;
+    }
+    nb_clipboard_->on_file_chunk_ack(nb_clipboard_, msg->file_seq(), msg->chunk_seq());
+#endif // LT_WINDOWS
 }
 
 void App::onServiceStatus(ServiceManager::ServiceStatus status) {
@@ -826,6 +976,10 @@ bool App::initClientManager() {
     params.on_client_status = std::bind(&App::onClientStatus, this, std::placeholders::_1);
     params.close_connection = std::bind(&App::closeConnectionByRoomID, this, std::placeholders::_1);
     params.on_remote_clipboard = std::bind(&App::onRemoteClipboard, this, std::placeholders::_1);
+    params.on_remote_pullfile = std::bind(&App::onRemotePullFile, this, std::placeholders::_1);
+    params.on_remote_file_chunk = std::bind(&App::onRemoteFileChunk, this, std::placeholders::_1);
+    params.on_remote_file_chunk_ack =
+        std::bind(&App::onRemoteFileChunkAck, this, std::placeholders::_1);
     client_manager_ = ClientManager::create(params);
     return client_manager_ != nullptr;
 }
@@ -861,6 +1015,60 @@ std::string App::generateAccessToken() {
     }
     LOG(DEBUG) << "Generated access token: " << str.c_str();
     return str;
+}
+
+void App::initNbClipboard() {
+#if defined(LT_WINDOWS)
+    NbClipboard::Params params{};
+    params.userdata = this;
+    params.log_print = &logFunc;
+    params.send_file_pull_request = [](void* ctx, int64_t peer_device_id, uint32_t file_seq) {
+        auto that = reinterpret_cast<App*>(ctx);
+        if (peer_device_id == that->device_id_) {
+            // 自己连自己时禁用该功能
+            LOG(INFO) << "send_file_pull_request peer_device_id == that->device_id_";
+            return;
+        }
+        that->postTask([peer_device_id, file_seq, that]() {
+            that->client_manager_->pullFileRequest(that->device_id_, peer_device_id, file_seq);
+            that->service_manager_->pullFileRequest(that->device_id_, peer_device_id, file_seq);
+        });
+    };
+    params.send_file_chunk = [](void* ctx, int64_t peer_device_id, uint32_t file_seq,
+                                uint32_t chunk_seq, const uint8_t* pdata, uint16_t size) {
+        auto that = reinterpret_cast<App*>(ctx);
+        if (peer_device_id == that->device_id_) {
+            // 自己连自己时禁用该功能
+            LOG(INFO) << "send_file_chunk peer_device_id == that->device_id_";
+            return;
+        }
+        std::shared_ptr<uint8_t> sdata(new uint8_t[size]);
+        memcpy(sdata.get(), pdata, size);
+        that->postTask([peer_device_id, file_seq, chunk_seq, sdata, size, that]() {
+            that->client_manager_->sendFileChunk(peer_device_id, file_seq, chunk_seq, sdata.get(),
+                                                 size);
+            that->service_manager_->sendFileChunk(peer_device_id, file_seq, chunk_seq, sdata.get(),
+                                                  size);
+        });
+    };
+    params.send_file_chunk_ack = [](void* ctx, int64_t peer_device_id, uint32_t file_seq,
+                                    uint64_t chunk_seq) {
+        auto that = reinterpret_cast<App*>(ctx);
+        if (peer_device_id == that->device_id_) {
+            // 自己连自己时禁用该功能
+            LOG(INFO) << "send_file_chunk_ack peer_device_id == that->device_id_";
+            return;
+        }
+        that->postTask([peer_device_id, file_seq, chunk_seq, that]() {
+            that->client_manager_->sendFileChunkAck(peer_device_id, file_seq, chunk_seq);
+            that->service_manager_->sendFileChunkAck(peer_device_id, file_seq, chunk_seq);
+        });
+    };
+    nb_clipboard_ = createNbClipboard(&params);
+    if (nb_clipboard_ == nullptr) {
+        LOG(WARNING) << "createNbClipboard failed";
+    }
+#endif // LT_WINDOWS
 }
 
 } // namespace lt

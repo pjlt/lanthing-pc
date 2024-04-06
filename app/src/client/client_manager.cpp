@@ -33,6 +33,9 @@
 #include <filesystem>
 #include <system_error>
 
+#include <ltproto/app/file_chunk.pb.h>
+#include <ltproto/app/file_chunk_ack.pb.h>
+#include <ltproto/app/pull_file.pb.h>
 #include <ltproto/client2app/client_status.pb.h>
 #include <ltproto/common/clipboard.pb.h>
 #include <ltproto/ltproto.h>
@@ -79,6 +82,9 @@ ClientManager::ClientManager(const Params& params)
     , on_connect_failed_{params.on_connect_failed}
     , on_client_status_{params.on_client_status}
     , on_remote_clipboard_{params.on_remote_clipboard}
+    , on_remote_pullfile_{params.on_remote_pullfile}
+    , on_remote_file_chunk_{params.on_remote_file_chunk}
+    , on_remote_file_chunk_ack_{params.on_remote_file_chunk_ack}
     , close_connection_{params.close_connection} {}
 
 std::unique_ptr<ClientManager> ClientManager::create(const Params& params) {
@@ -135,6 +141,15 @@ void ClientManager::onPipeMessage(uint32_t fd, uint32_t type,
         break;
     case ltproto::type::kClipboard:
         onRemoteClipboard(msg);
+        break;
+    case ltproto::type::kPullFile:
+        onRemotePullFile(msg);
+        break;
+    case ltproto::type::kFileChunk:
+        onRemoteFileChunk(msg);
+        break;
+    case ltproto::type::kFileChunkAck:
+        onRemoteFileChunkAck(msg);
         break;
     default:
         break;
@@ -307,6 +322,45 @@ void ClientManager::syncClipboardText(const std::string& text) {
     sendMessageToClient(ltproto::id(msg), msg);
 }
 
+void ClientManager::syncClipboardFile(int64_t my_device_id, uint32_t file_seq,
+                                      const std::string& filename, uint64_t size) {
+    auto msg = std::make_shared<ltproto::common::Clipboard>();
+    msg->set_type(ltproto::common::Clipboard_ClipboardType_File);
+    msg->set_device_id(my_device_id);
+    msg->set_file_seq(file_seq);
+    msg->set_file_name(filename);
+    msg->set_file_size(size);
+    sendMessageToClient(ltproto::id(msg), msg);
+}
+
+void ClientManager::pullFileRequest(int64_t my_device_id, int64_t peer_device_id,
+                                    uint32_t file_seq) {
+    auto msg = std::make_shared<ltproto::app::PullFile>();
+    msg->set_request_device_id(my_device_id);
+    msg->set_response_device_id(peer_device_id);
+    msg->set_file_seq(file_seq);
+    sendMessageToClient(ltproto::id(msg), msg);
+}
+
+void ClientManager::sendFileChunk(int64_t peer_device_id, uint32_t file_seq, uint32_t chunk_seq,
+                                  const uint8_t* data, uint16_t size) {
+    auto msg = std::make_shared<ltproto::app::FileChunk>();
+    msg->set_device_id(peer_device_id);
+    msg->set_file_seq(file_seq);
+    msg->set_chunk_seq(chunk_seq);
+    msg->set_data(data, size);
+    sendMessageToClient(ltproto::id(msg), msg);
+}
+
+void ClientManager::sendFileChunkAck(int64_t peer_device_id, uint32_t file_seq,
+                                     uint32_t chunk_seq) {
+    auto msg = std::make_shared<ltproto::app::FileChunkAck>();
+    msg->set_device_id(peer_device_id);
+    msg->set_file_seq(file_seq);
+    msg->set_chunk_seq(chunk_seq);
+    sendMessageToClient(ltproto::id(msg), msg);
+}
+
 void ClientManager::postTask(const std::function<void()>& task) {
     post_task_(task);
 }
@@ -364,6 +418,18 @@ void ClientManager::onClientStatus(std::shared_ptr<google::protobuf::MessageLite
 
 void ClientManager::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg) {
     on_remote_clipboard_(msg);
+}
+
+void ClientManager::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_remote_pullfile_(msg);
+}
+
+void ClientManager::onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_remote_file_chunk_(msg);
+}
+
+void ClientManager::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
+    on_remote_file_chunk_ack_(msg);
 }
 
 } // namespace lt

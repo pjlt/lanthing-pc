@@ -161,6 +161,9 @@ private:
     void onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onUserSwitchStretch();
     void resetVideoPipeline();
 

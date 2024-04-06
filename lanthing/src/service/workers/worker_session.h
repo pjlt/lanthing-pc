@@ -77,6 +77,10 @@ public:
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status;
         std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_pullfile;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk;
+        std::function<void(std::shared_ptr<google::protobuf::MessageLite>)>
+            on_remote_file_chunk_ack;
         bool enable_gamepad;
         bool enable_keyboard;
         bool enable_mouse;
@@ -100,6 +104,9 @@ public:
     void disableAudio();
     void close();
     void onAppClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppPullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onAppFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     WorkerSession(const Params& params);
@@ -166,6 +173,9 @@ private:
     void onStartTransmission(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onKeepAlive(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCapturedVideo(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onCapturedAudio(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -190,6 +200,9 @@ private:
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_accepted_connection_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_connection_status_;
     std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_clipboard_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_pullfile_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk_;
+    std::function<void(std::shared_ptr<google::protobuf::MessageLite>)> on_remote_file_chunk_ack_;
     std::string user_defined_relay_server_;
     std::unique_ptr<ltlib::Client> signaling_client_;
     std::unique_ptr<ltlib::BlockingThread> thread_;

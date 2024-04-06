@@ -56,7 +56,8 @@ if (LT_WINDOWS)
         @ONLY)
     list(APPEND APP_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/select_gpu.cpp
+    )
 endif()
 
 add_executable(${PROJECT_NAME} 
@@ -87,7 +88,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"leve
 endif(LT_WINDOWS)
 
 if (LT_WINDOWS)
-    set(PLAT_LIBS wintoastlib)
+    set(PLAT_LIBS wintoastlib nbclipboard)
 elseif(LT_LINUX)
     set(PLAT_LIBS
         m
