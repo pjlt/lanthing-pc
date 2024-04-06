@@ -45,9 +45,11 @@
 #include <ltlib/threads.h>
 
 #include <client/client_manager.h>
-#include <nbclipboard.h>
 #include <service/service_manager.h>
 #include <views/gui.h>
+#if defined(LT_WINDOWS)
+#include <nbclipboard.h>
+#endif // LT_WINDOWS
 
 namespace lt {
 
@@ -131,9 +133,11 @@ private:
 
     // service manager + client manager
     void onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> msg);
+#if defined(LT_WINDOWS)
     void onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteFileChunk(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+#endif // LT_WINDOWS
 
     size_t rand();
     std::string generateAccessToken();
@@ -147,7 +151,9 @@ private:
     std::unique_ptr<ClientManager> client_manager_;
     std::unique_ptr<ServiceManager> service_manager_;
     std::unique_ptr<ltlib::BlockingThread> thread_;
+#if defined(LT_WINDOWS)
     NbClipboard* nb_clipboard_ = nullptr;
+#endif // LT_WINDOWS
     int64_t device_id_ = 0;
     std::string access_token_;
     std::vector<std::string> history_ids_;

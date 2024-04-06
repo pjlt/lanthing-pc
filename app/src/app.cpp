@@ -70,6 +70,7 @@ namespace {
 const std::string kServiceName = "Lanthing";
 const std::string kDisplayName = "Lanthing Service";
 
+#if defined(LT_WINDOWS)
 void logFunc(NbClipLogLevel level, const char* format, ...) {
     constexpr int kMaxMessageSize = 2048;
     char buff[kMaxMessageSize];
@@ -98,6 +99,7 @@ void logFunc(NbClipLogLevel level, const char* format, ...) {
         break;
     }
 }
+#endif // LT_WINDOWS
 
 } // namespace
 
@@ -430,6 +432,9 @@ void App::syncClipboardText(const std::string& text) {
 }
 
 void App::syncClipboardFile(const std::string& fullpath, uint64_t file_size) {
+    (void)fullpath;
+    (void)file_size;
+#if defined(LT_WINDOWS)
     postTask([this, fullpath, file_size]() {
         if (nb_clipboard_ == nullptr) {
             return;
@@ -458,6 +463,7 @@ void App::syncClipboardFile(const std::string& fullpath, uint64_t file_size) {
         client_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
         service_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
     });
+#endif // LT_WINDOWS
 }
 
 void App::setMaxMbps(uint32_t mbps) {
@@ -860,6 +866,7 @@ void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg)
         gui_.setClipboardText(msg->text());
         break;
     case ltproto::common::Clipboard_ClipboardType_File:
+#if defined(LT_WINDOWS)
         if (msg->device_id() == 0 || msg->file_name().empty() || msg->file_size() == 0 ||
             msg->file_seq() == 0) {
             LOG(WARNING) << "Received clipboard file with invliad parameters";
@@ -876,6 +883,7 @@ void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg)
                              << "' to local failed, maybe we are serving another file";
             }
         }
+#endif // LT_WINDOWS
         break;
     default:
         LOG(WARNING) << "Received clipboard message with unkonwn type " << (int)msg->type();
@@ -883,6 +891,7 @@ void App::onRemoteClipboard(std::shared_ptr<google::protobuf::MessageLite> _msg)
     }
 }
 
+#if defined(LT_WINDOWS)
 void App::onRemotePullFile(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     if (nb_clipboard_ == nullptr) {
         return;
@@ -920,6 +929,7 @@ void App::onRemoteFileChunkAck(std::shared_ptr<google::protobuf::MessageLite> _m
     }
     nb_clipboard_->on_file_chunk_ack(nb_clipboard_, msg->file_seq(), msg->chunk_seq());
 }
+#endif // LT_WINDOWS
 
 void App::onServiceStatus(ServiceManager::ServiceStatus status) {
     switch (status) {
