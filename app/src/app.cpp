@@ -131,6 +131,11 @@ App::~App() {
     if (!run_as_daemon_) {
         stopService();
     }
+#if defined(LT_WINDOWS)
+    if (nb_clipboard_ != nullptr) {
+        destroyNbClipboard(nb_clipboard_);
+    }
+#endif // LT_WINDOWS
 }
 
 bool App::init() {
