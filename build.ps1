@@ -71,7 +71,7 @@ function prebuilt_fetch() {
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.win.v3.24.3-2.zip")
         [BuiltLib]::new("sqlite", "https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.win.v3.43.1-6.zip")
         [BuiltLib]::new("openh264", "https://github.com/numbaa/openh264-prebuilt/releases/download/v2.4.0-1/openh264.win.v2.4.0-1.zip")
-        [BuiltLib]::new("nbclipboard", "https://github.com/numbaa/nbclipboard-prebuilt/releases/download/v0.0.2/nbclipboard.win.v0.0.2.zip")
+        [BuiltLib]::new("nbclipboard", "https://github.com/numbaa/nbclipboard-prebuilt/releases/download/v0.0.3/nbclipboard.win.v0.0.3.zip")
     )
 
     New-Item -ItemType Directory -ErrorAction SilentlyContinue third_party/prebuilt
