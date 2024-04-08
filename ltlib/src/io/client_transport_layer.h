@@ -31,6 +31,8 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <mutex>
+#include <set>
 #include <string>
 
 #include <uv.h>
@@ -82,6 +84,9 @@ public:
 private:
     bool init_tcp();
     bool init_pipe();
+    void cleanup(uv_handle_t* handle);
+    static void cleanupTimer(std::set<uv_timer_t*> timers);
+    static void cleanupConn(uv_handle_t* conn, StreamType stype);
     uv_loop_t* uvloop();
     uv_stream_t* uvstream();
     uv_handle_t* uvhandle();
@@ -110,6 +115,8 @@ private:
     std::function<void()> on_reconnecting_;
     std::function<bool(const Buffer&)> on_read_;
     ltlib::ReconnectInterval intervals_;
+    std::set<uv_timer_t*> timers_;
+    std::mutex timer_mtx_;
 };
 
 } // namespace ltlib

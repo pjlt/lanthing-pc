@@ -77,38 +77,14 @@ LibuvCTransport::LibuvCTransport(const Params& params)
     , on_read_{params.on_read} {}
 
 LibuvCTransport::~LibuvCTransport() {
-    if (stype_ == StreamType::TCP) {
-        if (tcp_ == nullptr) {
-            return;
-        }
-        auto tcp_handle = tcp_.release();
-        if (ioloop_->isNotCurrentThread()) {
-            ioloop_->post([tcp_handle]() {
-                uv_close((uv_handle_t*)tcp_handle,
-                         [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
-            });
-        }
-        else {
-            uv_close((uv_handle_t*)tcp_handle,
-                     [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
-        }
+    uv_handle_t* handle = nullptr;
+    if (tcp_ != nullptr) {
+        handle = (uv_handle_t*)tcp_.release();
     }
-    else {
-        if (pipe_ == nullptr) {
-            return;
-        }
-        auto pipe_conn = pipe_.release();
-        if (ioloop_->isNotCurrentThread()) {
-            ioloop_->post([pipe_conn]() {
-                uv_close((uv_handle_t*)pipe_conn,
-                         [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
-            });
-        }
-        else {
-            uv_close((uv_handle_t*)pipe_conn,
-                     [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
-        }
+    else if (pipe_ != nullptr) {
+        handle = (uv_handle_t*)pipe_.release();
     }
+    cleanup(handle);
 }
 
 bool LibuvCTransport::init() {
@@ -148,6 +124,47 @@ bool LibuvCTransport::init_pipe() {
     uv_pipe_connect(conn_req_.get(), pipe_.get(), pipe_name_.c_str(),
                     &LibuvCTransport::on_connected);
     return true;
+}
+
+void LibuvCTransport::cleanup(uv_handle_t* handle) {
+    std::set<uv_timer_t*> timers;
+    {
+        std::lock_guard lock{timer_mtx_};
+        timers = std::move(timers_);
+    }
+    if (ioloop_->isCurrentThread()) {
+        cleanupTimer(timers);
+        cleanupConn(handle, stype_);
+    }
+    else {
+        auto stype = stype_;
+        ioloop_->post([timers, stype, handle]() {
+            cleanupTimer(timers);
+            cleanupConn(handle, stype);
+        });
+    }
+}
+
+void LibuvCTransport::cleanupTimer(std::set<uv_timer_t*> timers) {
+    for (auto timer : timers) {
+        uv_timer_stop(timer);
+        uv_close((uv_handle_t*)timer, [](uv_handle_t* handle) {
+            auto timer_handle = (uv_timer_t*)handle;
+            delete timer_handle;
+        });
+    }
+}
+
+void LibuvCTransport::cleanupConn(uv_handle_t* conn, StreamType stype) {
+    if (conn == nullptr) {
+        return;
+    }
+    if (stype == StreamType::TCP) {
+        uv_close((uv_handle_t*)conn, [](uv_handle_t* handle) { delete (uv_tcp_t*)handle; });
+    }
+    else if (stype == StreamType::Pipe) {
+        uv_close((uv_handle_t*)conn, [](uv_handle_t* handle) { delete (uv_pipe_t*)handle; });
+    }
 }
 
 uv_loop_t* LibuvCTransport::uvloop() {
@@ -223,6 +240,10 @@ void LibuvCTransport::reconnect() {
         uv_timer_init(uvloop(), timer);
         timer->data = this;
         uv_timer_start(timer, &LibuvCTransport::do_reconnect, intervals_.next(), 0);
+        {
+            std::lock_guard lock{timer_mtx_};
+            timers_.insert(timer);
+        }
     }
     on_reconnecting_();
 }
@@ -241,11 +262,19 @@ void LibuvCTransport::delay_reconnect(uv_handle_t* handle) {
     uv_timer_init(that->uvloop(), timer);
     timer->data = that;
     uv_timer_start(timer, &LibuvCTransport::do_reconnect, that->intervals_.next(), 0);
+    {
+        std::lock_guard lock{that->timer_mtx_};
+        that->timers_.insert(timer);
+    }
 }
 
 void LibuvCTransport::do_reconnect(uv_timer_t* handle) {
     auto that = (LibuvCTransport*)handle->data;
     uv_timer_stop(handle);
+    {
+        std::lock_guard lock{that->timer_mtx_};
+        that->timers_.erase(handle);
+    }
     uv_close((uv_handle_t*)handle, [](uv_handle_t* handle) {
         auto timer_handle = (uv_timer_t*)handle;
         delete timer_handle;
