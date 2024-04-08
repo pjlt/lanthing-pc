@@ -63,6 +63,8 @@
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #endif
 
+int getLtFlushLogLines();
+
 namespace {
 
 enum class Role {
@@ -74,6 +76,26 @@ enum class Role {
 std::unique_ptr<g3::LogWorker> g_log_worker;
 std::unique_ptr<g3::FileSinkHandle> g_log_sink;
 std::unique_ptr<LTMinidumpGenerator> g_minidump_genertator;
+
+std::optional<int> gFlushLogLines;
+
+void setFlushLogLines(std::map<std::string, std::string> options) {
+    auto iter = options.find("-flushlog");
+    if (iter == options.cend()) {
+        gFlushLogLines = 30;
+        return;
+    }
+    int lines = std::atoi(iter->second.c_str());
+    if (lines <= 0) {
+        gFlushLogLines = 30;
+    }
+    else if (lines > 100) {
+        gFlushLogLines = 100;
+    }
+    else {
+        gFlushLogLines = lines;
+    }
+}
 
 void sigint_handler(int) {
     LOG(INFO) << "SIGINT Received";
@@ -149,7 +171,8 @@ void initLogAndMinidump(Role role) {
     }
     g_log_worker = g3::LogWorker::createLogWorker();
     g_log_worker->addSink(
-        std::make_unique<ltlib::LogSink>(prefix, log_dir.string(), 30 /*flush_every_30_logs*/),
+        std::make_unique<ltlib::LogSink>(prefix, log_dir.string(),
+                                         getLtFlushLogLines() /*flush_every_x_lines*/),
         &ltlib::LogSink::fileWrite);
     g3::log_levels::disable(DEBUG);
     g3::only_change_at_initialization::addLogLevel(ERR);
@@ -270,9 +293,14 @@ int runAsWorker(std::map<std::string, std::string> options) {
 
 } // namespace
 
+int getLtFlushLogLines() {
+    return gFlushLogLines.value_or(30);
+}
+
 int main(int argc, char* argv[]) {
     ::srand(static_cast<unsigned int>(::time(nullptr)));
     auto options = parseOptions(argc, argv);
+    setFlushLogLines(options);
     auto iter = options.find("-type");
     if (iter == options.end() || iter->second == "service") {
         return runAsService(options);

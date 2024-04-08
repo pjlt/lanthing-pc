@@ -41,6 +41,8 @@
 #include <ltlib/strings.h>
 #include <ltlib/system.h>
 
+int getLtFlushLogLines();
+
 namespace {
 
 std::string to_string(std::vector<lt::VideoCodecType> codecs) {
@@ -147,9 +149,10 @@ void WorkerProcess::mainLoop(const std::function<void()>& i_am_alive) {
 bool WorkerProcess::launchWorkerProcess() {
     std::stringstream ss;
     ss << path_ << " -type worker "
-       << " -name " << pipe_name_ << " -width " << client_width_ << " -height " << client_height_
-       << " -freq " << client_refresh_rate_ << " -codecs " << ::to_string(client_video_codecs_)
-       << " -atype " << static_cast<int32_t>(audio_codec_) << " -action streaming "
+       << " -flushlog " << getLtFlushLogLines() << " -name " << pipe_name_ << " -width "
+       << client_width_ << " -height " << client_height_ << " -freq " << client_refresh_rate_
+       << " -codecs " << ::to_string(client_video_codecs_) << " -atype "
+       << static_cast<int32_t>(audio_codec_) << " -action streaming "
        << " -mindex " << monitor_index_;
     if (first_launch_) {
         first_launch_ = false;

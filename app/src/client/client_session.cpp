@@ -62,6 +62,7 @@ bool ClientSession::start() {
     std::stringstream ss;
     ss << ltlib::getProgramPath() << "\\"
        << "lanthing.exe "
+       << " -flushlog " << params_.flush_logs
        << " -type client"
        << " -cid " << params_.client_id
        << " -rid " << params_.room_id
@@ -186,6 +187,8 @@ bool ClientSession::start() {
         std::string path = ltlib::getProgramPath() + "/lanthing";
         std::vector<std::string> args;
         std::vector<char*> argv;
+        args.push_back("-flushlog");
+        args.push_back(std::to_string(params_.flush_logs));
         args.push_back("-type");
         args.push_back("client");
         args.push_back("-cid");

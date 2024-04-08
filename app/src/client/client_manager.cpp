@@ -47,6 +47,8 @@
 #include <ltlib/system.h>
 #include <ltlib/versions.h>
 
+int getLtFlushLogLines();
+
 namespace {
 
 lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
@@ -254,6 +256,7 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
         return;
     }
     ClientSession::Params params{};
+    params.flush_logs = static_cast<uint32_t>(getLtFlushLogLines());
     params.transport_type = ack->transport_type();
     params.client_id = ack->client_id();
     params.room_id = ack->room_id();

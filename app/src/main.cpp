@@ -33,6 +33,7 @@
 #include <cstdarg>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <regex>
 
 #include <g3log/logworker.hpp>
@@ -53,7 +54,29 @@ std::unique_ptr<g3::LogWorker> g_logWorker;
 std::unique_ptr<g3::FileSinkHandle> g_logsSink;
 std::unique_ptr<LTMinidumpGenerator> g_minidumpGenertator;
 
+int getLtFlushLogLines();
+
 namespace {
+
+std::optional<int> gFlushLogLines;
+
+void setFlushLogLines(std::map<std::string, std::string> options) {
+    auto iter = options.find("-flushlog");
+    if (iter == options.cend()) {
+        gFlushLogLines = 30;
+        return;
+    }
+    int lines = std::atoi(iter->second.c_str());
+    if (lines <= 0) {
+        gFlushLogLines = 30;
+    }
+    else if (lines > 100) {
+        gFlushLogLines = 100;
+    }
+    else {
+        gFlushLogLines = lines;
+    }
+}
 
 void sigint_handler(int) {
     LOG(INFO) << "SIGINT Received";
@@ -110,8 +133,10 @@ void initLoggingAndDumps() {
         }
     }
     g_logWorker = g3::LogWorker::createLogWorker();
-    g_logWorker->addSink(std::make_unique<ltlib::LogSink>(kPrefix, log_dir.string()),
-                         &ltlib::LogSink::fileWrite);
+    g_logWorker->addSink(
+        std::make_unique<ltlib::LogSink>(kPrefix, log_dir.string(),
+                                         getLtFlushLogLines() /*flush_every_x_lines*/),
+        &ltlib::LogSink::fileWrite);
     g3::only_change_at_initialization::addLogLevel(ERR);
     g3::log_levels::disable(DEBUG);
     g3::initializeLogging(g_logWorker.get());
@@ -139,7 +164,32 @@ void initLoggingAndDumps() {
     }
 }
 
+std::map<std::string, std::string> parseOptions(int argc, char* argv[]) {
+    std::vector<std::string> args;
+    std::map<std::string, std::string> options;
+    for (int i = 0; i < argc; i++) {
+        args.push_back(argv[i]);
+    }
+    for (size_t i = 0; i < args.size(); ++i) {
+        if ('-' != args[i][0]) {
+            continue;
+        }
+        if (i >= args.size() - 1) {
+            break;
+        }
+        if ('-' != args[i + 1][0]) {
+            options.insert({args[i], args[i + 1]});
+            ++i;
+        }
+    }
+    return options;
+}
+
 } // namespace
+
+int getLtFlushLogLines() {
+    return gFlushLogLines.value_or(30);
+}
 
 int main(int argc, char** argv) {
     if (ltlib::selfElevateAndNeedExit()) {
@@ -151,6 +201,8 @@ int main(int argc, char** argv) {
     }
     auto now = time(nullptr);
     ::srand(now);
+    auto options = parseOptions(argc, argv);
+    setFlushLogLines(options);
     initLoggingAndDumps();
     std::unique_ptr<lt::App> app = lt::App::create();
     if (app == nullptr) {

@@ -42,6 +42,7 @@ namespace lt {
 class ClientSession {
 public:
     struct Params {
+        uint32_t flush_logs;
         std::string client_id;
         std::string room_id;
         std::string auth_token;
