@@ -352,7 +352,9 @@ void Client::onPlatformRenderTargetReset() {
     // if (video_pipeline_ == nullptr) {
     //     LOG(ERR) << "Create VideoDecodeRenderPipeline failed";
     // }
-    video_pipeline_->resetRenderTarget();
+    if (video_pipeline_ != nullptr) {
+        video_pipeline_->resetRenderTarget();
+    }
 }
 
 void Client::onPlatformExit() {
