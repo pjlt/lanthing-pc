@@ -158,6 +158,8 @@ WorkerSession::WorkerSession(const Params& params)
 }
 
 WorkerSession::~WorkerSession() {
+    signaling_client_ = nullptr;
+    pipe_server_ = nullptr;
     if (tp_server_ != nullptr) {
         switch (transport_type_) {
         case ltproto::common::TransportType::TCP:

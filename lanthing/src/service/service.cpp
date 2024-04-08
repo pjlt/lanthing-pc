@@ -66,6 +66,7 @@ Service::~Service() {
         stoped_ = true;
         tcp_client_.reset();
         app_client_.reset();
+        worker_sessions_.clear(); // WorkerSession里用到了ioloop_
         ioloop_.reset();
     }
 }
