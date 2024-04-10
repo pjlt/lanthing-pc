@@ -82,9 +82,6 @@ void SdlInput::setInputHandler(const input::OnInputEvent& on_input_event) {
 }
 
 void SdlInput::handleKeyUpDown(const SDL_KeyboardEvent& ev) {
-    if (ev.repeat) {
-        return;
-    }
     // 这个范围里并不是每一个数值都有对应的SDL Scancode，进一步过滤的逻辑交由业务代码去做！
     if (ev.keysym.scancode <= SDL_SCANCODE_UNKNOWN || ev.keysym.scancode >= SDL_NUM_SCANCODES) {
         return;
