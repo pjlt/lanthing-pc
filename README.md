@@ -111,7 +111,7 @@ cp options-default.cmake options-user.cmake  #可选，如果需要修改编译�
 ## 使用
 
 1. 下载[Github Releases](https://github.com/pjlt/lanthing-pc/releases)页面下的lanthing.zip并解压
-2. 管理员运行app.exe
+2. 管理员运行lanthing-app.exe
 3. 输入对方设备码和校验码
 
 注意：**连接上对方默认只有手柄权限，鼠标和键盘权限需要被控方手动给予。** 如果不想每次都这么麻烦，可以在`管理`页面修改某个客户端的默认权限。
