@@ -39,8 +39,6 @@ DUPLICATIONMANAGER::~DUPLICATIONMANAGER() {
 // Initialize duplication interfaces
 //
 bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, ltlib::Monitor monitor) {
-    m_OutputNumber = std::numeric_limits<decltype(m_OutputNumber)>::max();
-
     // Take a reference on the device
     m_Device = Device;
 
@@ -74,6 +72,7 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, ltlib::Monitor moni
 
 bool DUPLICATIONMANAGER::InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdapter,
                                    ltlib::Monitor monitor) {
+    m_OutputNumber = std::numeric_limits<decltype(m_OutputNumber)>::max();
     ComPtr<IDXGIOutput> DxgiOutput;
     ComPtr<IDXGIOutputDuplication> DeskDupl;
     HRESULT hr;
@@ -112,7 +111,10 @@ bool DUPLICATIONMANAGER::InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdap
         DxgiOutput->GetDesc(&m_OutputDesc);
         default_output_ = true;
     }
-
+    if (DxgiOutput == nullptr) {
+        LOG(INFO) << "DxgiOutput == nullptr";
+        return false;
+    }
     // QI for Output 1
     ComPtr<IDXGIOutput1> DxgiOutput1;
     hr = DxgiOutput->QueryInterface(__uuidof(IDXGIOutput1),
