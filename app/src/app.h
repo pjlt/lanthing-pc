@@ -74,6 +74,7 @@ private:
     void enableShareClipboard(bool enable);
     void enableRunAsDaemon(bool enable);
     void setRelayServer(const std::string& svr);
+    void setDefaultMouseMode(bool absolute);
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onFullscreenModeChanged(bool is_windowed);
@@ -163,6 +164,7 @@ private:
     int64_t status_color_ = -1;
     int64_t rel_mouse_accel_ = 0;
     std::string ignored_nic_;
+    bool default_absolute_mouse_;
     bool enable_444_ = false;
     bool enable_tcp_ = false;
     bool enable_share_clipboard_ = false;

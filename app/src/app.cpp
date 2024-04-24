@@ -156,6 +156,7 @@ bool App::init() {
     enable_444_ = settings_->getBoolean("enable_444").value_or(false);
     enable_tcp_ = settings_->getBoolean("enable_tcp").value_or(false);
     max_mbps_ = static_cast<uint32_t>(settings_->getInteger("max_mbps").value_or(0));
+    default_absolute_mouse_ = settings_->getBoolean("absolute_mouse").value_or(true);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -231,6 +232,7 @@ int App::exec(int argc, char** argv) {
     params.on_clipboard_file =
         std::bind(&App::syncClipboardFile, this, std::placeholders::_1, std::placeholders::_2);
     params.set_max_mbps = std::bind(&App::setMaxMbps, this, std::placeholders::_1);
+    params.set_absolute_mouse = std::bind(&App::setDefaultMouseMode, this, std::placeholders::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -279,6 +281,7 @@ GUI::Settings App::getSettings() const {
     settings.run_as_daemon = run_as_daemon_;
     settings.relay_server = relay_server_;
     settings.windowed_fullscreen = windowed_fullscreen_;
+    settings.absolute_mouse = default_absolute_mouse_;
     settings.min_port = min_port_;
     settings.max_port = max_port_;
     if (status_color_ >= 0) {
@@ -312,6 +315,11 @@ void App::enableRunAsDaemon(bool enable) {
 void App::setRelayServer(const std::string& svr) {
     relay_server_ = svr;
     settings_->setString("relay", svr);
+}
+
+void App::setDefaultMouseMode(bool absolute) {
+    default_absolute_mouse_ = absolute;
+    settings_->setBoolean("absolute_mouse", absolute);
 }
 
 void App::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
