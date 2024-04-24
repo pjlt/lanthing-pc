@@ -264,6 +264,8 @@ bool Client::init() {
         windowed_fullscreen_ = true;
     }
     video_params_.status_color = settings_->getInteger("status_color").value_or(-1);
+    absolute_mouse_ = settings_->getBoolean("absolute_mouse").value_or(true);
+    video_params_.absolute_mouse = absolute_mouse_;
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         LOG(ERR) << "Init IOLoop failed";
@@ -553,6 +555,7 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
     params.on_reset = std::bind(&Client::onPlatformRenderTargetReset, this);
     params.on_exit = std::bind(&Client::onPlatformExit, this);
     params.windowed_fullscreen = windowed_fullscreen_;
+    params.absolute_mouse = absolute_mouse_;
     sdl_ = lt::plat::PcSdl::create(params);
     if (sdl_ == nullptr) {
         LOG(INFO) << "Initialize sdl failed";

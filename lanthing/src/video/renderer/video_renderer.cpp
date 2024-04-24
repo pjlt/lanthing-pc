@@ -59,6 +59,7 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     d3d11_params.rotation = params.rotation;
     d3d11_params.align = params.align;
     d3d11_params.stretch = params.stretch;
+    d3d11_params.absolute_mouse = params.absolute_mouse;
     auto renderer = std::make_unique<D3D11Pipeline>(d3d11_params);
     if (!renderer->init()) {
         return nullptr;

@@ -60,6 +60,7 @@ public:
         uint32_t screen_refresh_rate;
         uint32_t rotation;
         bool stretch;
+        bool absolute_mouse;
         int64_t status_color;
         lt::plat::PcSdl* sdl = nullptr;
         void* device = nullptr;
