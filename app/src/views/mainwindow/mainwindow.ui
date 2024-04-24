@@ -1615,16 +1615,16 @@ QHeaderView::section:vertical
                       <x>0</x>
                       <y>0</y>
                       <width>527</width>
-                      <height>700</height>
+                      <height>780</height>
                      </rect>
                     </property>
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>700</height>
+                      <height>780</height>
                      </size>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="2,2,5,1">
+                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="2,2,2,5,1">
                      <property name="sizeConstraint">
                       <enum>QLayout::SetDefaultConstraint</enum>
                      </property>
@@ -1658,6 +1658,35 @@ QHeaderView::section:vertical
                          <widget class="QCheckBox" name="checkboxShareClipboard">
                           <property name="text">
                            <string>Share Clipboard</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QGroupBox" name="gbMouseMode">
+                       <property name="title">
+                        <string>Default Mouse Mode</string>
+                       </property>
+                       <layout class="QVBoxLayout" name="verticalLayout_24">
+                        <property name="topMargin">
+                         <number>30</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>30</number>
+                        </property>
+                        <item>
+                         <widget class="QRadioButton" name="radioAbsoluteMouse">
+                          <property name="text">
+                           <string>Absolute Mode</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QRadioButton" name="radioRelativeMouse">
+                          <property name="text">
+                           <string>Relative Mode</string>
                           </property>
                          </widget>
                         </item>

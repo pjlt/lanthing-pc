@@ -161,61 +161,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     setupClientIndicators();
 
     // '设置'页面
-    auto settings = params.get_settings();
-    // ui->checkboxService->setChecked(settings.run_as_daemon);
-    ui->checkboxService->hide();
-    ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
-#if defined(LT_WINDOWS)
-    ui->checkboxShareClipboard->setChecked(settings.share_clipboard);
-#else  // LT_WINDOWS
-    ui->checkboxShareClipboard->hide();
-#endif // LT_WINDOWS
-    ui->leditRelay->setText(QString::fromStdString(settings.relay_server));
-    ui->btnRelay->setEnabled(false);
-    if (settings.windowed_fullscreen.has_value()) {
-        ui->radioRealFullscreen->setChecked(!settings.windowed_fullscreen.value());
-        ui->radioWindowedFullscreen->setChecked(settings.windowed_fullscreen.value());
-    }
-    else {
-        ui->radioRealFullscreen->setChecked(false);
-        ui->radioWindowedFullscreen->setChecked(false);
-    }
-    ui->checkBoxTCP->setChecked(settings.tcp);
-    ui->btnPortRange->setEnabled(false);
-    ui->leditMinPort->setValidator(new QIntValidator(1025, 65536, this));
-    ui->leditMaxPort->setValidator(new QIntValidator(1025, 65536, this));
-    if (settings.min_port != 0 && settings.max_port != 0) {
-        ui->leditMinPort->setText(QString::number(settings.min_port));
-        ui->leditMaxPort->setText(QString::number(settings.max_port));
-    }
-    ui->btnIgnoredNIC->setEnabled(false);
-    if (!settings.ignored_nic.empty()) {
-        ui->leditIgnoredNIC->setText(QString::fromStdString(settings.ignored_nic));
-    }
-    ui->btnMaxMbps->setEnabled(false);
-    ui->leditMaxMbps->setValidator(new QIntValidator(1, 100, this));
-    if (settings.max_mbps != 0) {
-        ui->leditMaxMbps->setText(QString::number(settings.max_mbps));
-    }
-    ui->btnStatusColor->setEnabled(false);
-    ui->leditRed->setValidator(new QIntValidator(0, 255, this));
-    ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
-    ui->leditBlue->setValidator(new QIntValidator(0, 255, this));
-    if (settings.status_color.has_value()) {
-        uint32_t color = settings.status_color.value();
-        uint32_t red = (color & 0xff000000) >> 24;
-        uint32_t green = (color & 0x00ff0000) >> 16;
-        uint32_t blue = (color & 0x0000ff00) >> 8;
-        ui->leditRed->setText(QString::number(red));
-        ui->leditGreen->setText(QString::number(green));
-        ui->leditBlue->setText(QString::number(blue));
-    }
-    ui->btnMouseAccel->setEnabled(false);
-    ui->leditMouseAccel->setValidator(new QDoubleValidator(0.1, 3.0, 1, this));
-    if (settings.rel_mouse_accel > 0 && settings.rel_mouse_accel <= 30) {
-        double accel = settings.rel_mouse_accel / 10.0;
-        ui->leditMouseAccel->setText(QString::number(accel, 'f', 1));
-    }
+    setupSettingsPage();
 
     // 左下角状态栏
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
@@ -727,6 +673,68 @@ void MainWindow::setupOtherCallbacks() {
             }
         }
     });
+}
+
+void MainWindow::setupSettingsPage() {
+    auto settings = params_.get_settings();
+    // ui->checkboxService->setChecked(settings.run_as_daemon);
+    ui->checkboxService->hide();
+    ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
+#if defined(LT_WINDOWS)
+    ui->checkboxShareClipboard->setChecked(settings.share_clipboard);
+#else  // LT_WINDOWS
+    ui->checkboxShareClipboard->hide();
+#endif // LT_WINDOWS
+    ui->radioAbsoluteMouse->setChecked(settings.absolute_mouse);
+    ui->radioRelativeMouse->setChecked(!settings.absolute_mouse);
+    connect(ui->radioAbsoluteMouse, &QRadioButton::toggled,
+            [this](bool is_absolute) { params_.set_absolute_mouse(is_absolute); });
+    ui->leditRelay->setText(QString::fromStdString(settings.relay_server));
+    ui->btnRelay->setEnabled(false);
+    if (settings.windowed_fullscreen.has_value()) {
+        ui->radioRealFullscreen->setChecked(!settings.windowed_fullscreen.value());
+        ui->radioWindowedFullscreen->setChecked(settings.windowed_fullscreen.value());
+    }
+    else {
+        ui->radioRealFullscreen->setChecked(false);
+        ui->radioWindowedFullscreen->setChecked(false);
+    }
+    ui->checkBoxTCP->setChecked(settings.tcp);
+    ui->btnPortRange->setEnabled(false);
+    ui->leditMinPort->setValidator(new QIntValidator(1025, 65536, this));
+    ui->leditMaxPort->setValidator(new QIntValidator(1025, 65536, this));
+    if (settings.min_port != 0 && settings.max_port != 0) {
+        ui->leditMinPort->setText(QString::number(settings.min_port));
+        ui->leditMaxPort->setText(QString::number(settings.max_port));
+    }
+    ui->btnIgnoredNIC->setEnabled(false);
+    if (!settings.ignored_nic.empty()) {
+        ui->leditIgnoredNIC->setText(QString::fromStdString(settings.ignored_nic));
+    }
+    ui->btnMaxMbps->setEnabled(false);
+    ui->leditMaxMbps->setValidator(new QIntValidator(1, 100, this));
+    if (settings.max_mbps != 0) {
+        ui->leditMaxMbps->setText(QString::number(settings.max_mbps));
+    }
+    ui->btnStatusColor->setEnabled(false);
+    ui->leditRed->setValidator(new QIntValidator(0, 255, this));
+    ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
+    ui->leditBlue->setValidator(new QIntValidator(0, 255, this));
+    if (settings.status_color.has_value()) {
+        uint32_t color = settings.status_color.value();
+        uint32_t red = (color & 0xff000000) >> 24;
+        uint32_t green = (color & 0x00ff0000) >> 16;
+        uint32_t blue = (color & 0x0000ff00) >> 8;
+        ui->leditRed->setText(QString::number(red));
+        ui->leditGreen->setText(QString::number(green));
+        ui->leditBlue->setText(QString::number(blue));
+    }
+    ui->btnMouseAccel->setEnabled(false);
+    ui->leditMouseAccel->setValidator(new QDoubleValidator(0.1, 3.0, 1, this));
+    if (settings.rel_mouse_accel > 0 && settings.rel_mouse_accel <= 30) {
+        double accel = settings.rel_mouse_accel / 10.0;
+        ui->leditMouseAccel->setText(QString::number(accel, 'f', 1));
+    }
 }
 
 void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {

@@ -77,6 +77,7 @@ public:
         uint32_t rotation;
         uint32_t align;
         bool stretch;
+        bool absolute_mouse;
     };
 
 public:
@@ -156,7 +157,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
 
     CursorInfo cursor_info_;
-    bool absolute_mouse_ = true;
+    bool absolute_mouse_;
     bool stretch_;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;

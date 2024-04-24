@@ -186,6 +186,7 @@ D3D11Pipeline::D3D11Pipeline(const Params& params)
     , video_height_{params.height}
     , rotation_{params.rotation}
     , align_{params.align}
+    , absolute_mouse_{params.absolute_mouse}
     , stretch_{params.stretch}
     , d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.device)}
     , d3d11_ctx_{reinterpret_cast<ID3D11DeviceContext*>(params.context)} {

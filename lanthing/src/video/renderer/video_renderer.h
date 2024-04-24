@@ -49,6 +49,7 @@ public:
         uint32_t align;
         uint32_t rotation;
         bool stretch;
+        bool absolute_mouse;
     };
 
     enum class RenderResult { Success2, Failed, Reset };

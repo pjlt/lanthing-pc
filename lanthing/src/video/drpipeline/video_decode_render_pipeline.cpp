@@ -184,7 +184,7 @@ private:
     float cursor_x_ = 0.f;
     float cursor_y_ = 0.f;
     bool visible_ = true;
-    bool absolute_mouse_ = true;
+    bool absolute_mouse_;
     bool is_stretch_;
     int64_t status_color_;
     void* device_;  // not ref
@@ -204,6 +204,7 @@ VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     , reset_pipeline_{params.reset_pipeline}
     , sdl_{params.sdl}
     , statistics_{new VideoStatistics}
+    , absolute_mouse_{params.absolute_mouse}
     , is_stretch_{params.stretch}
     , status_color_{params.status_color}
     , device_{params.device}
@@ -246,6 +247,7 @@ bool VDRPipeline::init() {
     render_params.video_height = video_height;
     render_params.rotation = rotation_;
     render_params.stretch = is_stretch_;
+    render_params.absolute_mouse = absolute_mouse_;
     render_params.align = Decoder::align(decode_codec_type_);
     video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {

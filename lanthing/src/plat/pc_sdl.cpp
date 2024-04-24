@@ -265,6 +265,7 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
     SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "0");
     SDL_SetWindowKeyboardGrab(window_, SDL_TRUE);
+    SDL_SetRelativeMouseMode(absolute_mouse_ ? SDL_FALSE : SDL_TRUE);
 
     // 在Win10下，长时间点住SDL的窗口拖动，会让SDL_WaitEventTimeout()卡住，SDL_AddEventWatch才能获取到相关事件
     // 但回调似乎是在其它线程执行，这点需要小心

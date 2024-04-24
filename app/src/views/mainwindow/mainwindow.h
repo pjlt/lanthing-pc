@@ -94,6 +94,8 @@ protected:
 private:
     void setupOtherCallbacks();
 
+    void setupSettingsPage();
+
     void setLoginStatusInUIThread(lt::GUI::LoginStatus status);
 
     void setServiceStatusInUIThread(lt::GUI::ServiceStatus status);
