@@ -165,7 +165,7 @@
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="14"/>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="233"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2215"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2244"/>
         <source>Lanthing</source>
         <translation></translation>
     </message>
@@ -245,21 +245,36 @@
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1670"/>
+        <source>Default Mouse Mode</source>
+        <translation>默认鼠标模式</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1682"/>
+        <source>Absolute Mode</source>
+        <translation>绝对坐标模式</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1689"/>
+        <source>Relative Mode</source>
+        <translation>相对位移模式</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1699"/>
         <source>Fullscreen Mode</source>
         <translation>全屏模式</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1682"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1711"/>
         <source>Fullscreen</source>
         <translation>全屏独占</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1689"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1718"/>
         <source>Windowed Fullscreen</source>
         <translation>窗口化全屏</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1720"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1749"/>
         <source>TCP (LAN)</source>
         <translation>TCP（局域网）</translation>
     </message>
@@ -268,17 +283,17 @@
         <translation type="vanished">强制中转（在被控端设置）</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1757"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1786"/>
         <source>Relay Server</source>
         <translation>中继服务器</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1783"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1875"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1920"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1965"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2039"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2100"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1812"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1904"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1949"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1994"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2068"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2129"/>
         <source>Confirm</source>
         <translation>确认</translation>
     </message>
@@ -337,7 +352,7 @@
         <translation>操作</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1699"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1728"/>
         <source>Network</source>
         <translation>网络</translation>
     </message>
@@ -346,64 +361,64 @@
         <translation type="vanished">强制中转</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1773"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1802"/>
         <source>relay:127.0.0.1:19000:user1:password1</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1826"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1855"/>
         <source>Port Range</source>
         <translation>端口范围</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1839"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1868"/>
         <source>1025</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1852"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1881"/>
         <source>65535</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1906"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1935"/>
         <source>Ignored NIC</source>
         <translation>过滤网卡</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1913"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1942"/>
         <source>Tailscale;Netease;Virtual;TAP-Windows;Sangfor;</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1951"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1980"/>
         <source>Max Mbps</source>
         <translation>最大码率Mbps</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1958"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1987"/>
         <source>1-100</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1978"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2007"/>
         <source>Misc</source>
         <translation>杂项</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2011"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2040"/>
         <source>Status Color</source>
         <translation>状态颜色</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2018"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2025"/>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2032"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2047"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2054"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2061"/>
         <source>0-255</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2086"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2115"/>
         <source>Mouse Accel</source>
         <translation>鼠标加速</translation>
     </message>
@@ -412,47 +427,47 @@
         <translation type="vanished">鼠标加速</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2093"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2122"/>
         <source>0.1-3.0</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2149"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2178"/>
         <source>Shotcut key</source>
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2158"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2187"/>
         <source>Switch Fullscreen</source>
         <translation>切换全屏</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2165"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2194"/>
         <source>Win+Shift+Z</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2176"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2205"/>
         <source>Mouse mode</source>
         <translation>鼠标模式</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2183"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2212"/>
         <source>Win+Shift+X</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2222"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2251"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing is a remote control tool created by &lt;a href=&quot;https://github.com/pjlt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;Project Lanthing&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2247"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2276"/>
         <source>License</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="2254"/>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="2283"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lanthing release under &lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/LICENSE&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;BSD-3-Clause license&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Thirdparty software licenses are listed in&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
