@@ -958,6 +958,9 @@ void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::Mess
     auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmissionAck>(_msg);
     if (msg->err_code() == ltproto::ErrorCode::Success) {
         LOG(INFO) << "Received StartTransmissionAck with success";
+        auto switch_mouse = std::make_shared<ltproto::client2worker::SwitchMouseMode>();
+        switch_mouse->set_absolute(absolute_mouse_);
+        sendMessageToHost(ltproto::id(switch_mouse), switch_mouse, true);
     }
     else {
         LOG(INFO) << "StartTransmission failed with " << ltproto::ErrorCode_Name(msg->err_code());
