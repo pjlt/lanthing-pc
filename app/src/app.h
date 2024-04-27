@@ -117,6 +117,7 @@ private:
     void handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleRequestConnectionAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void handleRedirectServerAddress(std::shared_ptr<google::protobuf::MessageLite> msg);
 
     // service manager
     bool initServiceManager();

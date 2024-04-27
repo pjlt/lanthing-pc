@@ -46,6 +46,7 @@
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/open_connection.pb.h>
 #include <ltproto/server/open_connection_ack.pb.h>
+#include <ltproto/server/redirect_server_address.pb.h>
 #include <ltproto/service2app/confirm_connection.pb.h>
 #include <ltproto/service2app/confirm_connection_ack.pb.h>
 #include <ltproto/service2app/disconnected_connection.pb.h>
@@ -439,6 +440,28 @@ void Service::onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> ms
 
 void Service::onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg) {
     (void)msg;
+}
+
+void Service::onRedirectServerAddress(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::server::RedirectServerAddress>(_msg);
+    postTask([msg, this]() {
+        ltlib::Client::Params params{};
+        params.stype = ltlib::StreamType::TCP;
+        params.ioloop = ioloop_.get();
+        params.host = msg->host();
+        params.port = static_cast<uint16_t>(msg->port());
+        params.is_tls = LT_SERVER_USE_SSL;
+        params.cert = kLanthingCert;
+        params.on_connected = std::bind(&Service::onServerConnected, this);
+        params.on_closed = std::bind(&Service::onServerDisconnected, this);
+        params.on_reconnecting = std::bind(&Service::onServerReconnecting, this);
+        params.on_message = std::bind(&Service::onServerMessage, this, std::placeholders::_1,
+                                      std::placeholders::_2);
+        tcp_client_ = ltlib::Client::create(params);
+        if (tcp_client_ == nullptr) {
+            LOG(ERR) << "RedirectServerAddress recreate tcp client failed";
+        }
+    });
 }
 
 void Service::sendKeepAliveToServer() {

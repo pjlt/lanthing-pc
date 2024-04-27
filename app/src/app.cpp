@@ -47,6 +47,7 @@
 #include <ltproto/server/login_device.pb.h>
 #include <ltproto/server/login_device_ack.pb.h>
 #include <ltproto/server/new_version.pb.h>
+#include <ltproto/server/redirect_server_address.pb.h>
 #include <ltproto/server/request_connection.pb.h>
 #include <ltproto/server/request_connection_ack.pb.h>
 #include <ltproto/service2app/accepted_connection.pb.h>
@@ -710,6 +711,9 @@ void App::onServerMessage(uint32_t type, std::shared_ptr<google::protobuf::Messa
     case ltype::kNewVersion:
         handleNewVersion(msg);
         break;
+    case ltype::kRedirectServerAddress:
+        handleRedirectServerAddress(msg);
+        break;
     default:
         LOG(WARNING) << "Unknown server message:" << type;
         break;
@@ -781,6 +785,7 @@ void App::handleLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> _m
         return;
     case ltproto::ErrorCode::LoginDeviceInvalidID:
     case ltproto::ErrorCode::LoginDeviceInvalidCookie:
+    case ltproto::ErrorCode::TerminalVersionTooLow:
         // cookie或ID错误
         LOG(ERR) << "LoginDevice failed: " << ltproto::ErrorCode_Name(ack->err_code()) << " "
                  << ack->err_code();
@@ -842,6 +847,28 @@ void App::handleNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) 
         return;
     }
     gui_.onNewVersion(msg);
+}
+
+void App::handleRedirectServerAddress(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    auto msg = std::static_pointer_cast<ltproto::server::RedirectServerAddress>(_msg);
+    postTask([msg, this]() {
+        ltlib::Client::Params params{};
+        params.stype = ltlib::StreamType::TCP;
+        params.ioloop = ioloop_.get();
+        params.host = msg->host();
+        params.port = static_cast<uint16_t>(msg->port());
+        params.is_tls = LT_SERVER_USE_SSL;
+        params.cert = kLanthingCert;
+        params.on_connected = std::bind(&App::onServerConnected, this);
+        params.on_closed = std::bind(&App::onServerDisconnected, this);
+        params.on_reconnecting = std::bind(&App::onServerReconnecting, this);
+        params.on_message =
+            std::bind(&App::onServerMessage, this, std::placeholders::_1, std::placeholders::_2);
+        tcp_client_ = ltlib::Client::create(params);
+        if (tcp_client_ == nullptr) {
+            LOG(ERR) << "RedirectServerAddress recreate tcp client failed";
+        }
+    });
 }
 
 bool App::initServiceManager() {

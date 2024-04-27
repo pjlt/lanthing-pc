@@ -73,6 +73,7 @@ private:
     void onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onLoginDeviceAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onLoginUserAck(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onRedirectServerAddress(std::shared_ptr<google::protobuf::MessageLite> msg);
     // 加ToServer是因为我们还以客户端的身份，连接了App，用于一眼消除歧义
     void sendKeepAliveToServer();
 
