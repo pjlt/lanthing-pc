@@ -244,9 +244,8 @@
         <translation>共享剪切板</translation>
     </message>
     <message>
-        <location filename="../src/views/mainwindow/mainwindow.ui" line="1670"/>
         <source>Default Mouse Mode</source>
-        <translation>默认鼠标模式</translation>
+        <translation type="vanished">默认鼠标模式</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1682"/>
@@ -350,6 +349,11 @@
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1564"/>
         <source>Operate</source>
         <translation>操作</translation>
+    </message>
+    <message>
+        <location filename="../src/views/mainwindow/mainwindow.ui" line="1670"/>
+        <source>Default Mouse Mode (Win+Shift+X)</source>
+        <translation type="unfinished">默认鼠标模式（Win+Shift+X动态切换）</translation>
     </message>
     <message>
         <location filename="../src/views/mainwindow/mainwindow.ui" line="1728"/>

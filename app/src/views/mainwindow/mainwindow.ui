@@ -1667,7 +1667,7 @@ QHeaderView::section:vertical
                      <item>
                       <widget class="QGroupBox" name="gbMouseMode">
                        <property name="title">
-                        <string>Default Mouse Mode</string>
+                        <string>Default Mouse Mode (Win+Shift+X)</string>
                        </property>
                        <layout class="QVBoxLayout" name="verticalLayout_24">
                         <property name="topMargin">
