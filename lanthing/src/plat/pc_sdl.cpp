@@ -439,7 +439,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSdlUserEvent(const SDL_Event& ev) {
         LOG(INFO) << "SDL loop received user stop";
         return DispatchResult::kStop;
     default:
-        SDL_assert(false);
+        assert(false);
         return DispatchResult::kStop;
     }
 }
