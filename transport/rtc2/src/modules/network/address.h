@@ -34,7 +34,7 @@
 #include <WinSock2.h>
 #include <in6addr.h>
 #include <ws2ipdef.h>
-#elif defined(LT_LINUX)
+#else
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #endif // if defined(LT_WINDOWS)

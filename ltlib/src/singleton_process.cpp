@@ -30,7 +30,7 @@
 
 #ifdef LT_WINDOWS
 #include <Windows.h>
-#elif defined LT_LINUX
+#else
 #include <errno.h>
 #include <pwd.h>
 #include <sys/file.h>
@@ -65,7 +65,7 @@ bool makeSingletonProcess(const std::string& name) {
     return no_other_process.value();
 }
 
-#elif defined LT_LINUX
+#else
 bool makeSingletonProcess(const std::string& name) {
     static std::optional<bool> no_other_process;
     if (no_other_process.has_value()) {
@@ -85,8 +85,6 @@ bool makeSingletonProcess(const std::string& name) {
     return true;
 }
 
-#else
-#error unsupported platform
 #endif
 
 } // namespace ltlib

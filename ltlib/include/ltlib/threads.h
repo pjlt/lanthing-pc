@@ -177,7 +177,6 @@ private:
     std::condition_variable cv_;
     std::atomic<bool> wakeup_{true};
     std::thread thread_;
-    bool started_ = false;
     bool stoped_ = false;
     int64_t last_report_time_;
 };

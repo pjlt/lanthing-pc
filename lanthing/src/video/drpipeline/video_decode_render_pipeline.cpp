@@ -108,7 +108,7 @@ public:
 public:
     static std::unique_ptr<VDRPipeline> create(const DecodeRenderPipeline::Params& params);
     ~VDRPipeline() override;
-    DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame);
+    DecodeRenderPipeline::Action submit(const lt::VideoFrame& frame) override;
     void setTimeDiff(int64_t diff_us) override;
     void setRTT(int64_t rtt_us) override;
     void setBWE(uint32_t bps) override;

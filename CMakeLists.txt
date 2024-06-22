@@ -112,11 +112,11 @@ find_package(g3log REQUIRED PATHS third_party/prebuilt/g3log/${LT_THIRD_POSTFIX}
 find_package(MbedTLS REQUIRED PATHS third_party/prebuilt/mbedtls/${LT_THIRD_POSTFIX})
 find_package(libuv REQUIRED PATHS third_party/prebuilt/libuv/${LT_THIRD_POSTFIX})
 find_package(SDL2 REQUIRED PATHS third_party/prebuilt/sdl/${LT_THIRD_POSTFIX})
-find_package(VPL REQUIRED PATHS third_party/prebuilt/onevpl/${LT_THIRD_POSTFIX})
 find_package(Opus REQUIRED PATHS third_party/prebuilt/opus/${LT_THIRD_POSTFIX})
 
 if (LT_WINDOWS)
     find_package(ViGEmClient REQUIRED PATHS third_party/prebuilt/vigemclient/${LT_THIRD_POSTFIX})
+    find_package(VPL REQUIRED PATHS third_party/prebuilt/onevpl/${LT_THIRD_POSTFIX})
     add_subdirectory(third_party/wintoast)
     add_subdirectory(third_party/prebuilt/openh264/win)
     add_subdirectory(third_party/prebuilt/nbclipboard/${LT_THIRD_POSTFIX})

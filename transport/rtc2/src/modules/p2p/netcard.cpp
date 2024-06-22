@@ -79,10 +79,8 @@ Address getNetcardAddress() {
     return result;
 }
 
-#elif defined(LT_LINUX)
-Address getNetcardAddress() { return {}; }
 #else
-#pragma error unsupported platform
+Address getNetcardAddress() { return {}; }
 #endif
 
 } // namespace rtc2

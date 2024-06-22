@@ -9,6 +9,9 @@
 #ifndef STUNXX_MESSAGE_H_
 #define STUNXX_MESSAGE_H_
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-reference-qualifiers"
+
 #include <cstring>
 #include <modules/p2p/stuns/msg.h>
 #include <string>
@@ -823,5 +826,7 @@ private:
 };
 
 } // namespace stun
+
+#pragma clang diagnostic pop
 
 #endif // STUNXX_MESSAGE_H_

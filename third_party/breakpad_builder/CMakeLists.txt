@@ -20,7 +20,7 @@ if (LT_WINDOWS)
     # 按照原始目录结构展开
     source_group(breakpad TREE ${BREAKPAD_SRC_FOLDER} FILES ${BREAKPAD_SOURCES})
     source_group(breakpad_builder TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${API_SOURCES})
-else()
+elseif(LT_LINUX)
     enable_language(ASM)
     set(BREAKPAD_SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../breakpad/src)
     set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/linux/handler)
@@ -50,6 +50,12 @@ else()
         ${BREAKPAD_SRC_FOLDER}/common/linux/linux_libc_support.cc
         ${BREAKPAD_SRC_FOLDER}/common/linux/memory_mapped_file.cc
         ${BREAKPAD_SRC_FOLDER}/common/linux/safe_readlink.cc
+    )
+elseif(LT_MAC)
+    set(BREAKPAD_SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../breakpad/src)
+    set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/mac/handler)
+    set(BREAKPAD_SOURCES
+        ${BREAKPAD_SRC_FOLDER}/client/mac/handler/exception_handler.cc  
     )
 endif()
 

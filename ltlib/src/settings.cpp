@@ -30,12 +30,10 @@
 
 #if defined(LT_WINDOWS)
 #include <Windows.h>
-#elif defined(LT_LINUX)
+#else
 #include <fcntl.h>
 #include <pwd.h>
 #include <unistd.h>
-#else
-#error unsupported platform
 #endif
 #include <ltlib/settings.h>
 
@@ -397,11 +395,9 @@ std::unique_ptr<Settings> Settings::create(Storage type) {
     }
     std::filesystem::path filepath = appdatapath;
     filepath = filepath / filename;
-#elif LT_LINUX
+#else
     std::filesystem::path filepath = getpwuid(getuid())->pw_dir;
     filepath = filepath / filename;
-#else
-    std::filesystem::path filepath;
 #endif
     return createWithPathForTest(type, filepath.string());
 }

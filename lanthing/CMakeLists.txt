@@ -282,6 +282,7 @@ if(LT_WINDOWS)
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
             ViGEmClient::ViGEmClientShared
+            VPL::dispatcher
     )
 elseif(LT_LINUX)
     set(PLATFORM_LIBS
@@ -295,6 +296,7 @@ elseif(LT_LINUX)
         PkgConfig::EGL
         PkgConfig::GLib
         PkgConfig::MFX
+        VPL::dispatcher
     )
 else()
     set(PLATFORM_LIBS)
@@ -307,7 +309,6 @@ target_link_libraries(${PROJECT_NAME}
     ffmpeg
     Opus::opus
     nvcodec
-    VPL::dispatcher
     amf
     uv
     breakpad
