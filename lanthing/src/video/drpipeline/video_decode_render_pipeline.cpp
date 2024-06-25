@@ -263,6 +263,8 @@ bool VDRPipeline::init() {
     decode_params.va_type = VaType::D3D11;
 #elif LT_LINUX
     decode_params.va_type = VaType::VAAPI;
+#elif LT_MAC
+    decode_params.va_type = VaType::VTB;
 #else
 #error unknown platform
 #endif

@@ -382,7 +382,7 @@ void MainWindow::onDisconnectedConnection(int64_t device_id) {
 }
 
 void MainWindow::errorMessageBox(const QString& message) {
-    dispatchToUiThread([this, message]() {
+    dispatchToUiThread([message]() {
         QMessageBox msgbox;
         msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Critical);
@@ -391,7 +391,7 @@ void MainWindow::errorMessageBox(const QString& message) {
 }
 
 void MainWindow::infoMessageBox(const QString& message) {
-    dispatchToUiThread([this, message]() {
+    dispatchToUiThread([message]() {
         QMessageBox msgbox;
         msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Information);
@@ -468,7 +468,7 @@ void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _ms
 }
 
 void MainWindow::setClipboardText(const std::string& text) {
-    dispatchToUiThread([this, text]() {
+    dispatchToUiThread([text]() {
         auto clipboard = QApplication::clipboard();
         auto text2 = QString::fromStdString(text);
         if (clipboard->text() == text2) {

@@ -53,9 +53,34 @@ elseif(LT_LINUX)
     )
 elseif(LT_MAC)
     set(BREAKPAD_SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../breakpad/src)
-    set(BREAKPAD_INC_FOLDER ${BREAKPAD_SRC_FOLDER}/client/mac/handler)
+    set(BREAKPAD_INC_FOLDER
+        ${BREAKPAD_SRC_FOLDER}/client/mac/handler
+        ${BREAKPAD_SRC_FOLDER}/client/apple/Framework
+    )
     set(BREAKPAD_SOURCES
+        ${BREAKPAD_SRC_FOLDER}/client/mac/Framework/Breakpad.mm
+        ${BREAKPAD_SRC_FOLDER}/client/mac/Framework/OnDemandServer.mm
+        ${BREAKPAD_SRC_FOLDER}/client/mac/crash_generation/crash_generation_client.cc
+        ${BREAKPAD_SRC_FOLDER}/client/mac/crash_generation/crash_generation_client.h
+        ${BREAKPAD_SRC_FOLDER}/client/mac/handler/protected_memory_allocator.cc
         ${BREAKPAD_SRC_FOLDER}/client/mac/handler/exception_handler.cc  
+        ${BREAKPAD_SRC_FOLDER}/client/mac/handler/minidump_generator.cc  
+        ${BREAKPAD_SRC_FOLDER}/client/mac/handler/dynamic_images.cc  
+        ${BREAKPAD_SRC_FOLDER}/client/mac/handler/breakpad_nlist_64.cc  
+        ${BREAKPAD_SRC_FOLDER}/client/minidump_file_writer.cc  
+        ${BREAKPAD_SRC_FOLDER}/common/mac/MachIPC.mm 
+        ${BREAKPAD_SRC_FOLDER}/common/mac/string_utilities.cc
+        ${BREAKPAD_SRC_FOLDER}/common/mac/file_id.cc
+        ${BREAKPAD_SRC_FOLDER}/common/mac/macho_id.cc
+        ${BREAKPAD_SRC_FOLDER}/common/mac/macho_utilities.cc
+        ${BREAKPAD_SRC_FOLDER}/common/mac/macho_walker.cc
+        ${BREAKPAD_SRC_FOLDER}/common/mac/HTTPMultipartUpload.m
+        ${BREAKPAD_SRC_FOLDER}/common/mac/HTTPRequest.m
+        ${BREAKPAD_SRC_FOLDER}/common/string_conversion.cc
+        ${BREAKPAD_SRC_FOLDER}/common/convert_UTF.cc
+        ${BREAKPAD_SRC_FOLDER}/common/md5.cc
+        ${BREAKPAD_SRC_FOLDER}/common/simple_string_dictionary.cc
+        ${BREAKPAD_SRC_FOLDER}/common/long_string_dictionary.cc
     )
 endif()
 

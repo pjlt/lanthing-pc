@@ -74,7 +74,7 @@ void StatusWidget::setTaskBarPos(uint32_t direction, uint32_t left, uint32_t rig
 void StatusWidget::render() {
     char buff[64] = {0};
     // const char* kFormat = "RTT:%u  FPS:%u  LOSS:%2.1f%%";
-    sprintf(buff, "RTT:%u  FPS:%u  LOSS:%2.1f  ", rtt_ms_, fps_, loss_ * 100.f);
+    snprintf(buff, 64, "RTT:%u  FPS:%u  LOSS:%2.1f  ", rtt_ms_, fps_, loss_ * 100.f);
     auto kTextSize = ImGui::CalcTextSize(buff);
     auto& io = ImGui::GetIO();
     display_width_ = static_cast<uint32_t>(io.DisplaySize.x);

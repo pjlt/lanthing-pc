@@ -143,6 +143,8 @@ AVPixelFormat hwPixFormat() {
     return AVPixelFormat::AV_PIX_FMT_D3D11;
 #elif LT_LINUX
     return AVPixelFormat::AV_PIX_FMT_VAAPI;
+#elif LT_MAC
+    return AVPixelFormat::AV_PIX_FMT_VIDEOTOOLBOX;
 #else
     return AVPixelFormat::;
 #endif

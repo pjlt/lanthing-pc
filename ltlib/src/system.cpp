@@ -38,7 +38,9 @@
 #include <X11/Xlib.h>
 #include <pwd.h>
 #include <unistd.h>
-#else
+#elif LT_MAC
+#include <unistd.h>
+#include <pwd.h>
 #endif // LT_WINDOWS
 
 #include <climits>
@@ -585,6 +587,89 @@ DisplayOutputDesc getDisplayOutputDesc(const std::string& name) {
     uint32_t height = s->height;
     XCloseDisplay(d);
     return {width, height, 60, 0};
+}
+
+bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {
+    (void)w;
+    (void)h;
+    (void)f;
+    return false;
+}
+
+bool setThreadDesktop() {
+    return false;
+}
+
+bool selfElevateAndNeedExit() {
+    return false;
+}
+
+std::vector<Monitor> enumMonitors() {
+    return {};
+}
+
+void openFolder(const std::string& path) {
+    (void)path;
+}
+
+#elif defined(LT_MAC)
+
+std::string getProgramFullpath() {
+    return "";
+}
+
+std::string getProgramPath() {
+    std::string fullpath = getProgramFullpath();
+    if (fullpath.empty()) {
+        return "";
+    }
+    auto pos = fullpath.rfind('/');
+    if (pos != std::string::npos) {
+        return fullpath.substr(0, pos);
+    }
+    return "";
+}
+
+std::string getProgramName() {
+    std::string fullpath = getProgramFullpath();
+    if (fullpath.empty()) {
+        return "";
+    }
+    auto pos = fullpath.rfind('/');
+    if (pos != std::string::npos) {
+        return fullpath.substr(pos + 1);
+    }
+    return "";
+}
+
+std::string getConfigPath(bool is_service) {
+    (void)is_service;
+    static std::string config_path;
+    if (!config_path.empty()) {
+        return config_path;
+    }
+    std::filesystem::path fs = getpwuid(getuid())->pw_dir;
+    fs = fs / ".lanthing";
+    config_path = fs.string();
+    return config_path;
+}
+
+bool isRunasLocalSystem() {
+    return false;
+}
+bool isRunAsService() {
+    return false;
+}
+
+int32_t getScreenWidth() {
+    return -1;
+}
+int32_t getScreenHeight() {
+    return -1;
+}
+
+DisplayOutputDesc getDisplayOutputDesc(const std::string& ) {
+    return {0, 0, 0, 0};
 }
 
 bool changeDisplaySettings(uint32_t w, uint32_t h, uint32_t f) {

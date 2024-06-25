@@ -36,6 +36,8 @@
 #include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#elif LT_MAC
+#include <unistd.h>
 #endif // LT_WINDOWS, LT_LINUX
 
 #include <sstream>

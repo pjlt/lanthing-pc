@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 exit_if_fail() {
     if [ $? -ne 0 ]; then
@@ -24,10 +24,11 @@ cmake_clean() {
 }
 
 check_build_type() {
-    if [ ${build_type,,} = "debug" ]; then
+    bt=$( tr '[:upper:]' '[:lower:]' <<<"$build_type" )
+    if [ ${bt} = "debug" ]; then
         build_type="Debug"
         echo "Debug"
-    elif [ ${build_type,,} = "release" ] || [ ${build_type,,} = "relwithdebinfo" ]; then
+    elif [ ${bt} = "release" ] || [ ${bt} = "relwithdebinfo" ]; then
         build_type="RelWithDebInfo"
         echo "RelWithDebInfo"
     else
@@ -53,9 +54,9 @@ prebuilt_fetch() {
         "opus https://github.com/numbaa/opus-build/releases/download/v1.4-4/opus.mac.v1.4-4.tar.gz"
         "g3log https://github.com/numbaa/g3log-build/releases/download/v2.3-6/g3log.mac.v2.3-6.tar.gz"
         "googletest https://github.com/numbaa/googletest-build/releases/download/v1.13.0-4/googletest.mac.v1.13.0-4.tar.gz"
-        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-11/ffmpeg.mac.v5.1.3-11.tar.gz"
+        "ffmpeg https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-12/ffmpeg.mac.v5.1.3-12.tar.gz"
         "protobuf https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-9/protobuf.mac.v3.24.3-9.tar.gz"
-        "sqlite https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-7/sqlite3.mac.v3.43.1-7.tar.gz"
+        "sqlite https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-8/sqlite3.mac.v3.43.1-8.tar.gz"
     )
     mkdir -p ./third_party/prebuilt
     for lib in "${libs[@]}"; do

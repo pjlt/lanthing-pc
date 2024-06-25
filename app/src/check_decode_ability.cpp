@@ -139,7 +139,9 @@ uint32_t checkDecodeAbility() {
 #endif // 0
 }
 #else  // LT_WINDOWS | LT_LINUX
-#error Unsupported platform
+uint32_t checkDecodeAbility() {
+    return VideoCodecType::H264_420 | VideoCodecType::H265_420;
+}
 #endif // LT_WINDOWS | LT_LINUX
 
 } // namespace lt

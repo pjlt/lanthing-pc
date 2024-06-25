@@ -44,7 +44,7 @@ void plotLines(const std::string& name, const lt::video::VideoStatistics::Histor
     }
     char buffer[128];
     const float max = std::min((float)history.max, 99999.f);
-    sprintf(buffer, "%s min:%.0f max:%.0f avg:%.0f", name.c_str(), history.min, max, history.avg);
+    snprintf(buffer, 128, "%s min:%.0f max:%.0f avg:%.0f", name.c_str(), history.min, max, history.avg);
     ImGui::PlotLines(buffer, values.data(), static_cast<int>(values.size()), 0, "",
                      static_cast<float>(history.min), max, ImVec2{300.f, 0});
 }

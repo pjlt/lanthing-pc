@@ -80,9 +80,8 @@ private:
     void* handle_;
 #if LT_WINDOWS
     std::unique_ptr<ltlib::BlockingThread> thread_;
-#elif LT_LINUX
-    std::unique_ptr<std::thread> thread_;
 #else
+    std::unique_ptr<std::thread> thread_;
 #endif
     bool stoped_ = true;
 };
