@@ -118,7 +118,13 @@ deploy_dlls(${PROJECT_NAME})
 deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 endif(LT_WINDOWS)
 
-install(TARGETS ${PROJECT_NAME})
+install(
+    TARGETS ${PROJECT_NAME}
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION .
+    LIBRARY DESTINATION .
+    ARCHIVE DESTINATION .
+)
 
 if (LT_WINDOWS)
     install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
@@ -126,6 +132,12 @@ if (LT_WINDOWS)
         FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
         DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
     )
+endif()
+
+if(LT_MAC)
+    set(MACOSX_BUNDLE_BUNDLE_VERSION "${LT_VERSION_MAJOR}${LT_VERSION_MINOR}${LT_VERSION_PATCH}")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER net.lanthing)
+    set(MACOSX_BUNDLE_ICON_FILE lanthing.ico)
 endif()
 
 # 设置VS调试路径

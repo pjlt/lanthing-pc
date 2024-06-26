@@ -76,6 +76,7 @@ elseif(LT_MAC)
         ${BREAKPAD_SRC_FOLDER}/common/mac/macho_walker.cc
         ${BREAKPAD_SRC_FOLDER}/common/mac/HTTPMultipartUpload.m
         ${BREAKPAD_SRC_FOLDER}/common/mac/HTTPRequest.m
+        ${BREAKPAD_SRC_FOLDER}/common/mac/bootstrap_compat.cc
         ${BREAKPAD_SRC_FOLDER}/common/string_conversion.cc
         ${BREAKPAD_SRC_FOLDER}/common/convert_UTF.cc
         ${BREAKPAD_SRC_FOLDER}/common/md5.cc

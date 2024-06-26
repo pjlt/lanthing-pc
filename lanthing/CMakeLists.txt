@@ -282,7 +282,7 @@ if(LT_WINDOWS)
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
             ViGEmClient::ViGEmClientShared
-            VPL::dispatcher
+            VPL::dispatcher nvcodec
     )
 elseif(LT_LINUX)
     set(PLATFORM_LIBS
@@ -308,7 +308,6 @@ target_link_libraries(${PROJECT_NAME}
     SDL2::SDL2
     ffmpeg
     Opus::opus
-    nvcodec
     amf
     uv
     breakpad
@@ -322,7 +321,14 @@ target_link_libraries(${PROJECT_NAME}
     ${PLATFORM_LIBS}
 )
 
-install(TARGETS ${PROJECT_NAME})
+install(
+    TARGETS ${PROJECT_NAME}
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION .
+    LIBRARY DESTINATION .
+    ARCHIVE DESTINATION .
+)
+
 if (LT_WINDOWS)
     install(
         FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
