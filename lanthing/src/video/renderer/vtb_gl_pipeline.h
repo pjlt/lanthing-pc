@@ -31,17 +31,12 @@
 #pragma once
 #include <video/renderer/video_renderer.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#include <va/va.h>
+#include <OpenGL/gl3.h>
+#include <OpenGL/glext.h>
 
 #include <SDL.h>
 
-#include <video/renderer/macos_wrapper.h>
+#include <video/renderer/vtb_gl_pipeline_plat.h>
 
 namespace lt {
 
@@ -51,7 +46,6 @@ class VtbGlPipeline : public Renderer {
 public:
     struct Params {
         SDL_Window* window;
-        uint32_t card;
         uint32_t width;
         uint32_t height;
         uint32_t rotation;
@@ -77,9 +71,6 @@ public:
     bool setDecodedFormat(DecodedFormat format) override;
 
 private:
-    bool loadFuncs();
-    bool initVaDrm();
-    bool initEGL();
     bool initOpenGL();
     void resizeWindow(int screen_width, int screen_height);
 
@@ -92,22 +83,11 @@ private:
     uint32_t window_width_;
     uint32_t window_height_;
     GLuint shader_ = 0;
-    int drm_fd_ = -1;
-    VADisplay va_display_ = nullptr;
-    EGLContext egl_context_ = nullptr;
-    EGLDisplay egl_display_ = nullptr;
-    EGLSurface egl_surface_ = nullptr;
-    PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_ = nullptr;
-    PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_ = nullptr;
-    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_ = nullptr;
-    PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
-    PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;
-    PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_ = nullptr;
     GLuint textures_[2] = {0};
     GLuint vao_ = 0;
     GLuint vbo_ = 0;
     GLuint ebo_ = 0;
-    MacOSWrapper mac_api_;
+    VtbGlPipelinePlatform* plat_ = nullptr;
 };
 
 } // namespace video

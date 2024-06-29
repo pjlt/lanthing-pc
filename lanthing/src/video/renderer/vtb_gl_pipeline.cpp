@@ -33,26 +33,10 @@
 #include <array>
 #include <string>
 
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
-#include <libdrm/drm_fourcc.h>
-
-#include <va/va_drm.h>
-#include <va/va_drmcommon.h>
-
 #include <SDL.h>
 #include <SDL_syswm.h>
 
 #include <ltlib/logging.h>
-
-// https://learnopengl.com
-
-// TODO: 1. 回收资源 2.整理OpenGL渲染管线 3.vsync相关问题.
 
 #define _ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
 
@@ -79,22 +63,11 @@ VtbGlPipeline::VtbGlPipeline(const Params& params)
     : sdl_window_{params.window}
     , video_width_{params.width}
     , video_height_{params.height}
-    , align_{params.align}
-    , card_{params.card} {}
+    , align_{params.align} {}
 
 VtbGlPipeline::~VtbGlPipeline() {
-    if (egl_display_) {
-        eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        if (egl_context_) {
-            eglDestroyContext(egl_display_, egl_context_);
-        }
-        if (egl_surface_) {
-            eglDestroySurface(egl_display_, egl_surface_);
-        }
-        eglTerminate(egl_display_);
-    }
     if (vao_ != 0) {
-        glDeleteVertexArrays_(1, &vao_);
+        glDeleteVertexArrays(1, &vao_);
     }
     if (vbo_ != 0) {
         glDeleteBuffers(1, &vbo_);
@@ -106,20 +79,23 @@ VtbGlPipeline::~VtbGlPipeline() {
     if (shader_ != 0) {
         glDeleteProgram(shader_);
     }
-    if (va_display_) {
-        vaTerminate(va_display_);
-    }
-    if (drm_fd_ >= 0) {
-        close(drm_fd_);
-    }
+    destroyVtbGlPipelinePlatform(plat_);
 }
 
 bool VtbGlPipeline::init() {
-    NSWindow* ns_window = info.info.cocoa.window;
-    mac_api_->replaceWithGLContentView(ns_window);
-    if (!loadFuncs()) {
+    SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
+    SDL_SysWMinfo info{};
+    SDL_VERSION(&info.version);
+    SDL_GetWindowWMInfo(sdl_window, &info);
+    if (info.subsystem != SDL_SYSWM_COCOA) {
+        LOG(ERR) << "Only support cocoa, but we are using " << (int)info.subsystem;
         return false;
     }
+    int window_width, window_height;
+    SDL_GetWindowSize(sdl_window, &window_width, &window_height);
+    window_width_ = static_cast<uint32_t>(window_width);
+    window_height_ = static_cast<uint32_t>(window_height);
+    plat_ = createVtbGlPipelinePlatform(info.info.cocoa.window, window_width, window_height);
     if (!initOpenGL()) {
         return false;
     }
@@ -132,100 +108,26 @@ bool VtbGlPipeline::bindTextures(const std::vector<void*>& textures) {
 }
 
 Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
-    EGLBoolean egl_ret = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
-    if (egl_ret != EGL_TRUE) {
-        LOG(ERR) << "eglMakeCurrent return " << egl_ret << " error: " << eglGetError();
-        return RenderResult::Failed;
-    }
+    plat_->glMakeCurrent(plat_);
     AutoGuard ag{[this]() {
-        EGLBoolean egl_ret =
-            eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        if (egl_ret != EGL_TRUE) {
-            LOG(ERR) << "eglMakeCurrent(null) return " << egl_ret << " error: " << eglGetError();
-        }
+        plat_->glMakeCurrentEmpty(plat_);
     }};
-    // frame是frame->data[3]
-    VASurfaceID va_surface = static_cast<VASurfaceID>(frame);
-    VADRMPRIMESurfaceDescriptor prime;
-    VAStatus va_status = vaExportSurfaceHandle(
-        va_display_, va_surface, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-        VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS, &prime);
-    if (va_status != VA_STATUS_SUCCESS) {
-        LOG(ERR) << "vaExportSurfaceHandle failed: " << va_status;
-        return RenderResult::Failed;
-    }
-    if (prime.fourcc != VA_FOURCC_NV12) {
-        LOG(ERR) << "prime.fourcc != VA_FOURCC_NV12";
-        return RenderResult::Failed;
-    }
-    // TODO:  更好的同步方式
-    va_status = vaSyncSurface(va_display_, va_surface);
-    if (va_status != VA_STATUS_SUCCESS) {
-        LOG(ERR) << "vaSyncSurface failed: " << va_status;
-        return RenderResult::Failed;
-    }
-
-    glViewport(0, 0, static_cast<GLsizei>(window_width_), static_cast<GLsizei>(window_height_));
-    EGLImage images[2] = {0};
-    for (size_t i = 0; i < 2; ++i) {
-        constexpr uint32_t formats[2] = {DRM_FORMAT_R8, DRM_FORMAT_GR88};
-        if (prime.layers[i].drm_format != formats[i]) {
-            LOG(ERR) << "prime.layers[i].drm_format: " << prime.layers[i].drm_format
-                     << ", formats[i]: " << formats[i];
-        }
-        EGLint img_attr[] = {EGL_LINUX_DRM_FOURCC_EXT,
-                             static_cast<EGLint>(formats[i]),
-                             EGL_WIDTH,
-                             static_cast<EGLint>(prime.width / (i + 1)), // half size
-                             EGL_HEIGHT,
-                             static_cast<EGLint>(prime.height / (i + 1)), // for chroma
-                             EGL_DMA_BUF_PLANE0_FD_EXT,
-                             static_cast<EGLint>(prime.objects[prime.layers[i].object_index[0]].fd),
-                             EGL_DMA_BUF_PLANE0_OFFSET_EXT,
-                             static_cast<EGLint>(prime.layers[i].offset[0]),
-                             EGL_DMA_BUF_PLANE0_PITCH_EXT,
-                             static_cast<EGLint>(prime.layers[i].pitch[0]),
-                             EGL_NONE};
-        images[i] =
-            eglCreateImageKHR_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, img_attr);
-        if (!images[i]) {
-            LOG(ERR) << "eglCreateImageKHR failed: "
-                     << (i ? "chroma eglCreateImageKHR" : "luma eglCreateImageKHR");
-            return RenderResult::Failed;
-        }
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, textures_[i]);
-        while (glGetError()) {
-        }
-        glEGLImageTargetTexture2DOES_(GL_TEXTURE_2D, images[i]);
-        if (glGetError()) {
-            LOG(ERR) << "glEGLImageTargetTexture2DOES failed";
-            return RenderResult::Failed;
-        }
-    }
-    for (uint32_t i = 0; i < prime.num_objects; ++i) {
-        close(prime.objects[i].fd);
-    }
+    plat_->mapOpenGLTexture(plat_, textures_, frame);
     glClear(GL_COLOR_BUFFER_BIT);
     while (glGetError()) {
     }
-    glBindVertexArray_(vao_);
+    glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     GLenum err = glGetError();
-    glBindVertexArray_(0);
+    glBindVertexArray(0);
     if (err) {
         LOG(ERR) << "glDrawArrays failed: " << err;
         return RenderResult::Failed;
     }
-    EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
-    if (egl_success != EGL_TRUE) {
-        LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
-        return RenderResult::Success2;
-    }
     for (uint32_t i = 0; i < 2U; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, 0);
-        eglDestroyImageKHR_(egl_display_, images[i]);
+        //eglDestroyImageKHR_(egl_display_, images[i]);
     }
     return RenderResult::Success2;
 }
@@ -263,11 +165,11 @@ bool VtbGlPipeline::waitForPipeline(int64_t max_wait_ms) {
 }
 
 void* VtbGlPipeline::hwDevice() {
-    return va_display_;
+    return nullptr;
 }
 
 void* VtbGlPipeline::hwContext() {
-    return va_display_;
+    return nullptr;
 }
 
 uint32_t VtbGlPipeline::displayWidth() {
@@ -286,162 +188,6 @@ bool VtbGlPipeline::setDecodedFormat(DecodedFormat format) {
         LOG(ERR) << "VtbGlPipeline doesn't support DecodedFormat " << (int)format;
         return false;
     }
-}
-
-bool VtbGlPipeline::loadFuncs() {
-    eglCreateImageKHR_ =
-        reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
-    if (eglCreateImageKHR_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(eglCreateImageKHR) failed";
-        return false;
-    }
-    eglDestroyImageKHR_ =
-        reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
-    if (eglDestroyImageKHR_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(eglDestroyImageKHR) failed";
-        return false;
-    }
-    glEGLImageTargetTexture2DOES_ = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
-        eglGetProcAddress("glEGLImageTargetTexture2DOES"));
-    if (glEGLImageTargetTexture2DOES_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(glEGLImageTargetTexture2DOES) failed";
-        return false;
-    }
-    glGenVertexArrays_ =
-        reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(eglGetProcAddress("glGenVertexArrays"));
-    if (glGenVertexArrays_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(glGenVertexArrays) failed";
-        return false;
-    }
-    auto glDeleteVertexArrays_ =
-        reinterpret_cast<PFNGLDELETEVERTEXARRAYSPROC>(eglGetProcAddress("glDeleteVertexArrays"));
-    if (glDeleteVertexArrays_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(glDeleteVertexArrays) failed";
-        return false;
-    }
-    glBindVertexArray_ =
-        reinterpret_cast<PFNGLBINDVERTEXARRAYPROC>(eglGetProcAddress("glBindVertexArray"));
-    if (glBindVertexArray_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(glBindVertexArray) failed";
-        return false;
-    }
-    return true;
-}
-
-bool VtbGlPipeline::initVaDrm() {
-    std::string drm_node = "/dev/dri/card" + std::to_string(card_);
-    drm_fd_ = ::open(drm_node.c_str(), O_RDWR);
-    if (drm_fd_ < 0) {
-        LOGF(ERR, "Open drm node '%s' failed", drm_node.c_str());
-        return false;
-    }
-    VADisplay va_display = vaGetDisplayDRM(drm_fd_);
-    if (!va_display) {
-        LOGF(ERR, "vaGetDisplayDRM '%s' failed", drm_node.c_str());
-        return false;
-    }
-    int major, minor;
-    VAStatus vastatus = vaInitialize(va_display, &major, &minor);
-    if (vastatus != VA_STATUS_SUCCESS) {
-        LOG(ERR) << "vaInitialize failed with " << (int)vastatus;
-        return false;
-    }
-    va_display_ = va_display;
-    return true;
-}
-
-bool VtbGlPipeline::initEGL() {
-    SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
-    SDL_SysWMinfo info{};
-    SDL_VERSION(&info.version);
-    SDL_GetWindowWMInfo(sdl_window, &info);
-    if (info.subsystem != SDL_SYSWM_X11) {
-        LOG(ERR) << "Only support X11, but we are using " << (int)info.subsystem;
-        return false;
-    }
-    int window_width, window_height;
-    SDL_GetWindowSize(sdl_window, &window_width, &window_height);
-    window_width_ = static_cast<uint32_t>(window_width);
-    window_height_ = static_cast<uint32_t>(window_height);
-
-    // SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    // SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
-    // if (gl_context == nullptr) {
-    //     LOG(ERR) << "SDL_GL_CreateContext failed: " << SDL_GetError();
-    //     return false;
-    // }
-    // if (SDL_GL_MakeCurrent(sdl_window, gl_context) != 0) {
-    //     LOG(ERR) << "SDL_GL_MakeCurrent failed: " << SDL_GetError();
-    //     return false;
-    // }
-
-    egl_display_ = eglGetDisplay(reinterpret_cast<EGLNativeDisplayType>(info.info.x11.display));
-    if (egl_display_ == EGL_NO_DISPLAY) {
-        LOG(ERR) << "eglGetDisplay failed";
-        return false;
-    }
-    if (!eglInitialize(egl_display_, NULL, NULL)) {
-        LOG(ERR) << "eglInitialize failed";
-        return false;
-    }
-    if (!eglBindAPI(EGL_OPENGL_API)) {
-        LOG(ERR) << "eglBindAPI failed";
-        return false;
-    }
-    EGLint visual_attr[] = {EGL_SURFACE_TYPE,
-                            EGL_WINDOW_BIT,
-                            EGL_RED_SIZE,
-                            8,
-                            EGL_GREEN_SIZE,
-                            8,
-                            EGL_BLUE_SIZE,
-                            8,
-                            EGL_ALPHA_SIZE,
-                            8,
-                            EGL_RENDERABLE_TYPE,
-                            EGL_OPENGL_BIT,
-                            EGL_NONE};
-    EGLConfig egl_cfg{};
-    EGLint egl_cfg_count{};
-    EGLBoolean egl_ret = eglChooseConfig(egl_display_, visual_attr, &egl_cfg, 1, &egl_cfg_count);
-    if (!egl_ret || egl_cfg_count < 1) {
-        LOG(ERR) << "eglChooseConfig failed, egl_ret:" << egl_ret
-                 << ", egl_cfg_count:" << egl_cfg_count;
-        return false;
-    }
-    egl_surface_ = eglCreateWindowSurface(egl_display_, egl_cfg, info.info.x11.window, nullptr);
-    if (egl_surface_ == EGL_NO_SURFACE) {
-        LOG(ERR) << "eglCreateWindowSurface failed";
-        return false;
-    }
-    constexpr EGLint CORE_PROFILE_MAJOR_VERSION = 3;
-    constexpr EGLint CORE_PROFILE_MINOR_VERSION = 3;
-    EGLint egl_ctx_attr[] = {EGL_CONTEXT_OPENGL_PROFILE_MASK,
-                             EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT,
-                             EGL_CONTEXT_MAJOR_VERSION,
-                             CORE_PROFILE_MAJOR_VERSION,
-                             EGL_CONTEXT_MINOR_VERSION,
-                             CORE_PROFILE_MINOR_VERSION,
-                             EGL_NONE};
-    egl_context_ = eglCreateContext(egl_display_, egl_cfg, EGL_NO_CONTEXT, egl_ctx_attr);
-    if (egl_context_ == EGL_NO_CONTEXT) {
-        LOG(ERR) << "eglCreateContext failed";
-        return false;
-    }
-    egl_ret = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
-    if (egl_ret != EGL_TRUE) {
-        LOG(ERR) << "eglMakeCurrent failed: " << eglGetError();
-        return false;
-    }
-    egl_ret = eglSwapInterval(egl_display_, 0);
-    if (egl_ret != EGL_TRUE) {
-        LOG(ERR) << "eglSwapInterval failed: " << eglGetError();
-        return false;
-    }
-    return true;
 }
 
 bool VtbGlPipeline::initOpenGL() {
@@ -551,11 +297,11 @@ void main() {
     static_assert(sizeof(verts) == 4*4*4);
     const uint32_t indexes[] = {0, 1, 2, 0, 2, 3};
     // clang-format on
-    glGenVertexArrays_(1, &vao_);
+    glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
     glGenBuffers(1, &ebo_);
 
-    glBindVertexArray_(vao_);
+    glBindVertexArray(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
@@ -564,7 +310,7 @@ void main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glBindVertexArray_(0);
+    glBindVertexArray(0);
     return true;
 }
 

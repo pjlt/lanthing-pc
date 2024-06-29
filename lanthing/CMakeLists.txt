@@ -110,6 +110,13 @@ elseif (LT_LINUX)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/va_gl_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/va_gl_pipeline.cpp
     )
+elseif (LT_MAC)
+    list(APPEND LT_VIDEO_RENDERER_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline_plat.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline_plat.m
+    )
 endif()
 
 set(LT_VIDEO_DR_PIPELINE_SRCS
@@ -298,6 +305,11 @@ elseif(LT_LINUX)
         PkgConfig::MFX
         VPL::dispatcher
     )
+elseif(LT_MAC)
+    set(PLATFORM_LIBS
+        OpenGL::GL
+    )
+    set(PLATFORM_LIBS "${PLATFORM_LIBS}" -lobjc ${LIB_CORE_VIDEO} ${LIB_APP_KIT})
 else()
     set(PLATFORM_LIBS)
 endif()

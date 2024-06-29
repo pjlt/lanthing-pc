@@ -49,6 +49,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(LT_WINDOWS)
     add_compile_definitions(WIN32 _WIN32 NOMINMAX WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS)# NOGDI)
     add_compile_options(/utf-8)
+elseif(LT_MAC)
+    add_compile_definitions(GL_SILENCE_DEPRECATION=1)
 endif()
 
 
@@ -141,6 +143,12 @@ if (LT_LINUX)
     pkg_check_modules(EGL REQUIRED IMPORTED_TARGET egl)
     pkg_check_modules(MFX REQUIRED IMPORTED_TARGET libmfx)
 endif(LT_LINUX)
+
+if (LT_MAC)
+    find_package(OpenGL REQUIRED)
+    find_library(LIB_CORE_VIDEO CoreVideo)
+    find_library(LIB_APP_KIT AppKit)
+endif(LT_MAC)
 
 # 依赖于SDL
 add_subdirectory(third_party/imgui_builder)

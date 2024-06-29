@@ -28,40 +28,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "macos_wrapper.h"
+#pragma once
+#include <stdint.h>
 
-#import <Cocoa/Cocoa.h>
+#if __cplusplus
+extern "C" {
+#endif
 
-static void replaceWithGLContentView(void* ns_window)
-{
-    NSWindow* wnd = (NSWindow*)ns_window;
-    CGSize size = [[wnd frame] size];
-    // ÄÚ´æÐ¹Â¶?
-    NSOpenGLView* view = [[NSOpenGLView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
-    [wnd setContentview:view];
+struct _VtbGlPipelinePlatform;
+
+typedef void (*FuncNSGLMakeCurrent)(struct _VtbGlPipelinePlatform* that);
+typedef void (*FuncNSGLMakeCurrentEmpty)(struct _VtbGlPipelinePlatform* that);
+typedef void (*FuncNSMapOpenGLTexture)(struct _VtbGlPipelinePlatform* that, uint32_t textures[2], int64_t frame);
+
+typedef struct _VtbGlPipelinePlatform {
+    FuncNSGLMakeCurrent glMakeCurrent;
+    FuncNSGLMakeCurrentEmpty glMakeCurrentEmpty;
+    FuncNSMapOpenGLTexture mapOpenGLTexture;
+} VtbGlPipelinePlatform;
+
+VtbGlPipelinePlatform* createVtbGlPipelinePlatform(void* ns_window, uint32_t width, uint32_t height);
+void destroyVtbGlPipelinePlatform(VtbGlPipelinePlatform* obj);
+
+#if __cplusplus
 }
-
-static void glMakeCurrent(void* ns_window)
-{
-    NSWindow* wnd = (NSWindow*)ns_window;
-    [[wnd contentView] lockFocus];
-}
-
-static void glMakeCurrentEmpty(void* ns_window)
-{
-    NSWindow* wnd = (NSWindow*)ns_window;
-    [[wnd contentView] unlockFocus];
-}
-
-void* createMacOSWrapper()
-{
-    MacOSWrapper* obj = (MacOSWrapper*)malloc(sizeof(MacOSWrapper));
-    obj->replaceWithGLContentView = &replaceWithGLContentView;
-    return obj;
-}
-
-void destroyMacOSWrapper(void* _obj)
-{
-    MacOSWrapper* obj = (MacOSWrapper*)_obj;
-    free(obj);
-}
+#endif
