@@ -63,6 +63,8 @@ AVHWDeviceType toAVHWDeviceType(lt::VaType type) {
         return AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA;
     case lt::VaType::VAAPI:
         return AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI;
+    case lt::VaType::VTB:
+        return AVHWDeviceType::AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
     default:
         return AVHWDeviceType::AV_HWDEVICE_TYPE_NONE;
     }
