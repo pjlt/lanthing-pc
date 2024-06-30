@@ -103,7 +103,7 @@ bool ClientManager::init(ltlib::IOLoop* ioloop) {
     params.ioloop = ioloop;
 #if LT_WINDOWS
     params.pipe_name = "\\\\?\\pipe\\lanthing_client_manager";
-#elif LT_LINUX
+#elif LT_LINUX || LT_MAC
     std::filesystem::path fs = ltlib::getConfigPath();
     fs = fs / "pipe_lanthing_client_manager";
     params.pipe_name = fs.string();
@@ -182,6 +182,9 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
         ltlib::combineVersion(LT_VERSION_MAJOR, LT_VERSION_MINOR, LT_VERSION_PATCH));
     req->set_required_version(ltlib::combineVersion(0, 3, 3));
     ltlib::DisplayOutputDesc display_output_desc = ltlib::getDisplayOutputDesc("");
+#if !defined(LT_WINDOWS)
+    display_output_desc = ltlib::DisplayOutputDesc(1920, 1080, 60, 0);
+#endif
     auto params = req->mutable_streaming_params();
     params->set_enable_driver_input(false);
     params->set_enable_gamepad(false);

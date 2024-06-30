@@ -72,7 +72,11 @@ bool makeSingletonProcess(const std::string& name) {
         return no_other_process.value();
     }
     std::stringstream ss;
-    ss << getpwuid(getuid())->pw_dir << "/.lanthing/" << name << ".pid";
+    ss << getpwuid(getuid())->pw_dir << "/.lanthing";
+    std::string folder = ss.str();
+    std::error_code ec;
+    std::filesystem::create_directories(folder, ec);
+    ss << "/" << name << ".pid";
     int pid_file = open(ss.str().c_str(), O_CREAT | O_RDWR, 0666);
     if (lockf(pid_file, F_TLOCK, 0) < 0) {
         no_other_process = false;

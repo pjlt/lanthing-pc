@@ -348,6 +348,7 @@ if (LT_WINDOWS)
     )
 endif()
 
+if (LT_WINDOWS)
 install(CODE [[
     file(GET_RUNTIME_DEPENDENCIES
         RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
@@ -363,6 +364,7 @@ install(CODE [[
         file(INSTALL ${DEP_LIB} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
     endforeach()
 ]])
+endif()
 
 if (LT_WINDOWS)
 deploy_dlls(${PROJECT_NAME})

@@ -42,6 +42,7 @@
 CMakeSettings.json
 options-user.cmake
 *AppImage
+CMakeLists.txt.user
 
 
 # misc
