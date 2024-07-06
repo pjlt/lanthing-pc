@@ -80,7 +80,7 @@ void selectGPU() {
         SimpleGuard reg_guard{
             [wprogram, kKey]() { RegDeleteKeyValueW(HKEY_CURRENT_USER, kKey, wprogram.c_str()); }};
         PROCESS_INFORMATION pi = {0};
-        STARTUPINFO si = {0};
+        STARTUPINFOW si = {0};
         si.dwFlags = STARTF_USESHOWWINDOW;
         si.cb = sizeof(STARTUPINFO);
         si.wShowWindow = SW_HIDE;

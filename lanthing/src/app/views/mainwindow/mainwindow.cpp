@@ -67,7 +67,7 @@
 #include <ltproto/service2app/connection_status.pb.h>
 #include <ltproto/service2app/operate_connection.pb.h>
 
-#include <views/components/access_token_validator.h>
+#include <app/views/components/access_token_validator.h>
 
 namespace {
 

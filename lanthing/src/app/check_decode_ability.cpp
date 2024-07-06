@@ -67,7 +67,7 @@ uint32_t checkDecodeAbility() {
     std::wstring wprogram = ltlib::utf8To16(program);
     std::wstring wcmd = ltlib::utf8To16("-type worker -action check_decode");
     PROCESS_INFORMATION pi = {0};
-    STARTUPINFO si = {0};
+    STARTUPINFOW si = {0};
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.cb = sizeof(STARTUPINFO);
     si.wShowWindow = SW_HIDE;

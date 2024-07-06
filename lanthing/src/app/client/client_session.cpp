@@ -111,7 +111,7 @@ bool ClientSession::start() {
         PROCESS_INFORMATION pi = {0};
         SECURITY_ATTRIBUTES sa = {0};
         sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-        STARTUPINFO si = {0};
+        STARTUPINFOW si = {0};
         si.dwFlags = STARTF_USESHOWWINDOW;
         si.cb = sizeof(STARTUPINFO);
         si.wShowWindow = SW_SHOW;

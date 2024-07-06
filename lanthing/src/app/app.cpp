@@ -512,7 +512,7 @@ void App::createAndStartService() {
         return;
     }
     // std::filesystem::path在字符编码上的问题好像挺复杂，先绕过
-    std::string bin_path = ltlib::getProgramPath() + "\\lanthing.exe";
+    std::string bin_path = ltlib::getProgramPath() + "\\lanthing.exe -type service";
     if (!ltlib::ServiceCtrl::createService(kServiceName, kDisplayName, bin_path)) {
         LOGF(ERR, "Create service failed (name:%s, path:%s)", kServiceName.c_str(),
              bin_path.c_str());

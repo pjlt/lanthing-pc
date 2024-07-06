@@ -45,6 +45,7 @@
 #include <ltlib/system.h>
 #include <ltlib/threads.h>
 
+#include <app/app.h>
 #include <client/client.h>
 #include <worker/worker.h>
 #if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
@@ -68,6 +69,7 @@ int getLtFlushLogLines();
 namespace {
 
 enum class Role {
+    App,
     Service,
     Client,
     Worker,
@@ -135,6 +137,9 @@ void initLogAndMinidump(Role role) {
     std::string rtc_prefix;
     std::filesystem::path log_dir;
     switch (role) {
+    case Role::App:
+        prefix = "app";
+        break;
     case Role::Client:
         prefix = "client";
         rtc_prefix = "rtccli.";
@@ -291,6 +296,23 @@ int runAsWorker(std::map<std::string, std::string> options) {
 #endif // LT_WINDOWS
 }
 
+int runAsApp(std::map<std::string, std::string> options, int argc, char* argv[]) {
+    if (ltlib::selfElevateAndNeedExit()) {
+        return 0;
+    }
+    if (!ltlib::makeSingletonProcess("lanthing_app")) {
+        printf("Another instance is running.\n");
+        return 0;
+    }
+    initLogAndMinidump(Role::App);
+    std::unique_ptr<lt::App> app = lt::App::create();
+    if (app == nullptr) {
+        return -1;
+    }
+    LOG(INFO) << "app run.";
+    return app->exec(argc, argv);
+}
+
 } // namespace
 
 int getLtFlushLogLines() {
@@ -302,7 +324,10 @@ int main(int argc, char* argv[]) {
     auto options = parseOptions(argc, argv);
     setFlushLogLines(options);
     auto iter = options.find("-type");
-    if (iter == options.end() || iter->second == "service") {
+    if (iter == options.end() || iter->second == "app") {
+        return runAsApp(options, argc, argv);
+    }
+    else if (iter->second == "service") {
         return runAsService(options);
     }
     else if (iter->second == "client") {

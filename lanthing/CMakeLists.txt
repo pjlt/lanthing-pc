@@ -1,12 +1,58 @@
 cmake_minimum_required(VERSION 3.21)
 project(lanthing)
 
+set(CMAKE_AUTORCC ON)
+
 include(deploy_dlls)
+include (deploy_qt6)
+
+list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui LinguistTools)
+qt_standard_project_setup()
+get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
 
 #cmrc_add_resource_library(fonts
 #    NAMESPACE fonts
 #    ${CMAKE_CURRENT_SOURCE_DIR}/fonts/NotoSansSC-Medium.ttf
 #)
+
+set(LT_APP_SRCS
+    # root
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/app.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/app.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/check_decode_ability.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/check_decode_ability.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_session.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_session.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_manager.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/service/service_manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/service/service_manager.cpp
+
+    # gui
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/resources.qrc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/gui.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/friendly_error_code.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/friendly_error_code.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/progress_widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/progress_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/clickable_label.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/access_token_validator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/access_token_validator.cpp
+)
+
+set(LT_APP_UI_VIEWS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.ui
+)
 
 set(LT_SVC_SRCS
     # Service
@@ -104,6 +150,10 @@ if (LT_WINDOWS)
     list(APPEND LT_VIDEO_DECODER_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/decoder/openh264_decoder.cpp
+    )
+    list(APPEND LT_APP_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/select_gpu.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/select_gpu.cpp
     )
 elseif (LT_LINUX)
     list(APPEND LT_VIDEO_RENDERER_SRCS
@@ -242,6 +292,8 @@ set(LT_SRCS
 
 if (LT_WINDOWS)
     list(APPEND LT_SRCS
+        ${LT_APP_SRCS}
+        ${LT_APP_UI_VIEWS}
         ${LT_SVC_SRCS}
         ${LT_WORKER_WIN_SRCS}
         ${LT_VIDEO_ENCODER_SRCS}
@@ -265,6 +317,11 @@ add_executable(${PROJECT_NAME}
 # 按照原始目录结构展开
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src FILES ${LT_SRCS} ${PLATFORM_SRCS})
 
+qt_add_translations(${PROJECT_NAME}
+    TS_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/i18n/lt-zh_CN.ts
+)
+
 target_include_directories(${PROJECT_NAME}
     #让本项目的代码可以从"src"文件夹开始include
     PRIVATE
@@ -272,6 +329,7 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DBUILDING_LT_EXE=1)
+qt_disable_unicode_defines(${PROJECT_NAME})
 
 set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
 
@@ -289,7 +347,7 @@ if(LT_WINDOWS)
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
             ViGEmClient::ViGEmClientShared
-            VPL::dispatcher nvcodec
+            VPL::dispatcher nvcodec wintoastlib nbclipboard
     )
 elseif(LT_LINUX)
     set(PLATFORM_LIBS
@@ -315,6 +373,8 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME}
+    Qt6::Widgets
+    Qt6::Gui
     g3log
     protobuf::libprotobuf-lite
     SDL2::SDL2
@@ -333,19 +393,30 @@ target_link_libraries(${PROJECT_NAME}
     ${PLATFORM_LIBS}
 )
 
+if (LT_WINDOWS)
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+endif(LT_WINDOWS)
+
 install(
     TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .
-    RUNTIME DESTINATION .
+    RUNTIME DESTINATION bin
     LIBRARY DESTINATION .
     ARCHIVE DESTINATION .
 )
 
 if (LT_WINDOWS)
+    install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
     install(
         FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
         DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
     )
+endif()
+
+if(LT_MAC)
+    set(MACOSX_BUNDLE_BUNDLE_VERSION "${LT_VERSION_MAJOR}${LT_VERSION_MINOR}${LT_VERSION_PATCH}")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER net.lanthing)
+    set(MACOSX_BUNDLE_ICON_FILE lanthing.ico)
 endif()
 
 if (LT_WINDOWS)
@@ -368,6 +439,7 @@ endif()
 
 if (LT_WINDOWS)
 deploy_dlls(${PROJECT_NAME})
+deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
 endif(LT_WINDOWS)
 
 # 设置VS调试路径

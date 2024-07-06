@@ -26,9 +26,9 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Project Lanthing"
             VALUE "FileDescription", "Lanthing"
-            VALUE "FileVersion", "0.0.0.0"
+            VALUE "FileVersion", "0.0.0"
             VALUE "InternalName", "lanthing.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2023 Project Lanthing All Rights Reserved"
+            VALUE "LegalCopyright", "Copyright (C) 2024 Project Lanthing All Rights Reserved"
             VALUE "OriginalFilename", "lanthing.exe"
             VALUE "ProductName", "Lanthing"
             VALUE "ProductVersion", LT_VERSION_STR

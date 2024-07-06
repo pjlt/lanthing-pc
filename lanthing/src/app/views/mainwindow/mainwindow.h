@@ -38,8 +38,8 @@
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qpushbutton.h>
 
-#include <views/components/progress_widget.h>
-#include <views/gui.h>
+#include <app/views/components/progress_widget.h>
+#include <app/views/gui.h>
 
 QT_BEGIN_NAMESPACE
 

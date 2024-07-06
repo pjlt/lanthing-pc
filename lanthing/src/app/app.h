@@ -44,9 +44,9 @@
 #include <ltlib/settings.h>
 #include <ltlib/threads.h>
 
-#include <client/client_manager.h>
-#include <service/service_manager.h>
-#include <views/gui.h>
+#include <app/client/client_manager.h>
+#include <app/service/service_manager.h>
+#include <app/views/gui.h>
 #if defined(LT_WINDOWS)
 #include <nbclipboard.h>
 #endif // LT_WINDOWS
