@@ -49,6 +49,7 @@ CMakeLists.txt.user
 draft.txt
 fonts/
 .VSCodeCounter
+.DS_Store
 
 /third_party/prebuilt
 /third_party/SDL

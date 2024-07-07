@@ -41,6 +41,7 @@
 #elif LT_MAC
 #include <unistd.h>
 #include <pwd.h>
+#include <mach-o/dyld.h>
 #endif // LT_WINDOWS
 
 #include <climits>
@@ -615,7 +616,13 @@ void openFolder(const std::string& path) {
 #elif defined(LT_MAC)
 
 std::string getProgramFullpath() {
-    return "";
+    std::vector<char> buff(PATH_MAX);
+    uint32_t buffsize = PATH_MAX;
+    if (_NSGetExecutablePath(buff.data(), &buffsize)) {
+        return "";
+    } else {
+        return std::string(buff.data());
+    }
 }
 
 std::string getProgramPath() {

@@ -266,12 +266,13 @@ set(LT_SRCS
     ${LT_VIDEO_WIDGET_SRCS}
     ${LT_AUDIO_PLAYER_SRCS}
     ${LT_INPUT_CAPTURER_SRCS}
+
+    ${LT_APP_SRCS}
+    ${LT_APP_UI_VIEWS}
 )
 
 if (LT_WINDOWS)
     list(APPEND LT_SRCS
-        ${LT_APP_SRCS}
-        ${LT_APP_UI_VIEWS}
         ${LT_SVC_SRCS}
         ${LT_WORKER_WIN_SRCS}
         ${LT_VIDEO_ENCODER_SRCS}
@@ -292,7 +293,7 @@ add_executable(${PROJECT_NAME}
     ${LT_SRCS}
 )
 
-# 按照原始目录结构展开
+# 鎸夌収鍘熷鐩綍缁撴瀯灞曞紑
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src FILES ${LT_SRCS} ${PLATFORM_SRCS})
 
 qt_add_translations(${PROJECT_NAME}
@@ -301,7 +302,7 @@ qt_add_translations(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME}
-    #让本项目的代码可以从"src"文件夹开始include
+    #璁╂湰椤圭洰鐨勪唬鐮佸彲浠ヤ粠"src"鏂囦欢澶瑰紑濮媔nclude
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
@@ -374,5 +375,5 @@ if (LT_WINDOWS)
     set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
 endif(LT_WINDOWS)
 
-# 设置VS调试路径
+# 璁剧疆VS璋冭瘯璺緞
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

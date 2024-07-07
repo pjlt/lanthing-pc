@@ -297,6 +297,7 @@ int runAsWorker(std::map<std::string, std::string> options) {
 }
 
 int runAsApp(std::map<std::string, std::string> options, int argc, char* argv[]) {
+    (void)options;
     if (ltlib::selfElevateAndNeedExit()) {
         return 0;
     }
