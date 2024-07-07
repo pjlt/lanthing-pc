@@ -64,15 +64,15 @@ namespace lt {
 WARNING_DISABLE(6335)
 uint32_t checkDecodeAbility() {
     std::string program = ltlib::getProgramPath() + "\\lanthing.exe";
-    std::wstring wprogram = ltlib::utf8To16(program);
-    std::wstring wcmd = ltlib::utf8To16("-type worker -action check_decode");
+    std::wstring wcmd =
+        ltlib::utf8To16(program) + ltlib::utf8To16(" -type worker -action check_decode");
     PROCESS_INFORMATION pi = {0};
     STARTUPINFOW si = {0};
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.cb = sizeof(STARTUPINFO);
     si.wShowWindow = SW_HIDE;
-    if (!CreateProcessW(const_cast<LPWSTR>(wprogram.c_str()), const_cast<LPWSTR>(wcmd.c_str()),
-                        nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+    if (!CreateProcessW(nullptr, const_cast<LPWSTR>(wcmd.c_str()), nullptr, nullptr, FALSE, 0,
+                        nullptr, nullptr, &si, &pi)) {
         LOGF(ERR, "Check decode ability CreateProcessW failed with %#x", GetLastError());
         return 0;
     }

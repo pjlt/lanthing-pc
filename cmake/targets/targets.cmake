@@ -1,25 +1,3 @@
-cmake_minimum_required(VERSION 3.21)
-project(lanthing)
-
-set(CMAKE_AUTORCC ON)
-
-include(deploy_dlls)
-include (deploy_qt6)
-
-list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})
-
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui LinguistTools)
-qt_standard_project_setup()
-get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
-get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
-find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
-
-#cmrc_add_resource_library(fonts
-#    NAMESPACE fonts
-#    ${CMAKE_CURRENT_SOURCE_DIR}/fonts/NotoSansSC-Medium.ttf
-#)
-
 set(LT_APP_SRCS
     # root
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app/app.h
@@ -314,7 +292,7 @@ add_executable(${PROJECT_NAME}
     ${LT_SRCS}
 )
 
-# 鎸夌収鍘熷鐩綍缁撴瀯灞曞紑
+# 按照原始目录结构展开
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src FILES ${LT_SRCS} ${PLATFORM_SRCS})
 
 qt_add_translations(${PROJECT_NAME}
@@ -323,7 +301,7 @@ qt_add_translations(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME}
-    #璁╂湰椤圭洰鐨勪唬鐮佸彲浠ヤ粠"src"鏂囦欢澶瑰紑濮媔nclude
+    #让本项目的代码可以从"src"文件夹开始include
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
@@ -332,7 +310,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE -DBUILDING_LT_EXE=1)
 qt_disable_unicode_defines(${PROJECT_NAME})
 
 set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
-
 
 if(LT_WINDOWS)
     if(LT_USE_PREBUILT_VIDEO2)
@@ -394,53 +371,8 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 if (LT_WINDOWS)
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
 endif(LT_WINDOWS)
 
-install(
-    TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION .
-    ARCHIVE DESTINATION .
-)
-
-if (LT_WINDOWS)
-    install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
-    install(
-        FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
-    )
-endif()
-
-if(LT_MAC)
-    set(MACOSX_BUNDLE_BUNDLE_VERSION "${LT_VERSION_MAJOR}${LT_VERSION_MINOR}${LT_VERSION_PATCH}")
-    set(MACOSX_BUNDLE_GUI_IDENTIFIER net.lanthing)
-    set(MACOSX_BUNDLE_ICON_FILE lanthing.ico)
-endif()
-
-if (LT_WINDOWS)
-install(CODE [[
-    file(GET_RUNTIME_DEPENDENCIES
-        RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
-        UNRESOLVED_DEPENDENCIES_VAR UNRESOLVED_DEPS
-        EXECUTABLES $<TARGET_FILE:lanthing>
-        DIRECTORIES ${CMAKE_SOURCE_DIR}
-        PRE_INCLUDE_REGEXES ${CMAKE_SOURCE_DIR}
-        POST_INCLUDE_REGEXES ${CMAKE_SOURCE_DIR}
-        PRE_EXCLUDE_REGEXES "system32"
-        POST_EXCLUDE_REGEXES "system32"
-    )
-    foreach(DEP_LIB ${RESOLVED_DEPS})
-        file(INSTALL ${DEP_LIB} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-    endforeach()
-]])
-endif()
-
-if (LT_WINDOWS)
-deploy_dlls(${PROJECT_NAME})
-deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
-endif(LT_WINDOWS)
-
-# 璁剧疆VS璋冭瘯璺緞
+# 设置VS调试路径
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")

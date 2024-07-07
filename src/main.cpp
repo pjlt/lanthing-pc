@@ -322,6 +322,7 @@ int getLtFlushLogLines() {
 int main(int argc, char* argv[]) {
     ::srand(static_cast<unsigned int>(::time(nullptr)));
     auto options = parseOptions(argc, argv);
+    options["-flushlog"] = 1;
     setFlushLogLines(options);
     auto iter = options.find("-type");
     if (iter == options.end() || iter->second == "app") {

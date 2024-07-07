@@ -1,0 +1,77 @@
+# 默认编译Release
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# 主要是把RelWithDebInfo在名字上也变成Release，方便编写脚本
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    set(LT_BUILD_TYPE Debug)
+elseif(CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    set(LT_BUILD_TYPE Release)
+else()
+    message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+endif()
+
+# 平台检测
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    set(LT_LINUX ON)
+    set(LT_PLAT linux)
+    set(LT_THIRD_POSTFIX ${LT_PLAT})
+    add_compile_definitions(LT_LINUX=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(LT_ANDROID ON)
+    set(LT_PLAT android)
+    set(LT_THIRD_POSTFIX ${LT_PLAT})
+    add_compile_definitions(LT_ANDROID=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(LT_MAC ON)
+    set(LT_PLAT mac)
+    set(LT_THIRD_POSTFIX ${LT_PLAT})
+    add_compile_definitions(LT_MAC=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+    set(LT_IOS ON)
+    set(LT_PLAT ios)
+    set(LT_THIRD_POSTFIX ${LT_PLAT})
+    add_compile_definitions(LT_IOS=1)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    set(LT_WINDOWS ON)
+    set(LT_PLAT win)
+    set(LT_THIRD_POSTFIX ${LT_PLAT}/${LT_BUILD_TYPE})
+    add_compile_definitions(LT_WINDOWS=1)
+endif()
+
+set(CMAKE_CXX_STANDARD 20)
+set(LT_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+#服务器地址
+add_definitions(-DLT_SERVER_ADDR=${LT_SERVER_ADDR})
+add_definitions(-DLT_SERVER_SVC_PORT=${LT_SERVER_SVC_PORT})
+add_definitions(-DLT_SERVER_APP_PORT=${LT_SERVER_APP_PORT})
+add_definitions(-DLT_SERVER_USE_SSL=$<IF:$<BOOL:${LT_SERVER_USE_SSL}>,true,false>)
+#windows服务
+add_definitions(-DLT_RUN_AS_SERVICE=$<IF:$<BOOL:${LT_RUN_AS_SERVICE}>,true,false>)
+add_definitions(-DLT_WIN_SERVICE_NAME=${LT_WIN_SERVICE_NAME})
+add_definitions(-DLT_WIN_SERVICE_DISPLAY_NAME=${LT_WIN_SERVICE_DISPLAY_NAME})
+#version
+add_definitions(-DLT_VERSION_MAJOR=${LT_VERSION_MAJOR})
+add_definitions(-DLT_VERSION_MINOR=${LT_VERSION_MINOR})
+add_definitions(-DLT_VERSION_PATCH=${LT_VERSION_PATCH})
+#misc
+add_definitions(-DLT_CRASH_ON_THREAD_HANGS=$<IF:$<BOOL:${LT_CRASH_ON_THREAD_HANGS}>,true,false>)
+add_definitions(-DLT_ENABLE_SELF_CONNECT=$<IF:$<BOOL:${LT_ENABLE_SELF_CONNECT}>,true,false>)
+add_definitions(-DLT_USE_PREBUILT_VIDEO2=$<IF:$<BOOL:${LT_USE_PREBUILT_VIDEO2}>,true,false>)
+add_definitions(-DLT_DUMP=$<IF:$<BOOL:${LT_DUMP}>,true,false>)
+add_definitions(-DLT_DUMP_URL=${LT_DUMP_URL})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
+
+if(${LT_ENABLE_TEST})
+    include(CTest)
+endif()
+
+if(LT_WINDOWS)
+    include(${CMAKE_CURRENT_LIST_DIR}/windows.cmake)
+elseif(LT_MAC)
+    include(${CMAKE_CURRENT_LIST_DIR}/mac.cmake)
+endif()

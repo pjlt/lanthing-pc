@@ -64,7 +64,8 @@ WARNING_DISABLE(6335)
 void selectGPU() {
     std::string program = ltlib::getProgramPath() + "\\lanthing.exe";
     std::wstring wprogram = ltlib::utf8To16(program);
-    std::wstring wcmd = ltlib::utf8To16("-type worker -action check_dupl");
+    std::wstring wcmd =
+        ltlib::utf8To16(program) + ltlib::utf8To16(" -type worker -action check_dupl");
     const wchar_t* kKey = L"Software\\Microsoft\\DirectX\\UserGpuPreferences";
     for (int i = 1; i <= 2; i++) {
         LOG(INFO) << "Try GpuPreference=" << i;
@@ -84,8 +85,8 @@ void selectGPU() {
         si.dwFlags = STARTF_USESHOWWINDOW;
         si.cb = sizeof(STARTUPINFO);
         si.wShowWindow = SW_HIDE;
-        if (!CreateProcessW(const_cast<LPWSTR>(wprogram.c_str()), const_cast<LPWSTR>(wcmd.c_str()),
-                            nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+        if (!CreateProcessW(nullptr, const_cast<LPWSTR>(wcmd.c_str()), nullptr, nullptr, FALSE, 0,
+                            nullptr, nullptr, &si, &pi)) {
             LOGF(ERR, "Select GPU(%d) CreateProcessW failed with %#x", i, GetLastError());
             continue;
         }
