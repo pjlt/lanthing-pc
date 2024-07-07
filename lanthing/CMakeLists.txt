@@ -377,11 +377,11 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Gui
     g3log
     protobuf::libprotobuf-lite
-    SDL2::SDL2
+    SDL2::SDL2-static
     ffmpeg
     Opus::opus
     amf
-    uv
+    uv_a
     breakpad
     imgui
     ltlib

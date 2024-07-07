@@ -66,7 +66,7 @@
 #include <ltlib/times.h>
 
 #include <transport/transport_rtc.h>
-#include <transport/transport_rtc2.h>
+// #include <transport/transport_rtc2.h>
 #include <transport/transport_tcp.h>
 
 #include "worker_process.h"
@@ -175,8 +175,8 @@ WorkerSession::~WorkerSession() {
         }
         case ltproto::common::TransportType::RTC2:
         {
-            auto rtc2_svr = static_cast<rtc2::Server*>(tp_server_);
-            delete rtc2_svr;
+            // auto rtc2_svr = static_cast<rtc2::Server*>(tp_server_);
+            // delete rtc2_svr;
             break;
         }
         default:
@@ -339,9 +339,9 @@ bool WorkerSession::initTransport() {
         tp_server_ = createRtcServer();
         break;
     case ltproto::common::TransportType::RTC2:
-        LOG(INFO) << "Init transport using RTC2";
-        tp_server_ = createRtc2Server();
-        break;
+        // LOG(INFO) << "Init transport using RTC2";
+        // tp_server_ = createRtc2Server();
+        // break;
     default:
         break;
     }
@@ -420,6 +420,7 @@ tp::Server* WorkerSession::createRtcServer() {
     return rtc::Server::create(std::move(params));
 }
 
+/*
 tp::Server* WorkerSession::createRtc2Server() {
     rtc2::Server::Params params{};
     params.user_data = this;
@@ -443,6 +444,7 @@ tp::Server* WorkerSession::createRtc2Server() {
     auto server = rtc2::Server::create(params);
     return server.release();
 }
+*/
 
 void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_height,
                                         uint32_t client_refresh_rate,

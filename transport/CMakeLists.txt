@@ -8,7 +8,7 @@ add_library(${PROJECT_NAME}
 	${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport.h
 	${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport_tcp.h
 	${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport_rtc.h
-	${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport_rtc2.h
+	#${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport_rtc2.h
 	${CMAKE_CURRENT_SOURCE_DIR}/tcp/transport_tcp.cpp
 )
 
@@ -18,16 +18,16 @@ target_link_libraries(${PROJECT_NAME}
 	PRIVATE
 		protobuf::libprotobuf-lite
 		g3log
-		uv
+		uv_a
 		ltlib
 		ltproto
 )
 
 add_subdirectory(rtc/${LT_PLAT})
-add_subdirectory(rtc2)
+#add_subdirectory(rtc2)
 
 target_link_libraries(${PROJECT_NAME}
 	PUBLIC
 		rtc
-		rtc2
+		#rtc2
 )

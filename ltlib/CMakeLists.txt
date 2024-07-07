@@ -97,7 +97,7 @@ target_link_libraries(${PROJECT_NAME}
         utf8cpp
         sqlite3
         protobuf::libprotobuf-lite
-        uv
+        uv_a
         tomlpp
         g3log
         MbedTLS::mbedtls

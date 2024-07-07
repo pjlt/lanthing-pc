@@ -58,7 +58,7 @@
 #include <ltlib/time_sync.h>
 
 #include <transport/transport_rtc.h>
-#include <transport/transport_rtc2.h>
+// #include <transport/transport_rtc2.h>
 #include <transport/transport_tcp.h>
 
 namespace {
@@ -243,8 +243,8 @@ Client::~Client() {
         }
         case ltproto::common::TransportType::RTC2:
         {
-            auto rtc2_cli = static_cast<rtc2::Client*>(tp_client_);
-            delete rtc2_cli;
+            // auto rtc2_cli = static_cast<rtc2::Client*>(tp_client_);
+            // delete rtc2_cli;
             break;
         }
         default:
@@ -633,8 +633,8 @@ bool Client::initTransport() {
         tp_client_ = createRtcClient();
         break;
     case ltproto::common::TransportType::RTC2:
-        tp_client_ = createRtc2Client();
-        break;
+        // tp_client_ = createRtc2Client();
+        // break;
     default:
         LOG(ERR) << "initTransport failed: Unknown transport type " << transport_type_;
         break;
@@ -709,6 +709,7 @@ tp::Client* Client::createRtcClient() {
     return rtc::Client::create(std::move(params));
 }
 
+/*
 tp::Client* Client::createRtc2Client() {
     namespace ph = std::placeholders;
     rtc2::Client::Params params{};
@@ -730,6 +731,7 @@ tp::Client* Client::createRtc2Client() {
     auto client = rtc2::Client::create(params);
     return client.release();
 }
+*/
 
 void Client::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool is_reliable) {
     // 跑在数据通道线程

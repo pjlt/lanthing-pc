@@ -138,7 +138,7 @@ private:
     bool initTransport();
     tp::Client* createTcpClient();
     tp::Client* createRtcClient();
-    tp::Client* createRtc2Client();
+    // tp::Client* createRtc2Client();
     static void onTpData(void* user_data, const uint8_t* data, uint32_t size, bool is_reliable);
     static void onTpVideoFrame(void* user_data, const lt::VideoFrame& frame);
     static void onTpAudioData(void* user_data, const lt::AudioData& audio_data);

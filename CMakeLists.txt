@@ -114,6 +114,7 @@ add_subdirectory(third_party/prebuilt/sqlite/${LT_PLAT})
 set(protobuf_MODULE_COMPATIBLE ON)
 #protobuf依赖absl
 find_package(absl REQUIRED PATHS third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX}/lib/cmake)
+find_package(utf8_range REQUIRED PATHS third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX}/lib/cmake)
 find_package(Protobuf REQUIRED PATHS third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX})
 find_package(GTest REQUIRED PATHS third_party/prebuilt/googletest/${LT_THIRD_POSTFIX})
 find_package(g3log REQUIRED PATHS third_party/prebuilt/g3log/${LT_THIRD_POSTFIX})
