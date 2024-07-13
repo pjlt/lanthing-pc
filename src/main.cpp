@@ -81,6 +81,19 @@ std::unique_ptr<LTMinidumpGenerator> g_minidump_genertator;
 
 std::optional<int> gFlushLogLines;
 
+struct AutoGuard {
+    AutoGuard(const std::function<void()>& func)
+        : func_{func} {}
+    ~AutoGuard() {
+        if (func_) {
+            func_();
+        }
+    }
+
+private:
+    std::function<void()> func_;
+};
+
 void setFlushLogLines(std::map<std::string, std::string> options) {
     auto iter = options.find("-flushlog");
     if (iter == options.cend()) {
@@ -202,11 +215,11 @@ void initLogAndMinidump(Role role) {
     g_minidump_genertator->addCallback([]() { rtc::flushLogs(); });
     signal(SIGINT, sigint_handler);
     if (LT_CRASH_ON_THREAD_HANGS) {
-        ltlib::ThreadWatcher::instance()->enableCrashOnTimeout();
-        ltlib::ThreadWatcher::instance()->registerTerminateCallback(terminateCallback);
+        ltlib::ThreadWatcher::enableCrashOnTimeout();
+        ltlib::ThreadWatcher::registerTerminateCallback(terminateCallback);
     }
     else {
-        ltlib::ThreadWatcher::instance()->disableCrashOnTimeout();
+        ltlib::ThreadWatcher::disableCrashOnTimeout();
     }
 }
 
@@ -236,8 +249,7 @@ int runAsClient(std::map<std::string, std::string> options) {
     lt::createInboundFirewallRule("Lanthing", ltlib::getProgramFullpath());
     auto client = lt::cli::Client::create(options);
     if (client) {
-        client->wait();
-        return 0;
+        return client->loop();
     }
     else {
         return 1;
@@ -321,6 +333,8 @@ int getLtFlushLogLines() {
 }
 
 int main(int argc, char* argv[]) {
+    ltlib::ThreadWatcher::init(std::this_thread::get_id());
+    AutoGuard ag{&ltlib::ThreadWatcher::uninit};
     ::srand(static_cast<unsigned int>(::time(nullptr)));
     auto options = parseOptions(argc, argv);
     options["-flushlog"] = 1;

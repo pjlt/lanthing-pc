@@ -100,19 +100,54 @@ void crash_me() {
     std::abort();
 }
 
+static ltlib::ThreadWatcher* g_watcher = nullptr;
+
 } // namespace
 
 namespace ltlib {
 
 using namespace time;
 
-ThreadWatcher* ThreadWatcher::instance() {
-    static ThreadWatcher* const thread_watcher = new ThreadWatcher;
-    return thread_watcher;
+void ThreadWatcher::init(std::thread::id main_thread_id) {
+    g_watcher = new ThreadWatcher{main_thread_id};
 }
 
-ThreadWatcher::ThreadWatcher()
-    : thread_{std::bind(&ThreadWatcher::checkLoop, this)} {}
+void ThreadWatcher::uninit() {
+    delete g_watcher;
+}
+
+void ThreadWatcher::add(const std::string& name, std::thread::id thread_id) {
+    g_watcher->doAdd(name, thread_id);
+}
+
+void ThreadWatcher::remove(const std::string& name) {
+    g_watcher->doRemove(name);
+}
+
+void ThreadWatcher::reportAlive(const std::string& name) {
+    g_watcher->doReportAlive(name);
+}
+
+void ThreadWatcher::registerTerminateCallback(
+    const std::function<void(const std::string&)>& callback) {
+    g_watcher->doRegisterTerminateCallback(callback);
+}
+
+void ThreadWatcher::enableCrashOnTimeout() {
+    g_watcher->doEnableCrashOnTimeout();
+}
+
+void ThreadWatcher::disableCrashOnTimeout() {
+    g_watcher->doDisableCrashOnTimeout();
+}
+
+std::thread::id ThreadWatcher::mainThreadID() {
+    return g_watcher->doGetMainThreadID();
+}
+
+ThreadWatcher::ThreadWatcher(std::thread::id main_thread_id)
+    : main_thread_id_{main_thread_id}
+    , thread_{std::bind(&ThreadWatcher::checkLoop, this)} {}
 
 ThreadWatcher::~ThreadWatcher() {
     {
@@ -123,30 +158,34 @@ ThreadWatcher::~ThreadWatcher() {
     thread_.join();
 }
 
-void ThreadWatcher::add(const std::string& name, std::thread::id thread_id) {
+void ThreadWatcher::doAdd(const std::string& name, std::thread::id thread_id) {
     // 由调用者保证name的唯一性
     ThreadInfo info{name, thread_id, ltlib::steady_now_ms()};
     std::lock_guard lock{mutex_};
     threads_[name] = info;
 }
 
-void ThreadWatcher::remove(const std::string& name) {
+void ThreadWatcher::doRemove(const std::string& name) {
     std::lock_guard lock{mutex_};
     threads_.erase(name);
 }
 
-void ThreadWatcher::registerTerminateCallback(
+void ThreadWatcher::doRegisterTerminateCallback(
     const std::function<void(const std::string&)>& callback) {
     std::lock_guard lock{mutex_};
     terminate_callback_ = callback;
 }
 
-void ThreadWatcher::enableCrashOnTimeout() {
+void ThreadWatcher::doEnableCrashOnTimeout() {
     enable_crash_ = true;
 }
 
-void ThreadWatcher::disableCrashOnTimeout() {
+void ThreadWatcher::doDisableCrashOnTimeout() {
     enable_crash_ = false;
+}
+
+std::thread::id ThreadWatcher::doGetMainThreadID() {
+    return main_thread_id_;
 }
 
 void ThreadWatcher::checkLoop() {
@@ -188,7 +227,7 @@ void ThreadWatcher::checkLoop() {
     }
 }
 
-void ThreadWatcher::reportAlive(const std::string& name) {
+void ThreadWatcher::doReportAlive(const std::string& name) {
     std::lock_guard lock{mutex_};
     auto iter = threads_.find(name);
     if (iter != threads_.end()) {
@@ -241,11 +280,11 @@ void BlockingThread::main_loop(std::promise<void>& promise) {
 }
 
 void BlockingThread::register_to_thread_watcher() {
-    ThreadWatcher::instance()->add(name_, std::this_thread::get_id());
+    ThreadWatcher::add(name_, std::this_thread::get_id());
 }
 
 void BlockingThread::unregister_from_thread_watcher() {
-    ThreadWatcher::instance()->remove(name_);
+    ThreadWatcher::remove(name_);
 }
 
 void BlockingThread::i_am_alive() {
@@ -253,7 +292,7 @@ void BlockingThread::i_am_alive() {
     int64_t now = ltlib::steady_now_ms();
     if (now - last_report_time_ > k1Second) {
         last_report_time_ = now;
-        ThreadWatcher::instance()->reportAlive(name_);
+        ThreadWatcher::reportAlive(name_);
     }
 }
 
@@ -368,16 +407,16 @@ void TaskThread::i_am_alive() {
     int64_t now = ltlib::steady_now_ms();
     if (now - last_report_time_ > k1Second) {
         last_report_time_ = now;
-        ThreadWatcher::instance()->reportAlive(name_);
+        ThreadWatcher::reportAlive(name_);
     }
 }
 
 void TaskThread::register_to_thread_watcher() {
-    ThreadWatcher::instance()->add(name_, std::this_thread::get_id());
+    ThreadWatcher::add(name_, std::this_thread::get_id());
 }
 
 void TaskThread::unregister_from_thread_watcher() {
-    ThreadWatcher::instance()->remove(name_);
+    ThreadWatcher::remove(name_);
 }
 
 void TaskThread::set_thread_name() {

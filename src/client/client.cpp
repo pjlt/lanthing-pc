@@ -279,10 +279,19 @@ bool Client::init() {
         LOG(ERR) << "Create app client failed";
         return false;
     }
-    main_thread_ = ltlib::BlockingThread::create(
-        "lt_main_thread",
-        [this](const std::function<void()>& i_am_alive) { mainLoop(i_am_alive); });
-    should_exit_ = false;
+    lt::plat::PcSdl::Params sdl_params{};
+    sdl_params.on_reset = std::bind(&Client::onPlatformRenderTargetReset, this);
+    sdl_params.windowed_fullscreen = windowed_fullscreen_;
+    sdl_params.absolute_mouse = absolute_mouse_;
+    sdl_ = lt::plat::PcSdl::create(sdl_params);
+    if (sdl_ == nullptr) {
+        LOG(INFO) << "Create SDL failed";
+        return false;
+    }
+    LOG(INFO) << "Create SDL success";
+    sdl_->setTitle("Joining room....");
+    io_thread_ = ltlib::BlockingThread::create(
+        "io_thread", [this](const std::function<void()>& i_am_alive) { ioLoop(i_am_alive); });
     return true;
 }
 
@@ -335,15 +344,42 @@ bool Client::initAppClient() {
     return app_client_ != nullptr;
 }
 
-void Client::wait() {
-    std::unique_lock<std::mutex> lock{exit_mutex_};
-    exit_cv_.wait(lock, [this]() { return should_exit_; });
+int32_t Client::loop() {
+    int32_t ret = sdl_->loop();
+    struct ExitCtx {
+        std::condition_variable cv;
+        std::mutex mtx;
+        std::atomic<bool> msg_sent = false;
+    };
+    auto exit_ctx = std::make_shared<ExitCtx>();
+    auto weak_ctx = std::weak_ptr{exit_ctx};
+    auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
+    msg->set_level(ltproto::signaling::SignalingMessage_Level_Core);
+    auto coremsg = msg->mutable_core_message();
+    coremsg->set_key(kSigCoreClose);
+    // 退出进程前，向主机端发送kSigCoreClose
+    signaling_client_->send(ltproto::id(msg), msg, [weak_ctx]() {
+        auto ctx = weak_ctx.lock();
+        if (ctx == nullptr) {
+            return;
+        }
+        {
+            std::lock_guard lg{ctx->mtx};
+            ctx->msg_sent = true;
+        }
+        ctx->cv.notify_one();
+    });
+    // 等待发送成功或超时
+    std::unique_lock lock{exit_ctx->mtx};
+    exit_ctx->cv.wait_for(lock, std::chrono::milliseconds{50},
+                          [exit_ctx]() { return exit_ctx->msg_sent.load(); });
+    return ret;
 }
 
-void Client::mainLoop(const std::function<void()>& i_am_alive) {
-    LOG(INFO) << "Lanthing client enter main loop";
+void Client::ioLoop(const std::function<void()>& i_am_alive) {
+    LOG(INFO) << "Lanthing client enter io loop";
     ioloop_->run(i_am_alive);
-    LOG(INFO) << "Lanthing client exit main loop";
+    LOG(INFO) << "Lanthing client exit io loop";
 }
 
 void Client::onPlatformRenderTargetReset() {
@@ -357,27 +393,6 @@ void Client::onPlatformRenderTargetReset() {
     if (video_pipeline_ != nullptr) {
         video_pipeline_->resetRenderTarget();
     }
-}
-
-void Client::onPlatformExit() {
-    LOG(INFO) << "onPlatformExit";
-    postTask([this]() {
-        auto msg = std::make_shared<ltproto::signaling::SignalingMessage>();
-        msg->set_level(ltproto::signaling::SignalingMessage_Level_Core);
-        auto coremsg = msg->mutable_core_message();
-        coremsg->set_key(kSigCoreClose);
-        signaling_client_->send(ltproto::id(msg), msg, [this]() { stopWait(); });
-    });
-    // 保险起见
-    postDelayTask(50, [this]() { stopWait(); });
-}
-
-void Client::stopWait() {
-    {
-        std::lock_guard<std::mutex> lock{exit_mutex_};
-        should_exit_ = true;
-    }
-    exit_cv_.notify_one();
 }
 
 void Client::postTask(const std::function<void()>& task) {
@@ -524,7 +539,7 @@ void Client::onSignalingNetMessage(uint32_t type,
 void Client::onSignalingDisconnected() {
     // TODO: 业务代码，目前是直接退出进程.
     LOG(INFO) << "Disconnected from signaling server, exit process";
-    stopWait();
+    sdl_->stop();
 }
 
 void Client::onSignalingReconnecting() {
@@ -551,20 +566,7 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
         return;
     }
     LOG(INFO) << "Join signaling room success";
-    lt::plat::PcSdl::Params params{};
-    params.on_reset = std::bind(&Client::onPlatformRenderTargetReset, this);
-    params.on_exit = std::bind(&Client::onPlatformExit, this);
-    params.windowed_fullscreen = windowed_fullscreen_;
-    params.absolute_mouse = absolute_mouse_;
-    sdl_ = lt::plat::PcSdl::create(params);
-    if (sdl_ == nullptr) {
-        LOG(INFO) << "Initialize sdl failed";
-        return;
-    }
-    LOG(INFO) << "Initialize SDL success";
-    sdl_->setTitle("Connecting....");
-    video_params_.sdl = sdl_.get();
-    input_params_.sdl = sdl_.get();
+    // initTransport必须在sdl_创建之后调用，因为onTpConnected会用到sdl_
     if (!initTransport()) {
         LOG(INFO) << "Initialize rtc failed";
         return;
@@ -788,6 +790,8 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     LOG(INFO) << "Connected, LinkType " << toString(link_type);
     auto that = reinterpret_cast<Client*>(user_data);
+    that->video_params_.sdl = that->sdl_.get();
+    that->input_params_.sdl = that->sdl_.get();
     if (that->video_device_ == nullptr) {
         that->video_device_ = plat::VideoDevice::create(that->video_params_.decode_codec);
         if (that->video_device_ == nullptr &&
@@ -870,12 +874,12 @@ void Client::onTpConnChanged(void* user_data, lt::LinkType old_type, lt::LinkTyp
 
 void Client::onTpFailed(void* user_data) {
     auto that = reinterpret_cast<Client*>(user_data);
-    that->stopWait();
+    that->sdl_->stop();
 }
 
 void Client::onTpDisconnected(void* user_data) {
     auto that = reinterpret_cast<Client*>(user_data);
-    that->stopWait();
+    that->sdl_->stop();
 }
 
 void Client::onTpSignalingMessage(void* user_data, const char* key, const char* value) {
@@ -966,7 +970,7 @@ void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::Mess
     }
     else {
         LOG(INFO) << "StartTransmission failed with " << ltproto::ErrorCode_Name(msg->err_code());
-        stopWait();
+        sdl_->stop();
     }
 }
 
@@ -1121,7 +1125,7 @@ void Client::resetVideoPipeline() {
             }
         }
         if (need_exit) {
-            onPlatformExit();
+            sdl_->stop();
         }
     });
 }

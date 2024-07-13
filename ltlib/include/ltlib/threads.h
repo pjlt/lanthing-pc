@@ -51,24 +51,34 @@ public:
     static constexpr int64_t kMaxBlockTimeMS = 5'000;
 
 public:
-    static ThreadWatcher* instance();
     ~ThreadWatcher();
-    void add(const std::string& name, std::thread::id thread_id);
-    void remove(const std::string& name);
-    void reportAlive(const std::string& name);
-    void registerTerminateCallback(const std::function<void(const std::string&)>& callback);
-    void enableCrashOnTimeout();
-    void disableCrashOnTimeout();
+    static void init(std::thread::id main_thread_id);
+    static void uninit();
+    static void add(const std::string& name, std::thread::id thread_id);
+    static void remove(const std::string& name);
+    static void reportAlive(const std::string& name);
+    static void registerTerminateCallback(const std::function<void(const std::string&)>& callback);
+    static void enableCrashOnTimeout();
+    static void disableCrashOnTimeout();
+    static std::thread::id mainThreadID();
 
 private:
-    ThreadWatcher();
+    ThreadWatcher(std::thread::id main_thread_id);
     ThreadWatcher(const ThreadWatcher&) = delete;
     ThreadWatcher(ThreadWatcher&&) = delete;
     ThreadWatcher& operator=(const ThreadWatcher&) = delete;
     ThreadWatcher& operator=(const ThreadWatcher&&) = delete;
     void checkLoop();
+    void doAdd(const std::string& name, std::thread::id thread_id);
+    void doRemove(const std::string& name);
+    void doReportAlive(const std::string& name);
+    void doRegisterTerminateCallback(const std::function<void(const std::string&)>& callback);
+    void doEnableCrashOnTimeout();
+    void doDisableCrashOnTimeout();
+    std::thread::id doGetMainThreadID();
 
 private:
+    const std::thread::id main_thread_id_;
     struct ThreadInfo {
         std::string name;
         std::thread::id thread_id;

@@ -48,11 +48,12 @@ namespace lt {
 
 namespace plat {
 
+class PcSdlImpl;
+
 class PcSdl {
 public:
     struct Params {
         std::function<void()> on_reset;
-        std::function<void()> on_exit;
         bool windowed_fullscreen = true;
         bool absolute_mouse = true;
         bool hide_window = false;
@@ -60,24 +61,28 @@ public:
 
 public:
     static std::unique_ptr<PcSdl> create(const Params& params);
-    virtual ~PcSdl(){};
-    // virtual void set_negotiated_params(uint32_t width, uint32_t height) = 0;
-    virtual SDL_Window* window() = 0;
 
-    virtual void setInputHandler(const input::OnInputEvent&) = 0;
+    SDL_Window* window();
 
-    virtual void toggleFullscreen() = 0;
+    int32_t loop();
 
-    virtual void setTitle(const std::string& title) = 0;
+    void setInputHandler(const input::OnInputEvent&);
 
-    virtual void stop() = 0;
+    void toggleFullscreen();
 
-    virtual void switchMouseMode(bool absolute) = 0;
+    void setTitle(const std::string& title);
 
-    virtual void setCursorInfo(int32_t cursor_id, bool visible) = 0;
+    void stop();
 
-protected:
-    PcSdl() = default;
+    void switchMouseMode(bool absolute);
+
+    void setCursorInfo(int32_t cursor_id, bool visible);
+
+private:
+    PcSdl();
+
+private:
+    std::shared_ptr<PcSdlImpl> impl_;
 };
 
 } // namespace plat

@@ -66,27 +66,30 @@ namespace lt {
 
 namespace plat {
 
-class PcSdlImpl : public PcSdl {
+class PcSdlImpl {
 public:
-    PcSdlImpl(const Params& params);
-    ~PcSdlImpl() override;
+    PcSdlImpl(const PcSdl::Params& params);
+    ~PcSdlImpl();
+
     bool init();
-    SDL_Window* window() override;
 
-    void setInputHandler(const input::OnInputEvent& on_event) override;
+    int32_t loop();
 
-    void toggleFullscreen() override;
+    SDL_Window* window();
 
-    void setTitle(const std::string& title) override;
+    void setInputHandler(const input::OnInputEvent& on_event);
 
-    void stop() override;
+    void toggleFullscreen();
 
-    void switchMouseMode(bool absolute) override;
+    void setTitle(const std::string& title);
 
-    void setCursorInfo(int32_t cursor_id, bool visible) override;
+    void stop();
+
+    void switchMouseMode(bool absolute);
+
+    void setCursorInfo(int32_t cursor_id, bool visible);
 
 private:
-    void loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive);
     bool initSdlSubSystems();
     void quitSdlSubSystems();
     void loadCursors();
@@ -120,49 +123,81 @@ private:
     SDL_Window* window_ = nullptr;
     const bool hide_window_;
     std::function<void()> on_reset_;
-    std::function<void()> on_exit_;
     bool windowed_fullscreen_;
     bool absolute_mouse_;
     bool cursor_visible_ = false;
     int32_t cursor_id_ = 0;
     std::mutex mutex_;
     std::unique_ptr<SdlInput> input_;
-    std::unique_ptr<ltlib::BlockingThread> thread_;
     std::string title_ = "Lanthing";
     std::map<int32_t, SDL_Cursor*> cursors_;
     bool init_dummy_audio_ = false;
+    bool init_audio_ = false;
+    bool init_video_ = false;
+    bool init_controller_ = false;
 };
 
-std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
-    if (params.on_reset == nullptr || params.on_exit == nullptr) {
-        LOG(ERR) << "Create PcSdl failed: invalid parameters";
-        return nullptr;
-    }
-    std::unique_ptr<PcSdlImpl> sdl{new PcSdlImpl(params)};
-    if (sdl->init()) {
-        return sdl;
-    }
-    else {
-        return nullptr;
-    }
-}
-
-PcSdlImpl::PcSdlImpl(const Params& params)
+PcSdlImpl::PcSdlImpl(const PcSdl::Params& params)
     : hide_window_{params.hide_window}
     , on_reset_(params.on_reset)
-    , on_exit_(params.on_exit)
     , windowed_fullscreen_{params.windowed_fullscreen}
     , absolute_mouse_{params.absolute_mouse} {}
 
-PcSdlImpl::~PcSdlImpl() {}
+PcSdlImpl::~PcSdlImpl() {
+    if (ltlib::ThreadWatcher::mainThreadID() != std::this_thread::get_id()) {
+        LOG(FATAL) << "You can't run ~PcSdlImpl in non-main thread!";
+    }
+    destroyCursors();
+    input_ = nullptr;
+    if (window_) {
+        SDL_DestroyWindow(window_);
+    }
+    quitSdlSubSystems();
+}
 
 bool PcSdlImpl::init() {
-    std::promise<bool> promise;
-    auto future = promise.get_future();
-    thread_ = ltlib::BlockingThread::create(
-        "lt_sdl_loop",
-        [&promise, this](const std::function<void()>& i_am_alive) { loop(promise, i_am_alive); });
-    return future.get();
+    if (ltlib::ThreadWatcher::mainThreadID() != std::this_thread::get_id()) {
+        LOG(FATAL) << "You can't initialize SDL in non-main thread!";
+    }
+    if (!initSdlSubSystems()) {
+        return false;
+    }
+    loadCursors();
+    int desktop_width = 1920;
+    int desktop_height = 1080;
+    SDL_DisplayMode dm{};
+    int ret = SDL_GetDesktopDisplayMode(0, &dm);
+    if (ret == 0) {
+        desktop_height = dm.h;
+        desktop_width = dm.w;
+    }
+    uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+    if (hide_window_) {
+        window_flags = window_flags | SDL_WINDOW_HIDDEN;
+    }
+    window_ = SDL_CreateWindow("Lanthing",
+                               desktop_width / 6,      // x
+                               desktop_height / 6,     // y
+                               desktop_width * 2 / 3,  // width,
+                               desktop_height * 2 / 3, // height,
+                               window_flags);
+
+    if (window_ == nullptr) {
+        LOG(ERR) << "SDL_CreateWindow failed: " << SDL_GetError();
+        return false;
+    }
+    SdlInput::Params input_params;
+    input_params.window = window_;
+    input_ = SdlInput::create(input_params);
+    if (input_ == nullptr) {
+        return false;
+    }
+    SDL_StopTextInput();
+    SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
+    SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "0");
+    SDL_SetWindowKeyboardGrab(window_, SDL_TRUE);
+    SDL_SetRelativeMouseMode(absolute_mouse_ ? SDL_FALSE : SDL_TRUE);
+    return true;
 }
 
 SDL_Window* PcSdlImpl::window() {
@@ -221,59 +256,12 @@ void PcSdlImpl::setCursorInfo(int32_t cursor_id, bool visible) {
     SDL_PushEvent(&ev);
 }
 
-void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i_am_alive) {
-    if (!initSdlSubSystems()) {
-        promise.set_value(false);
-        return;
+int32_t PcSdlImpl::loop() {
+    if (ltlib::ThreadWatcher::mainThreadID() != std::this_thread::get_id()) {
+        LOG(FATAL) << "You can't run SDL-Loop in non-main thread!";
     }
-    loadCursors();
-    int desktop_width = 1920;
-    int desktop_height = 1080;
-    SDL_DisplayMode dm{};
-    int ret = SDL_GetDesktopDisplayMode(0, &dm);
-    if (ret == 0) {
-        desktop_height = dm.h;
-        desktop_width = dm.w;
-    }
-    uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
-    if (hide_window_) {
-        window_flags = window_flags | SDL_WINDOW_HIDDEN;
-    }
-    window_ = SDL_CreateWindow("Lanthing",
-                               desktop_width / 6,      // x
-                               desktop_height / 6,     // y
-                               desktop_width * 2 / 3,  // width,
-                               desktop_height * 2 / 3, // height,
-                               window_flags);
-
-    if (window_ == nullptr) {
-        // 出错了，退出整个client（
-        LOG(ERR) << "SDL_CreateWindow failed: " << SDL_GetError();
-        promise.set_value(false);
-        return;
-    }
-    SdlInput::Params input_params;
-    input_params.window = window_;
-    input_ = SdlInput::create(input_params);
-    if (input_ == nullptr) {
-        promise.set_value(false);
-        return;
-    }
-    // TODO: 这里的promise.set_value()理论上应该等到Client获取到解码能力才设置值
-    promise.set_value(true);
-    SDL_StopTextInput();
-    SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");
-    SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "0");
-    SDL_SetWindowKeyboardGrab(window_, SDL_TRUE);
-    SDL_SetRelativeMouseMode(absolute_mouse_ ? SDL_FALSE : SDL_TRUE);
-
-    // 在Win10下，长时间点住SDL的窗口拖动，会让SDL_WaitEventTimeout()卡住，SDL_AddEventWatch才能获取到相关事件
-    // 但回调似乎是在其它线程执行，这点需要小心
-    SDL_AddEventWatch(sdl_event_watcher, (void*)&i_am_alive);
-
     SDL_Event ev;
     while (true) {
-        i_am_alive();
         if (!SDL_WaitEventTimeout(&ev, 1000)) {
             continue;
         }
@@ -284,59 +272,62 @@ void PcSdlImpl::loop(std::promise<bool>& promise, const std::function<void()>& i
         case DispatchResult::kContinue:
             continue;
         case DispatchResult::kStop:
-            goto CLEANUP;
+            break;
         default:
-            goto CLEANUP;
+            LOG(FATAL) << "Unknown SDL dispatch result";
+            break;
         }
     }
-CLEANUP:
-    // 回收资源，删除解码器等
-    destroyCursors();
-    SDL_DestroyWindow(window_);
-    quitSdlSubSystems();
-    on_exit_();
 }
 
 bool PcSdlImpl::initSdlSubSystems() {
     int ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_AUDIO failed:" << SDL_GetError();
-        return false;
+        throw std::exception{"SDL_INIT_AUDIO failed"};
     }
+    init_audio_ = true;
     int audio_devices = SDL_GetNumAudioDevices(0);
     if (audio_devices < 0) {
         LOG(WARNING) << "SDL_GetNumAudioDevices return " << audio_devices;
     }
     else if (audio_devices == 0) {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        init_audio_ = false;
         ret = SDL_AudioInit("dummy");
         if (ret != 0) {
             LOG(ERR) << "SDL_AudioInit failed:" << SDL_GetError();
-            return false;
+            throw std::exception{"SDL_AudioInit failed"};
         }
         init_dummy_audio_ = true;
     }
     ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
-        return false;
+        throw std::exception{"SDL_INIT_VIDEO failed"};
     }
+    init_video_ = true;
     ret = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_GAMECONTROLLER failed:" << SDL_GetError();
-        return false;
+        throw std::exception{"SDL_INIT_GAMECONTROLLER failed"};
     }
+    init_controller_ = true;
     return true;
 }
 
 void PcSdlImpl::quitSdlSubSystems() {
-    SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    if (init_controller_) {
+        SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+    }
+    if (init_video_) {
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    }
+    if (init_audio_) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
     if (init_dummy_audio_) {
         SDL_AudioQuit();
-    }
-    else {
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
     }
 }
 
@@ -595,6 +586,56 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
     }
     return DispatchResult::kContinue;
 }
+
+std::unique_ptr<PcSdl> PcSdl::create(const Params& params) {
+    if (params.on_reset == nullptr) {
+        LOG(ERR) << "Create PcSdl failed: invalid parameters";
+        return nullptr;
+    }
+    std::unique_ptr<PcSdl> sdl{new PcSdl};
+    auto impl = std::make_shared<PcSdlImpl>(params);
+    if (impl->init()) {
+        sdl->impl_ = impl;
+        return sdl;
+    }
+    else {
+        return nullptr;
+    }
+}
+
+SDL_Window* PcSdl::window() {
+    return impl_->window();
+}
+
+int32_t PcSdl::loop() {
+    return impl_->loop();
+}
+
+void PcSdl::setInputHandler(const input::OnInputEvent& handler) {
+    impl_->setInputHandler(handler);
+}
+
+void PcSdl::toggleFullscreen() {
+    impl_->toggleFullscreen();
+}
+
+void PcSdl::setTitle(const std::string& title) {
+    impl_->setTitle(title);
+}
+
+void PcSdl::stop() {
+    impl_->stop();
+}
+
+void PcSdl::switchMouseMode(bool absolute) {
+    impl_->switchMouseMode(absolute);
+}
+
+void PcSdl::setCursorInfo(int32_t cursor_id, bool visible) {
+    impl_->setCursorInfo(cursor_id, visible);
+}
+
+PcSdl::PcSdl() {}
 
 } // namespace plat
 

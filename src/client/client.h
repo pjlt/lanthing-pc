@@ -95,7 +95,7 @@ public:
 public:
     static std::unique_ptr<Client> create(std::map<std::string, std::string> options);
     ~Client();
-    void wait();
+    int32_t loop();
 
 private:
     Client(const Params& params);
@@ -103,10 +103,8 @@ private:
     bool initSettings();
     bool initSignalingClient();
     bool initAppClient();
-    void mainLoop(const std::function<void()>& i_am_alive);
+    void ioLoop(const std::function<void()>& i_am_alive);
     void onPlatformRenderTargetReset();
-    void onPlatformExit();
-    void stopWait();
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
     void syncTime();
@@ -194,10 +192,8 @@ private:
     std::unique_ptr<ltlib::Client> app_client_;
     lt::tp::Client* tp_client_ = nullptr;
     std::unique_ptr<lt::plat::PcSdl> sdl_;
-    std::unique_ptr<ltlib::BlockingThread> main_thread_;
+    std::unique_ptr<ltlib::BlockingThread> io_thread_;
     std::condition_variable exit_cv_;
-    std::mutex exit_mutex_;
-    bool should_exit_ = true;
     ltlib::TimeSync time_sync_;
     int64_t rtt_ = 0;
     int64_t time_diff_ = 0;

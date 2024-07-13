@@ -43,11 +43,8 @@ namespace worker {
 std::tuple<std::unique_ptr<WorkerCheckDecode>, int32_t>
 WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     (void)options;
-    std::promise<void> promise;
     auto empty_func = []() {};
-    auto on_sdl_exit = [&promise]() { promise.set_value(); };
     lt::plat::PcSdl::Params sdl_params{};
-    sdl_params.on_exit = on_sdl_exit;
     sdl_params.on_reset = empty_func;
     sdl_params.hide_window = true;
     auto sdl = lt::plat::PcSdl::create(sdl_params);
@@ -73,9 +70,7 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
             codecs = codecs | codec;
         }
     }
-    sdl->stop();
     std::unique_ptr<WorkerCheckDecode> w{new WorkerCheckDecode{codecs}};
-    promise.get_future().get();
     return {std::move(w), kExitCodeOK};
 }
 
