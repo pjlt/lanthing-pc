@@ -272,12 +272,13 @@ int32_t PcSdlImpl::loop() {
         case DispatchResult::kContinue:
             continue;
         case DispatchResult::kStop:
-            break;
+            return 0;
         default:
             LOG(FATAL) << "Unknown SDL dispatch result";
-            break;
+            return 0;
         }
     }
+    return 0;
 }
 
 bool PcSdlImpl::initSdlSubSystems() {

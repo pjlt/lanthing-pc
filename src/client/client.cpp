@@ -358,21 +358,29 @@ int32_t Client::loop() {
     auto coremsg = msg->mutable_core_message();
     coremsg->set_key(kSigCoreClose);
     // 退出进程前，向主机端发送kSigCoreClose
-    signaling_client_->send(ltproto::id(msg), msg, [weak_ctx]() {
-        auto ctx = weak_ctx.lock();
-        if (ctx == nullptr) {
-            return;
-        }
-        {
-            std::lock_guard lg{ctx->mtx};
-            ctx->msg_sent = true;
-        }
-        ctx->cv.notify_one();
+    postTask([this, msg, weak_ctx]() {
+        signaling_client_->send(ltproto::id(msg), msg, [weak_ctx]() {
+            auto ctx = weak_ctx.lock();
+            if (ctx == nullptr) {
+                return;
+            }
+            {
+                std::lock_guard lg{ctx->mtx};
+                ctx->msg_sent = true;
+            }
+            ctx->cv.notify_one();
+        });
     });
     // 等待发送成功或超时
     std::unique_lock lock{exit_ctx->mtx};
     exit_ctx->cv.wait_for(lock, std::chrono::milliseconds{50},
                           [exit_ctx]() { return exit_ctx->msg_sent.load(); });
+    // 运行到此处，要么是50ms超时，要么是libuv告诉我们kSigCore发送成功
+    // 但我并不清楚这个"发送成功"是指内容已经刷到缓冲区，还是指已经发送到网络
+    // 另外，即便是已经发送到网络，还是有丢包重传的可能
+    // 由于暂未做所谓的"优雅关闭"，这里sleep一会，一定程度减小'关闭'信令发不到对面的概率
+    // 最后最后，对面就算收不到这个关闭信令，也有超时关闭的逻辑
+    std::this_thread::sleep_for(std::chrono::milliseconds{50});
     return ret;
 }
 
