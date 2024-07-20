@@ -86,19 +86,30 @@ bool VtbGlPipeline::init() {
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);
+    LOG(INFO) << "111";
     SDL_GetWindowWMInfo(sdl_window, &info);
     if (info.subsystem != SDL_SYSWM_COCOA) {
         LOG(ERR) << "Only support cocoa, but we are using " << (int)info.subsystem;
         return false;
     }
+    LOG(INFO) << "222";
+
     int window_width, window_height;
     SDL_GetWindowSize(sdl_window, &window_width, &window_height);
+    LOG(INFO) << "333";
+
     window_width_ = static_cast<uint32_t>(window_width);
     window_height_ = static_cast<uint32_t>(window_height);
     plat_ = createVtbGlPipelinePlatform(info.info.cocoa.window, window_width, window_height);
+    LOG(INFO) << "444";
+
     if (!initOpenGL()) {
+    LOG(INFO) << "555";
+
         return false;
     }
+    LOG(INFO) << "666";
+
     return true;
 }
 

@@ -31,6 +31,8 @@
 #include "pc_sdl.h"
 
 #include <optional>
+#include <exception>
+#include <stdexcept>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -52,13 +54,13 @@ constexpr int32_t kUserEventSetTitle = 4;
 constexpr int32_t kUserEventSwitchMouseMode = 5;
 constexpr int32_t kUserEventUpdateCursorInfo = 6;
 
-int sdl_event_watcher(void* userdata, SDL_Event* ev) {
-    if (ev->type == SDL_WINDOWEVENT) {
-        auto i_am_alive = (std::function<void()>*)userdata;
-        i_am_alive->operator()();
-    }
-    return 0;
-}
+//int sdl_event_watcher(void* userdata, SDL_Event* ev) {
+//    if (ev->type == SDL_WINDOWEVENT) {
+//        auto i_am_alive = (std::function<void()>*)userdata;
+//        i_am_alive->operator()();
+//    }
+//    return 0;
+//}
 
 } // namespace
 
@@ -285,7 +287,7 @@ bool PcSdlImpl::initSdlSubSystems() {
     int ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_AUDIO failed:" << SDL_GetError();
-        throw std::exception{"SDL_INIT_AUDIO failed"};
+        throw std::runtime_error{"SDL_INIT_AUDIO failed"};
     }
     init_audio_ = true;
     int audio_devices = SDL_GetNumAudioDevices(0);
@@ -298,20 +300,20 @@ bool PcSdlImpl::initSdlSubSystems() {
         ret = SDL_AudioInit("dummy");
         if (ret != 0) {
             LOG(ERR) << "SDL_AudioInit failed:" << SDL_GetError();
-            throw std::exception{"SDL_AudioInit failed"};
+            throw std::runtime_error{"SDL_AudioInit failed"};
         }
         init_dummy_audio_ = true;
     }
     ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_VIDEO failed:" << SDL_GetError();
-        throw std::exception{"SDL_INIT_VIDEO failed"};
+        throw std::runtime_error{"SDL_INIT_VIDEO failed"};
     }
     init_video_ = true;
     ret = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     if (ret != 0) {
         LOG(ERR) << "SDL_INIT_GAMECONTROLLER failed:" << SDL_GetError();
-        throw std::exception{"SDL_INIT_GAMECONTROLLER failed"};
+        throw std::runtime_error{"SDL_INIT_GAMECONTROLLER failed"};
     }
     init_controller_ = true;
     return true;

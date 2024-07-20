@@ -190,7 +190,7 @@ void initLogAndMinidump(Role role) {
     g_log_worker = g3::LogWorker::createLogWorker();
     g_log_worker->addSink(
         std::make_unique<ltlib::LogSink>(prefix, log_dir.string(),
-                                         getLtFlushLogLines() /*flush_every_x_lines*/),
+                                         1 /*getLtFlushLogLines()*/ /*flush_every_x_lines*/),
         &ltlib::LogSink::fileWrite);
     g3::log_levels::disable(DEBUG);
     g3::only_change_at_initialization::addLogLevel(ERR);

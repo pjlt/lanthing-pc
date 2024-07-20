@@ -328,11 +328,10 @@ bool Client::initAppClient() {
     params.ioloop = ioloop_.get();
 #if LT_WINDOWS
     params.pipe_name = "\\\\?\\pipe\\lanthing_client_manager";
-#elif LT_LINUX
+#else
     std::filesystem::path fs = ltlib::getConfigPath(false);
     fs = fs / "pipe_lanthing_client_manager";
     params.pipe_name = fs.string();
-#else
 #endif
     params.is_tls = false;
     params.on_connected = std::bind(&Client::onAppConnected, this);
@@ -814,6 +813,7 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     }
     that->video_params_.device = that->video_device_->device();
     that->video_params_.context = that->video_device_->context();
+    // 将任务post到主线程
     that->video_pipeline_ = video::DecodeRenderPipeline::create(that->video_params_);
     if (that->video_pipeline_ == nullptr) {
         LOG(ERR) << "Create VideoDecodeRenderPipeline failed";

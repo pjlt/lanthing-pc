@@ -34,6 +34,8 @@
 #include "d3d11_pipeline.h"
 #elif LT_LINUX
 #include "va_gl_pipeline.h"
+#elif LT_MAC
+#include "vtb_gl_pipeline.h"
 #else
 #endif // LT_WINDOWS, LT_LINUX
 
@@ -74,6 +76,18 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     va_gl_params.rotation = params.rotation;
     va_gl_params.align = params.align;
     auto renderer = std::make_unique<VaGlPipeline>(va_gl_params);
+    if (!renderer->init()) {
+        return nullptr;
+    }
+    return renderer;
+#elif LT_MAC
+    VtbGlPipeline::Params vtb_gl_params{};
+    vtb_gl_params.window = sdl_window;
+    vtb_gl_params.width = params.video_width;
+    vtb_gl_params.height = params.video_height;
+    vtb_gl_params.rotation = params.rotation;
+    vtb_gl_params.align = params.align;
+    auto renderer = std::make_unique<VtbGlPipeline>(vtb_gl_params);
     if (!renderer->init()) {
         return nullptr;
     }
