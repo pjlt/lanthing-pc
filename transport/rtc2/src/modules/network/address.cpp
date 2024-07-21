@@ -84,7 +84,7 @@ std::string IPv4::to_string() const {
 }
 
 bool IPv4::is_loopback() const {
-    uint32_t ip = ::ntohl(ip_.s_addr);
+    uint32_t ip = ntohl(ip_.s_addr);
     return (ip >> 24) == 127;
 }
 
@@ -230,7 +230,7 @@ bool Address::is_loopback() const {
 
 bool Address::is_linklocal() const {
     if (family_ == AF_INET) {
-        uint32_t ip = ::ntohl(ip_.v4.to_in_addr().s_addr);
+        uint32_t ip = ntohl(ip_.v4.to_in_addr().s_addr);
         return ((ip >> 16) == ((169 << 8) | 254));
     }
     else if (family_ == AF_INET6) {
@@ -246,7 +246,7 @@ bool Address::is_linklocal() const {
 // fd:xx...
 bool Address::is_private_network() const {
     if (family_ == AF_INET) {
-        uint32_t ip = ::ntohl(ip_.v4.to_in_addr().s_addr);
+        uint32_t ip = ntohl(ip_.v4.to_in_addr().s_addr);
         return ((ip >> 24) == 10) || ((ip >> 20) == ((172 << 4) | 1)) ||
                ((ip >> 16) == ((192 << 8) | 168));
     }
@@ -261,7 +261,7 @@ bool Address::is_shared_network() const {
     if (family_ != AF_INET) {
         return false;
     }
-    uint32_t ip = ::ntohl(ip_.v4.to_in_addr().s_addr);
+    uint32_t ip = ntohl(ip_.v4.to_in_addr().s_addr);
     return (ip >> 22) == ((100 << 2) | 1);
 }
 
@@ -269,13 +269,13 @@ sockaddr_storage& Address::to_storage(sockaddr_storage& storage) const {
     if (family_ == AF_INET) {
         sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(&storage);
         addr->sin_family = AF_INET;
-        addr->sin_port = ::htons(port_);
+        addr->sin_port = htons(port_);
         addr->sin_addr = ip_.v4.to_in_addr();
     }
     else if (family_ == AF_INET6) {
         sockaddr_in6* addr = reinterpret_cast<sockaddr_in6*>(&storage);
         addr->sin6_family = AF_INET6;
-        addr->sin6_port = ::htons(port_);
+        addr->sin6_port = htons(port_);
         addr->sin6_addr = ip_.v6.to_in6_addr();
     }
     return storage;

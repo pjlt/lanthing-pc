@@ -30,7 +30,7 @@
 
 #ifdef LT_WINDOWS
 #include <Windows.h>
-#elif defined LT_LINUX
+#else
 #include <errno.h>
 #include <pwd.h>
 #include <sys/file.h>
@@ -65,14 +65,18 @@ bool makeSingletonProcess(const std::string& name) {
     return no_other_process.value();
 }
 
-#elif defined LT_LINUX
+#else
 bool makeSingletonProcess(const std::string& name) {
     static std::optional<bool> no_other_process;
     if (no_other_process.has_value()) {
         return no_other_process.value();
     }
     std::stringstream ss;
-    ss << getpwuid(getuid())->pw_dir << "/.lanthing/" << name << ".pid";
+    ss << getpwuid(getuid())->pw_dir << "/.lanthing";
+    std::string folder = ss.str();
+    std::error_code ec;
+    std::filesystem::create_directories(folder, ec);
+    ss << "/" << name << ".pid";
     int pid_file = open(ss.str().c_str(), O_CREAT | O_RDWR, 0666);
     if (lockf(pid_file, F_TLOCK, 0) < 0) {
         no_other_process = false;
@@ -85,8 +89,6 @@ bool makeSingletonProcess(const std::string& name) {
     return true;
 }
 
-#else
-#error unsupported platform
 #endif
 
 } // namespace ltlib

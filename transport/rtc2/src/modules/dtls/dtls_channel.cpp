@@ -41,7 +41,7 @@
 namespace {
 
 const size_t kDtlsRecordHeaderLen = 13;
-const size_t kMaxDtlsPacketLen = 2048;
+//const size_t kMaxDtlsPacketLen = 2048;
 const size_t kMinRtpPacketLen = 12;
 
 bool IsDtlsPacket(const uint8_t* data, size_t len) {

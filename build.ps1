@@ -59,13 +59,13 @@ class BuiltLib {
 
 function prebuilt_fetch() {
     $libs = @(
-        [BuiltLib]::new("mbedtls", "https://github.com/numbaa/mbedtls-build/releases/download/v3.2.1-3/mbedtls.win.v3.2.1-3.zip"),
+        [BuiltLib]::new("mbedtls", "https://github.com/numbaa/mbedtls-build/releases/download/v3.5.2-3/mbedtls.win.v3.5.2-3.zip"),
         [BuiltLib]::new("sdl", "https://github.com/numbaa/sdl-build/releases/download/v2.28.4-5/sdl.win.v2.28.4-5.zip"),
         [BuiltLib]::new("vigemclient", "https://github.com/numbaa/vigemclient-build/releases/download/v1/vigemclient.zip"),
         [BuiltLib]::new("libuv", "https://github.com/numbaa/libuv-build/releases/download/v1.44.1-3/libuv.win.v1.44.1-3.zip"),
-        [BuiltLib]::new("onevpl", "https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-2/onevpl.win.v2023.3.1-2.zip"),
+        [BuiltLib]::new("onevpl", "https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-3/onevpl.win.v2023.3.1-3.zip"),
         [BuiltLib]::new("opus", "https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.win.v1.4-2.zip"),
-        [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-4/g3log.win.v2.3-4.zip"),
+        [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-7/g3log.win.v2.3-7.zip"),
         [BuiltLib]::new("googletest", "https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.win.v1.13.0-2.zip"),
         [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-9/ffmpeg.win.v5.1.3-9.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.win.v3.24.3-2.zip")

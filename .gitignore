@@ -42,12 +42,15 @@
 CMakeSettings.json
 options-user.cmake
 *AppImage
+CMakeLists.txt.user
+/src/video2
 
 
 # misc
 draft.txt
 fonts/
 .VSCodeCounter
+.DS_Store
 
 /third_party/prebuilt
 /third_party/SDL

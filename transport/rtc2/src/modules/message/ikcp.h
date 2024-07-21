@@ -12,6 +12,11 @@
 #ifndef __IKCP_H__
 #define __IKCP_H__
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif // __clang__
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -396,5 +401,9 @@ IUINT32 ikcp_getconv(const void* ptr);
 #ifdef __cplusplus
 }
 #endif
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif // __clang__
 
 #endif

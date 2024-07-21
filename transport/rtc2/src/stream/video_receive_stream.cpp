@@ -39,7 +39,7 @@
 namespace {
 constexpr size_t kStartPacketBufferSize = 512;
 constexpr size_t kMaxPacketBufferSize = 1000;
-constexpr size_t kDecodedHistorySize = 1000;
+//constexpr size_t kDecodedHistorySize = 1000;
 } // namespace
 
 namespace rtc2 {

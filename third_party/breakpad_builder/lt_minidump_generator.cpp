@@ -61,7 +61,7 @@ LTMinidumpGenerator::LTMinidumpGenerator(const std::wstring& path, const std::ws
 	impl_ = handler;
 }
 
-#else
+#elif defined(LT_LINUX)
 
 #include <exception_handler.h>
 #include <common/linux/http_upload.h>
@@ -104,6 +104,27 @@ LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path, const std::str
 	google_breakpad::MinidumpDescriptor descriptor(path);
 	auto handler = new google_breakpad::ExceptionHandler(descriptor, nullptr, minidump_callback, this, true, -1);
 	impl_ = handler;
+}
+
+#elif defined(LT_MAC)
+#include <exception_handler.h>
+
+LTMinidumpGenerator::LTMinidumpGenerator(const std::wstring& path, const std::wstring& program_name) {
+	(void)path;
+	(void)program_name;
+	std::abort();
+}
+
+LTMinidumpGenerator::LTMinidumpGenerator(const std::string& path, const std::string& program_name)
+	: program_name_{program_name}
+{
+	if (program_name_.empty()) {
+		program_name_ = "unknown";
+	}
+	(void)path;
+	// google_breakpad::MinidumpDescriptor descriptor(path);
+	// auto handler = new google_breakpad::ExceptionHandler(descriptor, nullptr, minidump_callback, this, true, -1);
+	// impl_ = handler;
 }
 
 #endif

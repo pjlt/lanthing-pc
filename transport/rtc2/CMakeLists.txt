@@ -95,7 +95,7 @@ set(RTC2_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/src/modules/network/udp_socket.cpp
 )
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME} STATIC
 	${RTC2_SRCS}
 )
 
@@ -119,7 +119,7 @@ target_link_libraries(${PROJECT_NAME}
 	PRIVATE
 		transport_api
 		g3log
-		uv
+		uv_a
 		MbedTLS::mbedtls
 		MbedTLS::mbedx509
 		MbedTLS::mbedcrypto
