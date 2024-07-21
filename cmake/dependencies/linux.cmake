@@ -1,3 +1,4 @@
+find_package(VPL REQUIRED PATHS third_party/prebuilt/onevpl/${LT_THIRD_POSTFIX})
 find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLib REQUIRED IMPORTED_TARGET glib-2.0)
     pkg_check_modules(X11 REQUIRED IMPORTED_TARGET x11)

@@ -43,6 +43,7 @@ CMakeSettings.json
 options-user.cmake
 *AppImage
 CMakeLists.txt.user
+/src/video2
 
 
 # misc
