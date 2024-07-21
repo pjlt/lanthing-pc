@@ -177,6 +177,9 @@ bool PcSdlImpl::init() {
     if (hide_window_) {
         window_flags = window_flags | SDL_WINDOW_HIDDEN;
     }
+#ifdef LT_MAC
+    window_flags = window_flags | SDL_WINDOW_OPENGL;
+#endif // LT_MAC
     window_ = SDL_CreateWindow("Lanthing",
                                desktop_width / 6,      // x
                                desktop_height / 6,     // y

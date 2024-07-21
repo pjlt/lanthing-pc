@@ -35,20 +35,8 @@
 extern "C" {
 #endif
 
-struct _VtbGlPipelinePlatform;
-
-typedef void (*FuncNSGLMakeCurrent)(struct _VtbGlPipelinePlatform* that);
-typedef void (*FuncNSGLMakeCurrentEmpty)(struct _VtbGlPipelinePlatform* that);
-typedef void (*FuncNSMapOpenGLTexture)(struct _VtbGlPipelinePlatform* that, uint32_t textures[2], int64_t frame);
-
-typedef struct _VtbGlPipelinePlatform {
-    FuncNSGLMakeCurrent glMakeCurrent;
-    FuncNSGLMakeCurrentEmpty glMakeCurrentEmpty;
-    FuncNSMapOpenGLTexture mapOpenGLTexture;
-} VtbGlPipelinePlatform;
-
-VtbGlPipelinePlatform* createVtbGlPipelinePlatform(void* ns_window, uint32_t width, uint32_t height);
-void destroyVtbGlPipelinePlatform(VtbGlPipelinePlatform* obj);
+void ltMapOpenGLTexture(void* context, uint32_t textures[2], int64_t frame, int32_t width, int32_t height);
+void ltFlushOpenGLBuffer(void* context);
 
 #if __cplusplus
 }

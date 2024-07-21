@@ -40,48 +40,20 @@
 #include <OpenGL/gl3.h>
 #include <OpenGL/glext.h>
 
-typedef struct _VtbGlPipelinePlatformImpl
+void ltMapOpenGLTexture(void* context, uint32_t textures[2], int64_t frame, int32_t width, int32_t height)
 {
-    VtbGlPipelinePlatform funcs_;
-    NSWindow* window;
-    int width;
-    int height;
-    CVOpenGLTextureRef textures_[2];
-} VtbGlPipelinePlatformImpl;
-
-static void replaceWithGLContentView(NSWindow* window, int width, int height)
-{
-    NSOpenGLView* view = [[NSOpenGLView alloc] initWithFrame:CGRectMake(0, 0, width, height)];
-    [window setContentView:view];
-}
-
-static void glMakeCurrent(VtbGlPipelinePlatform* _that)
-{
-    VtbGlPipelinePlatformImpl* that = (VtbGlPipelinePlatformImpl*)_that;
-    [[that->window contentView] lockFocus];
-}
-
-static void glMakeCurrentEmpty(VtbGlPipelinePlatform* _that)
-{
-    VtbGlPipelinePlatformImpl* that = (VtbGlPipelinePlatformImpl*)_that;
-    [[that->window contentView] unlockFocus];
-}
-
-static void mapOpenGLTexture(VtbGlPipelinePlatform* _that, uint32_t textures[2], int64_t frame)
-{
-    VtbGlPipelinePlatformImpl* that = (VtbGlPipelinePlatformImpl*)_that;
-    NSOpenGLView* glview = (NSOpenGLView*)[that->window contentView];
+    NSOpenGLContext* glcontext = (NSOpenGLContext*)context;
     CVPixelBufferRef pixel_buffer = (CVPixelBufferRef)frame;
     IOSurfaceRef io_surface = CVPixelBufferGetIOSurface(pixel_buffer);
     uint32_t formats[2] = {GL_RED, GL_RG}; //???
     for (size_t i = 0; i < 2; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, textures[i]);
-        CGLTexImageIOSurface2D([[glview openGLContext] CGLContextObj],
+        CGLTexImageIOSurface2D([glcontext CGLContextObj],
                                                        GL_TEXTURE_2D,
                                                        formats[i],
-                                                       that->width / (i + 1),
-                                                       that->height / (i + 1),
+                                                       width / (i + 1),
+                                                       height / (i + 1),
                                                        formats[i],
                                                        GL_UNSIGNED_BYTE,
                                                        io_surface,
@@ -89,28 +61,8 @@ static void mapOpenGLTexture(VtbGlPipelinePlatform* _that, uint32_t textures[2],
     }
 }
 
-VtbGlPipelinePlatform* createVtbGlPipelinePlatform(void* ns_window, uint32_t width, uint32_t height)
+void ltFlushOpenGLBuffer(void* context)
 {
-    NSWindow* window = (NSWindow*)ns_window;
-    VtbGlPipelinePlatformImpl* obj = (VtbGlPipelinePlatformImpl*)malloc(sizeof(VtbGlPipelinePlatformImpl));
-    memset(obj, 0, sizeof(VtbGlPipelinePlatformImpl));
-    obj->window = window;
-    obj->width = width;
-    obj->height = height;
-    obj->funcs_.glMakeCurrent = &glMakeCurrent;
-    obj->funcs_.glMakeCurrentEmpty = &glMakeCurrentEmpty;
-    obj->funcs_.mapOpenGLTexture = &mapOpenGLTexture;
-    replaceWithGLContentView(window, width, height);
-    return (VtbGlPipelinePlatform*)obj;
-}
-
-void destroyVtbGlPipelinePlatform(VtbGlPipelinePlatform* _obj)
-{
-    VtbGlPipelinePlatformImpl* obj = (VtbGlPipelinePlatformImpl*)_obj;
-    for (int i = 0; i < 2; i++) {
-        if (obj->textures_[i]) {
-            CFRelease(obj->textures_[i]);
-        }
-    }
-    free(obj);
+    NSOpenGLContext* glcontext = (NSOpenGLContext*)context;
+    [glcontext flushBuffer];
 }
