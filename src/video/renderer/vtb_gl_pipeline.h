@@ -36,8 +36,6 @@
 
 #include <SDL.h>
 
-#include <video/renderer/vtb_gl_pipeline_plat.h>
-
 namespace lt {
 
 namespace video {
@@ -76,6 +74,7 @@ private:
 
 private:
     SDL_Window* sdl_window_ = nullptr;
+    SDL_GLContext sdl_gl_context_ = nullptr;
     uint32_t video_width_;
     uint32_t video_height_;
     uint32_t align_;
@@ -87,7 +86,6 @@ private:
     GLuint vao_ = 0;
     GLuint vbo_ = 0;
     GLuint ebo_ = 0;
-    VtbGlPipelinePlatform* plat_ = nullptr;
 };
 
 } // namespace video

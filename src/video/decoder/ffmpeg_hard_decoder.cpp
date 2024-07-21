@@ -443,6 +443,8 @@ DecodedFormat FFmpegHardDecoder::decodedFormat() const {
         return DecodedFormat::D3D11_NV12;
     case VaType::VAAPI:
         return DecodedFormat::VA_NV12;
+    case VaType::VTB:
+        return DecodedFormat::VTB_NV12;
     default:
         // client 在初始化阶段用FATAL没问题
         LOG(FATAL) << "Unknown VaType " << (int)va_type_;

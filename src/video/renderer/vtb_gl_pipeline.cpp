@@ -37,6 +37,7 @@
 #include <SDL_syswm.h>
 
 #include <ltlib/logging.h>
+#include <video/renderer/vtb_gl_pipeline_plat.h>
 
 #define _ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
 
@@ -79,7 +80,9 @@ VtbGlPipeline::~VtbGlPipeline() {
     if (shader_ != 0) {
         glDeleteProgram(shader_);
     }
-    destroyVtbGlPipelinePlatform(plat_);
+    if (sdl_gl_context_ != nullptr) {
+        SDL_GL_DeleteContext(sdl_gl_context_);
+    }
 }
 
 bool VtbGlPipeline::init() {
@@ -92,24 +95,16 @@ bool VtbGlPipeline::init() {
         LOG(ERR) << "Only support cocoa, but we are using " << (int)info.subsystem;
         return false;
     }
-    LOG(INFO) << "222";
-
     int window_width, window_height;
     SDL_GetWindowSize(sdl_window, &window_width, &window_height);
-    LOG(INFO) << "333";
+    std::this_thread::sleep_for(std::chrono::milliseconds{50});
 
     window_width_ = static_cast<uint32_t>(window_width);
     window_height_ = static_cast<uint32_t>(window_height);
-    plat_ = createVtbGlPipelinePlatform(info.info.cocoa.window, window_width, window_height);
-    LOG(INFO) << "444";
 
     if (!initOpenGL()) {
-    LOG(INFO) << "555";
-
         return false;
     }
-    LOG(INFO) << "666";
-
     return true;
 }
 
@@ -119,11 +114,9 @@ bool VtbGlPipeline::bindTextures(const std::vector<void*>& textures) {
 }
 
 Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
-    plat_->glMakeCurrent(plat_);
-    AutoGuard ag{[this]() {
-        plat_->glMakeCurrentEmpty(plat_);
-    }};
-    plat_->mapOpenGLTexture(plat_, textures_, frame);
+    SDL_GL_MakeCurrent(sdl_window_, sdl_gl_context_);
+    (void)frame;
+    ltMapOpenGLTexture(sdl_gl_context_, textures_, frame, static_cast<int32_t>(window_width_), static_cast<int32_t>(window_height_));
     glClear(GL_COLOR_BUFFER_BIT);
     while (glGetError()) {
     }
@@ -132,7 +125,6 @@ Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
     GLenum err = glGetError();
     glBindVertexArray(0);
     if (err) {
-        LOG(ERR) << "glDrawArrays failed: " << err;
         return RenderResult::Failed;
     }
     for (uint32_t i = 0; i < 2U; ++i) {
@@ -140,6 +132,7 @@ Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
         glBindTexture(GL_TEXTURE_2D, 0);
         //eglDestroyImageKHR_(egl_display_, images[i]);
     }
+    ltFlushOpenGLBuffer(sdl_gl_context_);
     return RenderResult::Success2;
 }
 
@@ -192,7 +185,7 @@ uint32_t VtbGlPipeline::displayHeight() {
 }
 
 bool VtbGlPipeline::setDecodedFormat(DecodedFormat format) {
-    if (format == DecodedFormat::VA_NV12) {
+    if (format == DecodedFormat::VTB_NV12) {
         return true;
     }
     else {
@@ -202,6 +195,15 @@ bool VtbGlPipeline::setDecodedFormat(DecodedFormat format) {
 }
 
 bool VtbGlPipeline::initOpenGL() {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    sdl_gl_context_ = SDL_GL_CreateContext(sdl_window_);
+    if (sdl_gl_context_ == nullptr) {
+        LOGF(ERR, "SDL_GL_CreateContext failed with %s", SDL_GetError());
+        return false;
+    }
+    SDL_GL_MakeCurrent(sdl_window_, sdl_gl_context_);
     LOGF(INFO, "OpenGL vendor:   %s\n", glGetString(GL_VENDOR));
     LOGF(INFO, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
     LOGF(INFO, "OpenGL version:  %s\n", glGetString(GL_VERSION));

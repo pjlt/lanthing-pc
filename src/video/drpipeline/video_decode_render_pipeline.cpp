@@ -249,8 +249,11 @@ bool VDRPipeline::init() {
     render_params.stretch = is_stretch_;
     render_params.absolute_mouse = absolute_mouse_;
     render_params.align = Decoder::align(decode_codec_type_);
+        LOG(ERR) << "before create renderer failed";
+
     video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {
+        LOG(ERR) << "create renderer failed";
         return false;
     }
     Decoder::Params decode_params{};
@@ -273,15 +276,21 @@ bool VDRPipeline::init() {
 
     video_decoder_ = Decoder::create(decode_params);
     if (video_decoder_ == nullptr) {
+        LOG(ERR) << "create decoder failed";
+
         return false;
     }
     if (!video_renderer_->setDecodedFormat(video_decoder_->decodedFormat())) {
+        LOG(ERR) << "setdecodedformat failed";
+
         return false;
     }
     if (for_test_) {
         return true;
     }
     if (!video_renderer_->bindTextures(video_decoder_->textures())) {
+        LOG(ERR) << "bind texture failed";
+
         return false;
     }
     WidgetsManager::Params widgets_params{};
@@ -297,6 +306,8 @@ bool VDRPipeline::init() {
     widgets_params.stretch = std::bind(&VDRPipeline::onUserSwitchStretchOrOrigin, this);
     widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
+        LOG(ERR) << "create widgets failed";
+
         return false;
     }
     smoother_.clear();

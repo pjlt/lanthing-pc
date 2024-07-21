@@ -46,6 +46,7 @@ enum class DecodedFormat {
     MEM_NV12,
     D3D11_NV12,
     VA_NV12,
+    VTB_NV12,
 };
 
 struct DecodedFrame {
