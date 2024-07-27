@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-void ltMapOpenGLTexture(void* context, uint32_t textures[2], int64_t frame, int32_t width, int32_t height);
+void ltMapOpenGLTexture(void* context, uint32_t textures[2], int64_t frame);
 void ltFlushOpenGLBuffer(void* context);
 
 #if __cplusplus

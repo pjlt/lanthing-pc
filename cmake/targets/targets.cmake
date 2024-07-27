@@ -345,7 +345,7 @@ elseif(LT_MAC)
     set(PLATFORM_LIBS
         OpenGL::GL
     )
-    set(PLATFORM_LIBS "${PLATFORM_LIBS}" -lobjc ${LIB_CORE_VIDEO} ${LIB_APP_KIT})
+    set(PLATFORM_LIBS "${PLATFORM_LIBS}" -lobjc ${LIB_CORE_VIDEO} ${LIB_APP_KIT} ${LIB_IO_SURFACE})
 else()
     set(PLATFORM_LIBS)
 endif()

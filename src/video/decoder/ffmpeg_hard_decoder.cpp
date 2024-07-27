@@ -88,7 +88,10 @@ void* getTexture(AVFrame* av_frame) {
     return av_frame->data[1];
 #elif LT_LINUX
     return av_frame->data[3];
+#elif LT_MAC
+    return av_frame->data[3];
 #else
+#error unsupported platform
     (void)av_frame;
     return nullptr;
 #endif

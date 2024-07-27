@@ -116,7 +116,7 @@ bool VtbGlPipeline::bindTextures(const std::vector<void*>& textures) {
 Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
     SDL_GL_MakeCurrent(sdl_window_, sdl_gl_context_);
     (void)frame;
-    ltMapOpenGLTexture(sdl_gl_context_, textures_, frame, static_cast<int32_t>(window_width_), static_cast<int32_t>(window_height_));
+    ltMapOpenGLTexture(sdl_gl_context_, textures_, frame);
     glClear(GL_COLOR_BUFFER_BIT);
     while (glGetError()) {
     }
@@ -129,7 +129,7 @@ Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
     }
     for (uint32_t i = 0; i < 2U; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_RECTANGLE, 0);
         //eglDestroyImageKHR_(egl_display_, images[i]);
     }
     ltFlushOpenGLBuffer(sdl_gl_context_);
@@ -221,7 +221,7 @@ void main() {
     const char* kFragmentShader = R"(
 #version 330
 in vec2 vTexCoord;
-uniform sampler2D uTexY, uTexC;
+uniform sampler2DRect uTexY, uTexC;
 const mat4 yuv2rgb = mat4(
     vec4(  1.1643835616,  1.1643835616,  1.1643835616,  0.0 ),
     vec4(  0.0, -0.2132486143,  2.1124017857,  0.0 ),
@@ -230,7 +230,7 @@ const mat4 yuv2rgb = mat4(
 out vec4 oColor;
 void main() {
     oColor = yuv2rgb * vec4(texture(uTexY, vTexCoord).x,
-                            texture(uTexC, vTexCoord).xy, 1.);
+                            texture(uTexC, vTexCoord * vec2(0.5, 0.5)).xy, 1.);
 }
 )";
     shader_ = glCreateProgram();
@@ -292,21 +292,19 @@ void main() {
     glUniform1i(glGetUniformLocation(shader_, "uTexC"), 1);
     glGenTextures(2, textures_);
     for (int i = 0; i < 2; ++i) {
-        glBindTexture(GL_TEXTURE_2D, textures_[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_RECTANGLE, textures_[i]);
+        glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, 0);
 
-    float u = (float)video_width_ / _ALIGN(video_width_, align_);
-    float v = (float)video_height_ / _ALIGN(video_height_, align_);
     // clang-format off
     float verts[] = {-1.0f, 1.0f, 0.0f, 0.0f,
-                      1.0f, 1.0f, u, 0.0f,
-                      1.0f, -1.0f, u, v,
-                      -1.0f, -1.0f, 0.0f, v};
+                      1.0f, 1.0f, video_width_ * 1.f, 0.0f,
+                      1.0f, -1.0f, video_width_ * 1.f, video_height_ * 1.f,
+                      -1.0f, -1.0f, 0.0f, video_height_ * 1.f};
     static_assert(sizeof(verts) == 4*4*4);
     const uint32_t indexes[] = {0, 1, 2, 0, 2, 3};
     // clang-format on

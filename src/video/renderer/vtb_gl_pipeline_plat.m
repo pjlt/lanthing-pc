@@ -40,17 +40,21 @@
 #include <OpenGL/gl3.h>
 #include <OpenGL/glext.h>
 
-void ltMapOpenGLTexture(void* context, uint32_t textures[2], int64_t frame, int32_t width, int32_t height)
+void ltMapOpenGLTexture(void* context, uint32_t textures[2], int64_t frame)
 {
+    // 🖤🍎为了不让人用OpenGL也是费了不少心机😅
     NSOpenGLContext* glcontext = (NSOpenGLContext*)context;
     CVPixelBufferRef pixel_buffer = (CVPixelBufferRef)frame;
     IOSurfaceRef io_surface = CVPixelBufferGetIOSurface(pixel_buffer);
-    uint32_t formats[2] = {GL_RED, GL_RG}; //???
+    GLsizei width = IOSurfaceGetWidth(io_surface);
+    GLsizei height = IOSurfaceGetHeight(io_surface);
+    //NSLog(@"widht:%d, height:%d, surface:%lld, frame:%lld", width, height, (int64_t)io_surface, frame);
+    uint32_t formats[2] = {GL_RED, GL_RG};
     for (size_t i = 0; i < 2; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, textures[i]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, textures[i]);
         CGLTexImageIOSurface2D([glcontext CGLContextObj],
-                                                       GL_TEXTURE_2D,
+                                                       GL_TEXTURE_RECTANGLE,
                                                        formats[i],
                                                        width / (i + 1),
                                                        height / (i + 1),
