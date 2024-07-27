@@ -21,8 +21,6 @@ find_package(Opus REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuil
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui_builder)
 
 add_subdirectory(ltproto)
-# TODO: 将ltlib合并到lanthing
-add_subdirectory(ltlib)
 add_subdirectory(transport)
 
 #Qt

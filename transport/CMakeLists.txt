@@ -19,7 +19,6 @@ target_link_libraries(${PROJECT_NAME}
 		protobuf::libprotobuf-lite
 		g3log
 		uv_a
-		ltlib
 		ltproto
 )
 
@@ -30,4 +29,9 @@ target_link_libraries(${PROJECT_NAME}
 	PUBLIC
 		rtc
 		#rtc2
+)
+
+target_include_directories(${PROJECT_NAME}
+	PRIVATE
+		${CMAKE_SOURCE_DIR}/src
 )

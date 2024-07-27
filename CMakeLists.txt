@@ -16,5 +16,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/deploy_qt6.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/definitions/definitions.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies/dependencies.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/targets/targets.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/postbuild/postbuild.cmake)
 
+# if (${LT_ENABLE_TEST})
+#     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/tests.cmake)
+# endif ()
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/postbuild/postbuild.cmake)
