@@ -72,6 +72,25 @@ prebuilt_fetch() {
     #rtc_fetch
 }
 
+make_bundle() {
+    mkdir -p install/$build_type/lanthing.app/Contents/Frameworks
+    cp third_party/prebuilt/g3log/mac/lib/*.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/protobuf/mac/lib/*.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/ffmpeg/mac/lib/libavutil.57.28.100.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/ffmpeg/mac/lib/libavcodec.59.37.100.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/ffmpeg/mac/lib/libswresample.4.7.100.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/libuv/mac/lib/*.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/sdl/mac/lib/*.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/mbedtls/mac/lib/*.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp third_party/prebuilt/sqlite/mac/*.dylib install/$build_type/lanthing.app/Contents/Frameworks/
+    cp install/$build_type/bin/librtc* install/$build_type/lanthing.app/Contents/Frameworks/
+    install_name_tool -change ./install/lib/libavcodec.59.dylib @rpath/libavcodec.59.37.100.dylib install/$build_type/lanthing.app/Contents/MacOS/lanthing
+    install_name_tool -change ./install/lib/libavutil.57.dylib @rpath/libavutil.57.28.100.dylib install/$build_type/lanthing.app/Contents/MacOS/lanthing
+    install_name_tool -change ./install/lib/libswresample.4.dylib @rpath/libswresample.4.7.100.dylib install/$build_type/lanthing.app/Contents/MacOS/lanthing
+    install_name_tool -change /Users/runner/work/sqlite-build/sqlite-build/sqlite/build/install/lib/libsqlite3.0.dylib  @rpath/libsqlite3.0.dylib install/RelWithDebInfo/lanthing.app/Contents/MacOS/lanthing
+    macdeployqt install/$build_type/lanthing.app
+}
+
 prebuilt_clean() {
     rm -rf third_party/prebuilt
     #rm -rf transport/rtc
@@ -106,7 +125,7 @@ elif [ "$1" = "build" ]; then
 elif [ "$1" = "package" ]; then
     build_type=$2
     check_build_type
-    make_appimage
+    make_bundle
 else
     print_usage
 fi
