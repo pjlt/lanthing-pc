@@ -22,11 +22,11 @@ jobs:
           target: 'desktop'
           arch: 'win64_msvc2019_64'
       - name: Fetch prebuilt
-        run: ./build.ps1 prebuilt fetch
+        run: ./build.win.ps1 prebuilt fetch
       - name: Build lanthing-pc
         run: |
           $LT_DUMP_URL = "${{ vars.LT_DUMP_URL }}"
-          ./build.ps1 build Release
+          ./build.win.ps1 build Release
       - name: Generate Zip
         run: |
           echo ${{ github.sha }} > Release.txt
@@ -64,7 +64,7 @@ jobs:
           target: 'desktop'
           arch: 'gcc_64'
       - name: Fetch prebuilt
-        run: bash build.sh prebuilt fetch
+        run: bash build.linux.sh prebuilt fetch
       - name: Build lanthing-pc
         run: |
           alias gcc='gcc-10'
@@ -72,7 +72,7 @@ jobs:
           export CC=`which gcc-10`
           export CXX=`which g++-10`
           export LT_DUMP_URL="${{ vars.LT_DUMP_URL }}"
-          bash build.sh build Release
+          bash build.linux.sh build Release
       - name: Set version
         run: |
           VERSION=${{ github.ref_name }}
@@ -81,7 +81,7 @@ jobs:
           echo "Set VERSION to $VERSION"
       - name: Make AppImage
         run: |
-          bash build.sh package Release
+          bash build.linux.sh package Release
           cp lanthing-${{ env.VERSION }}-x86_64.AppImage lanthing.linux-${{ env.VERSION }}-x86_64.AppImage
       - name: Release
         uses: softprops/action-gh-release@v1

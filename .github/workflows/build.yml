@@ -60,3 +60,23 @@ jobs:
           export CC=`which gcc-10`
           export CXX=`which g++-10`
           bash build.sh build Release
+  macOS:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        with:
+          submodules: true
+        uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.3'
+          host: 'mac'
+          target: 'desktop'
+          arch: 'clang_64'
+      - name: Fetch prebuilt
+        run: bash build.sh prebuilt fetch
+      - name: Build lanthing-pc
+        run: |
+          bash build.sh build Release

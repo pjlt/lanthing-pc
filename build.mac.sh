@@ -38,7 +38,7 @@ check_build_type() {
 }
 
 rtc_fetch() {
-    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.7.9/rtc.mac.zip"
+    rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.7.10/rtc.mac.zip"
     mkdir -p ./transport/rtc/mac
     echo "Fetch $rtc_url"
     curl -L $rtc_url -o ./third_party/prebuilt/rtc.mac.zip
@@ -69,7 +69,7 @@ prebuilt_fetch() {
         echo "Extra $lib_name.mac.tar.gz"
         tar -xzvf ./third_party/prebuilt/$lib_name.mac.tar.gz -C ./third_party/prebuilt/$lib_name/mac
     done
-    #rtc_fetch
+    rtc_fetch
 }
 
 make_bundle() {
@@ -93,7 +93,7 @@ make_bundle() {
 
 prebuilt_clean() {
     rm -rf third_party/prebuilt
-    #rm -rf transport/rtc
+    rm -rf transport/rtc
 }
 
 print_usage() {
