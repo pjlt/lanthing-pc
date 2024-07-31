@@ -23,9 +23,9 @@ jobs:
           target: 'desktop'
           arch: 'win64_msvc2019_64'
       - name: Fetch prebuilt
-        run: ./build.ps1 prebuilt fetch
+        run: ./build.win.ps1 prebuilt fetch
       - name: Build lanthing-pc
-        run: ./build.ps1 build Release
+        run: ./build.win.ps1 build Release
       - name: Run Tests
         run: |
           $Env:PATH = "${{ github.workspace }}/install/RelWithDebInfo/bin;$Env:PATH"
@@ -52,14 +52,14 @@ jobs:
           target: 'desktop'
           arch: 'gcc_64'
       - name: Fetch prebuilt
-        run: bash build.sh prebuilt fetch
+        run: bash build.linux.sh prebuilt fetch
       - name: Build lanthing-pc
         run: |
           alias gcc='gcc-10'
           alias g++='g++-10'
           export CC=`which gcc-10`
           export CXX=`which g++-10`
-          bash build.sh build Release
+          bash build.linux.sh build Release
   macOS:
     runs-on: macos-14
     steps:
@@ -76,7 +76,7 @@ jobs:
           target: 'desktop'
           arch: 'clang_64'
       - name: Fetch prebuilt
-        run: bash build.sh prebuilt fetch
+        run: bash build.mac.sh prebuilt fetch
       - name: Build lanthing-pc
         run: |
-          bash build.sh build Release
+          bash build.mac.sh build Release
