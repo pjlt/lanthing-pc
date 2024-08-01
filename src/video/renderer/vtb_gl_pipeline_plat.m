@@ -35,6 +35,7 @@
 #pragma clang diagnostic ignored "-Wmissing-method-return-type"
 #pragma clang diagnostic ignored "-Wpedantic"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-Wavailability"
 
 #include "vtb_gl_pipeline_plat.h"
 
