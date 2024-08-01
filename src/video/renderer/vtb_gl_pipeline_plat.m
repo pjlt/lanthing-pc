@@ -28,6 +28,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// 不清楚为啥clang会报系统头文件警告, 临时这样处理.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma clang diagnostic ignored "-Wzero-length-array"
+#pragma clang diagnostic ignored "-Wmissing-method-return-type"
+#pragma clang diagnostic ignored "-Wpedantic"
+
 #include "vtb_gl_pipeline_plat.h"
 
 #include <string.h>
@@ -70,3 +77,5 @@ void ltFlushOpenGLBuffer(void* context)
     NSOpenGLContext* glcontext = (NSOpenGLContext*)context;
     [glcontext flushBuffer];
 }
+
+#pragma clang diagnostic pop
