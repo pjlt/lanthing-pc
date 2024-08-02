@@ -168,8 +168,8 @@ VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
     , client_refresh_rate_{params.client_refresh_rate}
     , max_fps_{params.client_refresh_rate}
     , target_fps_{params.client_refresh_rate}
-    , max_bps_{(params.max_mbps == 0 || params.max_mbps > 100) ? (100 * 1024 * 1024)
-                                                               : (params.max_mbps * 1024 * 1024)}
+    , max_bps_{(params.max_mbps == 0 || params.max_mbps > 100) ? (100 * 1000 * 1000)
+                                                               : (params.max_mbps * 1000 * 1000)}
     , monitor_{params.monitor}
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
@@ -206,7 +206,7 @@ bool VCEPipeline::init() {
     target_fps_ = max_fps_;
     Encoder::InitParams encode_params{};
     encode_params.freq = max_fps_;
-    encode_params.bitrate_bps = 4 * 1024 * 1024;
+    encode_params.bitrate_bps = 4 * 1000 * 1000;
     encode_params.bitrate_bps = std::min(encode_params.bitrate_bps, max_bps_);
     if (monitor_.rotation == 90 || monitor_.rotation == 270) {
         encode_params.width = height_;

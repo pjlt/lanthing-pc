@@ -71,8 +71,8 @@ public:
     uint32_t height() const { return height_; }
     int fps() const { return fps_; }
     uint32_t bitrate() const { return bitrate_; }
-    uint32_t bitrate_kbps() const { return bitrate_ / 1024; }
-    uint32_t maxbitrate_kbps() const { return maxbitrate() / 1024; }
+    uint32_t bitrate_kbps() const { return bitrate_ / 1000; }
+    uint32_t maxbitrate_kbps() const { return maxbitrate() / 1000; }
     uint32_t maxbitrate() const { return static_cast<uint32_t>(bitrate_ * 1.15f); }
     std::array<uint32_t, 3> qmin() const { return qmin_; }
     std::array<uint32_t, 3> qmax() const { return qmax_; }
@@ -84,7 +84,7 @@ public:
     lt::VideoCodecType codec() const { return codec_type_; }
     Profile profile() const { return profile_; }
     void set_bitrate(uint32_t bps);
-    void set_bitrate_kbps(uint32_t kbps) { set_bitrate(kbps * 1024); }
+    void set_bitrate_kbps(uint32_t kbps) { set_bitrate(kbps * 1000); }
     void set_fps(int _fps);
 
     std::string params() const;

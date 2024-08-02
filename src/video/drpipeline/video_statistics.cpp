@@ -160,7 +160,7 @@ void VideoStatistics::updateVideoBW(int64_t bytes) {
             sum += history.bytes;
         }
     }
-    updateHistory(video_bw_, static_cast<double>(sum * 8 / 1024));
+    updateHistory(video_bw_, static_cast<double>(sum * 8 / 1000));
 }
 
 void VideoStatistics::updateLossRate(float rate) {
@@ -173,7 +173,7 @@ void VideoStatistics::addCapture(const std::vector<uint32_t>&) {
 }
 
 void VideoStatistics::updateBWE(uint32_t bps) {
-    updateHistory(bwe_, static_cast<double>(bps / 1024));
+    updateHistory(bwe_, static_cast<double>(bps / 1000));
 }
 
 } // namespace video

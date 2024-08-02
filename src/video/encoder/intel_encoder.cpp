@@ -387,9 +387,8 @@ VideoCodecType IntelEncoderImpl::codecType() const {
 std::shared_ptr<ltproto::client2worker::VideoFrame>
 IntelEncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     mfxSyncPoint sync_point{};
-    const uint32_t k1024 = 1024;
     const uint32_t buffer_size =
-        k1024 * encode_param_.mfx.BufferSizeInKB * encode_param_.mfx.BRCParamMultiplier;
+        1000 * encode_param_.mfx.BufferSizeInKB * encode_param_.mfx.BRCParamMultiplier;
     if (bitstream_.size() < buffer_size) {
         bitstream_.resize(buffer_size);
     }

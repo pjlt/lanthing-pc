@@ -300,7 +300,7 @@ void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLit
                          << ", but we are serving " << peer_client_device_id_.value();
             return;
         }
-        double Mbps = static_cast<double>(msg->bandwidth_bps()) / 1024. / 1024.;
+        double Mbps = static_cast<double>(msg->bandwidth_bps()) / 1000. / 1000.;
         int32_t delay_ms = msg->delay_ms();
         p2p_ = msg->p2p();
         mouse_hit_time_ = msg->hit_mouse() ? ltlib::steady_now_ms() : mouse_hit_time_;

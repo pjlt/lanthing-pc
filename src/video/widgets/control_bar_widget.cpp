@@ -112,7 +112,7 @@ void ControlBarWidget::render() {
             ImGui::SameLine();
             ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.6f);
             if (ImGui::SliderInt("Mbps", &manual_bitrate_, 2, 100, "%d")) {
-                set_bitrate_(static_cast<uint32_t>(manual_bitrate_) * 1024 * 1024);
+                set_bitrate_(static_cast<uint32_t>(manual_bitrate_) * 1000 * 1000);
             }
             ImGui::PopItemWidth();
         }
