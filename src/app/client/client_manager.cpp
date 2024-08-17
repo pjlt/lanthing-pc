@@ -242,7 +242,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     sendMessageToServer(ltproto::id(req), req);
     LOGF(INFO, "RequestConnection(device_id:%" PRId64 ", request_id:%" PRId64 ") sent",
          peerDeviceID, request_id);
-    tryRemoveSessionAfter10s(request_id);
+    tryRemoveSessionAfter15s(request_id);
 }
 
 // 跑在IOLoop线程
@@ -381,8 +381,8 @@ void ClientManager::sendMessageToServer(uint32_t type,
 }
 
 // 这里有个小问题，如果被控10秒内不点“同意”，就没了
-void ClientManager::tryRemoveSessionAfter10s(int64_t request_id) {
-    postDelayTask(10'000, [request_id, this]() { tryRemoveSession(request_id); });
+void ClientManager::tryRemoveSessionAfter15s(int64_t request_id) {
+    postDelayTask(15'000, [request_id, this]() { tryRemoveSession(request_id); });
 }
 
 // 跑在IOLoop线程

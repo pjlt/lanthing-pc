@@ -89,7 +89,7 @@ private:
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t, const std::function<void()>& task);
     void sendMessageToServer(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
-    void tryRemoveSessionAfter10s(int64_t request_id);
+    void tryRemoveSessionAfter15s(int64_t request_id);
     void tryRemoveSession(int64_t request_id);
     void onClientExited(int64_t request_id);
     void onClientStatus(std::shared_ptr<google::protobuf::MessageLite> msg);
