@@ -208,6 +208,8 @@ int App::exec(int argc, char** argv) {
         std::bind(&App::enableShareClipboard, this, std::placeholders::_1);
     params.enable_run_as_service = std::bind(&App::enableRunAsDaemon, this, std::placeholders::_1);
     params.get_history_device_ids = std::bind(&App::getHistoryDeviceIDs, this);
+    params.get_last_access_token = std::bind(&App::getLastAccessToken, this);
+    params.clear_last_access_token = std::bind(&App::clearLastAccessToken, this);
     params.get_settings = std::bind(&App::getSettings, this);
     params.on_user_confirmed_connection = std::bind(&App::onUserConfirmedConnection, this,
                                                     std::placeholders::_1, std::placeholders::_2);
@@ -269,6 +271,7 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
         }
         client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""), enable_tcp_);
     });
+    saveLastAccessToken(std::to_string(peerDeviceID), accessToken);
 }
 
 std::vector<std::string> App::getHistoryDeviceIDs() const {
@@ -598,6 +601,39 @@ void App::maybeRefreshAccessToken() {
     access_token_ = generateAccessToken();
     settings_->setString("access_token", access_token_);
     gui_.setAccessToken(access_token_);
+}
+
+std::pair<std::string, std::string> App::getLastAccessToken() {
+    std::string str = settings_->getString("last_access_token").value_or("");
+    auto pos = str.find('_');
+    if (pos == std::string::npos) {
+        return {"", ""};
+    }
+    std::string device_id = str.substr(0, pos);
+    std::string access_token = str.substr(pos + 1);
+    if (device_id.empty() || access_token.empty()) {
+        LOG(ERR) << "Invalid 'last_access_token':" << str;
+        return {"", ""};
+    }
+    // 在本地存储验证码，无论如何都是一件愚蠢的事，只能想办法让它'看上去没那么蠢'
+    for (auto& c : access_token) {
+        c = c - 1;
+    }
+    return {device_id, access_token};
+}
+
+void App::saveLastAccessToken(const std::string& device_id, const std::string& _access_token) {
+    // 在本地存储验证码，无论如何都是一件愚蠢的事，只能想办法让它'看上去没那么蠢'
+    std::string access_token = _access_token;
+    for (auto& c : access_token) {
+        c = c + 1;
+    }
+    std::string str = device_id + "_" + access_token;
+    settings_->setString("last_access_token", str);
+}
+
+void App::clearLastAccessToken() {
+    settings_->setString("last_access_token", "");
 }
 
 void App::onLaunchClientSuccess(int64_t device_id) { // 只将“合法”的device id加入历史列表

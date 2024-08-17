@@ -156,6 +156,18 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     lock_position->setIcon(QIcon(":/res/png_icons/lock.png"));
     ui->leditAccessToken->addAction(lock_position, QLineEdit::LeadingPosition);
     ui->leditAccessToken->setValidator(new AccesstokenValidator(this));
+    connect(ui->leditAccessToken, &QLineEdit::textChanged, [this](const QString& text) {
+        if (text.trimmed().isEmpty()) {
+            params_.clear_last_access_token();
+        }
+    });
+    if (!history_device_ids_.empty()) {
+        std::string last_device_id = history_device_ids_.front();
+        auto [id, token] = params.get_last_access_token();
+        if (last_device_id == id) {
+            ui->leditAccessToken->setText(QString::fromStdString(token));
+        }
+    }
 
     // 客户端指示器
     setupClientIndicators();
