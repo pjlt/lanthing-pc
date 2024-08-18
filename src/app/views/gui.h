@@ -89,6 +89,7 @@ public:
         std::function<std::vector<std::string>()> get_history_device_ids;
         std::function<std::pair<std::string, std::string>()> get_last_access_token;
         std::function<void()> clear_last_access_token;
+        std::function<void()> refresh_access_token;
         std::function<Settings()> get_settings;
         std::function<void(bool)> enable_auto_refresh_access_token;
         std::function<void(bool)> enable_share_clipboard;

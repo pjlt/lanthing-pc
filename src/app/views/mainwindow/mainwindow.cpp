@@ -52,6 +52,7 @@
 #include <qmenu.h>
 #include <qmimedata.h>
 #include <qstringbuilder.h>
+#include <qthread.h>
 
 #include <ltlib/logging.h>
 #include <ltlib/strings.h>
@@ -72,6 +73,10 @@
 namespace {
 
 void dispatchToUiThread(std::function<void()> callback) {
+    if (qApp->thread() == QThread::currentThread()) {
+        callback();
+        return;
+    }
     // any thread
     QTimer* timer = new QTimer();
     timer->moveToThread(qApp->thread());
@@ -521,6 +526,7 @@ void MainWindow::setupOtherCallbacks() {
     connect(ui->btnClose, &QPushButton::clicked, [this]() { hide(); });
     connect(ui->btnCopy, &QPushButton::pressed, this, &MainWindow::onCopyPressed);
     connect(ui->btnShowToken, &QPushButton::pressed, this, &MainWindow::onShowTokenPressed);
+    connect(ui->btnRefreshToken, &QPushButton::clicked, this, &MainWindow::onRefreshTokenClicked);
     connect(ui->btnConnect, &QPushButton::clicked, this, &MainWindow::onConnectBtnClicked);
     connect(ui->checkboxService, &QCheckBox::stateChanged,
             [this](int) { params_.enable_run_as_service(ui->checkboxService->isChecked()); });
@@ -967,6 +973,14 @@ void MainWindow::onShowTokenPressed() {
         ui->labelMyAccessToken->setText(QString::fromStdString(access_token_text_));
         QTimer::singleShot(5'100, std::bind(&MainWindow::onTimeoutHideToken, this));
     }
+}
+
+void MainWindow::onRefreshTokenClicked() {
+    params_.refresh_access_token();
+    token_showing_ = true;
+    token_last_show_time_ms_ = ltlib::steady_now_ms();
+    ui->labelMyAccessToken->setText(QString::fromStdString(access_token_text_));
+    QTimer::singleShot(5'100, std::bind(&MainWindow::onTimeoutHideToken, this));
 }
 
 void MainWindow::onCopyPressed() {

@@ -209,6 +209,7 @@ int App::exec(int argc, char** argv) {
     params.enable_run_as_service = std::bind(&App::enableRunAsDaemon, this, std::placeholders::_1);
     params.get_history_device_ids = std::bind(&App::getHistoryDeviceIDs, this);
     params.get_last_access_token = std::bind(&App::getLastAccessToken, this);
+    params.refresh_access_token = std::bind(&App::refreshAccessToken, this);
     params.clear_last_access_token = std::bind(&App::clearLastAccessToken, this);
     params.get_settings = std::bind(&App::getSettings, this);
     params.on_user_confirmed_connection = std::bind(&App::onUserConfirmedConnection, this,
@@ -598,9 +599,7 @@ void App::maybeRefreshAccessToken() {
     if (!auto_refresh_access_token_) {
         return;
     }
-    access_token_ = generateAccessToken();
-    settings_->setString("access_token", access_token_);
-    gui_.setAccessToken(access_token_);
+    maybeRefreshAccessToken();
 }
 
 std::pair<std::string, std::string> App::getLastAccessToken() {
@@ -620,6 +619,12 @@ std::pair<std::string, std::string> App::getLastAccessToken() {
         c = c - 1;
     }
     return {device_id, access_token};
+}
+
+void App::refreshAccessToken() {
+    access_token_ = generateAccessToken();
+    settings_->setString("access_token", access_token_);
+    gui_.setAccessToken(access_token_);
 }
 
 void App::saveLastAccessToken(const std::string& device_id, const std::string& _access_token) {

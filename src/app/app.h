@@ -98,6 +98,7 @@ private:
     void insertNewestHistoryID(const std::string& device_id);
     void maybeRefreshAccessToken();
     std::pair<std::string, std::string> getLastAccessToken();
+    void refreshAccessToken();
     void saveLastAccessToken(const std::string& device_id, const std::string& access_token);
     void clearLastAccessToken();
     void postTask(const std::function<void()>& task);

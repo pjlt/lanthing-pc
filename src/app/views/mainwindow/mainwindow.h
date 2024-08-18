@@ -114,6 +114,8 @@ private:
 
     void onShowTokenPressed();
 
+    void onRefreshTokenClicked();
+
     void onCopyPressed();
 
     void onUpdateIndicator();

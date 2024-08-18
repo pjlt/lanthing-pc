@@ -213,7 +213,7 @@ border-bottom: 3px solid rgb(44, 49, 58);
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap resource="../../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
+             <pixmap resource="../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -286,7 +286,7 @@ background-color:transparent;
                 <string/>
                </property>
                <property name="icon">
-                <iconset resource="../../../resources.qrc">
+                <iconset resource="../../resources.qrc">
                  <normaloff>:/res/icons/cil-description.png</normaloff>:/res/icons/cil-description.png</iconset>
                </property>
                <property name="iconSize">
@@ -306,7 +306,7 @@ background-color:transparent;
                 <string/>
                </property>
                <property name="icon">
-                <iconset resource="../../../resources.qrc">
+                <iconset resource="../../resources.qrc">
                  <normaloff>:/res/icons/icon_minimize.png</normaloff>:/res/icons/icon_minimize.png</iconset>
                </property>
                <property name="iconSize">
@@ -326,7 +326,7 @@ background-color:transparent;
                 <string/>
                </property>
                <property name="icon">
-                <iconset resource="../../../resources.qrc">
+                <iconset resource="../../resources.qrc">
                  <normaloff>:/res/icons/icon_close.png</normaloff>:/res/icons/icon_close.png</iconset>
                </property>
                <property name="iconSize">
@@ -804,7 +804,7 @@ color: rgb(190, 190, 190);
                          <string/>
                         </property>
                         <property name="icon">
-                         <iconset resource="../../../resources.qrc">
+                         <iconset resource="../../resources.qrc">
                           <normaloff>:/res/icons/cil-clone.png</normaloff>:/res/icons/cil-clone.png</iconset>
                         </property>
                        </widget>
@@ -890,26 +890,27 @@ color: rgb(190, 190, 190);
                          <string/>
                         </property>
                         <property name="icon">
-                         <iconset resource="../../../resources.qrc">
+                         <iconset resource="../../resources.qrc">
                           <normaloff>:/res/icons/cil-low-vision.png</normaloff>:/res/icons/cil-low-vision.png</iconset>
                         </property>
                        </widget>
                       </item>
                       <item>
-                       <spacer name="horizontalSpacer">
-                        <property name="orientation">
-                         <enum>Qt::Horizontal</enum>
-                        </property>
-                        <property name="sizeType">
-                         <enum>QSizePolicy::Fixed</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
+                       <widget class="QPushButton" name="btnRefreshToken">
+                        <property name="maximumSize">
                          <size>
                           <width>60</width>
-                          <height>20</height>
+                          <height>16777215</height>
                          </size>
                         </property>
-                       </spacer>
+                        <property name="text">
+                         <string/>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../../resources.qrc">
+                          <normaloff>:/res/icons/cil-reload.png</normaloff>:/res/icons/cil-reload.png</iconset>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
                     </item>
@@ -1052,7 +1053,7 @@ QPushButton#btnConnect:pressed {
                        <string/>
                       </property>
                       <property name="icon">
-                       <iconset resource="../../../resources.qrc">
+                       <iconset resource="../../resources.qrc">
                         <normaloff>:/res/icons/cil-link.png</normaloff>:/res/icons/cil-link.png</iconset>
                       </property>
                      </widget>
@@ -1137,7 +1138,7 @@ QPushButton#btnConnect:pressed {
                           <string/>
                          </property>
                          <property name="pixmap">
-                          <pixmap resource="../../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
+                          <pixmap resource="../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
                          </property>
                          <property name="scaledContents">
                           <bool>true</bool>
@@ -1186,7 +1187,7 @@ QPushButton#btnConnect:pressed {
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="../../../resources.qrc">:/res/png_icons/gamepad_gray.png</pixmap>
+                             <pixmap resource="../../resources.qrc">:/res/png_icons/gamepad_gray.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1214,7 +1215,7 @@ QPushButton#btnConnect:pressed {
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="../../../resources.qrc">:/res/png_icons/mouse_gray.png</pixmap>
+                             <pixmap resource="../../resources.qrc">:/res/png_icons/mouse_gray.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1236,7 +1237,7 @@ QPushButton#btnConnect:pressed {
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="../../../resources.qrc">:/res/png_icons/keyboard_gray.png</pixmap>
+                             <pixmap resource="../../resources.qrc">:/res/png_icons/keyboard_gray.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1311,7 +1312,7 @@ QPushButton#btnConnect:pressed {
                           <string/>
                          </property>
                          <property name="pixmap">
-                          <pixmap resource="../../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
+                          <pixmap resource="../../resources.qrc">:/res/png_icons/pc2.png</pixmap>
                          </property>
                          <property name="scaledContents">
                           <bool>true</bool>
@@ -1360,7 +1361,7 @@ QPushButton#btnConnect:pressed {
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="../../../resources.qrc">:/res/png_icons/gamepad_gray.png</pixmap>
+                             <pixmap resource="../../resources.qrc">:/res/png_icons/gamepad_gray.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1382,7 +1383,7 @@ QPushButton#btnConnect:pressed {
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="../../../resources.qrc">:/res/png_icons/mouse_gray.png</pixmap>
+                             <pixmap resource="../../resources.qrc">:/res/png_icons/mouse_gray.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1404,7 +1405,7 @@ QPushButton#btnConnect:pressed {
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="../../../resources.qrc">:/res/png_icons/keyboard_gray.png</pixmap>
+                             <pixmap resource="../../resources.qrc">:/res/png_icons/keyboard_gray.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1614,7 +1615,7 @@ QHeaderView::section:vertical
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>527</width>
+                      <width>459</width>
                       <height>780</height>
                      </rect>
                     </property>
@@ -2307,7 +2308,8 @@ QHeaderView::section:vertical
   </widget>
  </widget>
  <resources>
-  <include location="../../../resources.qrc"/>
+  <include location="../../resources.qrc"/>
+  <include location="../../resources.qrc"/>
   <include location="../../../resources.qrc"/>
  </resources>
  <connections/>
