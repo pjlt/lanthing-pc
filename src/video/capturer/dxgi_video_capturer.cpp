@@ -63,6 +63,20 @@ namespace lt {
 
 namespace video {
 
+static CursorFormat toCursorFormat(UINT type) {
+    switch (type) {
+    case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME:
+        return CursorFormat::MonoChrome;
+    case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR:
+        return CursorFormat::Color;
+    case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR:
+        return CursorFormat::MaskedColor;
+    default:
+        LOG(FATAL) << "Unknown Pointer shape type " << type;
+        return CursorFormat::Unknown;
+    }
+}
+
 DxgiVideoCapturer::DxgiVideoCapturer(ltlib::Monitor monitor)
     : impl_{std::make_unique<DUPLICATIONMANAGER>()}
     , monitor_{monitor} {}
@@ -153,9 +167,14 @@ std::optional<Capturer::Frame> DxgiVideoCapturer::capture() {
             out_frame.data = mem_data;
         }
         out_frame.capture_timestamp_us = ltlib::steady_now_us();
+        saveCursorInfo(&frame.FrameInfo);
         return out_frame;
     }
     return {};
+}
+
+std::optional<CursorInfo> DxgiVideoCapturer::cursorInfo() {
+    return cursor_info_;
 }
 
 uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
@@ -209,6 +228,32 @@ uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
         return nullptr;
     }
     return mem_buff_.data();
+}
+
+void DxgiVideoCapturer::saveCursorInfo(DXGI_OUTDUPL_FRAME_INFO* frame_info) {
+    cursor_info_ = std::nullopt;
+    if (frame_info->LastMouseUpdateTime.QuadPart <= 0) {
+        return;
+    }
+    CursorInfo info{};
+    info.x = frame_info->PointerPosition.Position.x;
+    info.y = frame_info->PointerPosition.Position.y;
+    info.visible = frame_info->PointerPosition.Visible != FALSE;
+    if (frame_info->PointerShapeBufferSize > 0) {
+        DXGI_OUTDUPL_POINTER_SHAPE_INFO shape_info{};
+        std::vector<uint8_t> shape_data;
+        shape_data.resize(frame_info->PointerShapeBufferSize);
+        if (impl_->GetPointerShape(shape_info, shape_data)) {
+            info.hot_x = shape_info.HotSpot.x;
+            info.hot_y = shape_info.HotSpot.y;
+            info.format = toCursorFormat(shape_info.Type);
+            info.w = shape_info.Width;
+            info.h = shape_info.Height;
+            info.pitch = shape_info.Pitch;
+            info.data = std::move(shape_data);
+        }
+    }
+    cursor_info_ = info;
 }
 
 void DxgiVideoCapturer::doneWithFrame() {

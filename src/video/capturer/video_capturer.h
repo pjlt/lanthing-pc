@@ -46,6 +46,22 @@ enum class CaptureFormat {
     MEM_I420,
 };
 
+enum class CursorFormat { Unknown, MonoChrome, Color, MaskedColor };
+
+struct CursorInfo {
+    int32_t id;
+    int32_t x;
+    int32_t y;
+    int16_t hot_x;
+    int16_t hot_y;
+    bool visible;
+    CursorFormat format;
+    uint32_t w;
+    uint32_t h;
+    uint16_t pitch;
+    std::vector<uint8_t> data;
+};
+
 class Capturer {
 public:
     enum class Backend {
@@ -60,6 +76,7 @@ public:
     static std::unique_ptr<Capturer> create(Backend backend, ltlib::Monitor monitor);
     virtual ~Capturer();
     virtual std::optional<Frame> capture() = 0;
+    virtual std::optional<CursorInfo> cursorInfo() = 0;
     virtual bool start() = 0;
     virtual void doneWithFrame() = 0;
     virtual Backend backend() const = 0;
