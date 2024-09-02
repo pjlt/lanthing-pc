@@ -207,6 +207,7 @@ private:
     bool connected_to_app_ = false;
     std::string ignored_nic_;
     bool stoped_ = false;
+    std::map<int32_t, std::string> cursors_;
 };
 
 } // namespace cli

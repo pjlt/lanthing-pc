@@ -72,6 +72,22 @@ void addHistory(std::deque<int64_t>& history) {
     }
 }
 
+ltproto::client2worker::CursorInfo_CursorDataType toProtobuf(lt::video::CursorFormat format) {
+    switch (format)
+    {
+    case lt::video::CursorFormat::MonoChrome:
+        return ltproto::client2worker::CursorInfo_CursorDataType_MonoChrome;
+    case lt::video::CursorFormat::Color:
+        return ltproto::client2worker::CursorInfo_CursorDataType_Color;
+    case lt::video::CursorFormat::MaskedColor:
+        return ltproto::client2worker::CursorInfo_CursorDataType_MaskedColor;
+    default:
+        // 光标协议设计得太早, 导致这些不合理的地方
+        LOG(FATAL) << "Unknown CursorFormat " << (int)format;
+        return ltproto::client2worker::CursorInfo_CursorDataType_MonoChrome;
+    }
+}
+
 } // namespace
 
 namespace lt {
@@ -391,15 +407,19 @@ void VCEPipeline::captureAndSendCursor() {
         return;
     }
     auto cursor = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(msg);
-    auto iter = cursors_map_.find(cursor->data());
-    if (iter != cursors_map_.end()) {
-        cursor->set_id(iter->second);
+    if (!cursor->data().empty()) {
+        auto iter = cursors_map_.find(cursor->data());
+        if (iter != cursors_map_.end()) {
+            cursor->set_data_id(iter->second);
+            cursor->clear_data();
+        }
+        else {
+            latest_cursor_id_ += 1;
+            cursors_map_.insert({cursor->data(), latest_cursor_id_});
+            cursor->set_data_id(latest_cursor_id_);
+        }
     }
-    else {
-        latest_cursor_id_ += 1;
-        cursors_map_.insert({cursor->data(), latest_cursor_id_});
-        cursor->set_id(latest_cursor_id_);
-    }
+
     send_message_(ltproto::id(cursor), cursor);
 }
 
@@ -477,8 +497,9 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() 
     msg->set_y(info->y);
     msg->set_w(ltlib::getScreenWidth());
     msg->set_h(ltlib::getScreenHeight());
-    // msg->set_cursor_w(info->w);
-    // msg->set_cursor_h(info->h);
+    msg->set_cursor_w(info->w);
+    msg->set_cursor_h(info->h);
+    msg->set_type(toProtobuf(info->format));
     msg->set_data(info->data.data(), info->data.size());
     return msg;
 }
@@ -591,9 +612,9 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo()
             msg->set_data(cursor_data.data(), cursor_data.size());
             msg->set_hot_x(hot_x);
             msg->set_hot_y(hot_y);
-            // msg->set_format(toProtobuf(format));
-            // msg->set_cursor_h(cursor_h);
-            // msg->set_cursor_w(cursor_w);
+            msg->set_type(toProtobuf(format));
+            msg->set_cursor_h(cursor_h);
+            msg->set_cursor_w(cursor_w);
             return msg;
         }
     }

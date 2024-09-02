@@ -1013,6 +1013,19 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(_msg);
     LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y%d", msg->preset(), msg->w(), msg->h(),
          msg->x(), msg->y());
+    std::string cursor_data;
+    {
+        // id
+        //mutex
+        auto iter = cursors_.find(msg->data_id());
+        if (iter != cursors_.end()) {
+            cursor_data = iter->second;
+        } else if (!msg->data().empty()) {
+            cursors_[msg->data_id()] = msg->data();
+            cursor_data = msg->data();
+        }
+    }
+    // sdl 和 render都要缓存?
     if (msg->w() == 0 || msg->h() == 0) {
         // 这个这么丑的flag，只是为了不让这行错误日志频繁打
         if (!last_w_or_h_is_0_) {
@@ -1043,6 +1056,10 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
         video_params_.width = width;
         video_params_.height = height;
         video_params_.rotation = rotation;
+        {
+            //mutex
+            cursors_.clear();
+        }
         input_capturer_->changeVideoParameters(video_params_.width, video_params_.height,
                                                video_params_.rotation, is_stretch_);
         std::lock_guard lock{dr_mutex_};
