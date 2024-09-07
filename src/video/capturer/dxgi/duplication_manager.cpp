@@ -405,7 +405,8 @@ DUPL_RETURN DUPLICATIONMANAGER::ResetDulp() {
 bool DUPLICATIONMANAGER::GetPointerShape(DXGI_OUTDUPL_POINTER_SHAPE_INFO& info,
                                          std::vector<uint8_t>& data) {
     UINT req_size;
-    HRESULT hr = m_DeskDupl->GetFramePointerShape(data.size(), data.data(), &req_size, &info);
+    HRESULT hr = m_DeskDupl->GetFramePointerShape(static_cast<UINT>(data.size()), data.data(),
+                                                  &req_size, &info);
     if (FAILED(hr)) {
         LOGF(ERR, "GetFramePointerShape failed, hr: 0x%08x", hr);
         return false;

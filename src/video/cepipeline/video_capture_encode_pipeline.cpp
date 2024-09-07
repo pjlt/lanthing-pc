@@ -73,8 +73,7 @@ void addHistory(std::deque<int64_t>& history) {
 }
 
 ltproto::client2worker::CursorInfo_CursorDataType toProtobuf(lt::video::CursorFormat format) {
-    switch (format)
-    {
+    switch (format) {
     case lt::video::CursorFormat::MonoChrome:
         return ltproto::client2worker::CursorInfo_CursorDataType_MonoChrome;
     case lt::video::CursorFormat::Color:
@@ -521,8 +520,8 @@ static CursorFormat getCursorDataFromHcursor(HCURSOR hcursor, std::vector<uint8_
         LOG(ERR) << "GetIconInfo failed: 0x" << std::hex << GetLastError();
         return CursorFormat::Unknown;
     }
-    hot_x = iconinfo.xHotspot;
-    hot_y = iconinfo.yHotspot;
+    hot_x = static_cast<uint16_t>(iconinfo.xHotspot);
+    hot_y = static_cast<uint16_t>(iconinfo.yHotspot);
     if (iconinfo.hbmColor) {
         BITMAP bmp{};
         GetObjectA(iconinfo.hbmColor, sizeof(BITMAP), &bmp);
@@ -583,7 +582,7 @@ static CursorFormat getCursorDataFromHcursor(HCURSOR hcursor, std::vector<uint8_
     }
     LOG(WARNING) << "getCursorDataFromHcursor failed, color size:" << color_data.size()
                  << ", mask size:" << mask_data.size() << ", mask_bits_pixel:" << mask_bits_pixel;
-    CursorFormat::Unknown;
+    return CursorFormat::Unknown;
 }
 
 std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo() {

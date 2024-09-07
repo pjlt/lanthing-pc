@@ -52,8 +52,8 @@ struct CursorInfo {
     int32_t id;
     int32_t x;
     int32_t y;
-    int16_t hot_x;
-    int16_t hot_y;
+    uint16_t hot_x;
+    uint16_t hot_y;
     bool visible;
     CursorFormat format;
     uint32_t w;

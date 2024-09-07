@@ -244,12 +244,12 @@ void DxgiVideoCapturer::saveCursorInfo(DXGI_OUTDUPL_FRAME_INFO* frame_info) {
         std::vector<uint8_t> shape_data;
         shape_data.resize(frame_info->PointerShapeBufferSize);
         if (impl_->GetPointerShape(shape_info, shape_data)) {
-            info.hot_x = shape_info.HotSpot.x;
-            info.hot_y = shape_info.HotSpot.y;
+            info.hot_x = static_cast<uint16_t>(shape_info.HotSpot.x);
+            info.hot_y = static_cast<uint16_t>(shape_info.HotSpot.y);
             info.format = toCursorFormat(shape_info.Type);
             info.w = shape_info.Width;
             info.h = shape_info.Height;
-            info.pitch = shape_info.Pitch;
+            info.pitch = static_cast<uint16_t>(shape_info.Pitch);
             info.data = std::move(shape_data);
         }
     }

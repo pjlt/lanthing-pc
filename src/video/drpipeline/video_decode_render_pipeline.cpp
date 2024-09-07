@@ -71,7 +71,7 @@ public:
     void setNack(uint32_t nack) override;
     void setLossRate(float rate) override;
     void resetRenderTarget() override;
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) override;
+    void setCursorInfo(const ::lt::CursorInfo& info) override;
     void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
 
@@ -90,7 +90,7 @@ void VDRPipeline2::setBWE(uint32_t) {}
 void VDRPipeline2::setNack(uint32_t) {}
 void VDRPipeline2::setLossRate(float) {}
 void VDRPipeline2::resetRenderTarget() {}
-void VDRPipeline2::setCursorInfo(int32_t, float, float, bool) {}
+void VDRPipeline2::setCursorInfo(const ::lt::CursorInfo&) {}
 void VDRPipeline2::switchMouseMode(bool) {}
 void VDRPipeline2::switchStretchMode(bool) {}
 // #if !defined(LT_WINDOWS)
@@ -115,7 +115,7 @@ public:
     void setNack(uint32_t nack) override;
     void setLossRate(float rate) override;
     void resetRenderTarget() override;
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) override;
+    void setCursorInfo(const ::lt::CursorInfo& info) override;
     void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
 
@@ -249,7 +249,7 @@ bool VDRPipeline::init() {
     render_params.stretch = is_stretch_;
     render_params.absolute_mouse = absolute_mouse_;
     render_params.align = Decoder::align(decode_codec_type_);
-        LOG(ERR) << "before create renderer failed";
+    LOG(ERR) << "before create renderer failed";
 
     video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {
@@ -389,7 +389,7 @@ void VDRPipeline::resetRenderTarget() {
     video_renderer_->resetRenderTarget();
 }
 
-void VDRPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
+void VDRPipeline::setCursorInfo(const ::lt::CursorInfo& info) {
     std::lock_guard lk{render_mtx_};
     cursor_id_ = cursor_id;
     cursor_x_ = x;

@@ -35,6 +35,7 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <cursor_info.h>
 #include <plat/pc_sdl.h>
 #include <transport/transport.h>
 
@@ -86,7 +87,7 @@ public:
     virtual void setBWE(uint32_t bps) = 0;
     virtual void setNack(uint32_t nack) = 0;
     virtual void setLossRate(float rate) = 0;
-    virtual void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) = 0;
+    virtual void setCursorInfo(const ::lt::CursorInfo& info) = 0;
     virtual void switchMouseMode(bool absolute) = 0;
     virtual void switchStretchMode(bool stretch) = 0;
 
