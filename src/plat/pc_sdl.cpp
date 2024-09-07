@@ -617,13 +617,20 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
             uint32_t& value = *ptr;
             uint32_t mask = 0xFF000000 & value;
             if (mask == 0xFF000000) {
-                //
+                value &= 0x00FFFFFF;
             }
             else if (mask == 0) {
+                value |= 0xFF000000;
             }
             else {
                 LOG(WARNING) << "Invalid color mask " << mask;
             }
+        }
+        SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
+            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_ARGB32);
+        if (surface != nullptr) {
+            sdl_cursor = SDL_CreateColorCursor(surface, info->hot_x, info->hot_y);
+            SDL_FreeSurface(surface);
         }
         break;
     }

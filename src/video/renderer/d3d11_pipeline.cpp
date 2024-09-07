@@ -271,8 +271,8 @@ Renderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     return RenderResult::Success2;
 }
 
-void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
-    cursor_info_ = CursorInfo{cursor_id, x, y, visible};
+void D3D11Pipeline::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
+    cursor_info_ = cursor_info;
 }
 
 void D3D11Pipeline::switchMouseMode(bool absolute) {
@@ -392,11 +392,20 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
-    CursorInfo c = cursor_info_;
-    if (absolute_mouse_ || !c.visible) {
+    if (absolute_mouse_ || !cursor_info_.has_value()) {
         return RenderResult::Success2;
     }
-    auto iter = cursors_.find(c.id);
+    CursorInfo& c = cursor_info_.value();
+    if (c.preset.has_value()) {
+        return renderPresetCursor(c);
+    }
+    else {
+        return renderDataCursor(c);
+    }
+}
+
+D3D11Pipeline::RenderResult D3D11Pipeline::renderPresetCursor(const lt::CursorInfo& c) {
+    auto iter = cursors_.find(c.preset.value());
     if (iter == cursors_.end()) {
         iter = cursors_.find(0);
     }
@@ -436,6 +445,11 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     ID3D11ShaderResourceView* const shader_views[1] = {iter->second.view.Get()};
     d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
+    return RenderResult::Success2;
+}
+
+D3D11Pipeline::RenderResult D3D11Pipeline::renderDataCursor(const lt::CursorInfo& info) {
+    (void)info;
     return RenderResult::Success2;
 }
 

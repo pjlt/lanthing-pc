@@ -132,7 +132,6 @@ private:
     void onUserSetBitrate(uint32_t bps);
     void onUserSwitchMonitor();
     void onUserSwitchStretchOrOrigin();
-    std::tuple<int32_t, float, float> getCursorInfo();
     bool isAbsoluteMouse();
     bool isStretchMode();
 
@@ -180,10 +179,7 @@ private:
     uint32_t nack_ = 0;
     float loss_rate_ = .0f;
 
-    int32_t cursor_id_ = 0;
-    float cursor_x_ = 0.f;
-    float cursor_y_ = 0.f;
-    bool visible_ = true;
+    std::optional<lt::CursorInfo> cursor_info_;
     bool absolute_mouse_;
     bool is_stretch_;
     int64_t status_color_;
@@ -391,10 +387,7 @@ void VDRPipeline::resetRenderTarget() {
 
 void VDRPipeline::setCursorInfo(const ::lt::CursorInfo& info) {
     std::lock_guard lk{render_mtx_};
-    cursor_id_ = cursor_id;
-    cursor_x_ = x;
-    cursor_y_ = y;
-    visible_ = visible;
+    cursor_info_ = info;
 }
 
 void VDRPipeline::switchMouseMode(bool absolute) {
@@ -500,11 +493,6 @@ void VDRPipeline::onUserSwitchStretchOrOrigin() {
     switch_stretch_();
 }
 
-std::tuple<int32_t, float, float> VDRPipeline::getCursorInfo() {
-    std::lock_guard lk{render_mtx_};
-    return {cursor_id_, cursor_x_, cursor_y_};
-}
-
 bool VDRPipeline::isAbsoluteMouse() {
     std::lock_guard lk{render_mtx_};
     return absolute_mouse_;
@@ -532,8 +520,12 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             }
             video_renderer_->switchMouseMode(isAbsoluteMouse());
             video_renderer_->switchStretchMode(isStretchMode());
-            auto [cursor, x, y] = getCursorInfo();
-            video_renderer_->updateCursor(cursor, x, y, visible_);
+            std::optional<lt::CursorInfo> cursor_info;
+            {
+                std::lock_guard lk{render_mtx_};
+                cursor_info = cursor_info_;
+            }
+            video_renderer_->updateCursor(cursor_info);
             LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
                        << ltlib::steady_now_us() - frame->capture_time - time_diff_;
             if (new_frame.has_value()) {

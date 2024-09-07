@@ -60,12 +60,6 @@ class D3D11Pipeline : public Renderer {
         int32_t width;
         int32_t height;
     };
-    struct CursorInfo {
-        int32_t id;
-        float x;
-        float y;
-        bool visible;
-    };
 
 public:
     struct Params {
@@ -86,7 +80,7 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
+    void updateCursor(const std::optional<lt::CursorInfo>& cursor_info) override;
     void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
     void resetRenderTarget() override;
@@ -119,6 +113,8 @@ private:
     RenderResult tryResetSwapChain();
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
+    RenderResult renderPresetCursor(const lt::CursorInfo& info);
+    RenderResult renderDataCursor(const lt::CursorInfo& info);
 
 private:
     HWND hwnd_;
@@ -156,7 +152,7 @@ private:
     // Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
 
-    CursorInfo cursor_info_;
+    std::optional<lt::CursorInfo> cursor_info_;
     bool absolute_mouse_;
     bool stretch_;
     uint32_t display_width_ = 0;
