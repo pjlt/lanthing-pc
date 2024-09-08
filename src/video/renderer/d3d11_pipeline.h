@@ -115,6 +115,11 @@ private:
     RenderResult renderCursor();
     RenderResult renderPresetCursor(const lt::CursorInfo& info);
     RenderResult renderDataCursor(const lt::CursorInfo& info);
+    auto createCursorTextures(const lt::CursorInfo& c)
+        -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
+                      Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>;
+    auto createCursorTexture(const uint8_t* data, uint32_t w, int32_t h)
+        -> Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>;
 
 private:
     HWND hwnd_;
@@ -151,7 +156,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11PixelShader> cursor_pixel_shader_;
     // Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
-
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blend_cursor1_{};
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blend_cursor2_{};
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blend_screen_{};
     std::optional<lt::CursorInfo> cursor_info_;
     bool absolute_mouse_;
     bool stretch_;

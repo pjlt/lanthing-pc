@@ -348,6 +348,7 @@ Renderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
+    d3d11_ctx_->OMSetBlendState(blend_screen_.Get(), nullptr, 0xffffffff);
     d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
     d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
     UINT stride = sizeof(Vertex);
@@ -448,9 +449,101 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderPresetCursor(const lt::CursorIn
     return RenderResult::Success2;
 }
 
-D3D11Pipeline::RenderResult D3D11Pipeline::renderDataCursor(const lt::CursorInfo& info) {
-    (void)info;
+D3D11Pipeline::RenderResult D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c) {
+    auto [cursor1, cursor2] = createCursorTextures(c);
+    if (cursor1 == nullptr && cursor2 == nullptr) {
+        return RenderResult::Success2;
+    }
+    const float widht = 1.0f * c.w / display_width_;
+    const float height = 1.0f * c.h / display_height_;
+    Vertex verts[] = {{(c.x - .5f) * 2.f, (.5f - c.y) * 2.f, 0.0f, 0.0f},
+                      {(c.x - .5f + widht) * 2.f, (.5f - c.y) * 2.f, 1.0f, 0.0f},
+                      {(c.x - .5f + widht) * 2.f, (.5f - c.y - height) * 2.f, 1.0f, 1.0f},
+                      {(c.x - .5f) * 2.f, (.5f - c.y - height) * 2.f, 0.0f, 1.0f}};
+    D3D11_BUFFER_DESC vb_desc = {};
+    vb_desc.ByteWidth = sizeof(verts);
+    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
+    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vb_desc.CPUAccessFlags = 0;
+    vb_desc.MiscFlags = 0;
+    vb_desc.StructureByteStride = sizeof(Vertex);
+
+    D3D11_SUBRESOURCE_DATA vb_data = {};
+    vb_data.pSysMem = verts;
+    cursor_vertex_buffer_ = nullptr;
+    HRESULT hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, cursor_vertex_buffer_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
+        return RenderResult::Failed;
+    }
+    d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    ID3D11Buffer* vbarray[] = {cursor_vertex_buffer_.Get()};
+    d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
+    d3d11_ctx_->IASetIndexBuffer(video_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
+    d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // d3d11_ctx_->PSSetShader(vs_shader, nullptr, 0); //TODO: PS SHADER
+    if (cursor1 != nullptr) {
+        ID3D11ShaderResourceView* const shader_views[1] = {cursor1.Get()};
+        d3d11_ctx_->OMSetBlendState(blend_cursor1_.Get(), nullptr, 0xffffffff);
+        d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
+        d3d11_ctx_->DrawIndexed(6, 0, 0);
+    }
+    if (cursor2 != nullptr) {
+        ID3D11ShaderResourceView* const shader_views[1] = {cursor2.Get()};
+        d3d11_ctx_->OMSetBlendState(blend_cursor2_.Get(), nullptr, 0x00ffffff);
+        d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
+        d3d11_ctx_->DrawIndexed(6, 0, 0);
+    }
     return RenderResult::Success2;
+}
+
+auto D3D11Pipeline::createCursorTextures(const lt::CursorInfo& c)
+    -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
+                  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> {
+    switch (c.type) {
+    case lt::CursorDataType::MonoChrome:
+        break;
+    case lt::CursorDataType::Color:
+        break;
+    case lt::CursorDataType::MaskedColor:
+        break;
+    default:
+        LOG(WARNING) << "Unknown cursor data type " << (int)c.type;
+        break;
+    }
+    return {nullptr, nullptr};
+}
+
+auto D3D11Pipeline::createCursorTexture(const uint8_t* pdata, uint32_t w, int32_t h)
+    -> Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> {
+    D3D11_SUBRESOURCE_DATA data{pdata, w * 4, 0};
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = w;
+    desc.Height = h;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_IMMUTABLE;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    ComPtr<ID3D11Texture2D> texture;
+    HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, &data, texture.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create cursor texture, hr:0x%08x", hr);
+        return nullptr;
+    }
+
+    ComPtr<ID3D11ShaderResourceView> shader_view;
+    hr = d3d11_dev_->CreateShaderResourceView(texture.Get(), nullptr, shader_view.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create cursor shader resource view, hr:0x%08x", hr);
+        return nullptr;
+    }
+    return shader_view;
 }
 
 bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {
@@ -741,25 +834,55 @@ bool D3D11Pipeline::setupPSStage() {
 }
 
 bool D3D11Pipeline::setupOMStage() {
-    D3D11_BLEND_DESC desc = {};
-    desc.AlphaToCoverageEnable = FALSE;
-    desc.IndependentBlendEnable = FALSE;
-    desc.RenderTarget[0].BlendEnable = TRUE;
-    desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-    desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-    ComPtr<ID3D11BlendState> bs;
-    auto hr = d3d11_dev_->CreateBlendState(&desc, bs.GetAddressOf());
+    D3D11_BLEND_DESC screen = {};
+    screen.AlphaToCoverageEnable = FALSE;
+    screen.IndependentBlendEnable = FALSE;
+    screen.RenderTarget[0].BlendEnable = TRUE;
+    screen.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    screen.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    screen.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    screen.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    screen.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    screen.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    screen.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    auto hr = d3d11_dev_->CreateBlendState(&screen, blend_screen_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
         return false;
     }
-    d3d11_ctx_->OMSetBlendState(bs.Get(), nullptr, 0xffffffff);
+    // d3d11_ctx_->OMSetBlendState(bs.Get(), nullptr, 0xffffffff);
+    D3D11_BLEND_DESC cursor1 = {};
+    // cursor1.AlphaToCoverageEnable = FALSE;
+    // cursor1.IndependentBlendEnable = FALSE;
+    cursor1.RenderTarget[0].BlendEnable = TRUE;
+    cursor1.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    cursor1.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    cursor1.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    cursor1.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+    cursor1.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    cursor1.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    cursor1.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    hr = d3d11_dev_->CreateBlendState(&cursor1, blend_cursor1_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
+        return false;
+    }
+    D3D11_BLEND_DESC cursor2 = {};
+    // cursor1.AlphaToCoverageEnable = FALSE;
+    // cursor1.IndependentBlendEnable = FALSE;
+    cursor2.RenderTarget[0].BlendEnable = TRUE;
+    cursor2.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_DEST_COLOR;
+    cursor2.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
+    cursor2.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    cursor2.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+    cursor2.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    cursor2.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    cursor2.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    hr = d3d11_dev_->CreateBlendState(&cursor2, blend_cursor2_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
+        return false;
+    }
     return true;
 }
 
