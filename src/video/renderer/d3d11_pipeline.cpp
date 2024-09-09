@@ -517,7 +517,7 @@ auto D3D11Pipeline::createCursorTextures(const lt::CursorInfo& c)
     return {nullptr, nullptr};
 }
 
-auto D3D11Pipeline::createCursorTexture(const uint8_t* pdata, uint32_t w, int32_t h)
+auto D3D11Pipeline::createCursorTexture(const uint8_t* pdata, uint32_t w, uint32_t h)
     -> Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> {
     D3D11_SUBRESOURCE_DATA data{pdata, w * 4, 0};
     D3D11_TEXTURE2D_DESC desc{};

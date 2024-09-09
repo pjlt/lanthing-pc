@@ -50,7 +50,8 @@ VaGlPipeline::VaGlPipeline(const Params& params)
     , video_width_{params.width}
     , video_height_{params.height}
     , align_{params.align}
-    , card_{params.card} {}
+    , card_{params.card}
+    , absolute_mouse_{params.absolute_mouse} {}
 
 VaGlPipeline::~VaGlPipeline() {
     if (egl_display_) {
@@ -210,11 +211,65 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     return RenderResult::Success2;
 }
 
-void VaGlPipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
-    (void)cursor_id;
-    (void)x;
-    (void)y;
-    (void)visible;
+VaGlPipeline::RenderResult VaGlPipeline::renderCursor() {
+    if (absolute_mouse_ || !cursor_info_.has_value()) {
+        return RenderResult::Success2;
+    }
+    CursorInfo& c = cursor_info_.value();
+    if (c.preset.has_value()) {
+        return renderPresetCursor(c);
+    }
+    else {
+        return renderDataCursor(c);
+    }
+}
+
+std::tuple<GLuint, GLuint> createCursorTextures(const lt::CursorInfo& c) {
+    switch (c.type) {
+    case lt::CursorDataType::MonoChrome:
+        break;
+    case lt::CursorDataType::Color:
+        break;
+    case lt::CursorDataType::MaskedColor:
+        break;
+    default:
+        LOG(WARNING) << "Unknown cursor data type " << (int)c.type;
+        break;
+    }
+    return {0, 0};
+}
+
+GLuint createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h) {
+    //
+}
+
+void VaGlPipeline::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
+    cursor_info_ = cursor_info;
+}
+
+VaGlPipeline::RenderResult VaGlPipeline::renderPresetCursor(const lt::CursorInfo& c) {
+    //
+}
+
+VaGlPipeline::RenderResult VaGlPipeline::renderDataCursor(const lt::CursorInfo& c) {
+    auto [cursor1, cursor2] = createCursorTextures(c);
+    if (cursor1 == 0 && cursro2 == 0) {
+        return RenderResult::Success2;
+    }
+    glBindVertexArray_(cursor_vao_);
+    if (cursor1 != 0) {
+        //todo: blend
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cursor1);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+    if (cursor2 != 0) {
+        //todo: blend
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cursor1);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+    return RenderResult::Success2;
 }
 
 void VaGlPipeline::switchMouseMode(bool absolute) {

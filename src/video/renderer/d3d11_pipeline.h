@@ -118,7 +118,7 @@ private:
     auto createCursorTextures(const lt::CursorInfo& c)
         -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
                       Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>;
-    auto createCursorTexture(const uint8_t* data, uint32_t w, int32_t h)
+    auto createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h)
         -> Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>;
 
 private:
