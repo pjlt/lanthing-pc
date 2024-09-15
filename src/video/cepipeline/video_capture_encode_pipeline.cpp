@@ -498,6 +498,7 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() 
     msg->set_h(ltlib::getScreenHeight());
     msg->set_cursor_w(info->w);
     msg->set_cursor_h(info->h);
+    msg->set_pitch(info->pitch);
     msg->set_type(toProtobuf(info->format));
     msg->set_data(info->data.data(), info->data.size());
     return msg;

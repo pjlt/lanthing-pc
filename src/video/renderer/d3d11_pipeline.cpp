@@ -484,7 +484,8 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderDataCursor(const lt::CursorInfo
     d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
     d3d11_ctx_->IASetIndexBuffer(video_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
     d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // d3d11_ctx_->PSSetShader(vs_shader, nullptr, 0); //TODO: PS SHADER
+    d3d11_ctx_->PSSetShader(cursor_pixel_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->PSSetSamplers(0, 1, cursor_sampler_.GetAddressOf());
     if (cursor1 != nullptr) {
         ID3D11ShaderResourceView* const shader_views[1] = {cursor1.Get()};
         d3d11_ctx_->OMSetBlendState(blend_cursor1_.Get(), nullptr, 0xffffffff);

@@ -1026,6 +1026,7 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     info.hot_x = msg->hot_x();
     info.hot_y = msg->hot_y();
     info.data_id = msg->data_id();
+    info.pitch = msg->pitch();
     if (msg->has_type()) {
         info.type = static_cast<::lt::CursorDataType>(msg->type());
     }
@@ -1061,7 +1062,7 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
         video_params_.height = height;
         video_params_.rotation = rotation;
         {
-            // mutex
+            std::lock_guard lg{cursor_mtx_};
             cursors_.clear();
         }
         sdl_->clearCursorInfos();
