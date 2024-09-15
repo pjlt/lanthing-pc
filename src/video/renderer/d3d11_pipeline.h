@@ -114,7 +114,9 @@ private:
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
     RenderResult renderPresetCursor(const lt::CursorInfo& info);
-    RenderResult renderDataCursor(const lt::CursorInfo& info);
+    RenderResult renderDataCursor(const lt::CursorInfo& info,
+                                  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor1,
+                                  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor2);
     auto createCursorTextures(const lt::CursorInfo& c)
         -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
                       Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>;

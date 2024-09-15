@@ -62,6 +62,19 @@ constexpr int32_t kUserEventUpdateCursorInfo = 6;
 //     return 0;
 // }
 
+struct AutoGuard {
+    AutoGuard(const std::function<void()>& func)
+        : func_{func} {}
+    ~AutoGuard() {
+        if (func_) {
+            func_();
+        }
+    }
+
+private:
+    std::function<void()> func_;
+};
+
 } // namespace
 
 namespace lt {
@@ -596,19 +609,12 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         SDL_ShowCursor(SDL_DISABLE);
         return DispatchResult::kContinue;
     }
-    if (info->preset.has_value()) {
-        if (info->preset.value() >= 12) {
-            return DispatchResult::kContinue;
-        }
-        auto iter = preset_cursors_.find(info->preset.value());
-        if (iter == preset_cursors_.cend() || iter->second == nullptr) {
-            return DispatchResult::kContinue;
-        }
-        SDL_ShowCursor(SDL_ENABLE);
-        SDL_SetCursor(iter->second);
-        return DispatchResult::kContinue;
-    }
     SDL_Cursor* sdl_cursor = nullptr;
+    AutoGuard ag{[&sdl_cursor]() {
+        if (sdl_cursor) {
+            SDL_FreeCursor(sdl_cursor);
+        }
+    }};
     switch (info->type) {
     case CursorDataType::MaskedColor:
     {
@@ -649,12 +655,23 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         break;
     }
     default:
+        if (info->preset.has_value()) {
+            if (info->preset.value() >= 12) {
+                return DispatchResult::kContinue;
+            }
+            auto iter = preset_cursors_.find(info->preset.value());
+            if (iter == preset_cursors_.cend() || iter->second == nullptr) {
+                return DispatchResult::kContinue;
+            }
+            SDL_ShowCursor(SDL_ENABLE);
+            SDL_SetCursor(iter->second);
+            return DispatchResult::kContinue;
+        }
         break;
     }
     if (sdl_cursor) {
         SDL_ShowCursor(SDL_ENABLE);
         SDL_SetCursor(sdl_cursor);
-        SDL_FreeCursor(sdl_cursor);
     }
     return DispatchResult::kContinue;
 }

@@ -397,15 +397,19 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
         return RenderResult::Success2;
     }
     CursorInfo& c = cursor_info_.value();
-    if (c.preset.has_value()) {
+    auto [cursor1, cursor2] = createCursorTextures(c);
+    if (cursor1 == nullptr && cursor2 == nullptr) {
         return renderPresetCursor(c);
     }
     else {
-        return renderDataCursor(c);
+        return renderDataCursor(c, cursor1, cursor2);
     }
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderPresetCursor(const lt::CursorInfo& c) {
+    if (!c.preset.has_value()) {
+        return RenderResult::Success2;
+    }
     auto iter = cursors_.find(c.preset.value());
     if (iter == cursors_.end()) {
         iter = cursors_.find(0);
@@ -449,11 +453,10 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderPresetCursor(const lt::CursorIn
     return RenderResult::Success2;
 }
 
-D3D11Pipeline::RenderResult D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c) {
-    auto [cursor1, cursor2] = createCursorTextures(c);
-    if (cursor1 == nullptr && cursor2 == nullptr) {
-        return RenderResult::Success2;
-    }
+D3D11Pipeline::RenderResult
+D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c,
+                                Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor1,
+                                Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor2) {
     const float widht = 1.0f * c.w / display_width_;
     const float height = 1.0f * c.h / display_height_;
     Vertex verts[] = {{(c.x - .5f) * 2.f, (.5f - c.y) * 2.f, 0.0f, 0.0f},
@@ -504,18 +507,84 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderDataCursor(const lt::CursorInfo
 auto D3D11Pipeline::createCursorTextures(const lt::CursorInfo& c)
     -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
                   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> {
+
     switch (c.type) {
     case lt::CursorDataType::MonoChrome:
-        break;
+    {
+        std::vector<uint8_t> cursor1((size_t)(c.w * c.h * 4));
+        std::vector<uint8_t> cursor2((size_t)(c.w * c.h * 4));
+        uint32_t* cursor1_ptr = reinterpret_cast<uint32_t*>(cursor1.data());
+        uint32_t* cursor2_ptr = reinterpret_cast<uint32_t*>(cursor2.data());
+        uint32_t pos = 0;
+        uint8_t bitmask = 0b1000'0000;
+        size_t size = c.data.size() / 2;
+        for (size_t i = 0; i < size / 2; i++) {
+            for (uint8_t j = 0; j < 8; j++) {
+                if (pos >= size) {
+                    break;
+                }
+                uint8_t and_bit = (c.data[i] & (bitmask >> j)) ? 1 : 0;
+                uint8_t xor_bit = (c.data[i + size] & (bitmask >> j)) ? 1 : 0;
+                uint8_t type = and_bit * 2 + xor_bit;
+                switch (type) {
+                case 0:
+                    cursor1_ptr[pos] = 0xFF000000;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 1:
+                    cursor1_ptr[pos] = 0xFFFFFFFF;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 2:
+                    cursor1_ptr[pos] = 0;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 3:
+                    cursor1_ptr[pos] = 0;
+                    cursor2_ptr[pos] = 0xFFFFFFFF;
+                    break;
+                default:
+                    break;
+                }
+                pos += 1;
+            }
+        }
+        return {createCursorTexture(cursor1.data(), c.w, c.h),
+                createCursorTexture(cursor2.data(), c.w, c.h)};
+    }
     case lt::CursorDataType::Color:
-        break;
+    {
+        return {createCursorTexture(c.data.data(), c.w, c.h), nullptr};
+    }
     case lt::CursorDataType::MaskedColor:
-        break;
+    {
+        std::vector<uint8_t> cursor1((size_t)(c.w * c.h * 4));
+        std::vector<uint8_t> cursor2((size_t)(c.w * c.h * 4));
+        for (size_t offset = 0; offset < c.data.size(); offset += 4) {
+            const uint32_t* pixel = reinterpret_cast<const uint32_t*>(c.data.data() + offset);
+            uint32_t* ptr1 = reinterpret_cast<uint32_t*>(cursor1.data() + offset);
+            uint32_t* ptr2 = reinterpret_cast<uint32_t*>(cursor2.data() + offset);
+            uint32_t mask = (*pixel) & 0xFF000000;
+            if (mask == 0xFF000000) {
+                *ptr1 = 0;
+                *ptr2 = *pixel;
+            }
+            else if (mask == 0) {
+                *ptr1 = *pixel | 0xFF000000;
+                *ptr2 = 0;
+            }
+            else {
+                LOGF(WARNING, "Invalid MonoChrome cursor mask %#x", mask);
+                return {nullptr, nullptr};
+            }
+        }
+        return {createCursorTexture(cursor1.data(), c.w, c.h),
+                createCursorTexture(cursor2.data(), c.w, c.h)};
+    }
     default:
         LOG(WARNING) << "Unknown cursor data type " << (int)c.type;
-        break;
+        return {nullptr, nullptr};
     }
-    return {nullptr, nullptr};
 }
 
 auto D3D11Pipeline::createCursorTexture(const uint8_t* pdata, uint32_t w, uint32_t h)

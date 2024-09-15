@@ -494,13 +494,15 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() 
     msg->set_visible(info->visible);
     msg->set_x(info->x);
     msg->set_y(info->y);
-    msg->set_w(ltlib::getScreenWidth());
-    msg->set_h(ltlib::getScreenHeight());
-    msg->set_cursor_w(info->w);
-    msg->set_cursor_h(info->h);
-    msg->set_pitch(info->pitch);
-    msg->set_type(toProtobuf(info->format));
-    msg->set_data(info->data.data(), info->data.size());
+    if (!info->data.empty()) {
+        msg->set_w(ltlib::getScreenWidth());
+        msg->set_h(ltlib::getScreenHeight());
+        msg->set_cursor_w(info->w);
+        msg->set_cursor_h(info->h);
+        msg->set_pitch(info->pitch);
+        msg->set_type(toProtobuf(info->format));
+        msg->set_data(info->data.data(), info->data.size());
+    }
     return msg;
 }
 
@@ -600,6 +602,11 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo()
         msg->set_x(pci.ptScreenPos.x);
         msg->set_y(pci.ptScreenPos.y);
         msg->set_visible(pci.flags != 0);
+        auto iter = cursors_.find(pci.hCursor);
+        if (iter != cursors_.end()) {
+            msg->set_preset(
+                static_cast<ltproto::client2worker::CursorInfo_PresetCursor>(iter->second));
+        }
         std::vector<uint8_t> cursor_data;
         uint16_t hot_x = 0, hot_y = 0;
         uint32_t cursor_w = 0, cursor_h = 0;
