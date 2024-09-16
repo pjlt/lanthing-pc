@@ -245,7 +245,6 @@ bool VDRPipeline::init() {
     render_params.stretch = is_stretch_;
     render_params.absolute_mouse = absolute_mouse_;
     render_params.align = Decoder::align(decode_codec_type_);
-    LOG(ERR) << "before create renderer failed";
 
     video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {

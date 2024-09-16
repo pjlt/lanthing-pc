@@ -75,6 +75,63 @@ private:
     std::function<void()> func_;
 };
 
+void printMonochromeCursor(const std::vector<uint8_t>& data, int32_t w, int32_t h) {
+    (void)w;
+    int pitch = (int)(data.size() / 2 / h);
+    std::stringstream ss;
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < pitch; j++) {
+            for (int k = 0; k < 8; k++) {
+                ss << (((0b1000'0000 >> k) & data[i * pitch + j]) ? 1 : 0) << ' ';
+            }
+        }
+        ss << '\n';
+    }
+    ss << '\n';
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < pitch; j++) {
+            for (int k = 0; k < 8; k++) {
+                ss << (((0b1000'0000 >> k) & data[pitch * h + i * pitch + j]) ? 1 : 0) << ' ';
+            }
+        }
+        ss << '\n';
+    }
+    LOG(INFO) << "Monochrome\n" << ss.str();
+}
+
+void convertMonochromeWin32ToSDL(lt::CursorInfo& c) {
+    uint8_t* ptr1 = c.data.data();
+    uint8_t* ptr2 = c.data.data() + c.data.size() / 2;
+    for (size_t i = 0; i < c.data.size() / 2; i++) {
+        for (int shift = 0; shift < 8; shift++) {
+            const uint8_t mask = 0b1000'0000 >> shift;
+            uint8_t type = ((*ptr1 & mask) ? 1 : 0) * 2 + ((*ptr2 & mask) ? 1 : 0);
+            switch (type) {
+            case 0:
+                *ptr1 |= mask;
+                *ptr2 |= mask;
+                break;
+            case 1:
+                *ptr1 &= ~mask;
+                *ptr2 |= mask;
+                break;
+            case 2:
+                *ptr1 &= ~mask;
+                *ptr2 &= ~mask;
+                break;
+            case 3:
+                *ptr1 |= mask;
+                *ptr2 &= ~mask;
+                break;
+            default:
+                break;
+            }
+        }
+        ptr1++;
+        ptr2++;
+    }
+}
+
 } // namespace
 
 namespace lt {
@@ -152,6 +209,7 @@ private:
     bool init_audio_ = false;
     bool init_video_ = false;
     bool init_controller_ = false;
+    SDL_Cursor* sdl_cursor_ = nullptr;
 };
 
 PcSdlImpl::PcSdlImpl(const PcSdl::Params& params)
@@ -163,6 +221,9 @@ PcSdlImpl::PcSdlImpl(const PcSdl::Params& params)
 PcSdlImpl::~PcSdlImpl() {
     if (ltlib::ThreadWatcher::mainThreadID() != std::this_thread::get_id()) {
         LOG(FATAL) << "You can't run ~PcSdlImpl in non-main thread!";
+    }
+    if (sdl_cursor_) {
+        SDL_FreeCursor(sdl_cursor_);
     }
     destroyCursors();
     input_ = nullptr;
@@ -610,11 +671,6 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         return DispatchResult::kContinue;
     }
     SDL_Cursor* sdl_cursor = nullptr;
-    AutoGuard ag{[&sdl_cursor]() {
-        if (sdl_cursor) {
-            SDL_FreeCursor(sdl_cursor);
-        }
-    }};
     switch (info->type) {
     case CursorDataType::MaskedColor:
     {
@@ -633,7 +689,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
             }
         }
         SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
-            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_ARGB32);
+            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_BGRA32);
         if (surface != nullptr) {
             sdl_cursor = SDL_CreateColorCursor(surface, info->hot_x, info->hot_y);
             SDL_FreeSurface(surface);
@@ -641,13 +697,18 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         break;
     }
     case CursorDataType::MonoChrome:
-        sdl_cursor = SDL_CreateCursor(info->data.data(), info->data.data() + info->pitch * info->h,
-                                      info->w, info->h, info->hot_x, info->hot_y);
+        LOGF(DEBUG, "data size:%llu, pitch*h:%d, w:%d, h:%d, hotx:%d, hoty:%d", info->data.size(),
+             info->pitch * info->h, info->w, info->h, info->hot_x, info->hot_y);
+        // printMonochromeCursor(info->data, info->w, info->h / 2);
+        convertMonochromeWin32ToSDL(info.value());
+        sdl_cursor =
+            SDL_CreateCursor(info->data.data(), info->data.data() + info->pitch * info->h / 2,
+                             info->w, info->h / 2, info->hot_x, info->hot_y);
         break;
     case CursorDataType::Color:
     {
         SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
-            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_ARGB32);
+            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_BGRA32);
         if (surface != nullptr) {
             sdl_cursor = SDL_CreateColorCursor(surface, info->hot_x, info->hot_y);
             SDL_FreeSurface(surface);
@@ -670,8 +731,12 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         break;
     }
     if (sdl_cursor) {
-        SDL_ShowCursor(SDL_ENABLE);
+        int ret = SDL_ShowCursor(SDL_ENABLE);
         SDL_SetCursor(sdl_cursor);
+        if (sdl_cursor_) {
+            SDL_FreeCursor(sdl_cursor_);
+        }
+        sdl_cursor_ = sdl_cursor;
     }
     return DispatchResult::kContinue;
 }

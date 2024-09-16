@@ -499,6 +499,8 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() 
         msg->set_h(ltlib::getScreenHeight());
         msg->set_cursor_w(info->w);
         msg->set_cursor_h(info->h);
+        msg->set_hot_x(info->hot_x);
+        msg->set_hot_y(info->hot_y);
         msg->set_pitch(info->pitch);
         msg->set_type(toProtobuf(info->format));
         msg->set_data(info->data.data(), info->data.size());
@@ -508,7 +510,7 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() 
 
 static CursorFormat getCursorDataFromHcursor(HCURSOR hcursor, std::vector<uint8_t>& cursor_data,
                                              uint32_t& w, uint32_t& h, uint16_t& hot_x,
-                                             uint16_t& hot_y) {
+                                             uint16_t& hot_y, uint32_t& pitch) {
     int32_t color_width = 0;
     int32_t color_height = 0;
     int32_t color_bits_pixel = 0;
@@ -565,13 +567,15 @@ static CursorFormat getCursorDataFromHcursor(HCURSOR hcursor, std::vector<uint8_
     }
     if (color_data.empty() && !mask_data.empty() && mask_bits_pixel == 1) {
         w = mask_width;
-        h = mask_height / 2;
+        h = mask_height;
+        pitch = static_cast<uint32_t>(mask_data.size() / h);
         cursor_data = std::move(mask_data);
         return CursorFormat::MonoChrome;
     }
     else if (!color_data.empty() && !mask_data.empty() && mask_bits_pixel == 32) { // ???
         w = color_width;
         h = color_height;
+        pitch = color_width * 4;
         cursor_data.resize(color_data.size() + mask_data.size());
         memcpy(cursor_data.data(), color_data.data(), color_data.size());
         memcpy(cursor_data.data() + color_data.size(), mask_data.data(), mask_data.size());
@@ -580,6 +584,7 @@ static CursorFormat getCursorDataFromHcursor(HCURSOR hcursor, std::vector<uint8_
     else if (!color_data.empty()) {
         w = color_width;
         h = color_height;
+        pitch = color_width * 4;
         cursor_data = std::move(color_data);
         return CursorFormat::Color;
     }
@@ -609,9 +614,9 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo()
         }
         std::vector<uint8_t> cursor_data;
         uint16_t hot_x = 0, hot_y = 0;
-        uint32_t cursor_w = 0, cursor_h = 0;
-        CursorFormat format =
-            getCursorDataFromHcursor(pci.hCursor, cursor_data, cursor_w, cursor_h, hot_x, hot_y);
+        uint32_t cursor_w = 0, cursor_h = 0, pitch = 0;
+        CursorFormat format = getCursorDataFromHcursor(pci.hCursor, cursor_data, cursor_w, cursor_h,
+                                                       hot_x, hot_y, pitch);
         if (format == CursorFormat::Unknown) {
             // some log
         }
@@ -622,6 +627,7 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo()
             msg->set_type(toProtobuf(format));
             msg->set_cursor_h(cursor_h);
             msg->set_cursor_w(cursor_w);
+            msg->set_pitch(pitch);
             return msg;
         }
     }

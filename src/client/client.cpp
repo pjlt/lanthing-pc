@@ -1011,7 +1011,7 @@ void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg)
 
 void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(_msg);
-    LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y%d", msg->preset(), msg->w(), msg->h(),
+    LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y:%d", msg->preset(), msg->w(), msg->h(),
          msg->x(), msg->y());
     lt::CursorInfo info{};
     if (msg->has_preset()) {
@@ -1027,6 +1027,7 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     info.hot_y = msg->hot_y();
     info.data_id = msg->data_id();
     info.pitch = msg->pitch();
+    info.visible = msg->visible();
     if (msg->has_type()) {
         info.type = static_cast<::lt::CursorDataType>(msg->type());
     }
