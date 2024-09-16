@@ -1035,12 +1035,17 @@ void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
         std::lock_guard lg{cursor_mtx_};
         auto iter = cursors_.find(msg->data_id());
         if (iter != cursors_.end()) {
-            info.data = iter->second;
+            // 存过
+            info.data = iter->second.data;
         }
         else if (!msg->data().empty()) {
+            // 新图形
             info.data.resize(msg->data().size());
             memcpy(info.data.data(), msg->data().data(), info.data.size());
-            cursors_[msg->data_id()] = info.data;
+            cursors_[msg->data_id()] = info;
+        }
+        else {
+            // 只需要更新位置
         }
     }
     {

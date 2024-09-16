@@ -197,7 +197,7 @@ D3D11Pipeline::~D3D11Pipeline() {
     if (waitable_obj_) {
         CloseHandle(waitable_obj_);
     }
-    cursors_.clear();
+    preset_cursors_.clear();
 }
 
 bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
@@ -272,7 +272,22 @@ Renderer::RenderResult D3D11Pipeline::render(int64_t frame) {
 }
 
 void D3D11Pipeline::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
-    cursor_info_ = cursor_info;
+    if (!cursor_info.has_value()) {
+        return;
+    }
+    if (cursor_info->data.empty()) {
+        if (!cursor_info_.has_value()) {
+            cursor_info_ = lt::CursorInfo{};
+        }
+        cursor_info_->screen_h = cursor_info->screen_h;
+        cursor_info_->screen_w = cursor_info->screen_w;
+        cursor_info_->x = cursor_info->x;
+        cursor_info_->y = cursor_info->y;
+        cursor_info_->visible = cursor_info->visible;
+    }
+    else {
+        cursor_info_ = cursor_info;
+    }
 }
 
 void D3D11Pipeline::switchMouseMode(bool absolute) {
@@ -407,19 +422,23 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderPresetCursor(const lt::CursorInfo& c) {
+    LOG(INFO) << "renderPresetCursor";
     if (!c.preset.has_value()) {
         return RenderResult::Success2;
     }
-    auto iter = cursors_.find(c.preset.value());
-    if (iter == cursors_.end()) {
-        iter = cursors_.find(0);
+    LOG(INFO) << "renderPresetCursor 2";
+    auto iter = preset_cursors_.find(c.preset.value());
+    if (iter == preset_cursors_.end()) {
+        iter = preset_cursors_.find(0);
     }
-    const float widht = 1.0f * iter->second.width / display_width_;
+    const float x = 1.0f * (c.x - c.hot_x) / c.screen_w;
+    const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
+    const float width = 1.0f * iter->second.width / display_width_;
     const float height = 1.0f * iter->second.height / display_height_;
-    Vertex verts[] = {{(c.x - .5f) * 2.f, (.5f - c.y) * 2.f, 0.0f, 0.0f},
-                      {(c.x - .5f + widht) * 2.f, (.5f - c.y) * 2.f, 1.0f, 0.0f},
-                      {(c.x - .5f + widht) * 2.f, (.5f - c.y - height) * 2.f, 1.0f, 1.0f},
-                      {(c.x - .5f) * 2.f, (.5f - c.y - height) * 2.f, 0.0f, 1.0f}};
+    Vertex verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
+                      {(x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f}};
     D3D11_BUFFER_DESC vb_desc = {};
     vb_desc.ByteWidth = sizeof(verts);
     vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -457,12 +476,14 @@ D3D11Pipeline::RenderResult
 D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c,
                                 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor1,
                                 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor2) {
+    const float x = 1.0f * (c.x - c.hot_x) / c.screen_w;
+    const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
     const float widht = 1.0f * c.w / display_width_;
     const float height = 1.0f * c.h / display_height_;
-    Vertex verts[] = {{(c.x - .5f) * 2.f, (.5f - c.y) * 2.f, 0.0f, 0.0f},
-                      {(c.x - .5f + widht) * 2.f, (.5f - c.y) * 2.f, 1.0f, 0.0f},
-                      {(c.x - .5f + widht) * 2.f, (.5f - c.y - height) * 2.f, 1.0f, 1.0f},
-                      {(c.x - .5f) * 2.f, (.5f - c.y - height) * 2.f, 0.0f, 1.0f}};
+    Vertex verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
+                      {(x - .5f + widht) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
+                      {(x - .5f + widht) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
+                      {(x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f}};
     D3D11_BUFFER_DESC vb_desc = {};
     vb_desc.ByteWidth = sizeof(verts);
     vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -507,7 +528,9 @@ D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c,
 auto D3D11Pipeline::createCursorTextures(const lt::CursorInfo& c)
     -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
                   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> {
-
+    if (c.data.empty()) {
+        return {nullptr, nullptr};
+    }
     switch (c.type) {
     case lt::CursorDataType::MonoChrome:
     {
@@ -987,19 +1010,21 @@ bool D3D11Pipeline::initShaderResources(const std::vector<ID3D11Texture2D*>& tex
 bool D3D11Pipeline::createCursors() {
     std::vector<LPSTR> kCursors = {IDC_ARROW,    IDC_IBEAM,    IDC_WAIT,   IDC_CROSS,
                                    IDC_SIZENWSE, IDC_SIZENESW, IDC_SIZEWE, IDC_SIZENS,
-                                   IDC_SIZEALL,  IDC_NO,       IDC_HAND};
+                                   nullptr,      IDC_SIZEALL,  IDC_NO,     IDC_HAND};
     for (size_t i = 0; i < kCursors.size(); i++) {
         int32_t width = 0;
         int32_t height = 0;
+        int32_t hot_x = 0;
+        int32_t hot_y = 0;
         std::vector<uint8_t> data;
-        if (!loadCursorAsBitmap(kCursors[i], width, height, data)) {
+        if (!loadCursorAsBitmap(kCursors[i], width, height, hot_x, hot_y, data)) {
             if (i == 0) {
                 // 普通箭头必须成功，作为兜底项
                 return false;
             }
             continue;
         }
-        if (!createCursorResourceFromBitmap(i, width, height, data)) {
+        if (!createCursorResourceFromBitmap(i, width, height, hot_x, hot_y, data)) {
             return false;
         }
     }
@@ -1010,7 +1035,11 @@ bool D3D11Pipeline::createCursors() {
 }
 
 bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& out_height,
+                                       int32_t& hot_x, int32_t& hot_y,
                                        std::vector<uint8_t>& out_data) {
+    if (name == nullptr) {
+        return false;
+    }
     auto cursor = LoadCursorA(nullptr, name);
     if (cursor == nullptr) {
         LOG(ERR) << "LoadCursor failed: 0x" << std::hex << GetLastError();
@@ -1022,6 +1051,8 @@ bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& 
         LOG(ERR) << "GetIconInfo failed: 0x" << std::hex << GetLastError();
         return false;
     }
+    hot_x = static_cast<int32_t>(iconinfo.xHotspot);
+    hot_y = static_cast<int32_t>(iconinfo.yHotspot);
     std::vector<uint8_t> color_data;
     std::vector<uint8_t> mask_data;
     int32_t color_width = 0;
@@ -1120,6 +1151,7 @@ bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& 
 }
 
 bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+                                                   int32_t hot_x, int32_t hot_y,
                                                    const std::vector<uint8_t>& data) {
     D3D11_TEXTURE2D_DESC desc{};
     desc.Width = width;
@@ -1156,7 +1188,9 @@ bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     cr.view = sv;
     cr.width = width;
     cr.height = height;
-    cursors_[id] = cr;
+    cr.hot_x = hot_x;
+    cr.hot_y = hot_y;
+    preset_cursors_[id] = cr;
     LOG(INFO) << "Create D3D11 Resource for cursor " << id << " success";
     return true;
 }

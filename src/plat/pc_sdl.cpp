@@ -731,7 +731,7 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         break;
     }
     if (sdl_cursor) {
-        int ret = SDL_ShowCursor(SDL_ENABLE);
+        SDL_ShowCursor(SDL_ENABLE);
         SDL_SetCursor(sdl_cursor);
         if (sdl_cursor_) {
             SDL_FreeCursor(sdl_cursor_);

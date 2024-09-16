@@ -59,6 +59,8 @@ class D3D11Pipeline : public Renderer {
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
         int32_t width;
         int32_t height;
+        int32_t hot_x;
+        int32_t hot_y;
     };
 
 public:
@@ -102,10 +104,10 @@ private:
     bool setupOMStage();
     bool initShaderResources(const std::vector<ID3D11Texture2D*>& textures);
     bool createCursors();
-    bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height,
-                            std::vector<uint8_t>& data);
-    bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
-                                        const std::vector<uint8_t>& data);
+    bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height, int32_t& hot_x,
+                            int32_t& hot_y, std::vector<uint8_t>& data);
+    bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height, int32_t hot_x,
+                                        int32_t hot_y, const std::vector<uint8_t>& data);
     bool calcVertexes();
     bool setupCursorD3DResources();
     const ColorMatrix& getColorMatrix() const;
@@ -150,7 +152,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> video_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> video_sampler_;
 
-    std::map<size_t, CursorRes> cursors_;
+    std::map<size_t, CursorRes> preset_cursors_;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> cursor_vertex_shader_;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> cursor_input_layout_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_vertex_buffer_;
