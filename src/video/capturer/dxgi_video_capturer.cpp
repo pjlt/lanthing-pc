@@ -231,7 +231,6 @@ uint8_t* DxgiVideoCapturer::toI420(ID3D11Texture2D* frame) {
 }
 
 void DxgiVideoCapturer::saveCursorInfo(DXGI_OUTDUPL_FRAME_INFO* frame_info) {
-    cursor_info_ = std::nullopt;
     if (frame_info->LastMouseUpdateTime.QuadPart <= 0) {
         return;
     }

@@ -288,6 +288,12 @@ void D3D11Pipeline::updateCursor(const std::optional<lt::CursorInfo>& cursor_inf
     else {
         cursor_info_ = cursor_info;
     }
+    LOGF(DEBUG,
+         "updateCursor x:%d, y:%d, hotx:%d, hoty:%d, size:%llu, visible:%d, screen_w:%d, "
+         "screen_h:%d",
+         cursor_info->x, cursor_info->y, cursor_info->hot_x, cursor_info->hot_y,
+         cursor_info->data.size(), cursor_info->visible, cursor_info->screen_w,
+         cursor_info->screen_h);
 }
 
 void D3D11Pipeline::switchMouseMode(bool absolute) {
@@ -476,8 +482,12 @@ D3D11Pipeline::RenderResult
 D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c,
                                 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor1,
                                 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor2) {
-    const float x = 1.0f * (c.x - c.hot_x) / c.screen_w;
-    const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
+    LOGF(DEBUG, "renderDataCursor x:%d, y:%d, hotx:%d, hoty:%d, size:%llu", c.x, c.y, c.hot_x,
+         c.hot_y, c.data.size());
+    // const float x = 1.0f * (c.x - c.hot_x) / c.screen_w;
+    // const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
+    const float x = 1.0f * c.x / c.screen_w;
+    const float y = 1.0f * c.y / c.screen_h;
     const float widht = 1.0f * c.w / display_width_;
     const float height = 1.0f * c.h / display_height_;
     Vertex verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
@@ -541,11 +551,8 @@ auto D3D11Pipeline::createCursorTextures(const lt::CursorInfo& c)
         uint32_t pos = 0;
         uint8_t bitmask = 0b1000'0000;
         size_t size = c.data.size() / 2;
-        for (size_t i = 0; i < size / 2; i++) {
+        for (size_t i = 0; i < size; i++) {
             for (uint8_t j = 0; j < 8; j++) {
-                if (pos >= size) {
-                    break;
-                }
                 uint8_t and_bit = (c.data[i] & (bitmask >> j)) ? 1 : 0;
                 uint8_t xor_bit = (c.data[i + size] & (bitmask >> j)) ? 1 : 0;
                 uint8_t type = and_bit * 2 + xor_bit;
@@ -1284,11 +1291,15 @@ bool D3D11Pipeline::calcVertexes() {
 
 bool D3D11Pipeline::setupCursorD3DResources() {
     D3D11_SAMPLER_DESC samplerDesc = {};
-    samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
-    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    // samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_POINT;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.MaxAnisotropy = 16;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    // samplerDesc.MaxAnisotropy = 16;
+    samplerDesc.MinLOD = 0;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
     HRESULT hr = d3d11_dev_->CreateSamplerState(&samplerDesc, &cursor_sampler_);
     if (hr != S_OK) {
         LOGF(ERR, "CreateSamplerState failed with %#x", hr);

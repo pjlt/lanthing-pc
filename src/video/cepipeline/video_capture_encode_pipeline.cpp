@@ -494,9 +494,9 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() 
     msg->set_visible(info->visible);
     msg->set_x(info->x);
     msg->set_y(info->y);
+    msg->set_w(ltlib::getScreenWidth());
+    msg->set_h(ltlib::getScreenHeight());
     if (!info->data.empty()) {
-        msg->set_w(ltlib::getScreenWidth());
-        msg->set_h(ltlib::getScreenHeight());
         msg->set_cursor_w(info->w);
         msg->set_cursor_h(info->h);
         msg->set_hot_x(info->hot_x);
@@ -622,6 +622,8 @@ std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo()
         }
         else {
             msg->set_data(cursor_data.data(), cursor_data.size());
+            msg->set_x(pci.ptScreenPos.x - hot_x);
+            msg->set_y(pci.ptScreenPos.y - hot_y);
             msg->set_hot_x(hot_x);
             msg->set_hot_y(hot_y);
             msg->set_type(toProtobuf(format));

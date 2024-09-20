@@ -697,8 +697,6 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
         break;
     }
     case CursorDataType::MonoChrome:
-        LOGF(DEBUG, "data size:%llu, pitch*h:%d, w:%d, h:%d, hotx:%d, hoty:%d", info->data.size(),
-             info->pitch * info->h, info->w, info->h, info->hot_x, info->hot_y);
         // printMonochromeCursor(info->data, info->w, info->h / 2);
         convertMonochromeWin32ToSDL(info.value());
         sdl_cursor =
