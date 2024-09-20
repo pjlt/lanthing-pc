@@ -385,8 +385,11 @@ void VDRPipeline::resetRenderTarget() {
 }
 
 void VDRPipeline::setCursorInfo(const ::lt::CursorInfo& info) {
-    std::lock_guard lk{render_mtx_};
-    cursor_info_ = info;
+    {
+        std::lock_guard lk{render_mtx_};
+        cursor_info_ = info;
+    }
+    waiting_for_render_.notify_one();
 }
 
 void VDRPipeline::switchMouseMode(bool absolute) {
@@ -455,7 +458,8 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
 
 bool VDRPipeline::waitForRender(std::chrono::microseconds ms) {
     std::unique_lock<std::mutex> lock(render_mtx_);
-    bool ret = waiting_for_render_.wait_for(lock, ms, [this]() { return smoother_.size() > 0; });
+    bool ret = waiting_for_render_.wait_for(
+        lock, ms, [this]() { return smoother_.size() > 0 || cursor_info_.has_value(); });
     return ret;
 }
 
@@ -522,7 +526,7 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             std::optional<lt::CursorInfo> cursor_info;
             {
                 std::lock_guard lk{render_mtx_};
-                cursor_info = cursor_info_;
+                std::swap(cursor_info, cursor_info_);
             }
             video_renderer_->updateCursor(cursor_info);
             LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
