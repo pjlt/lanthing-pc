@@ -75,29 +75,29 @@ private:
     std::function<void()> func_;
 };
 
-void printMonochromeCursor(const std::vector<uint8_t>& data, int32_t w, int32_t h) {
-    (void)w;
-    int pitch = (int)(data.size() / 2 / h);
-    std::stringstream ss;
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < pitch; j++) {
-            for (int k = 0; k < 8; k++) {
-                ss << (((0b1000'0000 >> k) & data[i * pitch + j]) ? 1 : 0) << ' ';
-            }
-        }
-        ss << '\n';
-    }
-    ss << '\n';
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < pitch; j++) {
-            for (int k = 0; k < 8; k++) {
-                ss << (((0b1000'0000 >> k) & data[pitch * h + i * pitch + j]) ? 1 : 0) << ' ';
-            }
-        }
-        ss << '\n';
-    }
-    LOG(INFO) << "Monochrome\n" << ss.str();
-}
+// void printMonochromeCursor(const std::vector<uint8_t>& data, int32_t w, int32_t h) {
+//     (void)w;
+//     int pitch = (int)(data.size() / 2 / h);
+//     std::stringstream ss;
+//     for (int i = 0; i < h; i++) {
+//         for (int j = 0; j < pitch; j++) {
+//             for (int k = 0; k < 8; k++) {
+//                 ss << (((0b1000'0000 >> k) & data[i * pitch + j]) ? 1 : 0) << ' ';
+//             }
+//         }
+//         ss << '\n';
+//     }
+//     ss << '\n';
+//     for (int i = 0; i < h; i++) {
+//         for (int j = 0; j < pitch; j++) {
+//             for (int k = 0; k < 8; k++) {
+//                 ss << (((0b1000'0000 >> k) & data[pitch * h + i * pitch + j]) ? 1 : 0) << ' ';
+//             }
+//         }
+//         ss << '\n';
+//     }
+//     LOG(INFO) << "Monochrome\n" << ss.str();
+// }
 
 void convertMonochromeWin32ToSDL(lt::CursorInfo& c) {
     uint8_t* ptr1 = c.data.data();
