@@ -184,16 +184,16 @@ Renderer::RenderResult VtbGlPipeline::renderDataCursor(const lt::CursorInfo& c, 
                                                        GLuint cursor2) {
     const float x = 1.0f * c.x / c.screen_w;
     const float y = 1.0f * c.y / c.screen_h;
-    const float widht = 1.0f * c.w / window_width_;
+    const float width = 1.0f * c.w / window_width_;
     const float height = 1.0f * c.h / window_height_;
     float verts[] = {(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f,
-                     (x - .5f + widht) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f,
-                     (x - .5f + widht) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f,
+                     (x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f,
+                     (x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f,
                      (x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f};
     glUseProgram(cursor_shader_);
     glBindVertexArray(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW); //  GL_STATIC_DRAW??
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
     glActiveTexture(GL_TEXTURE0);
 
     if (cursor1 != 0) {
@@ -209,7 +209,7 @@ Renderer::RenderResult VtbGlPipeline::renderDataCursor(const lt::CursorInfo& c, 
     if (cursor2 != 0) {
         glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR);
         // glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ZERO);
-        glBindTexture(GL_TEXTURE_2D, cursor1);
+        glBindTexture(GL_TEXTURE_2D, cursor2);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         GLenum err = glGetError();
         if (err != 0) {
@@ -408,7 +408,8 @@ in vec2 vTexCoord;
 uniform sampler2D cTex;
 out vec4 oColor;
 void main() {
-    oColor = texture(cTex, vTexCoord);
+    oColor = texture(cTex, vTexCoord).zyxw;
+    //oColor = vec4(1.0, 0.0, 0.0, 1.0);
 }
 )";
     shader_ = glCreateProgram();
@@ -536,10 +537,14 @@ void main() {
     glGenBuffers(1, &cursor_vbo_);
     glGenBuffers(1, &cursor_ebo_);
     glBindVertexArray(cursor_vao_);
-    // glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
+    float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f,
+                            .1f, .1f, 1.0f, 0.0f,
+                            .1f, -.1, 1.0f, 1.0f,
+                            -.1f, -.1f, 0.0f, 1.0f};
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts_cursor), verts_cursor, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cursor_ebo_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));

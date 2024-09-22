@@ -459,11 +459,11 @@ D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c,
     // const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
     const float x = 1.0f * c.x / c.screen_w;
     const float y = 1.0f * c.y / c.screen_h;
-    const float widht = 1.0f * c.w / display_width_;
+    const float width = 1.0f * c.w / display_width_;
     const float height = 1.0f * c.h / display_height_;
     Vertex verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
-                      {(x - .5f + widht) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
-                      {(x - .5f + widht) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
                       {(x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f}};
     D3D11_BUFFER_DESC vb_desc = {};
     vb_desc.ByteWidth = sizeof(verts);
