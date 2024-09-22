@@ -161,7 +161,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D11BlendState> blend_cursor1_{};
     Microsoft::WRL::ComPtr<ID3D11BlendState> blend_cursor2_{};
     Microsoft::WRL::ComPtr<ID3D11BlendState> blend_screen_{};
-    std::optional<lt::CursorInfo> cursor_info_;
     bool stretch_;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;

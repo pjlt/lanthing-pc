@@ -35,7 +35,7 @@
 
 #include <backends/imgui_impl_dx11.h>
 #include <backends/imgui_impl_win32.h>
-#elif defined(LT_LINUX)
+#else
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_sdl2.h>
 #endif
@@ -44,6 +44,7 @@
 #include <SDL_syswm.h>
 #include <imgui.h>
 
+#include <ltlib/logging.h>
 #include "control_bar_widget.h"
 #include "statistics_widget.h"
 #include "status_widget.h"
@@ -75,6 +76,8 @@ WidgetsManager::WidgetsManager(const Params& params)
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(reinterpret_cast<SDL_Window*>(params.window), &info);
     window_ = info.info.win.window;
+#else
+    window_ = params.window;
 #endif
 
     ControlBarWidget::Params control_params{};
@@ -103,8 +106,8 @@ WidgetsManager::WidgetsManager(const Params& params)
     auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(params.ctx);
     d3d11_dev->AddRef();
     d3d11_ctx->AddRef();
-    initImgui();
 #endif // LT_WINDOWS
+    initImgui();
 }
 
 void WidgetsManager::initImgui() {
@@ -130,8 +133,8 @@ void WidgetsManager::uninitImgui() {
 }
 
 WidgetsManager::~WidgetsManager() {
-#if defined(LT_WINDOWS)
     uninitImgui();
+#if defined(LT_WINDOWS)
     auto d3d11_dev = reinterpret_cast<ID3D11Device*>(dev_);
     auto d3d11_ctx = reinterpret_cast<ID3D11DeviceContext*>(ctx_);
     d3d11_dev->Release();
@@ -140,7 +143,6 @@ WidgetsManager::~WidgetsManager() {
 }
 
 void WidgetsManager::render() {
-#if LT_WINDOWS
     imguiImplNewFrame();
     auto& io = ImGui::GetIO();
     if (io.DeltaTime <= 0) {
@@ -156,7 +158,6 @@ void WidgetsManager::render() {
     }
     ImGui::Render();
     imguiImplRender();
-#endif
 }
 
 void WidgetsManager::reset() {
@@ -202,6 +203,11 @@ void WidgetsManager::imguiImplInit() {
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(reinterpret_cast<ID3D11Device*>(dev_),
                         reinterpret_cast<ID3D11DeviceContext*>(ctx_));
+#else // LT_WINDOWS
+    SDL_Window* wnd = reinterpret_cast<SDL_Window*>(window_);
+    bool ret1 = ImGui_ImplSDL2_InitForOpenGL(wnd, ctx_);
+    bool ret2 = ImGui_ImplOpenGL3_Init("#version 330");
+    LOGF(DEBUG, "ImGUI init wnd:%lld, ctx:%lld, ret1:%d, ret2:%d", (int64_t)wnd, (int64_t)ctx_, ret1, ret2) ;
 #endif // LT_WINDOWS
 }
 
@@ -209,6 +215,9 @@ void WidgetsManager::imguiImplShutdown() {
 #if defined(LT_WINDOWS)
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
+#else
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
 #endif // LT_WINDOWS
 }
 
@@ -216,12 +225,17 @@ void WidgetsManager::imguiImplNewFrame() {
 #if defined(LT_WINDOWS)
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
+#else
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
 #endif // LT_WINDOWS
 }
 
 void WidgetsManager::imguiImplRender() {
 #if defined(LT_WINDOWS)
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+#else
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #endif // LT_WINDOWS
 }
 

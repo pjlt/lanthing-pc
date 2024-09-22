@@ -104,7 +104,6 @@ bool VtbGlPipeline::init() {
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     SDL_SysWMinfo info{};
     SDL_VERSION(&info.version);
-    LOG(INFO) << "111";
     SDL_GetWindowWMInfo(sdl_window, &info);
     if (info.subsystem != SDL_SYSWM_COCOA) {
         LOG(ERR) << "Only support cocoa, but we are using " << (int)info.subsystem;
@@ -133,18 +132,17 @@ Renderer::RenderResult VtbGlPipeline::render(int64_t frame) {
     glEnable(GL_BLEND);
     RenderResult video_result = renderVideo(frame);
     if (video_result == RenderResult::Failed) {
-        return result;
+        return video_result;
     }
     RenderResult cursor_result = renderCursor();
     if (cursor_result == RenderResult::Failed) {
-        return result;
+        return cursor_result;
     }
 
-    ltFlushOpenGLBuffer(sdl_gl_context_);
     return RenderResult::Success2;
 }
 
-Renderer::RenderResult renderVideo(int64_t frame) {
+Renderer::RenderResult VtbGlPipeline::renderVideo(int64_t frame) {
     glUseProgram(shader_);
     glBlendFunc(GL_ONE, GL_ZERO);
     ltMapOpenGLTexture(sdl_gl_context_, textures_, frame);
@@ -160,38 +158,38 @@ Renderer::RenderResult renderVideo(int64_t frame) {
         glBindTexture(GL_TEXTURE_RECTANGLE, 0);
     }
     if (err) {
-        return RenderResult::Failed;
+        return Renderer::RenderResult::Failed;
     }
     else {
-        return RenderResult::Success2;
+        return Renderer::RenderResult::Success2;
     }
 }
 
-Renderer::RenderResult renderCursor() {
+Renderer::RenderResult VtbGlPipeline::renderCursor() {
     if (absolute_mouse_ || !cursor_info_.has_value()) {
-        return RenderResult::Success2;
+        return Renderer::RenderResult::Success2;
     }
     CursorInfo& c = cursor_info_.value();
     auto [cursor1, cursor2] = createCursorTextures(c);
     if (cursor1 == 0 && cursor2 == 0) {
         // return renderPresetCursor(c);
-        return RenderResult::Success2;
+        return Renderer::RenderResult::Success2;
     }
     else {
         return renderDataCursor(c, cursor1, cursor2);
     }
 }
 
-Renderer::RenderResult VtbGlPipeline::renderDataCursor(const lt::CursorInfo& info, GLuint cursor1,
+Renderer::RenderResult VtbGlPipeline::renderDataCursor(const lt::CursorInfo& c, GLuint cursor1,
                                                        GLuint cursor2) {
     const float x = 1.0f * c.x / c.screen_w;
     const float y = 1.0f * c.y / c.screen_h;
-    const float widht = 1.0f * c.w / display_width_;
-    const float height = 1.0f * c.h / display_height_;
-    float verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
-                     {(x - .5f + widht) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
-                     {(x - .5f + widht) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
-                     {(x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f}};
+    const float widht = 1.0f * c.w / window_width_;
+    const float height = 1.0f * c.h / window_height_;
+    float verts[] = {(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f,
+                     (x - .5f + widht) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f,
+                     (x - .5f + widht) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f,
+                     (x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f};
     glUseProgram(cursor_shader_);
     glBindVertexArray(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
@@ -269,14 +267,14 @@ auto VtbGlPipeline::createCursorTextures(const lt::CursorInfo& c) -> std::tuple<
         createCursorTexture(cursor1.data(), c.w, c.h);
         glBindTexture(GL_TEXTURE_2D, cursor_textures_[1]);
         createCursorTexture(cursor2.data(), c.w, c.h);
-        return {texture1, texture2};
+        return {cursor_textures_[0], cursor_textures_[1]};
     }
     case lt::CursorDataType::Color:
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cursor_textures_[0]);
         createCursorTexture(c.data.data(), c.w, c.h);
-        return {cursor_textures_[0], cursor_textures_[1]};
+        return {cursor_textures_[0], 0};
     }
     case lt::CursorDataType::MaskedColor:
     {
@@ -330,6 +328,7 @@ void VtbGlPipeline::resetRenderTarget() {
 }
 
 bool VtbGlPipeline::present() {
+    ltFlushOpenGLBuffer(sdl_gl_context_);
     return true;
 }
 
@@ -343,7 +342,7 @@ void* VtbGlPipeline::hwDevice() {
 }
 
 void* VtbGlPipeline::hwContext() {
-    return nullptr;
+    return sdl_gl_context_;
 }
 
 uint32_t VtbGlPipeline::displayWidth() {

@@ -110,11 +110,6 @@ private:
     GLuint vao_ = 0;
     GLuint vbo_ = 0;
     GLuint ebo_ = 0;
-    GLuint cursor_vao_ = 0;
-    GLuint cursor_vbo_ = 0;
-    GLuint cursor_ebo_ = 0;
-    std::optional<lt::CursorInfo> cursor_info_;
-    bool absolute_mouse_;
 };
 
 } // namespace video
