@@ -74,6 +74,7 @@ private:
     void resizeWindow(int screen_width, int screen_height);
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
+    RenderResult renderPresetCursor(const lt::CursorInfo& c);
     RenderResult renderDataCursor(const lt::CursorInfo& info, GLuint cursor1, GLuint cursor2);
     auto createCursorTextures(const lt::CursorInfo& c) -> std::tuple<GLuint, GLuint>;
     void createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h);

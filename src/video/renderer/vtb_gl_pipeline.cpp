@@ -315,11 +315,16 @@ void VtbGlPipeline::createCursorTexture(const uint8_t* data, uint32_t w, uint32_
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
+VtbGlPipeline::RenderResult VtbGlPipeline::renderPresetCursor(const lt::CursorInfo& c) {
+    (void)c;
+}
+
 void VtbGlPipeline::switchStretchMode(bool stretch) {
     (void)stretch;
 }
 
 void VtbGlPipeline::resetRenderTarget() {
+    //SDL_GL_GetDrawableSize();
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     int window_width, window_height;
     SDL_GetWindowSize(sdl_window, &window_width, &window_height);
@@ -435,7 +440,7 @@ void main() {
     }
     AutoGuard fs_guard{[fs]() { glDeleteShader(fs); }};
     GLuint cfs = glCreateShader(GL_FRAGMENT_SHADER);
-    if (!fs) {
+    if (!cfs) {
         LOG(ERR) << "glCreateShader(GL_FRAGMENT_SHADER) failed: " << glGetError();
         return false;
     }
@@ -538,6 +543,7 @@ void main() {
     glGenBuffers(1, &cursor_ebo_);
     glBindVertexArray(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
+    // 不赋值行不行?
     float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f,
                             .1f, .1f, 1.0f, 0.0f,
                             .1f, -.1, 1.0f, 1.0f,

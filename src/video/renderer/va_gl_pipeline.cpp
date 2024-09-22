@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -74,9 +75,23 @@ VaGlPipeline::~VaGlPipeline() {
     if (ebo_ != 0) {
         glDeleteBuffers(1, &ebo_);
     }
-
     if (shader_ != 0) {
         glDeleteProgram(shader_);
+    }
+    if (cursor_textures_[0] != 0) {
+        glDeleteTextures(2, cursor_textures_);
+    }
+    if (cursor_vao_ != 0) {
+        glDeleteVertexArrays(1, &cursor_vao_);
+    }
+    if (cursor_vbo_ != 0) {
+        glDeleteBuffers(1, &cursor_vbo_);
+    }
+    if (cursor_ebo_ != 0) {
+        glDeleteBuffers(1, &cursor_ebo_);
+    }
+    if (cursor_shader_ != 0) {
+        glDeleteProgram(cursor_shader_);
     }
     if (va_display_) {
         vaTerminate(va_display_);
@@ -119,6 +134,7 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
         LOG(ERR) << "eglMakeCurrent return " << egl_ret << " error: " << eglGetError();
         return RenderResult::Failed;
     }
+    glEnable(GL_BLEND);
     AutoGuard ag{[this]() {
         EGLBoolean egl_ret =
             eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -126,6 +142,23 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
             LOG(ERR) << "eglMakeCurrent(null) return " << egl_ret << " error: " << eglGetError();
         }
     }};
+    RenderResult video_result = renderVideo(frame);
+    if (video_result == RenderResult::Failed) {
+        return video_result;
+    }
+    RenderResult cursor_result = renderCursor();
+    if (cursor_result == RenderResult::Failed) {
+        return cursor_result;
+    }
+    EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
+    if (egl_success != EGL_TRUE) {
+        LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
+        return RenderResult::Success2;
+    } 
+    return RenderResult::Success2;
+}
+
+VaGlPipeline::RenderResult VaGlPipeline::renderVideo(int64_t frame) {
     // frame是frame->data[3]
     VASurfaceID va_surface = static_cast<VASurfaceID>(frame);
     VADRMPRIMESurfaceDescriptor prime;
@@ -199,11 +232,7 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
         LOG(ERR) << "glDrawArrays failed: " << err;
         return RenderResult::Failed;
     }
-    EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
-    if (egl_success != EGL_TRUE) {
-        LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
-        return RenderResult::Success2;
-    }
+    // 什么时候可以调用?
     for (uint32_t i = 0; i < 2U; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -218,55 +247,151 @@ VaGlPipeline::RenderResult VaGlPipeline::renderCursor() {
     }
     CursorInfo& c = cursor_info_.value();
     if (c.preset.has_value()) {
-        return renderPresetCursor(c);
+        // return renderPresetCursor(c);
+        return Renderer::RenderResult::Success2;
     }
     else {
         return renderDataCursor(c);
     }
 }
 
-std::tuple<GLuint, GLuint> createCursorTextures(const lt::CursorInfo& c) {
-    switch (c.type) {
-    case lt::CursorDataType::MonoChrome:
-        break;
-    case lt::CursorDataType::Color:
-        break;
-    case lt::CursorDataType::MaskedColor:
-        break;
-    default:
-        LOG(WARNING) << "Unknown cursor data type " << (int)c.type;
-        break;
+Renderer::RenderResult VaGlPipeline::renderDataCursor(const lt::CursorInfo& c, GLuint cursor1,
+                                                       GLuint cursor2) {
+    const float x = 1.0f * c.x / c.screen_w;
+    const float y = 1.0f * c.y / c.screen_h;
+    const float width = 1.0f * c.w / window_width_;
+    const float height = 1.0f * c.h / window_height_;
+    float verts[] = {(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f,
+                     (x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f,
+                     (x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f,
+                     (x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f};
+    glUseProgram(cursor_shader_);
+    glBindVertexArray(cursor_vao_);
+    glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
+    glActiveTexture(GL_TEXTURE0);
+
+    if (cursor1 != 0) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindTexture(GL_TEXTURE_2D, cursor1);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        GLenum err = glGetError();
+        if (err != 0) {
+            LOG(ERR) << "glDrawElements(cursor1) ret " << (int)err;
+            return RenderResult::Failed;
+        }
     }
-    return {0, 0};
+    if (cursor2 != 0) {
+        glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR);
+        // glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ZERO);
+        glBindTexture(GL_TEXTURE_2D, cursor2);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        GLenum err = glGetError();
+        if (err != 0) {
+            LOG(ERR) << "glDrawElements(cursor1) ret " << (int)err;
+            return RenderResult::Failed;
+        }
+    }
+    return RenderResult::Success2;
 }
 
-GLuint createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h) {
-    //
+std::tuple<GLuint, GLuint> VaGlPipeline::createCursorTextures(const lt::CursorInfo& c) {
+    if (c.data.empty()) {
+        return {0, 0};
+    }
+    switch (c.type) {
+    case lt::CursorDataType::MonoChrome:
+    {
+        std::vector<uint8_t> cursor1((size_t)(c.w * c.h * 4));
+        std::vector<uint8_t> cursor2((size_t)(c.w * c.h * 4));
+        uint32_t* cursor1_ptr = reinterpret_cast<uint32_t*>(cursor1.data());
+        uint32_t* cursor2_ptr = reinterpret_cast<uint32_t*>(cursor2.data());
+        uint32_t pos = 0;
+        uint8_t bitmask = 0b1000'0000;
+        size_t size = c.data.size() / 2;
+        for (size_t i = 0; i < size; i++) {
+            for (uint8_t j = 0; j < 8; j++) {
+                uint8_t and_bit = (c.data[i] & (bitmask >> j)) ? 1 : 0;
+                uint8_t xor_bit = (c.data[i + size] & (bitmask >> j)) ? 1 : 0;
+                uint8_t type = and_bit * 2 + xor_bit;
+                switch (type) {
+                case 0:
+                    cursor1_ptr[pos] = 0xFF000000;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 1:
+                    cursor1_ptr[pos] = 0xFFFFFFFF;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 2:
+                    cursor1_ptr[pos] = 0;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 3:
+                    cursor1_ptr[pos] = 0;
+                    cursor2_ptr[pos] = 0xFFFFFFFF;
+                    break;
+                default:
+                    break;
+                }
+                pos += 1;
+            }
+        }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cursor_textures_[0]);
+        createCursorTexture(cursor1.data(), c.w, c.h);
+        glBindTexture(GL_TEXTURE_2D, cursor_textures_[1]);
+        createCursorTexture(cursor2.data(), c.w, c.h);
+        return {cursor_textures_[0], cursor_textures_[1]};
+    }
+    case lt::CursorDataType::Color:
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cursor_textures_[0]);
+        createCursorTexture(c.data.data(), c.w, c.h);
+        return {cursor_textures_[0], 0};
+    }
+    case lt::CursorDataType::MaskedColor:
+    {
+        std::vector<uint8_t> cursor1((size_t)(c.w * c.h * 4));
+        std::vector<uint8_t> cursor2((size_t)(c.w * c.h * 4));
+        for (size_t offset = 0; offset < c.data.size(); offset += 4) {
+            const uint32_t* pixel = reinterpret_cast<const uint32_t*>(c.data.data() + offset);
+            uint32_t* ptr1 = reinterpret_cast<uint32_t*>(cursor1.data() + offset);
+            uint32_t* ptr2 = reinterpret_cast<uint32_t*>(cursor2.data() + offset);
+            uint32_t mask = (*pixel) & 0xFF000000;
+            if (mask == 0xFF000000) {
+                *ptr1 = 0;
+                *ptr2 = *pixel;
+            }
+            else if (mask == 0) {
+                *ptr1 = *pixel | 0xFF000000;
+                *ptr2 = 0;
+            }
+            else {
+                LOGF(WARNING, "Invalid MonoChrome cursor mask %#x", mask);
+                return {0, 0};
+            }
+        }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cursor_textures_[0]);
+        createCursorTexture(cursor1.data(), c.w, c.h);
+        glBindTexture(GL_TEXTURE_2D, cursor_textures_[1]);
+        createCursorTexture(cursor2.data(), c.w, c.h);
+        return {cursor_textures_[0], cursor_textures_[1]};
+    }
+    default:
+        LOG(WARNING) << "Unknown cursor data type " << (int)c.type;
+        return {0, 0};
+    }
+}
+
+void VaGlPipeline::createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
 VaGlPipeline::RenderResult VaGlPipeline::renderPresetCursor(const lt::CursorInfo& c) {
-    //
-}
-
-VaGlPipeline::RenderResult VaGlPipeline::renderDataCursor(const lt::CursorInfo& c) {
-    auto [cursor1, cursor2] = createCursorTextures(c);
-    if (cursor1 == 0 && cursro2 == 0) {
-        return RenderResult::Success2;
-    }
-    glBindVertexArray_(cursor_vao_);
-    if (cursor1 != 0) {
-        // todo: blend
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cursor1);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    }
-    if (cursor2 != 0) {
-        // todo: blend
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cursor1);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    }
-    return RenderResult::Success2;
+    (void)c;
 }
 
 void VaGlPipeline::switchStretchMode(bool stretch) {
@@ -274,6 +399,7 @@ void VaGlPipeline::switchStretchMode(bool stretch) {
 }
 
 void VaGlPipeline::resetRenderTarget() {
+    //SDL_GL_GetDrawableSize();
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     int window_width, window_height;
     SDL_GetWindowSize(sdl_window, &window_width, &window_height);
@@ -295,7 +421,7 @@ void* VaGlPipeline::hwDevice() {
 }
 
 void* VaGlPipeline::hwContext() {
-    return va_display_;
+    return va_display_; // sdl_gl_context_
 }
 
 uint32_t VaGlPipeline::displayWidth() {
@@ -502,8 +628,22 @@ void main() {
                             texture(uTexC, vTexCoord).xy, 1.);
 }
 )";
+    const char* kCursorFragmentShader = R"(
+#version 330
+in vec2 vTexCoord;
+uniform sampler2D cTex;
+out vec4 oColor;
+void main() {
+    oColor = texture(cTex, vTexCoord).zyxw;
+}
+)";
     shader_ = glCreateProgram();
     if (!shader_) {
+        LOG(ERR) << "glCreateProgram failed: " << glGetError();
+        return false;
+    }
+    cursor_shader_ = glCreateProgram();
+    if (!cursor_shader_) {
         LOG(ERR) << "glCreateProgram failed: " << glGetError();
         return false;
     }
@@ -512,14 +652,22 @@ void main() {
         LOG(ERR) << "glCreateShader(GL_VERTEX_SHADER) failed: " << glGetError();
         return false;
     }
+    AutoGuard vs_guard{[vs]() { glDeleteShader(vs); }};
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
     if (!fs) {
         LOG(ERR) << "glCreateShader(GL_FRAGMENT_SHADER) failed: " << glGetError();
-        glDeleteShader(vs);
         return false;
     }
+    AutoGuard fs_guard{[fs]() { glDeleteShader(fs); }};
+    GLuint cfs = glCreateShader(GL_FRAGMENT_SHADER);
+    if (!cfs) {
+        LOG(ERR) << "glCreateShader(GL_FRAGMENT_SHADER) failed: " << glGetError();
+        return false;
+    }
+    AutoGuard cfs_guard{[cfs]() { glDeleteShader(cfs); }};
     glShaderSource(vs, 1, &kVertexShader, nullptr);
     glShaderSource(fs, 1, &kFragmentShader, nullptr);
+    glShaderSource(cfs, 1, &kCursorFragmentShader, nullptr);
     while (glGetError()) {
     }
     std::array<char, 512> buffer{0};
@@ -529,8 +677,6 @@ void main() {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(vs, buffer.size(), nullptr, buffer.data());
         LOG(ERR) << "glCompileShader(GL_VERTEX_SHADER) failed: " << buffer.data();
-        glDeleteShader(vs);
-        glDeleteShader(fs);
         return false;
     }
     glCompileShader(fs);
@@ -538,8 +684,12 @@ void main() {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(vs, buffer.size(), nullptr, buffer.data());
         LOG(ERR) << "glCompileShader(GL_FRAGMENT_SHADER) failed: " << buffer.data();
-        glDeleteShader(vs);
-        glDeleteShader(fs);
+        return false;
+    }
+    glGetShaderiv(cfs, GL_COMPILE_STATUS, &status);
+    if (status != GL_TRUE) {
+        glGetShaderInfoLog(cfs, buffer.size(), nullptr, buffer.data());
+        LOG(ERR) << "glCompileShader(GL_FRAGMENT_SHADER) failed: " << buffer.data();
         return false;
     }
     glAttachShader(shader_, vs);
@@ -547,21 +697,37 @@ void main() {
     glLinkProgram(shader_);
     glGetProgramiv(shader_, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
-        glGetShaderInfoLog(vs, buffer.size(), nullptr, buffer.data());
+        glGetShaderInfoLog(shader_, buffer.size(), nullptr, buffer.data());
         LOG(ERR) << "glLinkProgram() failed: " << buffer.data();
-        glDeleteProgram(shader_);
-        glDeleteShader(vs);
-        glDeleteShader(fs);
         return false;
     }
-    glDeleteShader(vs);
-    glDeleteShader(fs);
     glUseProgram(shader_);
     glUniform1i(glGetUniformLocation(shader_, "uTexY"), 0);
     glUniform1i(glGetUniformLocation(shader_, "uTexC"), 1);
     glGenTextures(2, textures_);
     for (int i = 0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, textures_[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glAttachShader(cursor_shader_, vs);
+    glAttachShader(cursor_shader_, cfs);
+    glLinkProgram(cursor_shader_);
+    glGetProgramiv(cursor_shader_, GL_LINK_STATUS, &status);
+    if (status != GL_TRUE) {
+        glGetShaderInfoLog(cursor_shader_, buffer.size(), nullptr, buffer.data());
+        LOG(ERR) << "glLinkProgram() failed: " << buffer.data();
+        return false;
+    }
+    glUseProgram(cursor_shader_);
+    glUniform1i(glGetUniformLocation(cursor_shader_, "cTex"), 0);
+    glGenTextures(2, cursor_textures_);
+    for (int i = 0; i < 2; ++i) {
+        glBindTexture(GL_TEXTURE_2D, cursor_textures_[i]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -582,7 +748,6 @@ void main() {
     glGenVertexArrays_(1, &vao_);
     glGenBuffers(1, &vbo_);
     glGenBuffers(1, &ebo_);
-
     glBindVertexArray_(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
@@ -592,6 +757,25 @@ void main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glGenVertexArrays_(1, &cursor_vao_);
+    glGenBuffers(1, &cursor_vbo_);
+    glGenBuffers(1, &cursor_ebo_);
+    glBindVertexArray_(cursor_vao_);
+    glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
+    // 不赋值行不行?
+    float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f,
+                            .1f, .1f, 1.0f, 0.0f,
+                            .1f, -.1, 1.0f, 1.0f,
+                            -.1f, -.1f, 0.0f, 1.0f};
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts_cursor), verts_cursor, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cursor_ebo_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
     glBindVertexArray_(0);
     return true;
 }
