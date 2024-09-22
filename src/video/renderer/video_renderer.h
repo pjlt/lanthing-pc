@@ -62,8 +62,8 @@ public:
     // NOTE: bindTextures之后不允许调用setDecodedFormat
     virtual bool bindTextures(const std::vector<void*>& textures) = 0;
     virtual RenderResult render(int64_t frame) = 0;
-    virtual void updateCursor(const std::optional<lt::CursorInfo>& cursor_info) = 0;
-    virtual void switchMouseMode(bool absolute) = 0;
+    void updateCursor(const std::optional<lt::CursorInfo>& cursor_info);
+    void switchMouseMode(bool absolute);
     virtual void switchStretchMode(bool stretch) = 0;
     virtual void resetRenderTarget() = 0;
     virtual bool present() = 0;
@@ -74,6 +74,13 @@ public:
     virtual uint32_t displayHeight() = 0;
     // NOTE: bindTextures之后不允许调用setDecodedFormat
     virtual bool setDecodedFormat(DecodedFormat format) = 0;
+
+protected:
+    explicit Renderer(bool absolute_mouse);
+
+protected:
+    std::optional<lt::CursorInfo> cursor_info_;
+    bool absolute_mouse_;
 };
 
 } // namespace video

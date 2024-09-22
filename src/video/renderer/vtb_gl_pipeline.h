@@ -31,6 +31,8 @@
 #pragma once
 #include <video/renderer/video_renderer.h>
 
+#include <optional>
+
 #include <OpenGL/gl3.h>
 #include <OpenGL/glext.h>
 
@@ -48,6 +50,7 @@ public:
         uint32_t height;
         uint32_t rotation;
         uint32_t align;
+        bool absolute_mouse;
     };
 
 public:
@@ -56,8 +59,6 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
-    void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
     void resetRenderTarget() override;
     bool present() override;
@@ -71,6 +72,11 @@ public:
 private:
     bool initOpenGL();
     void resizeWindow(int screen_width, int screen_height);
+    RenderResult renderVideo(int64_t frame);
+    RenderResult renderCursor();
+    RenderResult renderDataCursor(const lt::CursorInfo& info, GLuint cursor1, GLuint cursor2);
+    auto createCursorTextures(const lt::CursorInfo& c) -> std::tuple<GLuint, GLuint>;
+    void createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h);
 
 private:
     SDL_Window* sdl_window_ = nullptr;
@@ -82,7 +88,9 @@ private:
     uint32_t window_width_;
     uint32_t window_height_;
     GLuint shader_ = 0;
+    GLuint cursor_shader_ = 0;
     GLuint textures_[2] = {0};
+    GLuint cursor_textures_[2] = {0};
     GLuint vao_ = 0;
     GLuint vbo_ = 0;
     GLuint ebo_ = 0;

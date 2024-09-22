@@ -181,12 +181,12 @@ namespace lt {
 namespace video {
 
 D3D11Pipeline::D3D11Pipeline(const Params& params)
-    : hwnd_{reinterpret_cast<HWND>(params.window)}
+    : Renderer{params.absolute_mouse}
+    , hwnd_{reinterpret_cast<HWND>(params.window)}
     , video_width_{params.widht}
     , video_height_{params.height}
     , rotation_{params.rotation}
     , align_{params.align}
-    , absolute_mouse_{params.absolute_mouse}
     , stretch_{params.stretch}
     , d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.device)}
     , d3d11_ctx_{reinterpret_cast<ID3D11DeviceContext*>(params.context)} {
@@ -269,35 +269,6 @@ Renderer::RenderResult D3D11Pipeline::render(int64_t frame) {
         return RenderResult::Reset;
     }
     return RenderResult::Success2;
-}
-
-void D3D11Pipeline::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
-    if (!cursor_info.has_value()) {
-        return;
-    }
-    if (cursor_info->data.empty()) {
-        if (!cursor_info_.has_value()) {
-            cursor_info_ = lt::CursorInfo{};
-        }
-        cursor_info_->screen_h = cursor_info->screen_h;
-        cursor_info_->screen_w = cursor_info->screen_w;
-        cursor_info_->x = cursor_info->x;
-        cursor_info_->y = cursor_info->y;
-        cursor_info_->visible = cursor_info->visible;
-    }
-    else {
-        cursor_info_ = cursor_info;
-    }
-    LOGF(DEBUG,
-         "updateCursor x:%d, y:%d, hotx:%d, hoty:%d, size:%llu, visible:%d, screen_w:%d, "
-         "screen_h:%d",
-         cursor_info->x, cursor_info->y, cursor_info->hot_x, cursor_info->hot_y,
-         cursor_info->data.size(), cursor_info->visible, cursor_info->screen_w,
-         cursor_info->screen_h);
-}
-
-void D3D11Pipeline::switchMouseMode(bool absolute) {
-    absolute_mouse_ = absolute;
 }
 
 void D3D11Pipeline::switchStretchMode(bool stretch) {

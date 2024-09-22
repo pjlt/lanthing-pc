@@ -46,7 +46,8 @@ namespace lt {
 namespace video {
 
 VaGlPipeline::VaGlPipeline(const Params& params)
-    : sdl_window_{params.window}
+    : Renderer{params.absolute_mouse}
+    , sdl_window_{params.window}
     , video_width_{params.width}
     , video_height_{params.height}
     , align_{params.align}
@@ -243,10 +244,6 @@ GLuint createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h) {
     //
 }
 
-void VaGlPipeline::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
-    cursor_info_ = cursor_info;
-}
-
 VaGlPipeline::RenderResult VaGlPipeline::renderPresetCursor(const lt::CursorInfo& c) {
     //
 }
@@ -258,22 +255,18 @@ VaGlPipeline::RenderResult VaGlPipeline::renderDataCursor(const lt::CursorInfo& 
     }
     glBindVertexArray_(cursor_vao_);
     if (cursor1 != 0) {
-        //todo: blend
+        // todo: blend
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cursor1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
     if (cursor2 != 0) {
-        //todo: blend
+        // todo: blend
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cursor1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
     return RenderResult::Success2;
-}
-
-void VaGlPipeline::switchMouseMode(bool absolute) {
-    (void)absolute;
 }
 
 void VaGlPipeline::switchStretchMode(bool stretch) {
