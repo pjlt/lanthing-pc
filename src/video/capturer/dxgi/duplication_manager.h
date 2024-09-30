@@ -29,6 +29,7 @@ public:
     void GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr);
     void WaitForVBlank();
     bool DefaultOutput();
+    bool GetPointerShape(DXGI_OUTDUPL_POINTER_SHAPE_INFO& info, std::vector<uint8_t>& data);
 
 private:
     DUPL_RETURN ResetDulp();

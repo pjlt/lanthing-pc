@@ -36,6 +36,7 @@
 #include <memory>
 #include <string>
 
+#include <cursor_info.h>
 #include <inputs/capturer/input_event.h>
 
 extern "C" {
@@ -76,7 +77,9 @@ public:
 
     void switchMouseMode(bool absolute);
 
-    void setCursorInfo(int32_t cursor_id, bool visible);
+    void setCursorInfo(const lt::CursorInfo& cursor_info);
+
+    void clearCursorInfos();
 
 private:
     PcSdl();

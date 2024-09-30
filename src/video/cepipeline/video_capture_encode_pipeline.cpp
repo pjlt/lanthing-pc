@@ -37,6 +37,7 @@
 #include <cstdint>
 #include <deque>
 #include <future>
+#include <unordered_map>
 
 #include <google/protobuf/message_lite.h>
 
@@ -68,6 +69,21 @@ void addHistory(std::deque<int64_t>& history) {
         else {
             break;
         }
+    }
+}
+
+ltproto::client2worker::CursorInfo_CursorDataType toProtobuf(lt::video::CursorFormat format) {
+    switch (format) {
+    case lt::video::CursorFormat::MonoChrome:
+        return ltproto::client2worker::CursorInfo_CursorDataType_MonoChrome;
+    case lt::video::CursorFormat::Color:
+        return ltproto::client2worker::CursorInfo_CursorDataType_Color;
+    case lt::video::CursorFormat::MaskedColor:
+        return ltproto::client2worker::CursorInfo_CursorDataType_MaskedColor;
+    default:
+        // 光标协议设计得太早, 导致这些不合理的地方
+        LOG(FATAL) << "Unknown CursorFormat " << (int)format;
+        return ltproto::client2worker::CursorInfo_CursorDataType_MonoChrome;
     }
 }
 
@@ -128,6 +144,8 @@ private:
     auto resolutionChanged() -> std::optional<ltlib::DisplayOutputDesc>;
     void sendChangeStreamingParams(ltlib::DisplayOutputDesc desc);
     bool shouldEncodeFrame();
+    auto getDxgiCursorInfo() -> std::shared_ptr<google::protobuf::MessageLite>;
+    auto getWin32CursorInfo() -> std::shared_ptr<google::protobuf::MessageLite>;
 
     // 从service收到的消息
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -156,10 +174,12 @@ private:
     std::vector<std::function<void()>> tasks_;
     bool manual_bitrate_ = false;
     std::map<HCURSOR, int32_t> cursors_;
-    bool get_cursor_failed_ = false;
+    bool get_win32_cursor_failed_ = false;
     std::deque<int64_t> capture_history_;
     int64_t last_encode_time_us_ = 0;
     bool half_fps_ = false;
+    std::map<std::string, int32_t> cursors_map_;
+    int32_t latest_cursor_id_ = 0;
 };
 
 VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
@@ -378,53 +398,28 @@ void VCEPipeline::consumeTasks() {
 }
 
 void VCEPipeline::captureAndSendCursor() {
-    auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
-    msg->set_w(ltlib::getScreenWidth());
-    msg->set_h(ltlib::getScreenHeight());
-    CURSORINFO pci{};
-    POINT pos{};
-    DWORD error1 = 0;
-    DWORD error2 = 0;
-    pci.cbSize = sizeof(pci);
-    if (GetCursorInfo(&pci)) {
-        get_cursor_failed_ = false;
-        msg->set_x(pci.ptScreenPos.x);
-        msg->set_y(pci.ptScreenPos.y);
-        msg->set_visible(pci.flags != 0);
-        auto iter = cursors_.find(pci.hCursor);
-        if (iter == cursors_.end()) {
-            msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
+    auto msg = getDxgiCursorInfo();
+    if (msg == nullptr) {
+        msg = getWin32CursorInfo();
+    }
+    if (msg == nullptr) {
+        return;
+    }
+    auto cursor = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(msg);
+    if (!cursor->data().empty()) {
+        auto iter = cursors_map_.find(cursor->data());
+        if (iter != cursors_map_.end()) {
+            cursor->set_data_id(iter->second);
+            cursor->clear_data();
         }
         else {
-            msg->set_preset(
-                static_cast<ltproto::client2worker::CursorInfo_PresetCursor>(iter->second));
+            latest_cursor_id_ += 1;
+            cursors_map_.insert({cursor->data(), latest_cursor_id_});
+            cursor->set_data_id(latest_cursor_id_);
         }
-        send_message_(ltproto::id(msg), msg);
-        return;
-    }
-    else {
-        error1 = GetLastError();
-    }
-    ltlib::setThreadDesktop();
-    if (GetCursorPos(&pos)) {
-        get_cursor_failed_ = false;
-        msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
-        msg->set_x(pos.x);
-        msg->set_y(pos.y);
-        msg->set_visible(true);
-        send_message_(ltproto::id(msg), msg);
-        return;
-    }
-    else {
-        error2 = GetLastError();
     }
 
-    // 这个标志位是为了只打一次这个日志
-    if (!get_cursor_failed_) {
-        // 这么写获取不到错误码，但是要获得错误码的写法很丑
-        LOGF(ERR, "GetCursorInfo=>%u and GetCursorPos=>%u", error1, error2);
-    }
-    get_cursor_failed_ = true;
+    send_message_(ltproto::id(cursor), cursor);
 }
 
 void VCEPipeline::captureAndSendVideoFrame() {
@@ -488,6 +483,180 @@ bool VCEPipeline::shouldEncodeFrame() {
     }
     last_encode_time_us_ = now_us;
     return true;
+}
+
+std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getDxgiCursorInfo() {
+    auto info = capturer_->cursorInfo();
+    if (!info.has_value()) {
+        return nullptr;
+    }
+    auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
+    msg->set_visible(info->visible);
+    msg->set_x(info->x);
+    msg->set_y(info->y);
+    msg->set_w(ltlib::getScreenWidth());
+    msg->set_h(ltlib::getScreenHeight());
+    if (!info->data.empty()) {
+        msg->set_cursor_w(info->w);
+        msg->set_cursor_h(info->h);
+        msg->set_hot_x(info->hot_x);
+        msg->set_hot_y(info->hot_y);
+        msg->set_pitch(info->pitch);
+        msg->set_type(toProtobuf(info->format));
+        msg->set_data(info->data.data(), info->data.size());
+    }
+    return msg;
+}
+
+static CursorFormat getCursorDataFromHcursor(HCURSOR hcursor, std::vector<uint8_t>& cursor_data,
+                                             uint32_t& w, uint32_t& h, uint16_t& hot_x,
+                                             uint16_t& hot_y, uint32_t& pitch) {
+    int32_t color_width = 0;
+    int32_t color_height = 0;
+    int32_t color_bits_pixel = 0;
+    int32_t mask_width = 0;
+    int32_t mask_height = 0;
+    int32_t mask_bits_pixel = 0;
+    std::vector<uint8_t> color_data;
+    std::vector<uint8_t> mask_data;
+    ICONINFO iconinfo{};
+    BOOL ret = GetIconInfo(hcursor, &iconinfo);
+    if (ret != TRUE) {
+        LOG(ERR) << "GetIconInfo failed: 0x" << std::hex << GetLastError();
+        return CursorFormat::Unknown;
+    }
+    hot_x = static_cast<uint16_t>(iconinfo.xHotspot);
+    hot_y = static_cast<uint16_t>(iconinfo.yHotspot);
+    if (iconinfo.hbmColor) {
+        BITMAP bmp{};
+        GetObjectA(iconinfo.hbmColor, sizeof(BITMAP), &bmp);
+        if (!bmp.bmWidthBytes || !bmp.bmHeight) {
+            return CursorFormat::Unknown;
+        }
+
+        color_data.resize(bmp.bmWidthBytes * bmp.bmHeight);
+        if (!GetBitmapBits(iconinfo.hbmColor, bmp.bmWidthBytes * bmp.bmHeight, color_data.data())) {
+            return CursorFormat::Unknown;
+        }
+
+        color_width = bmp.bmWidth;
+        color_height = bmp.bmHeight;
+        color_bits_pixel = bmp.bmBitsPixel;
+    }
+    if (iconinfo.hbmMask) {
+        BITMAP bmp{};
+        GetObjectA(iconinfo.hbmMask, sizeof(BITMAP), &bmp);
+        if (!bmp.bmWidthBytes || !bmp.bmHeight) {
+            return CursorFormat::Unknown;
+        }
+
+        mask_data.resize(bmp.bmWidthBytes * bmp.bmHeight);
+        if (!GetBitmapBits(iconinfo.hbmMask, bmp.bmWidthBytes * bmp.bmHeight, mask_data.data())) {
+            return CursorFormat::Unknown;
+        }
+
+        mask_width = bmp.bmWidth;
+        mask_height = bmp.bmHeight;
+        mask_bits_pixel = bmp.bmBitsPixel;
+    }
+    if (iconinfo.hbmColor) {
+        DeleteObject(iconinfo.hbmColor);
+    }
+    if (iconinfo.hbmMask) {
+        DeleteObject(iconinfo.hbmMask);
+    }
+    if (color_data.empty() && !mask_data.empty() && mask_bits_pixel == 1) {
+        w = mask_width;
+        h = mask_height;
+        pitch = static_cast<uint32_t>(mask_data.size() / h);
+        cursor_data = std::move(mask_data);
+        return CursorFormat::MonoChrome;
+    }
+    else if (!color_data.empty() && !mask_data.empty() && mask_bits_pixel == 32) { // ???
+        w = color_width;
+        h = color_height;
+        pitch = color_width * 4;
+        cursor_data.resize(color_data.size() + mask_data.size());
+        memcpy(cursor_data.data(), color_data.data(), color_data.size());
+        memcpy(cursor_data.data() + color_data.size(), mask_data.data(), mask_data.size());
+        return CursorFormat::MaskedColor;
+    }
+    else if (!color_data.empty()) {
+        w = color_width;
+        h = color_height;
+        pitch = color_width * 4;
+        cursor_data = std::move(color_data);
+        return CursorFormat::Color;
+    }
+    LOG(WARNING) << "getCursorDataFromHcursor failed, color size:" << color_data.size()
+                 << ", mask size:" << mask_data.size() << ", mask_bits_pixel:" << mask_bits_pixel;
+    return CursorFormat::Unknown;
+}
+
+std::shared_ptr<google::protobuf::MessageLite> VCEPipeline::getWin32CursorInfo() {
+    auto msg = std::make_shared<ltproto::client2worker::CursorInfo>();
+    msg->set_w(ltlib::getScreenWidth());
+    msg->set_h(ltlib::getScreenHeight());
+    CURSORINFO pci{};
+    POINT pos{};
+    DWORD error1 = 0;
+    DWORD error2 = 0;
+    pci.cbSize = sizeof(pci);
+    if (GetCursorInfo(&pci)) {
+        get_win32_cursor_failed_ = false;
+        msg->set_x(pci.ptScreenPos.x);
+        msg->set_y(pci.ptScreenPos.y);
+        msg->set_visible(pci.flags != 0);
+        auto iter = cursors_.find(pci.hCursor);
+        if (iter != cursors_.end()) {
+            msg->set_preset(
+                static_cast<ltproto::client2worker::CursorInfo_PresetCursor>(iter->second));
+        }
+        std::vector<uint8_t> cursor_data;
+        uint16_t hot_x = 0, hot_y = 0;
+        uint32_t cursor_w = 0, cursor_h = 0, pitch = 0;
+        CursorFormat format = getCursorDataFromHcursor(pci.hCursor, cursor_data, cursor_w, cursor_h,
+                                                       hot_x, hot_y, pitch);
+        if (format == CursorFormat::Unknown) {
+            // some log
+        }
+        else {
+            msg->set_data(cursor_data.data(), cursor_data.size());
+            msg->set_x(pci.ptScreenPos.x - hot_x);
+            msg->set_y(pci.ptScreenPos.y - hot_y);
+            msg->set_hot_x(hot_x);
+            msg->set_hot_y(hot_y);
+            msg->set_type(toProtobuf(format));
+            msg->set_cursor_h(cursor_h);
+            msg->set_cursor_w(cursor_w);
+            msg->set_pitch(pitch);
+            return msg;
+        }
+    }
+    else {
+        error1 = GetLastError();
+    }
+    ltlib::setThreadDesktop();
+    if (GetCursorPos(&pos)) {
+        get_win32_cursor_failed_ = false;
+        msg->set_preset(ltproto::client2worker::CursorInfo_PresetCursor_Arrow);
+        msg->set_x(pos.x);
+        msg->set_y(pos.y);
+        msg->set_visible(true);
+        // send_message_(ltproto::id(msg), msg);
+        return msg;
+    }
+    else {
+        error2 = GetLastError();
+    }
+
+    // 这个标志位是为了只打一次这个日志
+    if (!get_win32_cursor_failed_) {
+        // 这么写获取不到错误码，但是要获得错误码的写法很丑
+        LOGF(ERR, "GetCursorInfo=>%u and GetCursorPos=>%u", error1, error2);
+    }
+    get_win32_cursor_failed_ = true;
+    return nullptr;
 }
 
 void VCEPipeline::onReconfigure(std::shared_ptr<google::protobuf::MessageLite> _msg) {

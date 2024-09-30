@@ -541,7 +541,11 @@ void App::stopService() {
 
 void App::loadHistoryIDs() {
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
+#if LT_WINDOWS
     std::string filepath = appdata_dir + "\\historyids";
+#else
+    std::string filepath = appdata_dir + "/historyids";
+#endif
     std::fstream file{filepath.c_str(), std::ios::in | std::ios::out};
     if (!file.good()) {
         LOGF(WARNING, "Open history ids file(%s) failed", filepath.c_str());
@@ -568,7 +572,11 @@ void App::saveHistoryIDs() {
         ss << id << ';';
     }
     std::string appdata_dir = ltlib::getConfigPath(/*is_win_service=*/false);
+#if LT_WINDOWS
     std::string filepath = appdata_dir + "\\historyids";
+#else
+    std::string filepath = appdata_dir + "/historyids";
+#endif
     std::fstream file{filepath.c_str(), std::ios::out};
     if (!file.good()) {
         LOGF(WARNING, "Open history ids file(%s) failed", filepath.c_str());

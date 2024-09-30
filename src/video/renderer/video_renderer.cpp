@@ -98,6 +98,32 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
 #endif //
 }
 
+Renderer::Renderer(bool absolute_mouse)
+    : absolute_mouse_{absolute_mouse} {}
+
+void Renderer::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
+    if (!cursor_info.has_value()) {
+        return;
+    }
+    if (cursor_info->data.empty()) {
+        if (!cursor_info_.has_value()) {
+            cursor_info_ = lt::CursorInfo{};
+        }
+        cursor_info_->screen_h = cursor_info->screen_h;
+        cursor_info_->screen_w = cursor_info->screen_w;
+        cursor_info_->x = cursor_info->x;
+        cursor_info_->y = cursor_info->y;
+        cursor_info_->visible = cursor_info->visible;
+    }
+    else {
+        cursor_info_ = cursor_info;
+    }
+}
+
+void Renderer::switchMouseMode(bool absolute) {
+    absolute_mouse_ = absolute;
+}
+
 } // namespace video
 
 } // namespace lt

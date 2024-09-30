@@ -30,8 +30,8 @@
 
 #include "pc_sdl.h"
 
-#include <optional>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 
 #define SDL_MAIN_HANDLED
@@ -54,13 +54,83 @@ constexpr int32_t kUserEventSetTitle = 4;
 constexpr int32_t kUserEventSwitchMouseMode = 5;
 constexpr int32_t kUserEventUpdateCursorInfo = 6;
 
-//int sdl_event_watcher(void* userdata, SDL_Event* ev) {
-//    if (ev->type == SDL_WINDOWEVENT) {
-//        auto i_am_alive = (std::function<void()>*)userdata;
-//        i_am_alive->operator()();
-//    }
-//    return 0;
-//}
+// int sdl_event_watcher(void* userdata, SDL_Event* ev) {
+//     if (ev->type == SDL_WINDOWEVENT) {
+//         auto i_am_alive = (std::function<void()>*)userdata;
+//         i_am_alive->operator()();
+//     }
+//     return 0;
+// }
+
+struct AutoGuard {
+    AutoGuard(const std::function<void()>& func)
+        : func_{func} {}
+    ~AutoGuard() {
+        if (func_) {
+            func_();
+        }
+    }
+
+private:
+    std::function<void()> func_;
+};
+
+// void printMonochromeCursor(const std::vector<uint8_t>& data, int32_t w, int32_t h) {
+//     (void)w;
+//     int pitch = (int)(data.size() / 2 / h);
+//     std::stringstream ss;
+//     for (int i = 0; i < h; i++) {
+//         for (int j = 0; j < pitch; j++) {
+//             for (int k = 0; k < 8; k++) {
+//                 ss << (((0b1000'0000 >> k) & data[i * pitch + j]) ? 1 : 0) << ' ';
+//             }
+//         }
+//         ss << '\n';
+//     }
+//     ss << '\n';
+//     for (int i = 0; i < h; i++) {
+//         for (int j = 0; j < pitch; j++) {
+//             for (int k = 0; k < 8; k++) {
+//                 ss << (((0b1000'0000 >> k) & data[pitch * h + i * pitch + j]) ? 1 : 0) << ' ';
+//             }
+//         }
+//         ss << '\n';
+//     }
+//     LOG(INFO) << "Monochrome\n" << ss.str();
+// }
+
+void convertMonochromeWin32ToSDL(lt::CursorInfo& c) {
+    uint8_t* ptr1 = c.data.data();
+    uint8_t* ptr2 = c.data.data() + c.data.size() / 2;
+    for (size_t i = 0; i < c.data.size() / 2; i++) {
+        for (int shift = 0; shift < 8; shift++) {
+            const uint8_t mask = 0b1000'0000 >> shift;
+            uint8_t type = ((*ptr1 & mask) ? 1 : 0) * 2 + ((*ptr2 & mask) ? 1 : 0);
+            switch (type) {
+            case 0:
+                *ptr1 |= mask;
+                *ptr2 |= mask;
+                break;
+            case 1:
+                *ptr1 &= ~mask;
+                *ptr2 |= mask;
+                break;
+            case 2:
+                *ptr1 &= ~mask;
+                *ptr2 &= ~mask;
+                break;
+            case 3:
+                *ptr1 |= mask;
+                *ptr2 &= ~mask;
+                break;
+            default:
+                break;
+            }
+        }
+        ptr1++;
+        ptr2++;
+    }
+}
 
 } // namespace
 
@@ -89,7 +159,9 @@ public:
 
     void switchMouseMode(bool absolute);
 
-    void setCursorInfo(int32_t cursor_id, bool visible);
+    void setCursorInfo(const lt::CursorInfo& cursor_info);
+
+    void clearCursorInfos();
 
 private:
     bool initSdlSubSystems();
@@ -127,16 +199,17 @@ private:
     std::function<void()> on_reset_;
     bool windowed_fullscreen_;
     bool absolute_mouse_;
-    bool cursor_visible_ = false;
-    int32_t cursor_id_ = 0;
+    std::optional<lt::CursorInfo> cursor_info_;
     std::mutex mutex_;
     std::unique_ptr<SdlInput> input_;
     std::string title_ = "Lanthing";
-    std::map<int32_t, SDL_Cursor*> cursors_;
+    std::map<int32_t, SDL_Cursor*> preset_cursors_;
+    std::map<int32_t, SDL_Cursor*> xcursors_;
     bool init_dummy_audio_ = false;
     bool init_audio_ = false;
     bool init_video_ = false;
     bool init_controller_ = false;
+    SDL_Cursor* sdl_cursor_ = nullptr;
 };
 
 PcSdlImpl::PcSdlImpl(const PcSdl::Params& params)
@@ -148,6 +221,9 @@ PcSdlImpl::PcSdlImpl(const PcSdl::Params& params)
 PcSdlImpl::~PcSdlImpl() {
     if (ltlib::ThreadWatcher::mainThreadID() != std::this_thread::get_id()) {
         LOG(FATAL) << "You can't run ~PcSdlImpl in non-main thread!";
+    }
+    if (sdl_cursor_) {
+        SDL_FreeCursor(sdl_cursor_);
     }
     destroyCursors();
     input_ = nullptr;
@@ -249,16 +325,19 @@ void PcSdlImpl::switchMouseMode(bool absolute) {
     SDL_PushEvent(&ev);
 }
 
-void PcSdlImpl::setCursorInfo(int32_t cursor_id, bool visible) {
+void PcSdlImpl::setCursorInfo(const lt::CursorInfo& cursor_info) {
     {
         std::lock_guard lk{mutex_};
-        cursor_id_ = cursor_id;
-        cursor_visible_ = visible;
+        cursor_info_ = cursor_info;
     }
     SDL_Event ev{};
     ev.type = SDL_USEREVENT;
     ev.user.code = kUserEventUpdateCursorInfo;
     SDL_PushEvent(&ev);
+}
+
+void PcSdlImpl::clearCursorInfos() {
+    std::lock_guard lk{mutex_};
 }
 
 int32_t PcSdlImpl::loop() {
@@ -340,41 +419,41 @@ void PcSdlImpl::quitSdlSubSystems() {
 void PcSdlImpl::loadCursors() {
     // 顺序不一致，不能这么搞
     // for (int32_t i = 0; i < 12; i++) {
-    //    cursors_[i] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    //    preset_cursors_[i] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
     //}
     using namespace ltproto::client2worker;
-    cursors_[CursorInfo_PresetCursor_Arrow] =
+    preset_cursors_[CursorInfo_PresetCursor_Arrow] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW);
-    cursors_[CursorInfo_PresetCursor_Ibeam] =
+    preset_cursors_[CursorInfo_PresetCursor_Ibeam] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_IBEAM);
-    cursors_[CursorInfo_PresetCursor_Wait] =
+    preset_cursors_[CursorInfo_PresetCursor_Wait] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_WAIT);
-    cursors_[CursorInfo_PresetCursor_Cross] =
+    preset_cursors_[CursorInfo_PresetCursor_Cross] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_CROSSHAIR);
-    cursors_[CursorInfo_PresetCursor_SizeNwse] =
+    preset_cursors_[CursorInfo_PresetCursor_SizeNwse] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENWSE);
-    cursors_[CursorInfo_PresetCursor_SizeNesw] =
+    preset_cursors_[CursorInfo_PresetCursor_SizeNesw] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENESW);
-    cursors_[CursorInfo_PresetCursor_SizeWe] =
+    preset_cursors_[CursorInfo_PresetCursor_SizeWe] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZEWE);
-    cursors_[CursorInfo_PresetCursor_SizeNs] =
+    preset_cursors_[CursorInfo_PresetCursor_SizeNs] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZENS);
-    cursors_[8] = nullptr;
-    cursors_[CursorInfo_PresetCursor_SizeAll] =
+    preset_cursors_[8] = nullptr;
+    preset_cursors_[CursorInfo_PresetCursor_SizeAll] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_SIZEALL);
-    cursors_[CursorInfo_PresetCursor_No] =
+    preset_cursors_[CursorInfo_PresetCursor_No] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_NO);
-    cursors_[CursorInfo_PresetCursor_Hand] =
+    preset_cursors_[CursorInfo_PresetCursor_Hand] =
         SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_HAND);
 }
 
 void PcSdlImpl::destroyCursors() {
-    for (auto& cursor : cursors_) {
+    for (auto& cursor : preset_cursors_) {
         if (cursor.second) {
             SDL_FreeCursor(cursor.second);
         }
     }
-    cursors_.clear();
+    preset_cursors_.clear();
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::dispatchSdlEvent(const SDL_Event& ev) {
@@ -567,28 +646,95 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleSwitchMouseMode() {
 }
 
 PcSdlImpl::DispatchResult PcSdlImpl::handleUpdateCursorInfo() {
-    int32_t cursor_id = 0;
-    bool visible = false;
     bool absolute = true;
+    std::optional<lt::CursorInfo> info;
     {
         std::lock_guard<std::mutex> lk{mutex_};
-        cursor_id = cursor_id_;
-        visible = cursor_visible_;
+        info = cursor_info_;
         absolute = absolute_mouse_;
     }
-    if (cursor_id >= 12 || !absolute) {
+    if (!absolute) {
         return DispatchResult::kContinue;
     }
-    auto iter = cursors_.find(cursor_id);
-    if (iter == cursors_.cend() || iter->second == nullptr) {
-        return DispatchResult::kContinue;
-    }
-    if (visible) {
+    if (!info.has_value()) {
+        SDL_Cursor* sdl_cursor =
+            preset_cursors_[ltproto::client2worker::CursorInfo_PresetCursor_Arrow];
+        if (sdl_cursor == nullptr) {
+            return DispatchResult::kContinue;
+        }
         SDL_ShowCursor(SDL_ENABLE);
-        SDL_SetCursor(iter->second);
+        SDL_SetCursor(sdl_cursor);
+        return DispatchResult::kContinue;
     }
-    else {
+    if (!info->visible) {
         SDL_ShowCursor(SDL_DISABLE);
+        return DispatchResult::kContinue;
+    }
+    SDL_Cursor* sdl_cursor = nullptr;
+    switch (info->type) {
+    case CursorDataType::MaskedColor:
+    {
+        for (size_t offset = 0; offset < info->data.size(); offset += 4) {
+            uint32_t* ptr = reinterpret_cast<uint32_t*>(info->data.data() + offset);
+            uint32_t& value = *ptr;
+            uint32_t mask = 0xFF000000 & value;
+            if (mask == 0xFF000000) {
+                value &= 0x00FFFFFF;
+            }
+            else if (mask == 0) {
+                value |= 0xFF000000;
+            }
+            else {
+                LOG(WARNING) << "Invalid color mask " << mask;
+            }
+        }
+        SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
+            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_BGRA32);
+        if (surface != nullptr) {
+            sdl_cursor = SDL_CreateColorCursor(surface, info->hot_x, info->hot_y);
+            SDL_FreeSurface(surface);
+        }
+        break;
+    }
+    case CursorDataType::MonoChrome:
+        // printMonochromeCursor(info->data, info->w, info->h / 2);
+        convertMonochromeWin32ToSDL(info.value());
+        sdl_cursor =
+            SDL_CreateCursor(info->data.data(), info->data.data() + info->pitch * info->h / 2,
+                             info->w, info->h / 2, info->hot_x, info->hot_y);
+        break;
+    case CursorDataType::Color:
+    {
+        SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
+            info->data.data(), info->w, info->h, 32, info->pitch, SDL_PIXELFORMAT_BGRA32);
+        if (surface != nullptr) {
+            sdl_cursor = SDL_CreateColorCursor(surface, info->hot_x, info->hot_y);
+            SDL_FreeSurface(surface);
+        }
+        break;
+    }
+    default:
+        if (info->preset.has_value()) {
+            if (info->preset.value() >= 12) {
+                return DispatchResult::kContinue;
+            }
+            auto iter = preset_cursors_.find(info->preset.value());
+            if (iter == preset_cursors_.cend() || iter->second == nullptr) {
+                return DispatchResult::kContinue;
+            }
+            SDL_ShowCursor(SDL_ENABLE);
+            SDL_SetCursor(iter->second);
+            return DispatchResult::kContinue;
+        }
+        break;
+    }
+    if (sdl_cursor) {
+        SDL_ShowCursor(SDL_ENABLE);
+        SDL_SetCursor(sdl_cursor);
+        if (sdl_cursor_) {
+            SDL_FreeCursor(sdl_cursor_);
+        }
+        sdl_cursor_ = sdl_cursor;
     }
     return DispatchResult::kContinue;
 }
@@ -637,8 +783,12 @@ void PcSdl::switchMouseMode(bool absolute) {
     impl_->switchMouseMode(absolute);
 }
 
-void PcSdl::setCursorInfo(int32_t cursor_id, bool visible) {
-    impl_->setCursorInfo(cursor_id, visible);
+void PcSdl::setCursorInfo(const lt::CursorInfo& cursor_info) {
+    impl_->setCursorInfo(cursor_info);
+}
+
+void PcSdl::clearCursorInfos() {
+    impl_->clearCursorInfos();
 }
 
 PcSdl::PcSdl() {}

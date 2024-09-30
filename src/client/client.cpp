@@ -1011,24 +1011,48 @@ void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg)
 
 void Client::onCursorInfo(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::CursorInfo>(_msg);
-    LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y%d", msg->preset(), msg->w(), msg->h(),
+    LOGF(DEBUG, "onCursorInfo id:%d, w:%d, h:%d, x:%d, y:%d", msg->preset(), msg->w(), msg->h(),
          msg->x(), msg->y());
-    if (msg->w() == 0 || msg->h() == 0) {
-        // 这个这么丑的flag，只是为了不让这行错误日志频繁打
-        if (!last_w_or_h_is_0_) {
-            last_w_or_h_is_0_ = true;
-            LOG(ERR) << "Received CursorInfo with w " << msg->w() << " h " << msg->h();
-        }
-        return;
+    lt::CursorInfo info{};
+    if (msg->has_preset()) {
+        info.preset = msg->preset();
     }
-    last_w_or_h_is_0_ = false;
+    info.screen_w = msg->w();
+    info.screen_h = msg->h();
+    info.x = msg->x();
+    info.y = msg->y();
+    info.w = msg->cursor_w();
+    info.h = msg->cursor_h();
+    info.hot_x = msg->hot_x();
+    info.hot_y = msg->hot_y();
+    info.data_id = msg->data_id();
+    info.pitch = msg->pitch();
+    info.visible = msg->visible();
+    if (msg->has_type()) {
+        info.type = static_cast<::lt::CursorDataType>(msg->type());
+    }
+    {
+        std::lock_guard lg{cursor_mtx_};
+        auto iter = cursors_.find(msg->data_id());
+        if (iter != cursors_.end()) {
+            // 存过
+            info.data = iter->second.data;
+        }
+        else if (!msg->data().empty()) {
+            // 新图形
+            info.data.resize(msg->data().size());
+            memcpy(info.data.data(), msg->data().data(), info.data.size());
+            cursors_[msg->data_id()] = info;
+        }
+        else {
+            // 只需要更新位置
+        }
+    }
     {
         std::lock_guard lock{dr_mutex_};
-        video_pipeline_->setCursorInfo(msg->preset(), 1.0f * msg->x() / msg->w(),
-                                       1.0f * msg->y() / msg->h(), msg->visible());
+        video_pipeline_->setCursorInfo(info);
     }
-
-    sdl_->setCursorInfo(msg->preset(), msg->visible());
+    sdl_->setCursorInfo(info);
 }
 
 void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLite> _msg) {
@@ -1043,6 +1067,11 @@ void Client::onChangeStreamingParams(std::shared_ptr<google::protobuf::MessageLi
         video_params_.width = width;
         video_params_.height = height;
         video_params_.rotation = rotation;
+        {
+            std::lock_guard lg{cursor_mtx_};
+            cursors_.clear();
+        }
+        sdl_->clearCursorInfos();
         input_capturer_->changeVideoParameters(video_params_.width, video_params_.height,
                                                video_params_.rotation, is_stretch_);
         std::lock_guard lock{dr_mutex_};

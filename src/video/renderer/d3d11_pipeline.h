@@ -59,12 +59,8 @@ class D3D11Pipeline : public Renderer {
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
         int32_t width;
         int32_t height;
-    };
-    struct CursorInfo {
-        int32_t id;
-        float x;
-        float y;
-        bool visible;
+        int32_t hot_x;
+        int32_t hot_y;
     };
 
 public:
@@ -86,8 +82,6 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
-    void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
     void resetRenderTarget() override;
     bool present() override;
@@ -108,10 +102,10 @@ private:
     bool setupOMStage();
     bool initShaderResources(const std::vector<ID3D11Texture2D*>& textures);
     bool createCursors();
-    bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height,
-                            std::vector<uint8_t>& data);
-    bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
-                                        const std::vector<uint8_t>& data);
+    bool loadCursorAsBitmap(char* name, int32_t& width, int32_t& height, int32_t& hot_x,
+                            int32_t& hot_y, std::vector<uint8_t>& data);
+    bool createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height, int32_t hot_x,
+                                        int32_t hot_y, const std::vector<uint8_t>& data);
     bool calcVertexes();
     bool setupCursorD3DResources();
     const ColorMatrix& getColorMatrix() const;
@@ -119,6 +113,15 @@ private:
     RenderResult tryResetSwapChain();
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
+    RenderResult renderPresetCursor(const lt::CursorInfo& info);
+    RenderResult renderDataCursor(const lt::CursorInfo& info,
+                                  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor1,
+                                  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor2);
+    auto createCursorTextures(const lt::CursorInfo& c)
+        -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
+                      Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>;
+    auto createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h)
+        -> Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>;
 
 private:
     HWND hwnd_;
@@ -147,7 +150,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> video_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> video_sampler_;
 
-    std::map<size_t, CursorRes> cursors_;
+    std::map<size_t, CursorRes> preset_cursors_;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> cursor_vertex_shader_;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> cursor_input_layout_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_vertex_buffer_;
@@ -155,9 +158,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11PixelShader> cursor_pixel_shader_;
     // Microsoft::WRL::ComPtr<ID3D11Buffer> cursor_pixel_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> cursor_sampler_;
-
-    CursorInfo cursor_info_;
-    bool absolute_mouse_;
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blend_cursor1_{};
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blend_cursor2_{};
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blend_screen_{};
     bool stretch_;
     uint32_t display_width_ = 0;
     uint32_t display_height_ = 0;

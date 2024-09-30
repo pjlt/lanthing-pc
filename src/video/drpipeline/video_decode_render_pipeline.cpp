@@ -71,7 +71,7 @@ public:
     void setNack(uint32_t nack) override;
     void setLossRate(float rate) override;
     void resetRenderTarget() override;
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) override;
+    void setCursorInfo(const ::lt::CursorInfo& info) override;
     void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
 
@@ -90,7 +90,7 @@ void VDRPipeline2::setBWE(uint32_t) {}
 void VDRPipeline2::setNack(uint32_t) {}
 void VDRPipeline2::setLossRate(float) {}
 void VDRPipeline2::resetRenderTarget() {}
-void VDRPipeline2::setCursorInfo(int32_t, float, float, bool) {}
+void VDRPipeline2::setCursorInfo(const ::lt::CursorInfo&) {}
 void VDRPipeline2::switchMouseMode(bool) {}
 void VDRPipeline2::switchStretchMode(bool) {}
 // #if !defined(LT_WINDOWS)
@@ -115,7 +115,7 @@ public:
     void setNack(uint32_t nack) override;
     void setLossRate(float rate) override;
     void resetRenderTarget() override;
-    void setCursorInfo(int32_t cursor_id, float x, float y, bool visible) override;
+    void setCursorInfo(const ::lt::CursorInfo& info) override;
     void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
 
@@ -132,7 +132,6 @@ private:
     void onUserSetBitrate(uint32_t bps);
     void onUserSwitchMonitor();
     void onUserSwitchStretchOrOrigin();
-    std::tuple<int32_t, float, float> getCursorInfo();
     bool isAbsoluteMouse();
     bool isStretchMode();
 
@@ -180,10 +179,7 @@ private:
     uint32_t nack_ = 0;
     float loss_rate_ = .0f;
 
-    int32_t cursor_id_ = 0;
-    float cursor_x_ = 0.f;
-    float cursor_y_ = 0.f;
-    bool visible_ = true;
+    std::optional<lt::CursorInfo> cursor_info_;
     bool absolute_mouse_;
     bool is_stretch_;
     int64_t status_color_;
@@ -249,7 +245,6 @@ bool VDRPipeline::init() {
     render_params.stretch = is_stretch_;
     render_params.absolute_mouse = absolute_mouse_;
     render_params.align = Decoder::align(decode_codec_type_);
-        LOG(ERR) << "before create renderer failed";
 
     video_renderer_ = Renderer::create(render_params);
     if (video_renderer_ == nullptr) {
@@ -258,8 +253,6 @@ bool VDRPipeline::init() {
     }
     Decoder::Params decode_params{};
     decode_params.codec_type = decode_codec_type_;
-    // 这里的device和context理论上用device_和context_就行了，但是Linux下还没有将这两个东西转移到VideoDevice生成
-    // 依旧是Renderer里生成，所以从Renderer里取
     decode_params.hw_device = video_renderer_->hwDevice();
     decode_params.hw_context = video_renderer_->hwContext();
 #if LT_WINDOWS
@@ -389,12 +382,12 @@ void VDRPipeline::resetRenderTarget() {
     video_renderer_->resetRenderTarget();
 }
 
-void VDRPipeline::setCursorInfo(int32_t cursor_id, float x, float y, bool visible) {
-    std::lock_guard lk{render_mtx_};
-    cursor_id_ = cursor_id;
-    cursor_x_ = x;
-    cursor_y_ = y;
-    visible_ = visible;
+void VDRPipeline::setCursorInfo(const ::lt::CursorInfo& info) {
+    {
+        std::lock_guard lk{render_mtx_};
+        cursor_info_ = info;
+    }
+    waiting_for_render_.notify_one();
 }
 
 void VDRPipeline::switchMouseMode(bool absolute) {
@@ -463,7 +456,8 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
 
 bool VDRPipeline::waitForRender(std::chrono::microseconds ms) {
     std::unique_lock<std::mutex> lock(render_mtx_);
-    bool ret = waiting_for_render_.wait_for(lock, ms, [this]() { return smoother_.size() > 0; });
+    bool ret = waiting_for_render_.wait_for(
+        lock, ms, [this]() { return smoother_.size() > 0 || cursor_info_.has_value(); });
     return ret;
 }
 
@@ -500,11 +494,6 @@ void VDRPipeline::onUserSwitchStretchOrOrigin() {
     switch_stretch_();
 }
 
-std::tuple<int32_t, float, float> VDRPipeline::getCursorInfo() {
-    std::lock_guard lk{render_mtx_};
-    return {cursor_id_, cursor_x_, cursor_y_};
-}
-
 bool VDRPipeline::isAbsoluteMouse() {
     std::lock_guard lk{render_mtx_};
     return absolute_mouse_;
@@ -532,8 +521,12 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             }
             video_renderer_->switchMouseMode(isAbsoluteMouse());
             video_renderer_->switchStretchMode(isStretchMode());
-            auto [cursor, x, y] = getCursorInfo();
-            video_renderer_->updateCursor(cursor, x, y, visible_);
+            std::optional<lt::CursorInfo> cursor_info;
+            {
+                std::lock_guard lk{render_mtx_};
+                std::swap(cursor_info, cursor_info_);
+            }
+            video_renderer_->updateCursor(cursor_info);
             LOG(DEBUG) << "CAPTURE-BEFORE_RENDER "
                        << ltlib::steady_now_us() - frame->capture_time - time_diff_;
             if (new_frame.has_value()) {

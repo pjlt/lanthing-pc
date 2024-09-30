@@ -122,8 +122,8 @@ void configAVHWDeviceContext(void* _avhw_dev_ctx, void* dev, void* ctx) {
 #elif LT_LINUX
     // TODO: linux
     auto av_va_ctx = reinterpret_cast<AVVAAPIDeviceContext*>(avhw_dev_ctx->hwctx);
-    av_va_ctx->display = ctx;
-    (void)dev;
+    av_va_ctx->display = dev;
+    (void)ctx;
 #else
     (void)avhw_dev_ctx;
     (void)dev;

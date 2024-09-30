@@ -181,12 +181,12 @@ namespace lt {
 namespace video {
 
 D3D11Pipeline::D3D11Pipeline(const Params& params)
-    : hwnd_{reinterpret_cast<HWND>(params.window)}
+    : Renderer{params.absolute_mouse}
+    , hwnd_{reinterpret_cast<HWND>(params.window)}
     , video_width_{params.widht}
     , video_height_{params.height}
     , rotation_{params.rotation}
     , align_{params.align}
-    , absolute_mouse_{params.absolute_mouse}
     , stretch_{params.stretch}
     , d3d11_dev_{reinterpret_cast<ID3D11Device*>(params.device)}
     , d3d11_ctx_{reinterpret_cast<ID3D11DeviceContext*>(params.context)} {
@@ -197,7 +197,7 @@ D3D11Pipeline::~D3D11Pipeline() {
     if (waitable_obj_) {
         CloseHandle(waitable_obj_);
     }
-    cursors_.clear();
+    preset_cursors_.clear();
 }
 
 bool D3D11Pipeline::bindTextures(const std::vector<void*>& _textures) {
@@ -271,14 +271,6 @@ Renderer::RenderResult D3D11Pipeline::render(int64_t frame) {
     return RenderResult::Success2;
 }
 
-void D3D11Pipeline::updateCursor(int32_t cursor_id, float x, float y, bool visible) {
-    cursor_info_ = CursorInfo{cursor_id, x, y, visible};
-}
-
-void D3D11Pipeline::switchMouseMode(bool absolute) {
-    absolute_mouse_ = absolute;
-}
-
 void D3D11Pipeline::switchStretchMode(bool stretch) {
     if (stretch != stretch_) {
         stretch_ = stretch;
@@ -348,6 +340,7 @@ Renderer::RenderResult D3D11Pipeline::tryResetSwapChain() {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
+    d3d11_ctx_->OMSetBlendState(blend_screen_.Get(), nullptr, 0xffffffff);
     d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
     d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
     UINT stride = sizeof(Vertex);
@@ -392,20 +385,37 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderVideo(int64_t frame) {
 }
 
 D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
-    CursorInfo c = cursor_info_;
-    if (absolute_mouse_ || !c.visible) {
+    if (absolute_mouse_ || !cursor_info_.has_value()) {
         return RenderResult::Success2;
     }
-    auto iter = cursors_.find(c.id);
-    if (iter == cursors_.end()) {
-        iter = cursors_.find(0);
+    CursorInfo& c = cursor_info_.value();
+    auto [cursor1, cursor2] = createCursorTextures(c);
+    if (cursor1 == nullptr && cursor2 == nullptr) {
+        return renderPresetCursor(c);
     }
-    const float widht = 1.0f * iter->second.width / display_width_;
+    else {
+        return renderDataCursor(c, cursor1, cursor2);
+    }
+}
+
+D3D11Pipeline::RenderResult D3D11Pipeline::renderPresetCursor(const lt::CursorInfo& c) {
+    LOG(INFO) << "renderPresetCursor";
+    if (!c.preset.has_value()) {
+        return RenderResult::Success2;
+    }
+    LOG(INFO) << "renderPresetCursor 2";
+    auto iter = preset_cursors_.find(c.preset.value());
+    if (iter == preset_cursors_.end()) {
+        iter = preset_cursors_.find(0);
+    }
+    const float x = 1.0f * (c.x - c.hot_x) / c.screen_w;
+    const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
+    const float width = 1.0f * iter->second.width / display_width_;
     const float height = 1.0f * iter->second.height / display_height_;
-    Vertex verts[] = {{(c.x - .5f) * 2.f, (.5f - c.y) * 2.f, 0.0f, 0.0f},
-                      {(c.x - .5f + widht) * 2.f, (.5f - c.y) * 2.f, 1.0f, 0.0f},
-                      {(c.x - .5f + widht) * 2.f, (.5f - c.y - height) * 2.f, 1.0f, 1.0f},
-                      {(c.x - .5f) * 2.f, (.5f - c.y - height) * 2.f, 0.0f, 1.0f}};
+    Vertex verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
+                      {(x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f}};
     D3D11_BUFFER_DESC vb_desc = {};
     vb_desc.ByteWidth = sizeof(verts);
     vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -437,6 +447,174 @@ D3D11Pipeline::RenderResult D3D11Pipeline::renderCursor() {
     d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
     d3d11_ctx_->DrawIndexed(6, 0, 0);
     return RenderResult::Success2;
+}
+
+D3D11Pipeline::RenderResult
+D3D11Pipeline::renderDataCursor(const lt::CursorInfo& c,
+                                Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor1,
+                                Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cursor2) {
+    LOGF(DEBUG, "renderDataCursor x:%d, y:%d, hotx:%d, hoty:%d, size:%llu", c.x, c.y, c.hot_x,
+         c.hot_y, c.data.size());
+    // const float x = 1.0f * (c.x - c.hot_x) / c.screen_w;
+    // const float y = 1.0f * (c.y - c.hot_y) / c.screen_h;
+    const float x = 1.0f * c.x / c.screen_w;
+    const float y = 1.0f * c.y / c.screen_h;
+    const float width = 1.0f * c.w / display_width_;
+    const float height = 1.0f * c.h / display_height_;
+    Vertex verts[] = {{(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f},
+                      {(x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f},
+                      {(x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f}};
+    D3D11_BUFFER_DESC vb_desc = {};
+    vb_desc.ByteWidth = sizeof(verts);
+    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
+    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vb_desc.CPUAccessFlags = 0;
+    vb_desc.MiscFlags = 0;
+    vb_desc.StructureByteStride = sizeof(Vertex);
+
+    D3D11_SUBRESOURCE_DATA vb_data = {};
+    vb_data.pSysMem = verts;
+    cursor_vertex_buffer_ = nullptr;
+    HRESULT hr = d3d11_dev_->CreateBuffer(&vb_desc, &vb_data, cursor_vertex_buffer_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create vertext buffer, hr:0x%08x", hr);
+        return RenderResult::Failed;
+    }
+    d3d11_ctx_->VSSetShader(video_vertex_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->IASetInputLayout(video_input_layout_.Get());
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    ID3D11Buffer* vbarray[] = {cursor_vertex_buffer_.Get()};
+    d3d11_ctx_->IASetVertexBuffers(0, 1, vbarray, &stride, &offset);
+    d3d11_ctx_->IASetIndexBuffer(video_index_buffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
+    d3d11_ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    d3d11_ctx_->PSSetShader(cursor_pixel_shader_.Get(), nullptr, 0);
+    d3d11_ctx_->PSSetSamplers(0, 1, cursor_sampler_.GetAddressOf());
+    if (cursor1 != nullptr) {
+        ID3D11ShaderResourceView* const shader_views[1] = {cursor1.Get()};
+        d3d11_ctx_->OMSetBlendState(blend_cursor1_.Get(), nullptr, 0xffffffff);
+        d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
+        d3d11_ctx_->DrawIndexed(6, 0, 0);
+    }
+    if (cursor2 != nullptr) {
+        ID3D11ShaderResourceView* const shader_views[1] = {cursor2.Get()};
+        d3d11_ctx_->OMSetBlendState(blend_cursor2_.Get(), nullptr, 0x00ffffff);
+        d3d11_ctx_->PSSetShaderResources(0, 1, shader_views);
+        d3d11_ctx_->DrawIndexed(6, 0, 0);
+    }
+    return RenderResult::Success2;
+}
+
+auto D3D11Pipeline::createCursorTextures(const lt::CursorInfo& c)
+    -> std::tuple<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
+                  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> {
+    if (c.data.empty()) {
+        return {nullptr, nullptr};
+    }
+    switch (c.type) {
+    case lt::CursorDataType::MonoChrome:
+    {
+        std::vector<uint8_t> cursor1((size_t)(c.w * c.h * 4));
+        std::vector<uint8_t> cursor2((size_t)(c.w * c.h * 4));
+        uint32_t* cursor1_ptr = reinterpret_cast<uint32_t*>(cursor1.data());
+        uint32_t* cursor2_ptr = reinterpret_cast<uint32_t*>(cursor2.data());
+        uint32_t pos = 0;
+        uint8_t bitmask = 0b1000'0000;
+        size_t size = c.data.size() / 2;
+        for (size_t i = 0; i < size; i++) {
+            for (uint8_t j = 0; j < 8; j++) {
+                uint8_t and_bit = (c.data[i] & (bitmask >> j)) ? 1 : 0;
+                uint8_t xor_bit = (c.data[i + size] & (bitmask >> j)) ? 1 : 0;
+                uint8_t type = and_bit * 2 + xor_bit;
+                switch (type) {
+                case 0:
+                    cursor1_ptr[pos] = 0xFF000000;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 1:
+                    cursor1_ptr[pos] = 0xFFFFFFFF;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 2:
+                    cursor1_ptr[pos] = 0;
+                    cursor2_ptr[pos] = 0;
+                    break;
+                case 3:
+                    cursor1_ptr[pos] = 0;
+                    cursor2_ptr[pos] = 0xFFFFFFFF;
+                    break;
+                default:
+                    break;
+                }
+                pos += 1;
+            }
+        }
+        return {createCursorTexture(cursor1.data(), c.w, c.h),
+                createCursorTexture(cursor2.data(), c.w, c.h)};
+    }
+    case lt::CursorDataType::Color:
+    {
+        return {createCursorTexture(c.data.data(), c.w, c.h), nullptr};
+    }
+    case lt::CursorDataType::MaskedColor:
+    {
+        std::vector<uint8_t> cursor1((size_t)(c.w * c.h * 4));
+        std::vector<uint8_t> cursor2((size_t)(c.w * c.h * 4));
+        for (size_t offset = 0; offset < c.data.size(); offset += 4) {
+            const uint32_t* pixel = reinterpret_cast<const uint32_t*>(c.data.data() + offset);
+            uint32_t* ptr1 = reinterpret_cast<uint32_t*>(cursor1.data() + offset);
+            uint32_t* ptr2 = reinterpret_cast<uint32_t*>(cursor2.data() + offset);
+            uint32_t mask = (*pixel) & 0xFF000000;
+            if (mask == 0xFF000000) {
+                *ptr1 = 0;
+                *ptr2 = *pixel;
+            }
+            else if (mask == 0) {
+                *ptr1 = *pixel | 0xFF000000;
+                *ptr2 = 0;
+            }
+            else {
+                LOGF(WARNING, "Invalid MonoChrome cursor mask %#x", mask);
+                return {nullptr, nullptr};
+            }
+        }
+        return {createCursorTexture(cursor1.data(), c.w, c.h),
+                createCursorTexture(cursor2.data(), c.w, c.h)};
+    }
+    default:
+        LOG(WARNING) << "Unknown cursor data type " << (int)c.type;
+        return {nullptr, nullptr};
+    }
+}
+
+auto D3D11Pipeline::createCursorTexture(const uint8_t* pdata, uint32_t w, uint32_t h)
+    -> Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> {
+    D3D11_SUBRESOURCE_DATA data{pdata, w * 4, 0};
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = w;
+    desc.Height = h;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_IMMUTABLE;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    ComPtr<ID3D11Texture2D> texture;
+    HRESULT hr = d3d11_dev_->CreateTexture2D(&desc, &data, texture.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create cursor texture, hr:0x%08x", hr);
+        return nullptr;
+    }
+
+    ComPtr<ID3D11ShaderResourceView> shader_view;
+    hr = d3d11_dev_->CreateShaderResourceView(texture.Get(), nullptr, shader_view.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create cursor shader resource view, hr:0x%08x", hr);
+        return nullptr;
+    }
+    return shader_view;
 }
 
 bool D3D11Pipeline::waitForPipeline(int64_t max_wait_ms) {
@@ -727,25 +905,55 @@ bool D3D11Pipeline::setupPSStage() {
 }
 
 bool D3D11Pipeline::setupOMStage() {
-    D3D11_BLEND_DESC desc = {};
-    desc.AlphaToCoverageEnable = FALSE;
-    desc.IndependentBlendEnable = FALSE;
-    desc.RenderTarget[0].BlendEnable = TRUE;
-    desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-    desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-    ComPtr<ID3D11BlendState> bs;
-    auto hr = d3d11_dev_->CreateBlendState(&desc, bs.GetAddressOf());
+    D3D11_BLEND_DESC screen = {};
+    screen.AlphaToCoverageEnable = FALSE;
+    screen.IndependentBlendEnable = FALSE;
+    screen.RenderTarget[0].BlendEnable = TRUE;
+    screen.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    screen.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    screen.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    screen.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    screen.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    screen.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    screen.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    auto hr = d3d11_dev_->CreateBlendState(&screen, blend_screen_.GetAddressOf());
     if (FAILED(hr)) {
         LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
         return false;
     }
-    d3d11_ctx_->OMSetBlendState(bs.Get(), nullptr, 0xffffffff);
+    // d3d11_ctx_->OMSetBlendState(bs.Get(), nullptr, 0xffffffff);
+    D3D11_BLEND_DESC cursor1 = {};
+    // cursor1.AlphaToCoverageEnable = FALSE;
+    // cursor1.IndependentBlendEnable = FALSE;
+    cursor1.RenderTarget[0].BlendEnable = TRUE;
+    cursor1.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    cursor1.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    cursor1.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    cursor1.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+    cursor1.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    cursor1.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    cursor1.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    hr = d3d11_dev_->CreateBlendState(&cursor1, blend_cursor1_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
+        return false;
+    }
+    D3D11_BLEND_DESC cursor2 = {};
+    // cursor1.AlphaToCoverageEnable = FALSE;
+    // cursor1.IndependentBlendEnable = FALSE;
+    cursor2.RenderTarget[0].BlendEnable = TRUE;
+    cursor2.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_DEST_COLOR;
+    cursor2.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
+    cursor2.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    cursor2.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+    cursor2.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    cursor2.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    cursor2.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    hr = d3d11_dev_->CreateBlendState(&cursor2, blend_cursor2_.GetAddressOf());
+    if (FAILED(hr)) {
+        LOGF(WARNING, "Failed to create blend state, hr:0x%08x", hr);
+        return false;
+    }
     return true;
 }
 
@@ -780,19 +988,21 @@ bool D3D11Pipeline::initShaderResources(const std::vector<ID3D11Texture2D*>& tex
 bool D3D11Pipeline::createCursors() {
     std::vector<LPSTR> kCursors = {IDC_ARROW,    IDC_IBEAM,    IDC_WAIT,   IDC_CROSS,
                                    IDC_SIZENWSE, IDC_SIZENESW, IDC_SIZEWE, IDC_SIZENS,
-                                   IDC_SIZEALL,  IDC_NO,       IDC_HAND};
+                                   nullptr,      IDC_SIZEALL,  IDC_NO,     IDC_HAND};
     for (size_t i = 0; i < kCursors.size(); i++) {
         int32_t width = 0;
         int32_t height = 0;
+        int32_t hot_x = 0;
+        int32_t hot_y = 0;
         std::vector<uint8_t> data;
-        if (!loadCursorAsBitmap(kCursors[i], width, height, data)) {
+        if (!loadCursorAsBitmap(kCursors[i], width, height, hot_x, hot_y, data)) {
             if (i == 0) {
                 // 普通箭头必须成功，作为兜底项
                 return false;
             }
             continue;
         }
-        if (!createCursorResourceFromBitmap(i, width, height, data)) {
+        if (!createCursorResourceFromBitmap(i, width, height, hot_x, hot_y, data)) {
             return false;
         }
     }
@@ -803,7 +1013,11 @@ bool D3D11Pipeline::createCursors() {
 }
 
 bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& out_height,
+                                       int32_t& hot_x, int32_t& hot_y,
                                        std::vector<uint8_t>& out_data) {
+    if (name == nullptr) {
+        return false;
+    }
     auto cursor = LoadCursorA(nullptr, name);
     if (cursor == nullptr) {
         LOG(ERR) << "LoadCursor failed: 0x" << std::hex << GetLastError();
@@ -815,6 +1029,8 @@ bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& 
         LOG(ERR) << "GetIconInfo failed: 0x" << std::hex << GetLastError();
         return false;
     }
+    hot_x = static_cast<int32_t>(iconinfo.xHotspot);
+    hot_y = static_cast<int32_t>(iconinfo.yHotspot);
     std::vector<uint8_t> color_data;
     std::vector<uint8_t> mask_data;
     int32_t color_width = 0;
@@ -913,6 +1129,7 @@ bool D3D11Pipeline::loadCursorAsBitmap(char* name, int32_t& out_width, int32_t& 
 }
 
 bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int32_t height,
+                                                   int32_t hot_x, int32_t hot_y,
                                                    const std::vector<uint8_t>& data) {
     D3D11_TEXTURE2D_DESC desc{};
     desc.Width = width;
@@ -949,7 +1166,9 @@ bool D3D11Pipeline::createCursorResourceFromBitmap(size_t id, int32_t width, int
     cr.view = sv;
     cr.width = width;
     cr.height = height;
-    cursors_[id] = cr;
+    cr.hot_x = hot_x;
+    cr.hot_y = hot_y;
+    preset_cursors_[id] = cr;
     LOG(INFO) << "Create D3D11 Resource for cursor " << id << " success";
     return true;
 }
@@ -1043,11 +1262,15 @@ bool D3D11Pipeline::calcVertexes() {
 
 bool D3D11Pipeline::setupCursorD3DResources() {
     D3D11_SAMPLER_DESC samplerDesc = {};
-    samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
-    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    // samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_POINT;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.MaxAnisotropy = 16;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    // samplerDesc.MaxAnisotropy = 16;
+    samplerDesc.MinLOD = 0;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
     HRESULT hr = d3d11_dev_->CreateSamplerState(&samplerDesc, &cursor_sampler_);
     if (hr != S_OK) {
         LOGF(ERR, "CreateSamplerState failed with %#x", hr);

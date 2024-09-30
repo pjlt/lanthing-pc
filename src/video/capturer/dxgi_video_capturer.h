@@ -51,6 +51,7 @@ public:
     bool init() override;
     bool start() override;
     std::optional<Capturer::Frame> capture() override;
+    std::optional<CursorInfo> cursorInfo() override;
     void doneWithFrame() override;
     void waitForVBlank() override;
     Backend backend() const override;
@@ -64,6 +65,7 @@ public:
 private:
     bool initD3D11();
     uint8_t* toI420(ID3D11Texture2D* frame);
+    void saveCursorInfo(DXGI_OUTDUPL_FRAME_INFO* frame_info);
 
 private:
     std::unique_ptr<DUPLICATIONMANAGER> impl_;
@@ -76,6 +78,7 @@ private:
     uint32_t vendor_id_ = 0;
     ltlib::Monitor monitor_;
     CaptureFormat capture_foramt_ = CaptureFormat::D3D11_BGRA;
+    std::optional<CursorInfo> cursor_info_;
 };
 
 } // namespace video

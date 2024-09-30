@@ -54,6 +54,7 @@ public:
         uint32_t height;
         uint32_t rotation;
         uint32_t align;
+        bool absolute_mouse;
     };
 
 public:
@@ -62,8 +63,6 @@ public:
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
     RenderResult render(int64_t frame) override;
-    void updateCursor(int32_t cursor_id, float x, float y, bool visible) override;
-    void switchMouseMode(bool absolute) override;
     void switchStretchMode(bool stretch) override;
     void resetRenderTarget() override;
     bool present() override;
@@ -80,6 +79,12 @@ private:
     bool initEGL();
     bool initOpenGL();
     void resizeWindow(int screen_width, int screen_height);
+    RenderResult renderVideo(int64_t frame);
+    RenderResult renderCursor();
+    RenderResult renderPresetCursor(const lt::CursorInfo& info);
+    RenderResult renderDataCursor(const lt::CursorInfo& c, GLuint cursor1, GLuint cursor2);
+    std::tuple<GLuint, GLuint> createCursorTextures(const lt::CursorInfo& info);
+    void createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h);
 
 private:
     SDL_Window* sdl_window_ = nullptr;
@@ -89,7 +94,6 @@ private:
     uint32_t card_;
     uint32_t window_width_;
     uint32_t window_height_;
-    GLuint shader_ = 0;
     int drm_fd_ = -1;
     VADisplay va_display_ = nullptr;
     EGLContext egl_context_ = nullptr;
@@ -101,10 +105,16 @@ private:
     PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
     PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;
     PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_ = nullptr;
+    GLuint shader_ = 0;
+    GLuint cursor_shader_ = 0;
     GLuint textures_[2] = {0};
+    GLuint cursor_textures_[2] = {0};
     GLuint vao_ = 0;
     GLuint vbo_ = 0;
     GLuint ebo_ = 0;
+    GLuint cursor_vao_ = 0;
+    GLuint cursor_vbo_ = 0;
+    GLuint cursor_ebo_ = 0;
 };
 
 } // namespace video

@@ -388,17 +388,12 @@ void SettingsSqlite::deleteKey(const std::string& key) {
 
 std::unique_ptr<Settings> Settings::create(Storage type) {
     std::string filename = type == Storage::Toml ? "settings.toml" : "settings.db";
-#if LT_WINDOWS
     std::string appdatapath = ltlib::getConfigPath(ltlib::isRunAsService());
     if (appdatapath.empty()) {
         return nullptr;
     }
     std::filesystem::path filepath = appdatapath;
     filepath = filepath / filename;
-#else
-    std::filesystem::path filepath = getpwuid(getuid())->pw_dir;
-    filepath = filepath / filename;
-#endif
     return createWithPathForTest(type, filepath.string());
 }
 
