@@ -52,8 +52,7 @@ VaGlPipeline::VaGlPipeline(const Params& params)
     , video_width_{params.width}
     , video_height_{params.height}
     , align_{params.align}
-    , card_{params.card}
-    , absolute_mouse_{params.absolute_mouse} {}
+    , card_{params.card} {}
 
 VaGlPipeline::~VaGlPipeline() {
     if (egl_display_) {
@@ -82,7 +81,7 @@ VaGlPipeline::~VaGlPipeline() {
         glDeleteTextures(2, cursor_textures_);
     }
     if (cursor_vao_ != 0) {
-        glDeleteVertexArrays(1, &cursor_vao_);
+        glDeleteVertexArrays_(1, &cursor_vao_);
     }
     if (cursor_vbo_ != 0) {
         glDeleteBuffers(1, &cursor_vbo_);
@@ -392,6 +391,7 @@ void VaGlPipeline::createCursorTexture(const uint8_t* data, uint32_t w, uint32_t
 
 VaGlPipeline::RenderResult VaGlPipeline::renderPresetCursor(const lt::CursorInfo& c) {
     (void)c;
+    return RenderResult::Success2;
 }
 
 void VaGlPipeline::switchStretchMode(bool stretch) {

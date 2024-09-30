@@ -82,7 +82,7 @@ private:
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
     RenderResult renderPresetCursor(const lt::CursorInfo& info);
-    RenderResult renderDataCursor(const lt::CursorInfo& info);
+    RenderResult renderDataCursor(const lt::CursorInfo& c, GLuint cursor1, GLuint cursor2);
     std::tuple<GLuint, GLuint> createCursorTextures(const lt::CursorInfo& info);
     void createCursorTexture(const uint8_t* data, uint32_t w, uint32_t h);
 

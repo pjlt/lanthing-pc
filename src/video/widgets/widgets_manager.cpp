@@ -207,7 +207,7 @@ void WidgetsManager::imguiImplInit() {
     SDL_Window* wnd = reinterpret_cast<SDL_Window*>(window_);
     bool ret1 = ImGui_ImplSDL2_InitForOpenGL(wnd, ctx_);
     bool ret2 = ImGui_ImplOpenGL3_Init("#version 330");
-    LOGF(DEBUG, "ImGUI init wnd:%lld, ctx:%lld, ret1:%d, ret2:%d", (int64_t)wnd, (int64_t)ctx_, ret1, ret2) ;
+    LOGF(DEBUG, "ImGUI init wnd:%" PRId64 ", ctx:%" PRId64 ", ret1:%d, ret2:%d", (int64_t)wnd, (int64_t)ctx_, ret1, ret2) ;
 #endif // LT_WINDOWS
 }
 
