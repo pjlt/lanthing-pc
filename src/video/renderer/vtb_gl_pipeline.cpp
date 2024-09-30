@@ -317,6 +317,7 @@ void VtbGlPipeline::createCursorTexture(const uint8_t* data, uint32_t w, uint32_
 
 VtbGlPipeline::RenderResult VtbGlPipeline::renderPresetCursor(const lt::CursorInfo& c) {
     (void)c;
+    return RenderResult::Success2;
 }
 
 void VtbGlPipeline::switchStretchMode(bool stretch) {
