@@ -30,6 +30,7 @@
 
 #pragma once
 #include <audio/player/audio_player.h>
+#include <limits>
 
 namespace lt {
 

@@ -102,7 +102,7 @@ std::unique_ptr<VDRPipeline2> VDRPipeline2::create(const DecodeRenderPipeline::P
 class VDRPipeline : public DecodeRenderPipeline {
 public:
     struct VideoFrameInternal : lt::VideoFrame {
-        std::shared_ptr<uint8_t> data_internal;
+        std::shared_ptr<uint8_t[]> data_internal;
     };
 
 public:
@@ -342,7 +342,7 @@ DecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _frame) {
     frame.capture_timestamp_us = _frame.capture_timestamp_us;
     frame.start_encode_timestamp_us = _frame.start_encode_timestamp_us;
     frame.end_encode_timestamp_us = _frame.end_encode_timestamp_us;
-    frame.data_internal = std::shared_ptr<uint8_t>(new uint8_t[_frame.size]);
+    frame.data_internal = std::shared_ptr<uint8_t[]>(new uint8_t[_frame.size]);
     memcpy(frame.data_internal.get(), _frame.data, _frame.size);
     frame.data = frame.data_internal.get();
     {
