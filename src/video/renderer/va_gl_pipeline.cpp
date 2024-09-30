@@ -153,7 +153,7 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     if (egl_success != EGL_TRUE) {
         LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
         return RenderResult::Success2;
-    } 
+    }
     return RenderResult::Success2;
 }
 
@@ -245,27 +245,28 @@ VaGlPipeline::RenderResult VaGlPipeline::renderCursor() {
         return RenderResult::Success2;
     }
     CursorInfo& c = cursor_info_.value();
-    if (c.preset.has_value()) {
+    auto [cursor1, cursor2] = createCursorTextures(c);
+    if (cursor1 == 0 && cursor2 == 0) {
         // return renderPresetCursor(c);
         return Renderer::RenderResult::Success2;
     }
     else {
-        return renderDataCursor(c);
+        return renderDataCursor(c, cursor1, cursor2);
     }
 }
 
 Renderer::RenderResult VaGlPipeline::renderDataCursor(const lt::CursorInfo& c, GLuint cursor1,
-                                                       GLuint cursor2) {
+                                                      GLuint cursor2) {
     const float x = 1.0f * c.x / c.screen_w;
     const float y = 1.0f * c.y / c.screen_h;
     const float width = 1.0f * c.w / window_width_;
     const float height = 1.0f * c.h / window_height_;
-    float verts[] = {(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f,
-                     (x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f,
+    float verts[] = {(x - .5f) * 2.f,         (.5f - y) * 2.f,          0.0f, 0.0f,
+                     (x - .5f + width) * 2.f, (.5f - y) * 2.f,          1.0f, 0.0f,
                      (x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f,
-                     (x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f};
+                     (x - .5f) * 2.f,         (.5f - y - height) * 2.f, 0.0f, 1.0f};
     glUseProgram(cursor_shader_);
-    glBindVertexArray(cursor_vao_);
+    glBindVertexArray_(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
     glActiveTexture(GL_TEXTURE0);
@@ -399,7 +400,7 @@ void VaGlPipeline::switchStretchMode(bool stretch) {
 }
 
 void VaGlPipeline::resetRenderTarget() {
-    //SDL_GL_GetDrawableSize();
+    // SDL_GL_GetDrawableSize();
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     int window_width, window_height;
     SDL_GetWindowSize(sdl_window, &window_width, &window_height);
@@ -764,10 +765,8 @@ void main() {
     glBindVertexArray_(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
     // 不赋值行不行?
-    float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f,
-                            .1f, .1f, 1.0f, 0.0f,
-                            .1f, -.1, 1.0f, 1.0f,
-                            -.1f, -.1f, 0.0f, 1.0f};
+    float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f, .1f,  .1f,  1.0f, 0.0f,
+                            .1f,  -.1, 1.0f, 1.0f, -.1f, -.1f, 0.0f, 1.0f};
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts_cursor), verts_cursor, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cursor_ebo_);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_DYNAMIC_DRAW);
