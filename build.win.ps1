@@ -65,7 +65,7 @@ function prebuilt_fetch() {
         [BuiltLib]::new("libuv", "https://github.com/numbaa/libuv-build/releases/download/v1.44.1-3/libuv.win.v1.44.1-3.zip"),
         [BuiltLib]::new("onevpl", "https://github.com/numbaa/onevpl-build/releases/download/v2023.3.1-3/onevpl.win.v2023.3.1-3.zip"),
         [BuiltLib]::new("opus", "https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.win.v1.4-2.zip"),
-        [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-7/g3log.win.v2.3-7.zip"),
+        [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-6/g3log.win.v2.3-6.zip"),
         [BuiltLib]::new("googletest", "https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.win.v1.13.0-2.zip"),
         [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-9/ffmpeg.win.v5.1.3-9.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.win.v3.24.3-2.zip")
