@@ -568,9 +568,9 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             }
             statistics_->updateRenderVideoTime(t1 - t0);
             video_renderer_->attachRenderContext();
+            AutoGuard auto_detach{[this](){ video_renderer_->detachRenderContext(); }};
             auto t2 = ltlib::steady_now_us();
             widgets_->render();
-            video_renderer_->detachRenderContext();
             auto t3 = ltlib::steady_now_us();
             video_renderer_->present();
             auto t4 = ltlib::steady_now_us();

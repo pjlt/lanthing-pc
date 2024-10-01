@@ -56,7 +56,7 @@ VaGlPipeline::VaGlPipeline(const Params& params)
 
 VaGlPipeline::~VaGlPipeline() {
     if (egl_display_) {
-        eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        detachRenderContext();
         if (egl_context_) {
             eglDestroyContext(egl_display_, egl_context_);
         }
@@ -163,11 +163,6 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     RenderResult cursor_result = renderCursor();
     if (cursor_result == RenderResult::Failed) {
        return cursor_result;
-    }
-    EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
-    if (egl_success != EGL_TRUE) {
-        LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
-        return RenderResult::Success2;
     }
     return RenderResult::Success2;
 }
@@ -426,6 +421,11 @@ void VaGlPipeline::resetRenderTarget() {
 }
 
 bool VaGlPipeline::present() {
+    EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
+    if (egl_success != EGL_TRUE) {
+        LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
+        return false;
+    }
     return true;
 }
 
