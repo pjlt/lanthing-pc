@@ -124,6 +124,14 @@ void Renderer::switchMouseMode(bool absolute) {
     absolute_mouse_ = absolute;
 }
 
+bool Renderer::attachRenderContext() {
+    return true;
+}
+
+bool Renderer::detachRenderContext() {
+    return true;
+}
+
 } // namespace video
 
 } // namespace lt

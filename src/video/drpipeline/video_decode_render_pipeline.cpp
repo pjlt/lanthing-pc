@@ -54,6 +54,23 @@
 #include <video/renderer/video_renderer.h>
 #include <video/widgets/widgets_manager.h>
 
+namespace {
+
+struct AutoGuard {
+    AutoGuard(const std::function<void()>& func)
+        : func_{func} {}
+    ~AutoGuard() {
+        if (func_) {
+            func_();
+        }
+    }
+
+private:
+    std::function<void()> func_;
+};
+
+} // namespace
+
 namespace lt {
 
 namespace video {
@@ -297,6 +314,8 @@ bool VDRPipeline::init() {
         std::bind(&VDRPipeline::onUserSetBitrate, this, std::placeholders::_1);
     widgets_params.switch_monitor = std::bind(&VDRPipeline::onUserSwitchMonitor, this);
     widgets_params.stretch = std::bind(&VDRPipeline::onUserSwitchStretchOrOrigin, this);
+    video_renderer_->attachRenderContext();
+    AutoGuard auto_detach{[this](){ video_renderer_->detachRenderContext(); }};
     widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
         LOG(ERR) << "create widgets failed";

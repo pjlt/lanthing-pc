@@ -113,18 +113,33 @@ bool VaGlPipeline::init() {
     if (!initOpenGL()) {
         return false;
     }
-    EGLBoolean egl_ret =
-        eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    if (egl_ret != EGL_TRUE) {
-        LOG(ERR) << "eglMakeCurrent(null) return " << egl_ret << " error: " << eglGetError();
-        return false;
-    }
+    detachRenderContext();
     return true;
 }
 
 bool VaGlPipeline::bindTextures(const std::vector<void*>& textures) {
     (void)textures;
     return true;
+}
+
+bool VaGlPipeline::attachRenderContext() {
+    EGLBoolean egl_ret = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
+    if (egl_ret != EGL_TRUE) {
+        LOG(ERR) << "eglMakeCurrent return " << egl_ret << " error: " << eglGetError();
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bool VaGlPipeline::detachRenderContext() {
+    EGLBoolean egl_ret =  eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    if (egl_ret != EGL_TRUE) {
+        LOG(ERR) << "eglMakeCurrent(null) return " << egl_ret << " error: " << eglGetError();
+        return false;
+    } else {
+        return true;
+    }
 }
 
 Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
@@ -145,10 +160,10 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     if (video_result == RenderResult::Failed) {
         return video_result;
     }
-    RenderResult cursor_result = renderCursor();
-    if (cursor_result == RenderResult::Failed) {
-        return cursor_result;
-    }
+    //RenderResult cursor_result = renderCursor();
+    //if (cursor_result == RenderResult::Failed) {
+    //    return cursor_result;
+    //}
     EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
     if (egl_success != EGL_TRUE) {
         LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
@@ -600,9 +615,9 @@ bool VaGlPipeline::initEGL() {
 }
 
 bool VaGlPipeline::initOpenGL() {
-    LOGF(INFO, "OpenGL vendor:   %s\n", glGetString(GL_VENDOR));
-    LOGF(INFO, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
-    LOGF(INFO, "OpenGL version:  %s\n", glGetString(GL_VERSION));
+    LOGF(INFO, "OpenGL vendor:   %s", glGetString(GL_VENDOR));
+    LOGF(INFO, "OpenGL renderer: %s", glGetString(GL_RENDERER));
+    LOGF(INFO, "OpenGL version:  %s", glGetString(GL_VERSION));
 
     const char* kVertexShader = R"(
 #version 330
@@ -687,6 +702,7 @@ void main() {
         LOG(ERR) << "glCompileShader(GL_FRAGMENT_SHADER) failed: " << buffer.data();
         return false;
     }
+    glCompileShader(cfs);
     glGetShaderiv(cfs, GL_COMPILE_STATUS, &status);
     if (status != GL_TRUE) {
         glGetShaderInfoLog(cfs, buffer.size(), nullptr, buffer.data());

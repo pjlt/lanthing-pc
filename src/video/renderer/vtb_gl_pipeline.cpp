@@ -379,9 +379,9 @@ bool VtbGlPipeline::initOpenGL() {
         return false;
     }
     SDL_GL_MakeCurrent(sdl_window_, sdl_gl_context_);
-    LOGF(INFO, "OpenGL vendor:   %s\n", glGetString(GL_VENDOR));
-    LOGF(INFO, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
-    LOGF(INFO, "OpenGL version:  %s\n", glGetString(GL_VERSION));
+    LOGF(INFO, "OpenGL vendor:   %s", glGetString(GL_VENDOR));
+    LOGF(INFO, "OpenGL renderer: %s", glGetString(GL_RENDERER));
+    LOGF(INFO, "OpenGL version:  %s", glGetString(GL_VERSION));
 
     const char* kVertexShader = R"(
 #version 330

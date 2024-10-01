@@ -72,6 +72,8 @@ public:
     uint32_t displayWidth() override;
     uint32_t displayHeight() override;
     bool setDecodedFormat(DecodedFormat format) override;
+    bool attachRenderContext() override;
+    bool detachRenderContext() override;
 
 private:
     bool loadFuncs();
