@@ -1614,18 +1614,18 @@ QHeaderView::section:vertical
                     <property name="geometry">
                      <rect>
                       <x>0</x>
-                      <y>0</y>
-                      <width>459</width>
-                      <height>780</height>
+                      <y>-425</y>
+                      <width>527</width>
+                      <height>850</height>
                      </rect>
                     </property>
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>780</height>
+                      <height>850</height>
                      </size>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="2,2,2,5,1">
+                    <layout class="QVBoxLayout" name="verticalLayout_23" stretch="2,2,2,5,3">
                      <property name="sizeConstraint">
                       <enum>QLayout::SetDefaultConstraint</enum>
                      </property>
@@ -2015,6 +2015,41 @@ QHeaderView::section:vertical
                          <number>30</number>
                         </property>
                         <item>
+                         <widget class="QFrame" name="frame_8">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QHBoxLayout" name="horizontalLayout_19">
+                           <item>
+                            <widget class="QCheckBox" name="checkBoxOverlay">
+                             <property name="text">
+                              <string>Show overlay</string>
+                             </property>
+                             <property name="checked">
+                              <bool>false</bool>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <spacer name="horizontalSpacer">
+                             <property name="orientation">
+                              <enum>Qt::Horizontal</enum>
+                             </property>
+                             <property name="sizeHint" stdset="0">
+                              <size>
+                               <width>361</width>
+                               <height>20</height>
+                              </size>
+                             </property>
+                            </spacer>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
                          <widget class="QFrame" name="frame_4">
                           <property name="frameShape">
                            <enum>QFrame::StyledPanel</enum>
@@ -2310,7 +2345,7 @@ QHeaderView::section:vertical
  <resources>
   <include location="../../resources.qrc"/>
   <include location="../../resources.qrc"/>
-  <include location="../../../resources.qrc"/>
+  <include location="../../resources.qrc"/>
  </resources>
  <connections/>
 </ui>

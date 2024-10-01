@@ -75,6 +75,7 @@ private:
     void enableRunAsDaemon(bool enable);
     void setRelayServer(const std::string& svr);
     void setDefaultMouseMode(bool absolute);
+    void setShowOverlay(bool show);
     void onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result);
     void onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onFullscreenModeChanged(bool is_windowed);
@@ -173,6 +174,7 @@ private:
     bool enable_444_ = false;
     bool enable_tcp_ = false;
     bool enable_share_clipboard_ = false;
+    bool show_overlay_ = true;
     uint32_t max_mbps_ = 0;
     std::optional<bool> windowed_fullscreen_;
     std::string relay_server_;

@@ -202,6 +202,7 @@ private:
     int64_t status_color_;
     void* device_;  // not ref
     void* context_; // not ref
+    bool show_overlay_;
 };
 
 VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
@@ -221,7 +222,8 @@ VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     , is_stretch_{params.stretch}
     , status_color_{params.status_color}
     , device_{params.device}
-    , context_{params.context} {
+    , context_{params.context}
+    , show_overlay_{params.show_overlay} {
     window_ = params.sdl->window();
 }
 
@@ -315,7 +317,7 @@ bool VDRPipeline::init() {
     widgets_params.switch_monitor = std::bind(&VDRPipeline::onUserSwitchMonitor, this);
     widgets_params.stretch = std::bind(&VDRPipeline::onUserSwitchStretchOrOrigin, this);
     video_renderer_->attachRenderContext();
-    AutoGuard auto_detach{[this](){ video_renderer_->detachRenderContext(); }};
+    AutoGuard auto_detach{[this]() { video_renderer_->detachRenderContext(); }};
     widgets_ = WidgetsManager::create(widgets_params);
     if (widgets_ == nullptr) {
         LOG(ERR) << "create widgets failed";
@@ -568,9 +570,11 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
             }
             statistics_->updateRenderVideoTime(t1 - t0);
             video_renderer_->attachRenderContext();
-            AutoGuard auto_detach{[this](){ video_renderer_->detachRenderContext(); }};
+            AutoGuard auto_detach{[this]() { video_renderer_->detachRenderContext(); }};
             auto t2 = ltlib::steady_now_us();
-            widgets_->render();
+            if (show_overlay_) {
+                widgets_->render();
+            }
             auto t3 = ltlib::steady_now_us();
             video_renderer_->present();
             auto t4 = ltlib::steady_now_us();

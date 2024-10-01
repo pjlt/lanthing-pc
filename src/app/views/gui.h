@@ -66,6 +66,7 @@ public:
         bool share_clipboard;
         bool tcp;
         bool absolute_mouse;
+        bool show_overlay;
         std::string relay_server;
         std::optional<bool> windowed_fullscreen;
         uint16_t min_port;
@@ -111,6 +112,7 @@ public:
         std::function<void(const std::string&, uint64_t)> on_clipboard_file;
         std::function<void(uint32_t)> set_max_mbps;
         std::function<void(bool)> set_absolute_mouse;
+        std::function<void(bool)> set_show_overlay;
     };
 
 public:

@@ -647,6 +647,8 @@ void MainWindow::setupOtherCallbacks() {
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
     connect(ui->leditBlue, &QLineEdit::textChanged,
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
+    connect(ui->checkBoxOverlay, &QCheckBox::stateChanged,
+            [this](int) { params_.set_show_overlay(ui->checkBoxOverlay->isChecked()); });
     connect(ui->btnStatusColor, &QPushButton::clicked, [this]() {
         ui->btnStatusColor->setEnabled(false);
         if (ui->leditRed->text().isEmpty() && ui->leditGreen->text().isEmpty() &&
@@ -734,6 +736,7 @@ void MainWindow::setupSettingsPage() {
     if (settings.max_mbps != 0) {
         ui->leditMaxMbps->setText(QString::number(settings.max_mbps));
     }
+    ui->checkBoxOverlay->setChecked(settings.show_overlay);
     ui->btnStatusColor->setEnabled(false);
     ui->leditRed->setValidator(new QIntValidator(0, 255, this));
     ui->leditGreen->setValidator(new QIntValidator(0, 255, this));

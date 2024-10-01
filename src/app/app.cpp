@@ -158,6 +158,7 @@ bool App::init() {
     enable_tcp_ = settings_->getBoolean("enable_tcp").value_or(false);
     max_mbps_ = static_cast<uint32_t>(settings_->getInteger("max_mbps").value_or(0));
     default_absolute_mouse_ = settings_->getBoolean("absolute_mouse").value_or(true);
+    show_overlay_ = settings_->getBoolean("show_overlay").value_or(true);
 
     std::optional<std::string> access_token = settings_->getString("access_token");
     if (access_token.has_value()) {
@@ -237,6 +238,7 @@ int App::exec(int argc, char** argv) {
         std::bind(&App::syncClipboardFile, this, std::placeholders::_1, std::placeholders::_2);
     params.set_max_mbps = std::bind(&App::setMaxMbps, this, std::placeholders::_1);
     params.set_absolute_mouse = std::bind(&App::setDefaultMouseMode, this, std::placeholders::_1);
+    params.set_show_overlay = std::bind(&App::setShowOverlay, this, std::placeholders ::_1);
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -296,6 +298,7 @@ GUI::Settings App::getSettings() const {
     settings.ignored_nic = ignored_nic_;
     settings.tcp = enable_tcp_;
     settings.max_mbps = max_mbps_;
+    settings.show_overlay = show_overlay_;
 
     return settings;
 }
@@ -320,6 +323,11 @@ void App::enableRunAsDaemon(bool enable) {
 void App::setRelayServer(const std::string& svr) {
     relay_server_ = svr;
     settings_->setString("relay", svr);
+}
+
+void App::setShowOverlay(bool show) {
+    show_overlay_ = show;
+    settings_->setBoolean("show_overlay", show);
 }
 
 void App::setDefaultMouseMode(bool absolute) {

@@ -266,6 +266,7 @@ bool Client::init() {
     video_params_.status_color = settings_->getInteger("status_color").value_or(-1);
     absolute_mouse_ = settings_->getBoolean("absolute_mouse").value_or(true);
     video_params_.absolute_mouse = absolute_mouse_;
+    video_params_.show_overlay = settings_->getBoolean("show_overlay").value_or(true);
     ioloop_ = ltlib::IOLoop::create();
     if (ioloop_ == nullptr) {
         LOG(ERR) << "Init IOLoop failed";

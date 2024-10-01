@@ -62,6 +62,7 @@ public:
         uint32_t rotation;
         bool stretch;
         bool absolute_mouse;
+        bool show_overlay;
         int64_t status_color;
         lt::plat::PcSdl* sdl = nullptr;
         void* device = nullptr;
