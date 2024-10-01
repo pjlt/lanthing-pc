@@ -51,6 +51,7 @@ draft.txt
 fonts/
 .VSCodeCounter
 .DS_Store
+*.dmg
 
 /third_party/prebuilt
 /third_party/SDL

@@ -93,7 +93,14 @@ make_bundle() {
     install_name_tool -change ./install/lib/libswresample.4.dylib @rpath/libswresample.4.7.100.dylib install/$build_type/lanthing.app/Contents/MacOS/lanthing
     install_name_tool -change /Users/runner/work/sqlite-build/sqlite-build/sqlite/build/install/lib/libsqlite3.0.dylib  @rpath/libsqlite3.0.dylib install/RelWithDebInfo/lanthing.app/Contents/MacOS/lanthing
     macdeployqt install/$build_type/lanthing.app
+    exit_if_fail
 }
+
+create_dmg() {
+    create-dmg lanthing.dmg install/$build_type/lanthing.app
+    exit_if_fail
+}
+
 
 prebuilt_clean() {
     rm -rf third_party/prebuilt
@@ -130,6 +137,7 @@ elif [ "$1" = "package" ]; then
     build_type=$2
     check_build_type
     make_bundle
+    create_dmg
 else
     print_usage
 fi
