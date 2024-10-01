@@ -90,7 +90,10 @@ jobs:
           files: |
             lanthing.linux-${{ env.VERSION }}-x86_64.AppImage
   macOS:
+    permissions:
+      contents: write
     runs-on: macos-14
+    environment: package
     steps:
       - name: Checkout
         with:
