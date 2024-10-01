@@ -17,7 +17,7 @@ cmake_configure() {
 }
 
 cmake_build() {
-    cmake --build build/$build_type --parallel 3
+    cmake --build build/$build_type --parallel $(sysctl -n hw.logicalcpu)
     exit_if_fail
     cmake --install build/$build_type
     exit_if_fail
