@@ -160,10 +160,10 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     if (video_result == RenderResult::Failed) {
         return video_result;
     }
-    //RenderResult cursor_result = renderCursor();
-    //if (cursor_result == RenderResult::Failed) {
-    //    return cursor_result;
-    //}
+    RenderResult cursor_result = renderCursor();
+    if (cursor_result == RenderResult::Failed) {
+       return cursor_result;
+    }
     EGLBoolean egl_success = eglSwapBuffers(egl_display_, egl_surface_);
     if (egl_success != EGL_TRUE) {
         LOG(ERR) << "eglSwapBuffers failed: " << eglGetError();
@@ -173,6 +173,8 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
 }
 
 VaGlPipeline::RenderResult VaGlPipeline::renderVideo(int64_t frame) {
+    glUseProgram(shader_);
+    glBlendFunc(GL_ONE, GL_ZERO);
     // frame是frame->data[3]
     VASurfaceID va_surface = static_cast<VASurfaceID>(frame);
     VADRMPRIMESurfaceDescriptor prime;
