@@ -457,7 +457,9 @@ void App::syncClipboardText(const std::string& text) {
     }
     postTask([this, text]() {
         client_manager_->syncClipboardText(text);
+#if LT_WINDOWS
         service_manager_->syncClipboardText(text);
+#endif
     });
 }
 
