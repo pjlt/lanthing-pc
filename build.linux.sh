@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 exit_if_fail() {
     if [ $? -ne 0 ]; then
@@ -15,7 +15,7 @@ cmake_configure() {
 }
 
 cmake_build() {
-    cmake --build build/$build_type --parallel 2
+    cmake --build build/$build_type --parallel $(nproc)
     cmake --install build/$build_type
 }
 
@@ -81,11 +81,9 @@ make_appimage() {
     mkdir -p install/$build_type/appdir/usr/lib
     mkdir -p install/$build_type/appdir/usr/share/applications
     mkdir -p install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps
-    cp app/res/png_icons/pc2.png install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps/lanthing.png
+    cp src/app/res/png_icons/pc2.png install/$build_type/appdir/usr/share/icons/hicolor/512x512/apps/lanthing.png
     cp lanthing.desktop install/$build_type/appdir/usr/share/applications/
-    cp install/$build_type/bin/lanthing-app install/$build_type/appdir/usr/bin/
     cp install/$build_type/bin/lanthing install/$build_type/appdir/usr/bin/
-    cp install/$build_type/bin/libltproto.so install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/g3log/linux/lib/libg3log.so.2 install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/protobuf/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
     cp third_party/prebuilt/ffmpeg/linux/lib/lib*so* install/$build_type/appdir/usr/lib/
