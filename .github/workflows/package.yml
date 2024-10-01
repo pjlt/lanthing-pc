@@ -89,3 +89,31 @@ jobs:
           prerelease: true
           files: |
             lanthing.linux-${{ env.VERSION }}-x86_64.AppImage
+  macOS:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        with:
+          submodules: true
+        uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.3'
+          host: 'mac'
+          target: 'desktop'
+          arch: 'clang_64'
+      - name: Fetch prebuilt
+        run: bash build.mac.sh prebuilt fetch
+      - name: Build lanthing-pc
+        run: |
+          bash build.mac.sh build Release
+          bash build.mac.sh package Release
+          cp lanthing.dmg lanthing.mac-${{ github.ref_name }}-arm64.dmg
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files: |
+            lanthing.mac-${{ github.ref_name }}-arm64.dmg
