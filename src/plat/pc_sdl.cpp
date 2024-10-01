@@ -611,15 +611,15 @@ PcSdlImpl::DispatchResult PcSdlImpl::handleToggleFullscreen() {
     auto flag = SDL_GetWindowFlags(window_);
     auto current_is_fullscreen =
         (flag & SDL_WINDOW_FULLSCREEN) || (flag & SDL_WINDOW_FULLSCREEN_DESKTOP);
+    SDL_WindowFlags fullscreen_mode =
+        windowed_fullscreen_ ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
+    SDL_SetWindowFullscreen(window_, current_is_fullscreen ? 0 : fullscreen_mode);
     if (current_is_fullscreen) {
         SDL_SetWindowGrab(window_, SDL_FALSE);
     }
     else {
         SDL_SetWindowGrab(window_, SDL_TRUE);
     }
-    SDL_WindowFlags fullscreen_mode =
-        windowed_fullscreen_ ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
-    SDL_SetWindowFullscreen(window_, current_is_fullscreen ? 0 : fullscreen_mode);
     return DispatchResult::kContinue;
 }
 
