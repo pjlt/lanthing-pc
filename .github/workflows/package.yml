@@ -121,6 +121,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Set VERSION to $VERSION"
       - name: Make dmg
+        run: |
           bash build.mac.sh package Release
           cp lanthing.dmg lanthing.mac-${{ env.VERSION }}-unsigned-arm64.dmg
       - name: Release
