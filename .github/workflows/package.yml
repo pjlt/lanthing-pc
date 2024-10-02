@@ -114,11 +114,18 @@ jobs:
       - name: Build lanthing-pc
         run: |
           bash build.mac.sh build Release
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION=${VERSION/v/beta}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Set VERSION to $VERSION"
+      - name: Make dmg
           bash build.mac.sh package Release
-          cp lanthing.dmg lanthing.mac-${{ github.ref_name }}-arm64.dmg
+          cp lanthing.dmg lanthing.mac-${{ env.VERSION }}-unsigned-arm64.dmg
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           files: |
-            lanthing.mac-${{ github.ref_name }}-arm64.dmg
+            lanthing.mac-${{ env.VERSION }}-unsigned-arm64.dmg
