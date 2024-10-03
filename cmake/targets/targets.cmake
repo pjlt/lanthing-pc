@@ -337,10 +337,12 @@ if (LT_WINDOWS)
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc.in
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
         @ONLY)
+
+    set(LT_LANTHING_RC ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc)
 endif()
 
 add_executable(${PROJECT_NAME}
-    ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
+    ${LT_LANTHING_RC}
     ${LT_SRCS}
 )
 
