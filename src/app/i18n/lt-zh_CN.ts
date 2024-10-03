@@ -85,7 +85,7 @@
     <message>
         <location filename="../views/mainwindow/mainwindow.cpp" line="441"/>
         <source>New features:</source>
-        <translation>新特性：</translation>
+        <translation>新增：</translation>
     </message>
     <message>
         <location filename="../views/mainwindow/mainwindow.cpp" line="447"/>

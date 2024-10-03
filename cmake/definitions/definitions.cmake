@@ -44,6 +44,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(LT_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+find_package(Git REQUIRED)
+execute_process(COMMAND "${GIT_EXECUTABLE}" describe --match=NeVeRmAtCh --always --abbrev=7 --dirty OUTPUT_VARIABLE LT_COMMIT_ID OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 #·þÎñÆ÷µØÖ·
 add_definitions(-DLT_SERVER_ADDR=${LT_SERVER_ADDR})
 add_definitions(-DLT_SERVER_SVC_PORT=${LT_SERVER_SVC_PORT})
@@ -63,6 +66,7 @@ add_definitions(-DLT_ENABLE_SELF_CONNECT=$<IF:$<BOOL:${LT_ENABLE_SELF_CONNECT}>,
 add_definitions(-DLT_USE_PREBUILT_VIDEO2=$<IF:$<BOOL:${LT_USE_PREBUILT_VIDEO2}>,true,false>)
 add_definitions(-DLT_DUMP=$<IF:$<BOOL:${LT_DUMP}>,true,false>)
 add_definitions(-DLT_DUMP_URL=${LT_DUMP_URL})
+add_definitions(-DLT_COMMIT_ID=${LT_COMMIT_ID})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
 

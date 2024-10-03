@@ -1,5 +1,5 @@
 #define            LT_VERSION               @LT_VERSION_MAJOR@,@LT_VERSION_MINOR@,@LT_VERSION_PATCH@
-#define            LT_VERSION_STR           "@LT_VERSION_MAJOR@.@LT_VERSION_MINOR@.@LT_VERSION_PATCH@"
+#define            LT_VERSION_STR           "@LT_VERSION_MAJOR@.@LT_VERSION_MINOR@.@LT_VERSION_PATCH@.@LT_COMMIT_ID@"
 
 #include "winres.h"
 
@@ -8,7 +8,7 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 IDB_PNG1                ICON                     "lanthing.ico"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,0
+ FILEVERSION LT_VERSION
  PRODUCTVERSION LT_VERSION
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -26,7 +26,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Project Lanthing"
             VALUE "FileDescription", "Lanthing"
-            VALUE "FileVersion", "0.0.0"
+            VALUE "FileVersion", LT_VERSION_STR
             VALUE "InternalName", "lanthing.exe"
             VALUE "LegalCopyright", "Copyright (C) 2024 Project Lanthing All Rights Reserved"
             VALUE "OriginalFilename", "lanthing.exe"

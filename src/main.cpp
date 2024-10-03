@@ -198,8 +198,12 @@ void initLogAndMinidump(Role role) {
     if ((role == Role::Service || role == Role::Client) && !rtc_prefix.empty()) {
         rtc::initLogging(log_dir.string().c_str(), rtc_prefix.c_str());
     }
-    LOGF(INFO, "Lanthing Version: v%d.%d.%d, Build time: %s %s", LT_VERSION_MAJOR, LT_VERSION_MINOR,
-         LT_VERSION_PATCH, __DATE__, __TIME__);
+#define MACRO_TO_STRING_HELPER(str) #str
+#define MACRO_TO_STRING(str) MACRO_TO_STRING_HELPER(str)
+    LOGF(INFO, "Lanthing Version: v%d.%d.%d.%s, Build time: %s %s", LT_VERSION_MAJOR,
+         LT_VERSION_MINOR, LT_VERSION_PATCH, MACRO_TO_STRING(LT_COMMIT_ID), __DATE__, __TIME__);
+#undef MACRO_TO_STRING
+#undef MACRO_TO_STRING_HELPER
 
     std::thread cleanup_dumps([log_dir]() { cleanupDumps(log_dir); });
     cleanup_dumps.detach();
