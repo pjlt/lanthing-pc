@@ -32,7 +32,7 @@ jobs:
           echo ${{ github.sha }} > Release.txt
           $OP = "${{ github.workspace }}/install/RelWithDebInfo/bin"
           $PDB = "${{ github.workspace }}/install/RelWithDebInfo/pdb"
-          Compress-Archive -Path Release.txt,LICENSE,third-party-licenses.txt,$OP/platforms,$OP/styles,$OP/abseil_dll.dll,$OP/avcodec-59.dll,$OP/avutil-57.dll,$OP/swresample-4.dll,$OP/g3log.dll,$OP/lanthing.exe,$OP/libprotobuf-lite.dll,$OP/Qt6Core.dll,$OP/Qt6Gui.dll,$OP/Qt6Widgets.dll,$OP/rtc.dll,$OP/sqlite3.dll,$OP/openh264-2.4.0-win64.dll -DestinationPath lanthing.win.${{ github.ref_name }}.zip
+          Compress-Archive -Path Release.txt,LICENSE,third-party-licenses.txt,$OP/platforms,$OP/styles,$OP/abseil_dll.dll,$OP/avcodec-59.dll,$OP/avutil-57.dll,$OP/swresample-4.dll,$OP/g3log.dll,$OP/lanthing.exe,$OP/libprotobuf-lite.dll,$OP/Qt6Core.dll,$OP/Qt6Gui.dll,$OP/Qt6Widgets.dll,$OP/rtc.dll,$OP/sqlite3.dll,$OP/openh264-2.4.0-win64.dll,$OP/vcruntime140.dll,$OP/vcruntime140_1.dll,$OP/msvcp140.dll,$OP/msvcp140_1.dll,$OP/msvcp140_2.dll -DestinationPath lanthing.win.${{ github.ref_name }}.zip
           Compress-Archive -Path Release.txt,$PDB -DestinationPath debug.pdb.${{ github.ref_name }}.zip
       - name: Release
         uses: softprops/action-gh-release@v1
