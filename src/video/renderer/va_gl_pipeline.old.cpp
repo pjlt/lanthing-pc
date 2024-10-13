@@ -11,14 +11,15 @@
 #include <EGL/eglext.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <va/va_x11.h>
-#include <va/va_wayland.h>
+#include <libdrm/drm_fourcc.h>
+
+#include <va/va_drm.h>
+#include <va/va_drmcommon.h>
 
 #include <SDL.h>
 #include <SDL_syswm.h>
 
 #include <ltlib/logging.h>
-#include <ltlib/system.h>
 
 // https://learnopengl.com
 
@@ -94,13 +95,16 @@ VaGlPipeline::~VaGlPipeline() {
     if (va_display_) {
         vaTerminate(va_display_);
     }
+    if (drm_fd_ >= 0) {
+        close(drm_fd_);
+    }
 }
 
 bool VaGlPipeline::init() {
     if (!loadFuncs()) {
         return false;
     }
-    if (!initVa()) {
+    if (!initVaDrm()) {
         return false;
     }
     if (!initEGL()) {
@@ -496,49 +500,26 @@ bool VaGlPipeline::loadFuncs() {
     return true;
 }
 
-bool VaGlPipeline::initVa() {
-    SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
-    SDL_SysWMinfo info{};
-    SDL_VERSION(&info.version);
-    SDL_GetWindowWMInfo(sdl_window, &info);
-    if (info.subsystem == SDL_SYSWM_X11) {
-        info.info.x11.window;
-        va_display_ = vaGetDisplay(info.info.x11.display);
-        if (va_display_ == nullptr) {
-            LOG(ERR) << "vaGetDisplay failed";
-            return false;
-        }
-    } else if (info.subsystem == SDL_SYSWM_WAYLAND) {
-        va_display_ = vaGetDisplayWl(info.info.wl.display);
-        if (va_display_ == nullptr) {
-            LOG(ERR) << "vaGetDisplayWl failed";
-            return false;
-        }
-    } else {
-        LOG(ERR) << "Unknown Window subsystem " << (int)info.subsystem;
+bool VaGlPipeline::initVaDrm() {
+    std::string drm_node = "/dev/dri/card" + std::to_string(card_);
+    drm_fd_ = ::open(drm_node.c_str(), O_RDWR);
+    if (drm_fd_ < 0) {
+        LOGF(ERR, "Open drm node '%s' failed", drm_node.c_str());
         return false;
     }
-    std::vector<std::string> paths { "", "/usr/lib64/va/drivers:/usr/lib/x86_64-linux-gnu/dri:/usr/lib/dri:/usr/lib/va/drivers"};
-    std::vector<std::string> drivers { "", "iHD", "i965", "radeonsi", "nvidia" };
-    for (auto& path : paths) {
-        if (!path.empty()) {
-            ltlib::putenv("LIBVA_DRIVERS_PATH", paths);
-        }
-        for (auto& driver : drivers) {
-            if (!driver.empty()) {
-                ltlib::putenv("LIBVA_DRIVER_NAME", driver);
-            }
-            int major, minor;
-            VAStatus vastatus = vaInitialize(va_display_, &major, &minor);
-            if (vastatus == VA_STATUS_SUCCESS) {
-                LOG(INFO) << "vaInitialize success with driver:" << driver << ", path:" << path;
-                return true;
-            } else {
-                LOG(ERR) << "vaInitialize failed with " << (int)vastatus;
-            }
-        }
+    VADisplay va_display = vaGetDisplayDRM(drm_fd_);
+    if (!va_display) {
+        LOGF(ERR, "vaGetDisplayDRM '%s' failed", drm_node.c_str());
+        return false;
     }
-    return false;
+    int major, minor;
+    VAStatus vastatus = vaInitialize(va_display, &major, &minor);
+    if (vastatus != VA_STATUS_SUCCESS) {
+        LOG(ERR) << "vaInitialize failed with " << (int)vastatus;
+        return false;
+    }
+    va_display_ = va_display;
+    return true;
 }
 
 bool VaGlPipeline::initEGL() {

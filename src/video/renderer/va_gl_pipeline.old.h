@@ -77,7 +77,7 @@ public:
 
 private:
     bool loadFuncs();
-    bool initVa();
+    bool initVaDrm();
     bool initEGL();
     bool initOpenGL();
     void resizeWindow(int screen_width, int screen_height);
@@ -96,6 +96,7 @@ private:
     uint32_t card_;
     uint32_t window_width_;
     uint32_t window_height_;
+    int drm_fd_ = -1;
     VADisplay va_display_ = nullptr;
     EGLContext egl_context_ = nullptr;
     EGLDisplay egl_display_ = nullptr;
