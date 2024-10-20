@@ -7,6 +7,10 @@
 
 #include "duplication_manager.h"
 
+#include <dxgi1_5.h>
+
+#include <array>
+
 #include <ltlib/logging.h>
 #include <ltlib/pragma_warning.h>
 #include <ltlib/system.h>
@@ -381,15 +385,16 @@ DUPL_RETURN DUPLICATIONMANAGER::ResetDulp() {
         m_DeskDupl = nullptr;
     }
     m_DxgiOutput->GetDesc(&m_OutputDesc);
-    ComPtr<IDXGIOutput1> DxgiOutput1;
-    HRESULT hr = m_DxgiOutput->QueryInterface(__uuidof(IDXGIOutput1),
-                                              reinterpret_cast<void**>(DxgiOutput1.GetAddressOf()));
+    ComPtr<IDXGIOutput5> DxgiOutput5;
+    HRESULT hr = m_DxgiOutput->QueryInterface(__uuidof(IDXGIOutput5),
+                                              reinterpret_cast<void**>(DxgiOutput5.GetAddressOf()));
     if (FAILED(hr)) {
-        LOGF(ERR, "Failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
+        LOGF(ERR, "Failed to QI for DxgiOutput5 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
         return DUPL_RETURN_ERROR_UNEXPECTED;
     }
-
-    hr = DxgiOutput1->DuplicateOutput(m_Device.Get(), m_DeskDupl.GetAddressOf());
+    std::array<DXGI_FORMAT, 2> formats{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_B8G8R8X8_UNORM};
+    hr = DxgiOutput5->DuplicateOutput1(m_Device.Get(), 0, static_cast<UINT>(formats.size()),
+                                       formats.data(), m_DeskDupl.GetAddressOf());
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
             LOGF(ERR, "There is already the maximum number of applications using the Desktop "
