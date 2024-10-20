@@ -77,11 +77,9 @@ public:
 
 private:
     bool loadFuncs();
-    bool initVa();
+    bool initVaDrm();
     bool initEGL();
     bool initOpenGL();
-    EGLImage createEGLImage(EGLint attr[]);
-    void destroyEGLImage(EGLImage image);
     void resizeWindow(int screen_width, int screen_height);
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
@@ -98,14 +96,13 @@ private:
     uint32_t card_;
     uint32_t window_width_;
     uint32_t window_height_;
+    int drm_fd_ = -1;
     VADisplay va_display_ = nullptr;
     EGLContext egl_context_ = nullptr;
     EGLDisplay egl_display_ = nullptr;
     EGLSurface egl_surface_ = nullptr;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_ = nullptr;
     PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_ = nullptr;
-    PFNEGLCREATEIMAGEPROC eglCreateImage_ = nullptr;
-    PFNEGLDESTROYIMAGEPROC eglDestroyImage_ = nullptr;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_ = nullptr;
     PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
     PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;

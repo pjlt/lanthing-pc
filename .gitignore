@@ -52,6 +52,7 @@ fonts/
 .VSCodeCounter
 .DS_Store
 *.dmg
+imgui.ini
 
 /third_party/prebuilt
 /third_party/SDL

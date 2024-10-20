@@ -85,4 +85,6 @@ std::vector<Monitor> enumMonitors();
 
 void openFolder(const std::string& path);
 
+void putenv(const std::string& key, const std::string& value);
+
 } // namespace ltlib

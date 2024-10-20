@@ -386,6 +386,8 @@ elseif(LT_LINUX)
         stdc++
         PkgConfig::X11
         PkgConfig::Va
+        PkgConfig::Va-X11
+        PkgConfig::Va-Wayland
         PkgConfig::Drm
         PkgConfig::Va-Drm
         PkgConfig::GL

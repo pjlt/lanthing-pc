@@ -512,7 +512,21 @@ void openFolder(const std::string& path) {
     CoUninitialize();
 }
 
-#elif defined(LT_LINUX)
+void putenv(const std::string& key, const std::string& value) {
+    _putenv_s(key.c_str(), value.c_str());
+}
+
+#endif // LT_WINDOWS
+
+#ifndef LT_WINDOWS
+
+void putenv(const std::string& key, const std::string& value) {
+    ::setenv(key.c_str(), value.c_str(), 1);
+}
+
+#endif // NOT LT_WINDOWS
+
+#if defined(LT_LINUX)
 
 std::string getProgramFullpath() {
     char result[PATH_MAX];
@@ -613,7 +627,9 @@ void openFolder(const std::string& path) {
     (void)path;
 }
 
-#elif defined(LT_MAC)
+#endif // LT_LINUX
+
+#if defined(LT_MAC)
 
 std::string getProgramFullpath() {
     std::vector<char> buff(PATH_MAX);
@@ -702,6 +718,6 @@ void openFolder(const std::string& path) {
     (void)path;
 }
 
-#endif // #elif defined(LT_LINUX)
+#endif // LT_MAC
 
 } // namespace ltlib
