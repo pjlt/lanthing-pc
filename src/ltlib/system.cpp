@@ -521,8 +521,7 @@ void putenv(const std::string& key, const std::string& value) {
 #ifndef LT_WINDOWS
 
 void putenv(const std::string& key, const std::string& value) {
-    std::string content = key + "=" + value;
-    ::putenv(const_cast<char*>(content.c_str()));
+    ::setenv(key.c_str(), value.c_str(), 1);
 }
 
 #endif // NOT LT_WINDOWS

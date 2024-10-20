@@ -11,8 +11,11 @@
 #include <EGL/eglext.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <va/va_drm.h>
+#include <va/va_drmcommon.h>
 #include <va/va_x11.h>
 #include <va/va_wayland.h>
+#include <libdrm/drm_fourcc.h>
 
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -208,8 +211,7 @@ VaGlPipeline::RenderResult VaGlPipeline::renderVideo(int64_t frame) {
                              EGL_DMA_BUF_PLANE0_PITCH_EXT,
                              static_cast<EGLint>(prime.layers[i].pitch[0]),
                              EGL_NONE};
-        images[i] =
-            eglCreateImageKHR_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, img_attr);
+        images[i] = createEGLImage(img_attr);
         if (!images[i]) {
             LOG(ERR) << "eglCreateImageKHR failed: "
                      << (i ? "chroma eglCreateImageKHR" : "luma eglCreateImageKHR");
@@ -243,9 +245,30 @@ VaGlPipeline::RenderResult VaGlPipeline::renderVideo(int64_t frame) {
     for (uint32_t i = 0; i < 2U; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, 0);
-        eglDestroyImageKHR_(egl_display_, images[i]);
+        destroyEGLImage(images[i]);
     }
     return RenderResult::Success2;
+}
+
+EGLImage VaGlPipeline::createEGLImage(EGLint attr[]) {
+    if (eglCreateImage_) {
+        std::vector<EGLAttrib> vattr;
+        for (size_t i = 0; attr[i] != EGL_NONE; i++) {
+            vattr.push_back(static_cast<EGLAttrib>(attr[i]));
+        }
+        vattr.push_back(EGL_NONE);
+        return eglCreateImage_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, vattr.data());
+    } else {
+        return eglCreateImageKHR_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attr);
+    }
+}
+
+void VaGlPipeline::destroyEGLImage(EGLImage image) {
+    if (eglDestroyImage_) {
+        eglDestroyImage_(egl_display_, image);
+    } else {
+        eglDestroyImageKHR_(egl_display_, image);
+    }
 }
 
 VaGlPipeline::RenderResult VaGlPipeline::renderCursor() {
@@ -460,13 +483,25 @@ bool VaGlPipeline::loadFuncs() {
     eglCreateImageKHR_ =
         reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
     if (eglCreateImageKHR_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(eglCreateImageKHR) failed";
-        return false;
+        LOG(WARNING) << "eglGetProcAddress(eglCreateImageKHR) failed";
     }
     eglDestroyImageKHR_ =
         reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
     if (eglDestroyImageKHR_ == nullptr) {
-        LOG(ERR) << "eglGetProcAddress(eglDestroyImageKHR) failed";
+        LOG(WARNING) << "eglGetProcAddress(eglDestroyImageKHR) failed";
+    }
+    eglCreateImage_ =
+        reinterpret_cast<PFNEGLCREATEIMAGEPROC>(eglGetProcAddress("eglCreateImage"));
+    if (eglCreateImage_ == nullptr) {
+        LOG(WARNING) << "eglGetProcAddress(eglCreateImage) failed";
+    }
+    eglDestroyImage_ =
+        reinterpret_cast<PFNEGLDESTROYIMAGEPROC>(eglGetProcAddress("eglDestroyImage"));
+    if (eglDestroyImage_ == nullptr) {
+        LOG(WARNING) << "eglGetProcAddress(eglDestroyImage) failed";
+    }
+    if ((eglCreateImageKHR_ == nullptr || eglDestroyImageKHR_ == nullptr) && (eglCreateImage_ == nullptr || eglDestroyImage_ == nullptr)) {
+        LOG(WARNING) << "eglGetProcAddress(eglCreateImage, eglDestroyImage, eglCreateImageKHR, eglDestroyImageKHR) failed";
         return false;
     }
     glEGLImageTargetTexture2DOES_ = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
@@ -502,7 +537,6 @@ bool VaGlPipeline::initVa() {
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(sdl_window, &info);
     if (info.subsystem == SDL_SYSWM_X11) {
-        info.info.x11.window;
         va_display_ = vaGetDisplay(info.info.x11.display);
         if (va_display_ == nullptr) {
             LOG(ERR) << "vaGetDisplay failed";
@@ -518,11 +552,11 @@ bool VaGlPipeline::initVa() {
         LOG(ERR) << "Unknown Window subsystem " << (int)info.subsystem;
         return false;
     }
-    std::vector<std::string> paths { "", "/usr/lib64/va/drivers:/usr/lib/x86_64-linux-gnu/dri:/usr/lib/dri:/usr/lib/va/drivers"};
+    std::vector<std::string> paths { "", "/usr/lib64/va/drivers:/usr/lib/x86_64-linux-gnu/dri:/usr/lib64/dri"};
     std::vector<std::string> drivers { "", "iHD", "i965", "radeonsi", "nvidia" };
     for (auto& path : paths) {
         if (!path.empty()) {
-            ltlib::putenv("LIBVA_DRIVERS_PATH", paths);
+            ltlib::putenv("LIBVA_DRIVERS_PATH", path);
         }
         for (auto& driver : drivers) {
             if (!driver.empty()) {
@@ -534,7 +568,8 @@ bool VaGlPipeline::initVa() {
                 LOG(INFO) << "vaInitialize success with driver:" << driver << ", path:" << path;
                 return true;
             } else {
-                LOG(ERR) << "vaInitialize failed with " << (int)vastatus;
+                LOG(WARNING) << "vaInitialize failed with " << (int)vastatus << ", LIBVA_DRIVER_NAME: "
+                             << std::getenv("LIBVA_DRIVER_NAME") << ", LIBVA_DRIVERS_PATH: " << std::getenv("LIBVA_DRIVERS_PATH") ;
             }
         }
     }

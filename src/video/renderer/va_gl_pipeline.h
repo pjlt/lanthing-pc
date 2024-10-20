@@ -80,6 +80,8 @@ private:
     bool initVa();
     bool initEGL();
     bool initOpenGL();
+    EGLImage createEGLImage(EGLint attr[]);
+    void destroyEGLImage(EGLImage image);
     void resizeWindow(int screen_width, int screen_height);
     RenderResult renderVideo(int64_t frame);
     RenderResult renderCursor();
@@ -102,6 +104,8 @@ private:
     EGLSurface egl_surface_ = nullptr;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_ = nullptr;
     PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_ = nullptr;
+    PFNEGLCREATEIMAGEPROC eglCreateImage_ = nullptr;
+    PFNEGLDESTROYIMAGEPROC eglDestroyImage_ = nullptr;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_ = nullptr;
     PFNGLGENVERTEXARRAYSPROC glGenVertexArrays_ = nullptr;
     PFNGLBINDVERTEXARRAYPROC glBindVertexArray_ = nullptr;
