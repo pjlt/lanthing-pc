@@ -57,25 +57,6 @@ uint32_t reArrangePoints(std::vector<POINTER_TYPE_INFO>& points) {
     return static_cast<uint32_t>(i);
 }
 
-bool injectSyntheticPointerInput(HSYNTHETICPOINTERDEVICE device,
-                                 const std::vector<POINTER_TYPE_INFO>& pointerInfo,
-                                 uint32_t count) {
-    BOOL ret = InjectSyntheticPointerInput(device, pointerInfo.data(), count);
-    if (ret == TRUE) {
-        return true;
-    }
-    if (!ltlib::setThreadDesktop()) {
-        LOG(WARNING) << "WinTouch::submit SetThreadDesktop failed";
-        return false;
-    }
-    ret = InjectSyntheticPointerInput(device, pointerInfo.data(), count);
-    if (ret == FALSE) {
-        LOGF(WARNING, "InjectSyntheticPointerInput failed with %#x", GetLastError());
-        return false;
-    }
-    return true;
-}
-
 void convert(const std::shared_ptr<ltproto::client2worker::TouchEvent>& msg, POINTER_INFO& point,
              const ltlib::Monitor& monitor, int32_t w, int32_t h, int32_t ox, int32_t oy) {
     using namespace ltproto::client2worker;
@@ -128,7 +109,7 @@ std::unique_ptr<WinTouch> WinTouch::create(uint32_t screen_width, uint32_t scree
 
 WinTouch::~WinTouch() {
     if (touch_dev_ != nullptr) {
-        DestroySyntheticPointerDevice(touch_dev_);
+        destroy_pointer_(touch_dev_);
     }
 }
 
@@ -142,6 +123,30 @@ WinTouch::WinTouch(uint32_t screen_width, uint32_t screen_height, ltlib::Monitor
 bool WinTouch::init() {
     offset_x_ = GetSystemMetrics(SM_XVIRTUALSCREEN);
     offset_y_ = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const std::string kLibName = "user32.dll";
+    user32_lib_ = ltlib::DynamicLibrary::load(kLibName);
+    if (user32_lib_ == nullptr) {
+        LOG(ERR) << "Load library " << kLibName << " failed";
+        return false;
+    }
+    create_pointer_ = reinterpret_cast<decltype(&CreateSyntheticPointerDevice)>(
+        user32_lib_->getFunc("CreateSyntheticPointerDevice"));
+    if (create_pointer_ == nullptr) {
+        LOG(ERR) << "Load function CreateSyntheticPointerDevice from " << kLibName << " failed";
+        return false;
+    }
+    destroy_pointer_ = reinterpret_cast<decltype(&DestroySyntheticPointerDevice)>(
+        user32_lib_->getFunc("DestroySyntheticPointerDevice"));
+    if (destroy_pointer_ == nullptr) {
+        LOG(ERR) << "Load function DestroySyntheticPointerDevice from " << kLibName << " failed";
+        return false;
+    }
+    inject_pointer_ = reinterpret_cast<decltype(&InjectSyntheticPointerInput)>(
+        user32_lib_->getFunc("InjectSyntheticPointerInput"));
+    if (inject_pointer_ == nullptr) {
+        LOG(ERR) << "Load function InjectSyntheticPointerInput from " << kLibName << " failed";
+        return false;
+    }
     return true;
 }
 
@@ -149,8 +154,8 @@ bool WinTouch::init2() {
     if (init_success_.has_value()) {
         return init_success_.value();
     }
-    touch_dev_ = CreateSyntheticPointerDevice(PT_TOUCH, static_cast<ULONG>(points_.size()),
-                                              POINTER_FEEDBACK_DEFAULT);
+    touch_dev_ =
+        create_pointer_(PT_TOUCH, static_cast<ULONG>(points_.size()), POINTER_FEEDBACK_DEFAULT);
     if (touch_dev_ == nullptr) {
         init_success_ = false;
         LOGF(ERR, "CreateSyntheticPointerDevice failed with %#x", GetLastError());
@@ -266,6 +271,25 @@ void WinTouch::update() {
         return;
     }
     injectSyntheticPointerInput(touch_dev_, points_, using_points_);
+}
+
+bool WinTouch::injectSyntheticPointerInput(HSYNTHETICPOINTERDEVICE device,
+                                           const std::vector<POINTER_TYPE_INFO>& pointerInfo,
+                                           uint32_t count) {
+    BOOL ret = inject_pointer_(device, pointerInfo.data(), count);
+    if (ret == TRUE) {
+        return true;
+    }
+    if (!ltlib::setThreadDesktop()) {
+        LOG(WARNING) << "WinTouch::submit SetThreadDesktop failed";
+        return false;
+    }
+    ret = inject_pointer_(device, pointerInfo.data(), count);
+    if (ret == FALSE) {
+        LOGF(WARNING, "InjectSyntheticPointerInput failed with %#x", GetLastError());
+        return false;
+    }
+    return true;
 }
 
 } // namespace input

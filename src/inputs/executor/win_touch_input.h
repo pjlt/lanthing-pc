@@ -39,6 +39,7 @@
 
 #include <google/protobuf/message_lite.h>
 
+#include <ltlib/load_library.h>
 #include <ltlib/system.h>
 
 namespace lt {
@@ -60,6 +61,9 @@ private:
     bool init2();
     bool reset();
     void resetPointState();
+    bool injectSyntheticPointerInput(HSYNTHETICPOINTERDEVICE device,
+                                     const std::vector<POINTER_TYPE_INFO>& pointerInfo,
+                                     uint32_t count);
 
 private:
     uint32_t screen_width_;
@@ -71,6 +75,10 @@ private:
     HSYNTHETICPOINTERDEVICE touch_dev_ = nullptr;
     int32_t offset_x_ = 0;
     int32_t offset_y_ = 0;
+    decltype(InjectSyntheticPointerInput)* inject_pointer_ = nullptr;
+    decltype(DestroySyntheticPointerDevice)* destroy_pointer_ = nullptr;
+    decltype(CreateSyntheticPointerDevice)* create_pointer_ = nullptr;
+    std::unique_ptr<ltlib::DynamicLibrary> user32_lib_;
 };
 
 } // namespace input
