@@ -43,11 +43,11 @@ check_build_type() {
 
 rtc_fetch() {
     rtc_url="https://github.com/numbaa/rtc-prebuilt/releases/download/v0.7.10/rtc.mac.zip"
-    mkdir -p ./transport/rtc/mac
+    mkdir -p ./src/transport/rtc/mac
     echo "Fetch $rtc_url"
     curl -L $rtc_url -o ./third_party/prebuilt/rtc.mac.zip
     echo "Extra rtc.mac.zip"
-    unzip ./third_party/prebuilt/rtc.mac.zip -d ./transport/rtc/mac
+    unzip ./third_party/prebuilt/rtc.mac.zip -d ./src/transport/rtc/mac
 }
 
 prebuilt_fetch() {

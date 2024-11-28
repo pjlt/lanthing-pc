@@ -7,7 +7,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/breakpad_builder)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/sqlite/${LT_PLAT})
 
 set(protobuf_MODULE_COMPATIBLE ON)
-#protobuf“¿¿µabsl
+#protobuf‰æùËµñabsl
 find_package(absl REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX}/lib/cmake)
 find_package(utf8_range REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX}/lib/cmake)
 find_package(Protobuf REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/protobuf/${LT_THIRD_POSTFIX})
@@ -21,7 +21,7 @@ find_package(Opus REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuil
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui_builder)
 
 add_subdirectory(ltproto)
-add_subdirectory(transport)
+add_subdirectory(src/transport)
 
 #Qt
 list(APPEND CMAKE_PREFIX_PATH ${LT_QT_CMAKE_PATH})

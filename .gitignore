@@ -31,12 +31,15 @@
 *.out
 *.app
 
+*.zip
+
 # build dirs, project dirs
 /out
 /.vscode
 /.vs
 /build
 /install
+/src/transport/rtc
 /transport/rtc
 /lanthing/src/video2
 CMakeSettings.json

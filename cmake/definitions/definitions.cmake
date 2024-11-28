@@ -1,9 +1,9 @@
-# Ä¬ÈÏ±àÒëRelease
+# é»˜è®¤ç¼–è¯‘Release
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Ö÷ÒªÊÇ°ÑRelWithDebInfoÔÚÃû×ÖÉÏÒ²±ä³ÉRelease£¬·½±ã±àĞ´½Å±¾
+# ä¸»è¦æ˜¯æŠŠRelWithDebInfoåœ¨åå­—ä¸Šä¹Ÿå˜æˆReleaseï¼Œæ–¹ä¾¿ç¼–å†™è„šæœ¬
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     set(LT_BUILD_TYPE Debug)
 elseif(CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
@@ -12,7 +12,7 @@ else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 endif()
 
-# Æ½Ì¨¼ì²â
+# å¹³å°æ£€æµ‹
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(LT_LINUX ON)
     set(LT_PLAT linux)
@@ -47,12 +47,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Git REQUIRED)
 execute_process(COMMAND "${GIT_EXECUTABLE}" describe --match=NeVeRmAtCh --always --abbrev=7 --dirty OUTPUT_VARIABLE LT_COMMIT_ID OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-#·şÎñÆ÷µØÖ·
+#æœåŠ¡å™¨åœ°å€
 add_definitions(-DLT_SERVER_ADDR=${LT_SERVER_ADDR})
 add_definitions(-DLT_SERVER_SVC_PORT=${LT_SERVER_SVC_PORT})
 add_definitions(-DLT_SERVER_APP_PORT=${LT_SERVER_APP_PORT})
 add_definitions(-DLT_SERVER_USE_SSL=$<IF:$<BOOL:${LT_SERVER_USE_SSL}>,true,false>)
-#windows·şÎñ
+#windowsæœåŠ¡
 add_definitions(-DLT_RUN_AS_SERVICE=$<IF:$<BOOL:${LT_RUN_AS_SERVICE}>,true,false>)
 add_definitions(-DLT_WIN_SERVICE_NAME=${LT_WIN_SERVICE_NAME})
 add_definitions(-DLT_WIN_SERVICE_DISPLAY_NAME=${LT_WIN_SERVICE_DISPLAY_NAME})
