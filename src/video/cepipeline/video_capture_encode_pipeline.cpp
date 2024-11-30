@@ -44,6 +44,7 @@
 #include <ltproto/client2worker/change_streaming_params.pb.h>
 #include <ltproto/client2worker/cursor_info.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
+#include <ltproto/client2worker/video_frame_ack1.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/worker2service/network_changed.pb.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
@@ -151,6 +152,7 @@ private:
     void onReconfigure(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onRequestKeyframe(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onNetworkEvent(std::shared_ptr<google::protobuf::MessageLite> msg);
+    void onVideoFrameAck1(std::shared_ptr<google::protobuf::MessageLite> msg);
 
 private:
     uint32_t width_;
@@ -377,7 +379,8 @@ bool VCEPipeline::registerHandlers() {
     const std::pair<uint32_t, MessageHandler> handlers[] = {
         {ltype::kReconfigureVideoEncoder, std::bind(&VCEPipeline::onReconfigure, this, ph::_1)},
         {ltype::kRequestKeyframe, std::bind(&VCEPipeline::onRequestKeyframe, this, ph::_1)},
-        {ltype::kNetworkChanged, std::bind(&VCEPipeline::onNetworkEvent, this, ph::_1)}};
+        {ltype::kNetworkChanged, std::bind(&VCEPipeline::onNetworkEvent, this, ph::_1)},
+        {ltype::kVideoFrameAck1, std::bind(&VCEPipeline::onVideoFrameAck1, this, ph::_1)}};
     for (auto& handler : handlers) {
         if (!register_message_handler_(handler.first, handler.second)) {
             return false;
@@ -726,6 +729,14 @@ void VCEPipeline::onNetworkEvent(std::shared_ptr<google::protobuf::MessageLite> 
             LOG(WARNING) << "Received unknown NetworkEvent " << (int)msg->network_event();
             break;
         }
+    });
+}
+
+void VCEPipeline::onVideoFrameAck1(std::shared_ptr<google::protobuf::MessageLite> _msg) {
+    std::lock_guard lock{mutex_};
+    tasks_.push_back([this, _msg] {
+        auto msg = std::static_pointer_cast<ltproto::client2worker::VideoFrameAck1>(_msg);
+        // TODO:
     });
 }
 

@@ -42,6 +42,8 @@
 #include <SDL_syswm.h>
 
 #include <ltproto/client2worker/switch_monitor.pb.h>
+#include <ltproto/client2worker/video_frame_ack1.pb.h>
+#include <ltproto/client2worker/video_frame_ack2.pb.h>
 #include <ltproto/ltproto.h>
 #include <ltproto/worker2service/reconfigure_video_encoder.pb.h>
 
@@ -345,15 +347,17 @@ DecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _frame) {
     LOGF(DEBUG, "capture:%" PRId64 ", start_enc:% " PRId64 ", end_enc:%" PRId64,
          _frame.capture_timestamp_us, _frame.start_encode_timestamp_us,
          _frame.end_encode_timestamp_us);
+    int64_t now_us = ltlib::steady_now_us();
     statistics_->addEncode();
     statistics_->updateVideoBW(_frame.size);
     statistics_->updateEncodeTime(_frame.end_encode_timestamp_us -
                                   _frame.start_encode_timestamp_us);
     if (time_diff_ != 0) {
-        statistics_->updateNetDelay(ltlib::steady_now_us() - _frame.end_encode_timestamp_us -
-                                    time_diff_);
+        statistics_->updateNetDelay(now_us - _frame.end_encode_timestamp_us - time_diff_);
     }
-
+    auto ack = std::make_shared<ltproto::client2worker::VideoFrameAck1>();
+    ack->set_picture_id(static_cast<int64_t>(_frame.ltframe_id));
+    ack->set_recv_time(now_us);
     VideoFrameInternal frame{};
     frame.is_keyframe = _frame.is_keyframe;
     frame.ltframe_id = _frame.ltframe_id;
@@ -368,10 +372,13 @@ DecodeRenderPipeline::Action VDRPipeline::submit(const lt::VideoFrame& _frame) {
     frame.data = frame.data_internal.get();
     {
         std::unique_lock<std::mutex> lock(decode_mtx_);
+        // FIXME: 这个undecoded_num是不准的
+        ack->set_undecoded_num(static_cast<int32_t>(encoded_frames_.size()));
         encoded_frames_.emplace_back(frame);
         decode_signal_ = true;
     }
     waiting_for_decode_.notify_one();
+    send_message_to_host_(ltproto::id(ack), ack, true);
     bool request_i_frame = request_i_frame_.exchange(false);
     return request_i_frame ? DecodeRenderPipeline::Action::REQUEST_KEY_FRAME
                            : DecodeRenderPipeline::Action::NONE;
@@ -446,6 +453,7 @@ void VDRPipeline::decodeLoop(const std::function<void()>& i_am_alive) {
             auto end = ltlib::steady_now_us();
             if (decoded_frame.status == DecodeStatus::Failed) {
                 LOG(ERR) << "Failed to call decode(), reqesut i frame";
+                // TODO: send decode failed
                 request_i_frame_ = true;
                 break;
             }

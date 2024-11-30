@@ -341,7 +341,6 @@ int main(int argc, char* argv[]) {
     AutoGuard ag{&ltlib::ThreadWatcher::uninit};
     ::srand(static_cast<unsigned int>(::time(nullptr)));
     auto options = parseOptions(argc, argv);
-    options["-flushlog"] = 1;
     setFlushLogLines(options);
     auto iter = options.find("-type");
     if (iter == options.end() || iter->second == "app") {
