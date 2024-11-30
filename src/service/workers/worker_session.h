@@ -114,7 +114,7 @@ private:
     bool initTransport();
     tp::Server* createTcpServer();
     tp::Server* createRtcServer();
-    // tp::Server* createRtc2Server();
+    tp::Server* createRtc2Server();
     void createWorkerProcess(uint32_t client_width, uint32_t client_height,
                              uint32_t client_refresh_rate,
                              std::vector<lt::VideoCodecType> client_codecs);

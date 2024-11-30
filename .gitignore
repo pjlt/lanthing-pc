@@ -39,8 +39,8 @@
 /.vs
 /build
 /install
-/src/transport/rtc
-/transport/rtc
+/src/transport/rtc*
+/transport/rtc*
 /lanthing/src/video2
 CMakeSettings.json
 options-user.cmake

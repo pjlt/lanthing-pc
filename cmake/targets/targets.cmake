@@ -405,6 +405,11 @@ else()
     set(PLATFORM_LIBS)
 endif()
 
+set(TRANSPORT_LIBS rtc transport_api transport)
+if(LT_HAS_RTC2)
+    list(APPEND TRANSPORT_LIBS rtc2)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     Qt6::Widgets
     Qt6::Gui
@@ -424,9 +429,7 @@ target_link_libraries(${PROJECT_NAME}
     MbedTLS::mbedcrypto
     MbedTLS::mbedx509
     ltproto
-    rtc
-    transport_api
-    transport
+    ${TRANSPORT_LIBS}
     #fonts
     ${PLATFORM_LIBS}
 )

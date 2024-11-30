@@ -66,8 +66,10 @@
 #include <ltlib/times.h>
 
 #include <transport/transport_rtc.h>
-// #include <transport/transport_rtc2.h>
 #include <transport/transport_tcp.h>
+#if LT_HAS_RTC2
+#include <transport/transport_rtc2.h>
+#endif
 
 #include "worker_process.h"
 #include <lt_constants.h>
@@ -175,8 +177,10 @@ WorkerSession::~WorkerSession() {
         }
         case ltproto::common::TransportType::RTC2:
         {
-            // auto rtc2_svr = static_cast<rtc2::Server*>(tp_server_);
-            // delete rtc2_svr;
+#if LT_HAS_RTC2
+            auto rtc2_svr = static_cast<rtc2::Server*>(tp_server_);
+            delete rtc2_svr;
+#endif
             break;
         }
         default:
@@ -339,9 +343,11 @@ bool WorkerSession::initTransport() {
         tp_server_ = createRtcServer();
         break;
     case ltproto::common::TransportType::RTC2:
-        // LOG(INFO) << "Init transport using RTC2";
-        // tp_server_ = createRtc2Server();
-        // break;
+#if LT_HAS_RTC2
+        LOG(INFO) << "Init transport using RTC2";
+        tp_server_ = createRtc2Server();
+        break;
+#endif
     default:
         break;
     }
@@ -420,8 +426,8 @@ tp::Server* WorkerSession::createRtcServer() {
     return rtc::Server::create(std::move(params));
 }
 
-/*
 tp::Server* WorkerSession::createRtc2Server() {
+#if LT_HAS_RTC2
     rtc2::Server::Params params{};
     params.user_data = this;
     params.on_failed = &WorkerSession::onTpFailed;
@@ -443,8 +449,10 @@ tp::Server* WorkerSession::createRtc2Server() {
     // FIXME: 修改rtc2接口
     auto server = rtc2::Server::create(params);
     return server.release();
+#else
+    return nullptr;
+#endif
 }
-*/
 
 void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_height,
                                         uint32_t client_refresh_rate,

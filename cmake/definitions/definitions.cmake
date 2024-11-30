@@ -68,6 +68,11 @@ add_definitions(-DLT_DUMP=$<IF:$<BOOL:${LT_DUMP}>,true,false>)
 add_definitions(-DLT_DUMP_URL=${LT_DUMP_URL})
 add_definitions(-DLT_COMMIT_ID=${LT_COMMIT_ID})
 
+if (EXISTS ${CMAKE_SOURCE_DIR}/src/transport/rtc2/CMakeLists.txt)
+	set(LT_HAS_RTC2 ON)
+    add_definitions(-DLT_HAS_RTC2=1)
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/certs)
 
 if(${LT_ENABLE_TEST})

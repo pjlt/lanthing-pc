@@ -4,10 +4,6 @@ project(transport)
 add_library(${PROJECT_NAME}_api INTERFACE)
 target_include_directories(${PROJECT_NAME}_api INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-if (EXISTS rtc2/CMakeLists.txt)
-	set(LT_HAS_RTC2 ON)
-endif()
-
 set(SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport.h
 	${CMAKE_CURRENT_SOURCE_DIR}/include/transport/transport_tcp.h
