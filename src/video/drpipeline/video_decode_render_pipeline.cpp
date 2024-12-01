@@ -41,6 +41,10 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#ifdef Success
+#undef Success
+#endif
+
 #include <ltproto/client2worker/switch_monitor.pb.h>
 #include <ltproto/client2worker/video_frame_ack1.pb.h>
 #include <ltproto/client2worker/video_frame_ack2.pb.h>
