@@ -67,7 +67,7 @@ function prebuilt_fetch() {
         [BuiltLib]::new("opus", "https://github.com/numbaa/opus-build/releases/download/v1.4-2/opus.win.v1.4-2.zip"),
         [BuiltLib]::new("g3log", "https://github.com/numbaa/g3log-build/releases/download/v2.3-6/g3log.win.v2.3-6.zip"),
         [BuiltLib]::new("googletest", "https://github.com/numbaa/googletest-build/releases/download/v1.13.0-2/googletest.win.v1.13.0-2.zip"),
-        [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-9/ffmpeg.win.v5.1.3-9.zip"),
+        [BuiltLib]::new("ffmpeg", "https://github.com/numbaa/ffmpeg-build/releases/download/v5.1.3-16/ffmpeg.win.v5.1.3-16.zip"),
         [BuiltLib]::new("protobuf", "https://github.com/numbaa/protobuf-build/releases/download/v3.24.3-2/protobuf.win.v3.24.3-2.zip")
         [BuiltLib]::new("sqlite", "https://github.com/numbaa/sqlite-build/releases/download/v3.43.1-6/sqlite3.win.v3.43.1-6.zip")
         [BuiltLib]::new("openh264", "https://github.com/numbaa/openh264-prebuilt/releases/download/v2.4.0-1/openh264.win.v2.4.0-1.zip")

@@ -210,8 +210,8 @@ Client::Client(const Params& params)
                     params.screen_refresh_rate,
                     params.rotation,
                     is_stretch_,
-                    std::bind(&Client::sendMessageToHost, this, std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3),
+                    std::bind(&Client::sendMessageToHostFromOtherModule, this,
+                              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                     std::bind(&Client::onUserSwitchStretch, this),
                     std::bind_front(&Client::resetVideoPipeline, this)}
     , audio_params_{atype(params.transport_type), params.audio_freq, params.audio_channels}
@@ -975,6 +975,11 @@ bool Client::sendMessageToHost(uint32_t type,
     // header一起传过去.
     bool success = tp_client_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
     return success;
+}
+
+void Client::sendMessageToHostFromOtherModule(
+    uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, bool reliable) {
+    postTask([type, msg, reliable, this]() { sendMessageToHost(type, msg, reliable); });
 }
 
 void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {

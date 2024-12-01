@@ -153,6 +153,9 @@ private:
     void onKeepAliveAck();
     bool sendMessageToHost(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
                            bool reliable);
+    void sendMessageToHostFromOtherModule(uint32_t type,
+                                          const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                                          bool reliable);
     void onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onTimeSync(std::shared_ptr<google::protobuf::MessageLite> msg);
     void onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> msg);
