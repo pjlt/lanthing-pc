@@ -196,6 +196,93 @@ void ClientImpl::reconnect()
     transport_->reconnect();
 }
 
+class WSClientImpl {
+public:
+    WSClientImpl(const Client::Params& params);
+    ~WSClientImpl();
+    bool init();
+    bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+              const std::function<void()>& callback);
+    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len,
+              const std::function<void()>& callback);
+
+private:
+    CTransport::Params make_transport_params(const Client::Params& cparams);
+    bool on_transport_connected();
+    void on_transport_closed();
+    void on_transport_reconnecting();
+    bool on_transport_read(const Buffer& buff);
+
+private:
+    bool connected_ = false;
+    IOLoop* ioloop_;
+    std::function<void()> on_connected_;
+    std::function<void()> on_closed_;
+    std::function<void()> on_reconnecting_;
+    std::function<void(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>&)>
+        on_message_;
+    std::unique_ptr<CTransport> transport_;
+    ltproto::Parser parser_;
+};
+
+WSClientImpl::WSClientImpl(const Client::Params& params)
+    : ioloop_{params.ioloop}
+    , on_connected_{params.on_connected}
+    , on_closed_{params.on_closed}
+    , on_reconnecting_{params.on_reconnecting}
+    , on_message_{params.on_message} {
+    if (params.is_tls) {
+        transport_ = std::make_unique<MbedtlsCTransport>(make_transport_params(params));
+    }
+    else {
+        transport_ = std::make_unique<LibuvCTransport>(make_transport_params(params));
+    }
+}
+
+WSClientImpl::~WSClientImpl() {
+    //
+}
+
+CTransport::Params WSClientImpl::make_transport_params(const Client::Params& cparams) {
+    CTransport::Params tparams{};
+    tparams.stype = StreamType::TCP;
+    tparams.ioloop = cparams.ioloop;
+    tparams.host = cparams.host;
+    tparams.port = cparams.port;
+    tparams.cert = cparams.cert;
+    tparams.on_connected = std::bind(&WSClientImpl::on_transport_connected, this);
+    tparams.on_closed = std::bind(&WSClientImpl::on_transport_closed, this);
+    tparams.on_reconnecting = std::bind(&WSClientImpl::on_transport_reconnecting, this);
+    tparams.on_read = std::bind(&WSClientImpl::on_transport_read, this, std::placeholders::_1);
+    return tparams;
+}
+
+bool WSClientImpl::init() {
+    return transport_->init();
+}
+
+bool WSClientImpl::on_transport_connected() {
+    // Send http request
+    return true;
+}
+
+void WSClientImpl::on_transport_closed() {
+    connected_ = false;
+    on_closed_();
+}
+
+void WSClientImpl::on_transport_reconnecting() {
+    // ??
+    connected_ = false;
+    parser_.clear();
+    on_reconnecting_();
+}
+
+bool ClientImpl::on_transport_read(const Buffer& buff) {
+    // http state / websocket state
+    return true;
+}
+
 std::unique_ptr<Client> Client::create(const Params& params)
 {
     auto impl = std::make_shared<ClientImpl>(params);
