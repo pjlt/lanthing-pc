@@ -37,15 +37,29 @@
 namespace ltlib
 {
 
-class ClientImpl
+class IClientImpl
+{
+public:
+    virtual ~IClientImpl() {};
+    virtual bool init() = 0;
+    virtual bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+              const std::function<void()>& callback) = 0;
+    virtual bool send(const std::shared_ptr<uint8_t>& data, uint32_t len,
+              const std::function<void()>& callback) = 0;
+    virtual void reconnect() = 0;
+};
+
+class ClientImpl : public IClientImpl
 {
 public:
     ClientImpl(const Client::Params& params);
-    ~ClientImpl();
-    bool init();
-    bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg, const std::function<void()>& callback);
-    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len, const std::function<void()>& callback);
-    void reconnect();
+    ~ClientImpl() override;
+    bool init() override;
+    bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+              const std::function<void()>& callback) override;
+    bool send(const std::shared_ptr<uint8_t>& data, uint32_t len,
+              const std::function<void()>& callback) override;
+    void reconnect() override;
 
 private:
     CTransport::Params make_transport_params(const Client::Params& cparams);
@@ -196,15 +210,16 @@ void ClientImpl::reconnect()
     transport_->reconnect();
 }
 
-class WSClientImpl {
+class WSClientImpl : public IClientImpl {
 public:
     WSClientImpl(const Client::Params& params);
-    ~WSClientImpl();
-    bool init();
+    ~WSClientImpl() override;
+    bool init() override;
     bool send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
-              const std::function<void()>& callback);
+              const std::function<void()>& callback) override;
     bool send(const std::shared_ptr<uint8_t>& data, uint32_t len,
-              const std::function<void()>& callback);
+              const std::function<void()>& callback) override;
+    void reconnect() override;
 
 private:
     CTransport::Params make_transport_params(const Client::Params& cparams);
@@ -223,6 +238,9 @@ private:
         on_message_;
     std::unique_ptr<CTransport> transport_;
     ltproto::Parser parser_;
+    std::string path_;
+    std::string host_;
+    uint16_t port_;
 };
 
 WSClientImpl::WSClientImpl(const Client::Params& params)
@@ -258,12 +276,29 @@ CTransport::Params WSClientImpl::make_transport_params(const Client::Params& cpa
 }
 
 bool WSClientImpl::init() {
+    // TODO: 解析url
     return transport_->init();
 }
 
 bool WSClientImpl::on_transport_connected() {
-    // Send http request
-    return true;
+    connected_ = true;
+    constexpr size_t kBuffSize = 4096;
+    std::shared_ptr<char> buff = std::shared_ptr<char>(new char[kBuffSize]);
+    memset(buff.get(), 0, kBuffSize);
+    std::vector<char> buff(kBuffSize, 0);
+    const char* format = ""
+        "GET /%s HTTP/1.1\r\n"
+        "Host: %s:%d\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Key: xxxxxxxx==\r\n"
+        "Sec-WebSocket-Version: 13\r\n"
+        "\r\n";
+    snprintf(buff.get(), kBuffSize, format, path_.c_str(), host_.c_str(), port_);
+    Buffer buffer[1] = {{buff.get(), strlen(buff.get())}};
+    return transport_->send(buffer, 1, [buff]() {
+        // TODO: 确保buff的生命周期.
+    });
 }
 
 void WSClientImpl::on_transport_closed() {
