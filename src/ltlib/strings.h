@@ -40,4 +40,8 @@ std::string utf16To8(const std::wstring& str);
 
 std::string randomStr(size_t len);
 
+std::string base64Encode(const std::string& in);
+
+std::string base64Decode(const std::string& in);
+
 } // namespace ltlib
