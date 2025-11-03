@@ -95,6 +95,8 @@ set(LT_VIDEO_CAPTURER_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi/duplication_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi/duplication_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/dxgi/common_types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/nvfbc_video_capturer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/video/capturer/nvfbc_video_capturer.cpp
 )
 
 set(LT_VIDEO_CE_PIPELINE_SRCS
@@ -419,6 +421,7 @@ target_link_libraries(${PROJECT_NAME}
     ffmpeg
     Opus::opus
     amf
+    nvfbc
     uv_a
     breakpad
     imgui

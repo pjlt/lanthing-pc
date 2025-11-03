@@ -40,6 +40,7 @@ namespace worker {
 
 std::tuple<std::unique_ptr<WorkerCheckDupl>, int32_t>
 worker::WorkerCheckDupl::create(std::map<std::string, std::string> options) {
+    (void)options;
     ltlib::setThreadDesktop();
     auto w = std::make_unique<WorkerCheckDupl>();
     ltlib::Monitor monitor{};

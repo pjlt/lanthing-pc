@@ -35,6 +35,7 @@
 #include <ltlib/times.h>
 
 #include "dxgi_video_capturer.h"
+#include "nvfbc_video_capturer.h"
 
 namespace lt {
 
@@ -45,11 +46,27 @@ std::unique_ptr<Capturer> Capturer::create(Backend backend, ltlib::Monitor monit
         LOG(FATAL) << "Only support dxgi video capturer!";
         return nullptr;
     }
-    auto capturer = std::make_unique<DxgiVideoCapturer>(monitor);
-    if (!capturer->init()) {
+    switch (backend) {
+    case lt::video::Capturer::Backend::Dxgi:
+    {
+        auto capturer = std::make_unique<DxgiVideoCapturer>(monitor);
+        if (!capturer->init()) {
+            return nullptr;
+        }
+        return capturer;
+    }
+    case lt::video::Capturer::Backend::Nvfbc:
+    {
+        auto capturer = std::make_unique<NvFBCVideoCapturer>(monitor);
+        if (!capturer->init()) {
+            return nullptr;
+        }
+        return capturer;
+    }
+    default:
+        LOG(ERR) << "Unknown Capturer backend " << (int)backend;
         return nullptr;
     }
-    return capturer;
 }
 
 Capturer::Capturer() = default;

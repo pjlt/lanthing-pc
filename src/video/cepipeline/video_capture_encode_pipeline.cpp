@@ -218,7 +218,8 @@ bool VCEPipeline::init() {
     if (!registerHandlers()) {
         return false;
     }
-    auto capturer = Capturer::create(Capturer::Backend::Dxgi, monitor_);
+    // auto capturer = Capturer::create(Capturer::Backend::Dxgi, monitor_);
+    auto capturer = Capturer::create(Capturer::Backend::Nvfbc, monitor_);
     if (capturer == nullptr) {
         return false;
     }

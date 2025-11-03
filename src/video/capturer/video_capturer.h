@@ -66,6 +66,7 @@ class Capturer {
 public:
     enum class Backend {
         Dxgi,
+        Nvfbc,
     };
     struct Frame {
         void* data;
