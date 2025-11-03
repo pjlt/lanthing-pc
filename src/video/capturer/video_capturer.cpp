@@ -42,10 +42,6 @@ namespace lt {
 namespace video {
 
 std::unique_ptr<Capturer> Capturer::create(Backend backend, ltlib::Monitor monitor) {
-    if (backend != Backend::Dxgi) {
-        LOG(FATAL) << "Only support dxgi video capturer!";
-        return nullptr;
-    }
     switch (backend) {
     case lt::video::Capturer::Backend::Dxgi:
     {

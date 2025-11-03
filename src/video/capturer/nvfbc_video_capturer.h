@@ -36,6 +36,7 @@
 #include <future>
 #include <optional>
 
+#include <NvFBC/nvFBC.h>
 #include <NvFBC/nvFBCToDx9Vid.h>
 
 #include <ltlib/system.h>

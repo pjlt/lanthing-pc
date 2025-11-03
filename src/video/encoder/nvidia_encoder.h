@@ -41,11 +41,11 @@ namespace lt {
 
 namespace video {
 
-class NvD3d11EncoderImpl;
-class NvD3d11Encoder : public Encoder {
+class NvD3dEncoderBase;
+class NvD3dEncoder : public Encoder {
 public:
-    static std::unique_ptr<NvD3d11Encoder> create(const EncodeParamsHelper& params);
-    ~NvD3d11Encoder() override {}
+    static std::unique_ptr<NvD3dEncoder> create(const EncodeParamsHelper& params);
+    ~NvD3dEncoder() override {}
     void reconfigure(const ReconfigureParams& params) override;
     CaptureFormat captureFormat() const override;
     VideoCodecType codecType() const override;
@@ -54,7 +54,7 @@ public:
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
 
 private:
-    std::shared_ptr<NvD3d11EncoderImpl> impl_;
+    std::shared_ptr<NvD3dEncoderBase> impl_;
 };
 
 } // namespace video

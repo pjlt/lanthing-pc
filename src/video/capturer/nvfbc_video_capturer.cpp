@@ -40,6 +40,8 @@
 #include <ltlib/system.h>
 #include <ltlib/times.h>
 
+#pragma comment(lib, "d3d9.lib")
+
 #if 0
 static int64_t point1;
 static int64_t point2;
@@ -94,11 +96,15 @@ bool NvFBCVideoCapturer::init() {
     nvfbc_dx9_ =
         (NvFBCToDx9Vid*)impl_->create(NVFBC_TO_DX9_VID, &maxDisplayWidth, &maxDisplayHeight,
                                       adapter_index_, (void*)d3d9_dev_.Get());
-    HRESULT hr = d3d9_dev_->CreateOffscreenPlainSurface(maxDisplayWidth, maxDisplayHeight,
-                                                        D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
-                                                        d3d9_surface_.GetAddressOf(), nullptr);
+    if (!nvfbc_dx9_) {
+        LOG(ERR) << "Failed to create NvFBCToDx9Vid instance";
+        return false;
+    }
+    HRESULT hr = d3d9_dev_->CreateOffscreenPlainSurface(
+        2560, 1440, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, d3d9_surface_.GetAddressOf(), nullptr);
     if (FAILED(hr)) {
-        LOGF(ERR, "Failed to create offscreen plain surface, er:%08x", hr);
+        LOGF(ERR, "Failed to create offscreen plain surface(%u x %u), er:%08x", maxDisplayWidth,
+             maxDisplayHeight, hr);
         return false;
     }
     nvfbc_outbuf_.pPrimary = d3d9_surface_.Get();
@@ -119,7 +125,7 @@ bool NvFBCVideoCapturer::init() {
 }
 
 bool NvFBCVideoCapturer::start() {
-    // 要不要把上面的挪下来?
+    // 瑕佷笉瑕佹妸涓婇潰鐨勬尓涓嬫潵?
     return true;
 }
 
@@ -155,6 +161,11 @@ bool NvFBCVideoCapturer::initD3D9() {
             // Not Nvidia
             continue;
         }
+        hr = Direct3DCreate9Ex(D3D_SDK_VERSION, d3d9_ex_.GetAddressOf());
+        if (FAILED(hr)) {
+            LOGF(WARNING, "Adapter %d Direct3DCreate9Ex failed", index);
+            continue;
+        }
         D3DDISPLAYMODE display_mode;
         hr = d3d9_ex_->GetAdapterDisplayMode(index, &display_mode);
         if (FAILED(hr)) {
@@ -162,6 +173,7 @@ bool NvFBCVideoCapturer::initD3D9() {
             continue;
         }
         display_mode_ = display_mode;
+        LOG(INFO) << "Display width:" << display_mode.Width << ", height:" << display_mode.Height;
         // DEBUG ?
         D3DPRESENT_PARAMETERS d3dpp;
         ZeroMemory(&d3dpp, sizeof(d3dpp));
@@ -176,7 +188,7 @@ bool NvFBCVideoCapturer::initD3D9() {
         d3dpp.Flags = D3DPRESENTFLAG_VIDEO;
         DWORD dwBehaviorFlags =
             D3DCREATE_FPU_PRESERVE | D3DCREATE_MULTITHREADED | D3DCREATE_HARDWARE_VERTEXPROCESSING;
-        hr = d3d9_ex_->CreateDeviceEx(index, D3DDEVTYPE_HAL, nullptr, dwBehaviorFlags, nullptr,
+        hr = d3d9_ex_->CreateDeviceEx(index, D3DDEVTYPE_HAL, nullptr, dwBehaviorFlags, &d3dpp,
                                       nullptr, d3d9_dev_.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(WARNING, "Adapter %d CreateDeviceEx failed: %#x", index, hr);

@@ -163,7 +163,7 @@ std::unique_ptr<lt::video::Encoder> doCreateHard(const lt::video::Encoder::InitP
     switch (params.vendor_id) {
     case kNvidiaVendorID:
     {
-        auto encoder = NvD3d11Encoder::create(params_helper);
+        auto encoder = NvD3dEncoder::create(params_helper);
         if (encoder) {
             LOG(INFO) << "NvidiaEncoder created";
             return encoder;
