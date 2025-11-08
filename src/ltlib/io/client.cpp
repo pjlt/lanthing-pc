@@ -27,6 +27,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <random>
 
 #include "client_secure_layer.h"
 #include "client_transport_layer.h"
@@ -43,7 +44,7 @@ template <typename T>
 T randomIntegral(T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
     static std::random_device rd;
     static std::mt19937 engine(rd());
-    static std::uniform_int_distribution<T> distrib(min, max);
+    std::uniform_int_distribution distrib(min, max);
     return distrib(engine);
 }
 
@@ -172,8 +173,8 @@ bool ClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::Mes
         return false;
     }
     const auto& pkt = packet.value();
-    Buffer buff[2] = {{(char*)&pkt.header, sizeof(pkt.header)},
-                      {(char*)pkt.payload.get(), pkt.header.payload_size}};
+    Buffer buff[2] = {{(char*)pkt.header, sizeof(*pkt.header)},
+                      {(char*)pkt.payload.get(), pkt.header->payload_size}};
     return transport_->send(buff, 2, [packet, callback]() {
         // 把packet capture进来，是为了延续内部shared_ptr的生命周期
         if (callback != nullptr) {
@@ -197,8 +198,8 @@ bool ClientImpl::send(const std::shared_ptr<uint8_t>& data, uint32_t len,
         return false;
     }
     const auto& pkt = packet.value();
-    Buffer buff[2] = {{(char*)&pkt.header, sizeof(pkt.header)},
-                      {(char*)pkt.payload.get(), pkt.header.payload_size}};
+    Buffer buff[2] = {{(char*)pkt.header, sizeof(*pkt.header)},
+                      {(char*)pkt.payload.get(), pkt.header->payload_size}};
     return transport_->send(buff, 2, [packet, callback]() {
         // 把packet capture进来，是为了延续内部shared_ptr的生命周期
         if (callback != nullptr) {
@@ -348,7 +349,6 @@ bool WSClientImpl::on_transport_connected() {
     constexpr size_t kBuffSize = 4096;
     std::shared_ptr<char> buff = std::shared_ptr<char>(new char[kBuffSize]);
     memset(buff.get(), 0, kBuffSize);
-    std::vector<char> buff(kBuffSize, 0);
     const char* format = ""
                          "GET /%s HTTP/1.1\r\n"
                          "Host: %s:%d\r\n"
@@ -359,7 +359,7 @@ bool WSClientImpl::on_transport_connected() {
                          "\r\n";
     snprintf(buff.get(), kBuffSize, format, path_.c_str(), host_.c_str(), port_,
              rand16_base64_.c_str());
-    Buffer buffer[1] = {{buff.get(), strlen(buff.get())}};
+    Buffer buffer[1] = {{buff.get(), static_cast<uint32_t>(strlen(buff.get()))}};
     return transport_->send(buffer, 1, [buff]() {
         // 确保buff的生命周期.
         LOG(VERBOSE) << "WebSocket HTTP upgrade request sent";
@@ -411,19 +411,20 @@ bool WSClientImpl::parse_http_response() {
     char* msg = nullptr;
     size_t msg_len = 0;
     const char* buff_begin = reinterpret_cast<const char*>(buffer_.data());
-    int ret = phr_parse_response(buff_begin, buffer_.size(), &minor_version, &status, &msg,
-                                 &msg_len, headers.data(), &num_headers, 0);
+    int ret = phr_parse_response(buff_begin, buffer_.size(), &minor_version, &status,
+                                 const_cast<const char**>(&msg), &msg_len, headers.data(),
+                                 &num_headers, 0);
     if (ret > 0) {
         LOGF(INFO,
              "Parse websocket http upgrade response success, minor_version:%d, status:%d, "
              "num_headers:%u, content:\n%s",
-             minor_version, status, num_headers,
-             std::string(buff_begin, buff_begin + std::min(size_t(4096), buffer_.size())));
+             minor_version, status, static_cast<uint32_t>(num_headers),
+             std::string(buff_begin, buff_begin + std::min(size_t(4096), buffer_.size())).c_str());
         if (status != 101) {
             LOG(ERR) << "Got bad status from websocket upgrade response";
             return false;
         }
-        int header_length = msg - buff_begin;
+        auto header_length = msg - buff_begin;
         if (header_length <= 0) {
             LOG(ERR) << "Websocket http upgrade response header length invalid " << header_length;
             return false;
@@ -522,8 +523,8 @@ bool WSClientImpl::parse_ws() {
                  ws.opcode == wsheader_type::BINARY_FRAME ||
                  ws.opcode == wsheader_type::CONTINUATION) {
             if (ws.mask) {
-                for (size_t i = 0; i != ws.N; ++i) {
-                    buffer_[i + ws.header_size] ^= ws.masking_key[i & 0x3];
+                for (size_t j = 0; j != ws.N; ++j) {
+                    buffer_[j + ws.header_size] ^= ws.masking_key[j & 0x3];
                 }
             }
             current_opcode_ =
@@ -538,13 +539,13 @@ bool WSClientImpl::parse_ws() {
         }
         else if (ws.opcode == wsheader_type::PING) {
             if (ws.mask) {
-                for (size_t i = 0; i != ws.N; ++i) {
-                    buffer_[i + ws.header_size] ^= ws.masking_key[i & 0x3];
+                for (size_t j = 0; j != ws.N; ++j) {
+                    buffer_[j + ws.header_size] ^= ws.masking_key[j & 0x3];
                 }
             }
             std::shared_ptr<uint8_t> payload = std::shared_ptr<uint8_t>(new uint8_t[ws.N]);
             memcpy(payload.get(), buffer_.data() + ws.header_size, (size_t)ws.N);
-            send_ws_message(wsheader_type::PONG, payload, ws.N, nullptr);
+            send_ws_message(wsheader_type::PONG, payload, (uint32_t)ws.N, nullptr);
         }
         else if (ws.opcode == wsheader_type::PONG) {
         }
@@ -567,6 +568,21 @@ bool WSClientImpl::on_ws_message() {
     case wsheader_type::BINARY_FRAME:
     {
         ret = true;
+        uint32_t type = *reinterpret_cast<const uint32_t*>(current_msg_.data());
+        std::shared_ptr<google::protobuf::MessageLite> msg = ltproto::create_by_type(type);
+        if (msg == nullptr) {
+            // unknown msg type
+        }
+        else {
+            bool success = msg->ParseFromArray(current_msg_.data() + 4,
+                                               static_cast<int>(current_msg_.size() - 4));
+            if (!success) {
+                // error
+            }
+            else {
+                on_message_(type, msg);
+            }
+        }
         break;
     }
     case wsheader_type::TEXT_FRAME:
@@ -620,15 +636,16 @@ bool WSClientImpl::send_ws_message(wsheader_type::opcode_type type,
         }
     }
     else { // TODO: run coverage testing here
+        uint64_t len64 = message_size;
         header[1] = 127 | (use_mask_ ? 0x80 : 0);
-        header[2] = (message_size >> 56) & 0xff;
-        header[3] = (message_size >> 48) & 0xff;
-        header[4] = (message_size >> 40) & 0xff;
-        header[5] = (message_size >> 32) & 0xff;
-        header[6] = (message_size >> 24) & 0xff;
-        header[7] = (message_size >> 16) & 0xff;
-        header[8] = (message_size >> 8) & 0xff;
-        header[9] = (message_size >> 0) & 0xff;
+        header[2] = (len64 >> 56) & 0xff;
+        header[3] = (len64 >> 48) & 0xff;
+        header[4] = (len64 >> 40) & 0xff;
+        header[5] = (len64 >> 32) & 0xff;
+        header[6] = (len64 >> 24) & 0xff;
+        header[7] = (len64 >> 16) & 0xff;
+        header[8] = (len64 >> 8) & 0xff;
+        header[9] = (len64 >> 0) & 0xff;
         if (use_mask_) {
             header[10] = masking_key[0];
             header[11] = masking_key[1];

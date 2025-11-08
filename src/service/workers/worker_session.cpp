@@ -1245,7 +1245,7 @@ bool WorkerSession::sendMessageToRemoteClient(
     }
     const auto& pkt = packet.value();
     // rtc的数据通道可以帮助我们完成stream->packet的过程，所以这里不需要把packet header一起传过去.
-    bool success = tp_server_->sendData(pkt.payload.get(), pkt.header.payload_size, reliable);
+    bool success = tp_server_->sendData(pkt.payload.get(), pkt.header->payload_size, reliable);
     return success;
 }
 
