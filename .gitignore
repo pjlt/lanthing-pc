@@ -39,7 +39,7 @@
 /.vs
 /build
 /install
-/src/transport/rtc*
+/src/transport/rtc
 /transport/rtc*
 /lanthing/src/video2
 CMakeSettings.json

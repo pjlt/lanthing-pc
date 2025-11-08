@@ -36,6 +36,19 @@
 #include <ltlib/strings.h>
 #include <ltproto/ltproto.h>
 
+namespace {
+
+template <typename T>
+    requires std::is_integral_v<T>
+T randomIntegral(T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
+    static std::random_device rd;
+    static std::mt19937 engine(rd());
+    static std::uniform_int_distribution<T> distrib(min, max);
+    return distrib(engine);
+}
+
+} // namespace
+
 namespace ltlib {
 
 class IClientImpl {
@@ -205,7 +218,7 @@ class WSClientImpl : public IClientImpl {
         unsigned header_size;
         bool fin;
         bool mask;
-        enum opcode_type {
+        enum opcode_type : uint8_t {
             CONTINUATION = 0x0,
             TEXT_FRAME = 0x1,
             BINARY_FRAME = 0x2,
@@ -216,6 +229,14 @@ class WSClientImpl : public IClientImpl {
         int N0;
         uint64_t N;
         uint8_t masking_key[4];
+    };
+    struct Packet {
+        Packet()
+            : header{new uint8_t[14]} {}
+        std::shared_ptr<uint8_t> header;
+        uint32_t header_length = 0;
+        std::shared_ptr<uint8_t> payload;
+        uint32_t payload_length = 0;
     };
 
 public:
@@ -236,6 +257,9 @@ private:
     bool on_transport_read(const Buffer& buff);
     bool parse_http_response();
     bool parse_ws();
+    bool on_ws_message();
+    bool send_ws_message(wsheader_type::opcode_type type, const std::shared_ptr<uint8_t>& data,
+                         uint32_t len, const std::function<void()>& callback);
 
 private:
     bool connected_ = false;
@@ -254,6 +278,9 @@ private:
     std::string rand16_base64_;
     WSState state_ = WSState::Closed;
     std::vector<uint8_t> buffer_;
+    std::vector<uint8_t> current_msg_;
+    wsheader_type::opcode_type current_opcode_;
+    bool use_mask_ = false;
 };
 
 WSClientImpl::WSClientImpl(const Client::Params& params)
@@ -295,6 +322,27 @@ bool WSClientImpl::init() {
     return transport_->init();
 }
 
+bool WSClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,
+                        const std::function<void()>& callback) {
+    size_t length = msg->ByteSizeLong();
+    std::shared_ptr<uint8_t> payload = std::shared_ptr<uint8_t>(new uint8_t[length + 4]);
+    *reinterpret_cast<uint32_t*>(payload.get()) = type;
+    if (!msg->SerializeToArray(payload.get() + 4, static_cast<int>(length) - 4)) {
+        LOG(ERR) << "Serialize protobuf message failed, type:" << type;
+        return false;
+    }
+
+    return send_ws_message(wsheader_type::opcode_type::BINARY_FRAME, payload,
+                           static_cast<uint32_t>(length + 4), callback);
+}
+
+bool WSClientImpl::send(const std::shared_ptr<uint8_t>& data, uint32_t len,
+                        const std::function<void()>& callback) {
+    return send_ws_message(wsheader_type::opcode_type::BINARY_FRAME, data, len, callback);
+}
+
+void WSClientImpl::reconnect() {}
+
 bool WSClientImpl::on_transport_connected() {
     connected_ = true;
     constexpr size_t kBuffSize = 4096;
@@ -313,7 +361,8 @@ bool WSClientImpl::on_transport_connected() {
              rand16_base64_.c_str());
     Buffer buffer[1] = {{buff.get(), strlen(buff.get())}};
     return transport_->send(buffer, 1, [buff]() {
-        // TODO: 确保buff的生命周期.
+        // 确保buff的生命周期.
+        LOG(VERBOSE) << "WebSocket HTTP upgrade request sent";
     });
 }
 
@@ -362,14 +411,14 @@ bool WSClientImpl::parse_http_response() {
     char* msg = nullptr;
     size_t msg_len = 0;
     const char* buff_begin = reinterpret_cast<const char*>(buffer_.data());
-    int ret = phr_parse_response(buff_begin, buffer_.size(),
-                                 &minor_version, &status, &msg, &msg_len, headers.data(),
-                                 &num_headers, 0);
+    int ret = phr_parse_response(buff_begin, buffer_.size(), &minor_version, &status, &msg,
+                                 &msg_len, headers.data(), &num_headers, 0);
     if (ret > 0) {
-        LOGF(INFO, "Parse websocket http upgrade response success, minor_version:%d, status:%d, num_headers:%u, content:\n%s",
+        LOGF(INFO,
+             "Parse websocket http upgrade response success, minor_version:%d, status:%d, "
+             "num_headers:%u, content:\n%s",
              minor_version, status, num_headers,
-             std::string(buff_begin, buff_begin +
-                             std::min(size_t(4096), buffer_.size())));
+             std::string(buff_begin, buff_begin + std::min(size_t(4096), buffer_.size())));
         if (status != 101) {
             LOG(ERR) << "Got bad status from websocket upgrade response";
             return false;
@@ -385,8 +434,7 @@ bool WSClientImpl::parse_http_response() {
     }
     else if (ret == -1) {
         LOG(ERR) << "Parse websocket http upgrade response failed: "
-                 << std::string(buff_begin, buff_begin +
-                                    std::min(size_t(4096), buffer_.size()));
+                 << std::string(buff_begin, buff_begin + std::min(size_t(4096), buffer_.size()));
         return false;
     }
     else {
@@ -395,10 +443,9 @@ bool WSClientImpl::parse_http_response() {
     }
 }
 
-bool WSClientImpl::parse_ws()
-{
+bool WSClientImpl::parse_ws() {
     if (state_ != WSState::WSConnected) {
-        return;
+        return false;
     }
     while (true) {
         wsheader_type ws;
@@ -412,7 +459,7 @@ bool WSClientImpl::parse_ws()
         ws.N0 = (data[1] & 0x7f);
         ws.header_size = 2 + (ws.N0 == 126 ? 2 : 0) + (ws.N0 == 127 ? 8 : 0) + (ws.mask ? 4 : 0);
         if (buffer_.size() < ws.header_size) {
-            return; /* Need: ws.header_size - rxbuf.size() */
+            return true; /* Need: ws.header_size - rxbuf.size() */
         }
         int i = 0;
         if (ws.N0 < 126) {
@@ -465,7 +512,7 @@ bool WSClientImpl::parse_ws()
         // Note: The checks above should hopefully ensure this addition
         //       cannot overflow:
         if (buffer_.size() < ws.header_size + ws.N) {
-            return; /* Need: ws.header_size+ws.N - rxbuf.size() */
+            return true;
         }
 
         // We got a whole message, now do something with it:
@@ -479,12 +526,14 @@ bool WSClientImpl::parse_ws()
                     buffer_[i + ws.header_size] ^= ws.masking_key[i & 0x3];
                 }
             }
-            receivedData.insert(receivedData.end(), buffer_.begin() + ws.header_size,
+            current_opcode_ =
+                ws.opcode == wsheader_type::CONTINUATION ? current_opcode_ : ws.opcode;
+            current_msg_.insert(current_msg_.end(), buffer_.begin() + ws.header_size,
                                 buffer_.begin() + ws.header_size + (size_t)ws.N); // just feed
             if (ws.fin) {
-                callable((const std::vector<uint8_t>)receivedData);
-                receivedData.erase(receivedData.begin(), receivedData.end());
-                std::vector<uint8_t>().swap(receivedData); // free memory
+                on_ws_message();
+                current_msg_.clear();
+                current_opcode_ = wsheader_type::CONTINUATION;
             }
         }
         else if (ws.opcode == wsheader_type::PING) {
@@ -493,23 +542,116 @@ bool WSClientImpl::parse_ws()
                     buffer_[i + ws.header_size] ^= ws.masking_key[i & 0x3];
                 }
             }
-            std::string data(buffer_.begin() + ws.header_size,
-                             buffer_.begin() + ws.header_size + (size_t)ws.N);
-            sendData(wsheader_type::PONG, data.size(), data.begin(), data.end());
+            std::shared_ptr<uint8_t> payload = std::shared_ptr<uint8_t>(new uint8_t[ws.N]);
+            memcpy(payload.get(), buffer_.data() + ws.header_size, (size_t)ws.N);
+            send_ws_message(wsheader_type::PONG, payload, ws.N, nullptr);
         }
         else if (ws.opcode == wsheader_type::PONG) {
         }
         else if (ws.opcode == wsheader_type::CLOSE) {
-            return false; // 重连??
+            return false;
         }
         else {
-            fprintf(stderr, "ERROR: Got unexpected WebSocket message.\n");
+            LOG(ERR) << "Got unexpected WebSocket message, opcode:" << (int)ws.opcode;
             return false;
         }
 
         buffer_.erase(buffer_.begin(), buffer_.begin() + ws.header_size + (size_t)ws.N);
     }
     return true;
+}
+
+bool WSClientImpl::on_ws_message() {
+    bool ret = false;
+    switch (current_opcode_) {
+    case wsheader_type::BINARY_FRAME:
+    {
+        ret = true;
+        break;
+    }
+    case wsheader_type::TEXT_FRAME:
+    {
+        ret = true;
+        LOG(INFO) << "Received ws text message: "
+                  << std::string(current_msg_.begin(), current_msg_.end());
+        break;
+    }
+    default:
+        LOG(DEBUG) << "Unknown ws message type: " << current_opcode_;
+        break;
+    }
+    return ret;
+}
+
+bool WSClientImpl::send_ws_message(wsheader_type::opcode_type type,
+                                   const std::shared_ptr<uint8_t>& data, uint32_t message_size,
+                                   const std::function<void()>& callback) {
+    uint8_t masking_key[4];
+    *(uint32_t*)masking_key = randomIntegral<uint32_t>();
+    if (state_ != WSState::WSConnected) {
+        LOG(ERR) << "WebSocket is not connected, can't send ws message";
+        return false;
+    }
+    Packet pkt{};
+    pkt.header_length =
+        2 + (message_size >= 126 ? 2 : 0) + (message_size >= 65536 ? 6 : 0) + (use_mask_ ? 4 : 0);
+    uint8_t* header = pkt.header.get();
+    header[0] = 0x80 | type;
+    if (false) {
+    }
+    else if (message_size < 126) {
+        header[1] = (message_size & 0xff) | (use_mask_ ? 0x80 : 0);
+        if (use_mask_) {
+            header[2] = masking_key[0];
+            header[3] = masking_key[1];
+            header[4] = masking_key[2];
+            header[5] = masking_key[3];
+        }
+    }
+    else if (message_size < 65536) {
+        header[1] = 126 | (use_mask_ ? 0x80 : 0);
+        header[2] = (message_size >> 8) & 0xff;
+        header[3] = (message_size >> 0) & 0xff;
+        if (use_mask_) {
+            header[4] = masking_key[0];
+            header[5] = masking_key[1];
+            header[6] = masking_key[2];
+            header[7] = masking_key[3];
+        }
+    }
+    else { // TODO: run coverage testing here
+        header[1] = 127 | (use_mask_ ? 0x80 : 0);
+        header[2] = (message_size >> 56) & 0xff;
+        header[3] = (message_size >> 48) & 0xff;
+        header[4] = (message_size >> 40) & 0xff;
+        header[5] = (message_size >> 32) & 0xff;
+        header[6] = (message_size >> 24) & 0xff;
+        header[7] = (message_size >> 16) & 0xff;
+        header[8] = (message_size >> 8) & 0xff;
+        header[9] = (message_size >> 0) & 0xff;
+        if (use_mask_) {
+            header[10] = masking_key[0];
+            header[11] = masking_key[1];
+            header[12] = masking_key[2];
+            header[13] = masking_key[3];
+        }
+    }
+    pkt.payload = std::shared_ptr<uint8_t>(new uint8_t[message_size]);
+    memcpy(pkt.payload.get(), data.get(), message_size);
+    pkt.payload_length = message_size;
+    if (use_mask_) {
+        for (size_t i = 0; i != message_size; ++i) {
+            pkt.payload.get()[i] ^= masking_key[i & 0x3];
+        }
+    }
+    Buffer buff[2] = {{(char*)pkt.header.get(), pkt.header_length},
+                      {(char*)pkt.payload.get(), pkt.payload_length}};
+    return transport_->send(buff, 2, [pkt, callback]() {
+        // 把packet capture进来，是为了延续内部shared_ptr的生命周期
+        if (callback != nullptr) {
+            callback();
+        }
+    });
 }
 
 std::unique_ptr<Client> Client::create(const Params& params) {

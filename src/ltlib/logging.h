@@ -18,6 +18,7 @@
 #include <g3log/logmessage.hpp>
 
 const LEVELS ERR{WARNING.value + 100, "ERROR"};
+const LEVELS VERBOSE{g3::kDebugValue - 10, "VERBOSE"};
 
 #define LOG_2(level, file, line, func)                                                             \
     if (!g3::logLevel(level)) {                                                                    \

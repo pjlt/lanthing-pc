@@ -72,8 +72,7 @@ std::string randomStr(size_t len) {
 }
 
 // https://stackoverflow.com/a/34571089
-std::string base64Encode(const std::string& in)
-{
+std::string base64Encode(const std::string& in) {
     using uchar = unsigned char;
     std::string out;
 
@@ -96,9 +95,8 @@ std::string base64Encode(const std::string& in)
     return out;
 }
 
-//https://stackoverflow.com/a/34571089
-std::string base64Decode(const std::string& in)
-{
+// https://stackoverflow.com/a/34571089
+std::string base64Decode(const std::string& in) {
     using uchar = unsigned char;
     std::string out;
 
