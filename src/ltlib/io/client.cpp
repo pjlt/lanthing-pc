@@ -280,7 +280,7 @@ private:
     WSState state_ = WSState::Closed;
     std::vector<uint8_t> buffer_;
     std::vector<uint8_t> current_msg_;
-    wsheader_type::opcode_type current_opcode_;
+    wsheader_type::opcode_type current_opcode_ = wsheader_type::CONTINUATION;
     bool use_mask_ = false;
 };
 
@@ -289,7 +289,10 @@ WSClientImpl::WSClientImpl(const Client::Params& params)
     , on_connected_{params.on_connected}
     , on_closed_{params.on_closed}
     , on_reconnecting_{params.on_reconnecting}
-    , on_message_{params.on_message} {
+    , on_message_{params.on_message}
+    , path_{params.url_path}
+    , host_{params.host}
+    , port_{params.port} {
     if (params.is_tls) {
         transport_ = std::make_unique<MbedtlsCTransport>(make_transport_params(params));
     }
@@ -317,7 +320,6 @@ CTransport::Params WSClientImpl::make_transport_params(const Client::Params& cpa
 }
 
 bool WSClientImpl::init() {
-    // TODO: 解析url
     rand16_ = randomStr(16);
     rand16_base64_ = base64Encode(rand16_);
     return transport_->init();
@@ -672,13 +674,24 @@ bool WSClientImpl::send_ws_message(wsheader_type::opcode_type type,
 }
 
 std::unique_ptr<Client> Client::create(const Params& params) {
-    auto impl = std::make_shared<ClientImpl>(params);
-    if (!impl->init()) {
-        return nullptr;
+    if (params.stype == StreamType::Websocket) {
+        auto impl = std::make_shared<WSClientImpl>(params);
+        if (!impl->init()) {
+            return nullptr;
+        }
+        std::unique_ptr<Client> client{new Client};
+        client->impl_ = std::move(impl);
+        return client;
     }
-    std::unique_ptr<Client> client{new Client};
-    client->impl_ = std::move(impl);
-    return client;
+    else {
+        auto impl = std::make_shared<ClientImpl>(params);
+        if (!impl->init()) {
+            return nullptr;
+        }
+        std::unique_ptr<Client> client{new Client};
+        client->impl_ = std::move(impl);
+        return client;
+    }
 }
 
 bool Client::send(uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg,

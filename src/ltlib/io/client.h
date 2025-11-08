@@ -49,6 +49,7 @@ public:
         IOLoop* ioloop;
         std::string pipe_name;
         std::string host;
+        std::string url_path;
         uint16_t port = 0;
         bool is_tls = false;
         std::string cert;
