@@ -330,7 +330,7 @@ bool WSClientImpl::send(uint32_t type, const std::shared_ptr<google::protobuf::M
     size_t length = msg->ByteSizeLong();
     std::shared_ptr<uint8_t> payload = std::shared_ptr<uint8_t>(new uint8_t[length + 4]);
     *reinterpret_cast<uint32_t*>(payload.get()) = type;
-    if (!msg->SerializeToArray(payload.get() + 4, static_cast<int>(length) - 4)) {
+    if (!msg->SerializeToArray(payload.get() + 4, static_cast<int>(length))) {
         LOG(ERR) << "Serialize protobuf message failed, type:" << type;
         return false;
     }
@@ -352,7 +352,7 @@ bool WSClientImpl::on_transport_connected() {
     std::shared_ptr<char> buff = std::shared_ptr<char>(new char[kBuffSize]);
     memset(buff.get(), 0, kBuffSize);
     const char* format = ""
-                         "GET /%s HTTP/1.1\r\n"
+                         "GET %s HTTP/1.1\r\n"
                          "Host: %s:%d\r\n"
                          "Upgrade: websocket\r\n"
                          "Connection: Upgrade\r\n"
@@ -361,6 +361,7 @@ bool WSClientImpl::on_transport_connected() {
                          "\r\n";
     snprintf(buff.get(), kBuffSize, format, path_.c_str(), host_.c_str(), port_,
              rand16_base64_.c_str());
+    state_ = WSState::SentHttp;
     Buffer buffer[1] = {{buff.get(), static_cast<uint32_t>(strlen(buff.get()))}};
     return transport_->send(buffer, 1, [buff]() {
         // 确保buff的生命周期.
@@ -377,6 +378,7 @@ void WSClientImpl::on_transport_reconnecting() {
     // ??
     connected_ = false;
     // parser_.clear();
+    buffer_.clear();
     on_reconnecting_();
 }
 
@@ -407,7 +409,7 @@ bool WSClientImpl::on_transport_read(const Buffer& buff) {
 
 bool WSClientImpl::parse_http_response() {
     std::vector<phr_header> headers(100, phr_header{});
-    size_t num_headers = 0;
+    size_t num_headers = headers.size();
     int minor_version = 0;
     int status = 0;
     char* msg = nullptr;
@@ -433,6 +435,7 @@ bool WSClientImpl::parse_http_response() {
         }
         buffer_.erase(buffer_.begin(), buffer_.begin() + header_length);
         state_ = WSState::WSConnected;
+        on_connected_();
         return true;
     }
     else if (ret == -1) {
