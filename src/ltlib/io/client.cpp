@@ -281,7 +281,7 @@ private:
     std::vector<uint8_t> buffer_;
     std::vector<uint8_t> current_msg_;
     wsheader_type::opcode_type current_opcode_ = wsheader_type::CONTINUATION;
-    bool use_mask_ = false;
+    bool use_mask_ = true;
 };
 
 WSClientImpl::WSClientImpl(const Client::Params& params)
@@ -400,6 +400,8 @@ bool WSClientImpl::on_transport_read(const Buffer& buff) {
             return false;
         }
     case WSState::WSConnected:
+        buffer_.insert(buffer_.end(), reinterpret_cast<const uint8_t*>(buff.base),
+                       reinterpret_cast<const uint8_t*>(buff.base) + buff.len);
         return parse_ws();
     default:
         LOG(ERR) << "Unknown WSState " << (int)state_;
@@ -419,7 +421,7 @@ bool WSClientImpl::parse_http_response() {
                                  const_cast<const char**>(&msg), &msg_len, headers.data(),
                                  &num_headers, 0);
     if (ret > 0) {
-        LOGF(INFO,
+        LOGF(DEBUG,
              "Parse websocket http upgrade response success, minor_version:%d, status:%d, "
              "num_headers:%u, content:\n%s",
              minor_version, status, static_cast<uint32_t>(num_headers),
@@ -428,12 +430,13 @@ bool WSClientImpl::parse_http_response() {
             LOG(ERR) << "Got bad status from websocket upgrade response";
             return false;
         }
-        auto header_length = msg - buff_begin;
-        if (header_length <= 0) {
-            LOG(ERR) << "Websocket http upgrade response header length invalid " << header_length;
+        auto http_length = headers[num_headers - 1].value + headers[num_headers - 1].value_len + 4 - buff_begin;
+        //auto header_length = msg - buff_begin;
+        if (http_length <= 0) {
+            LOG(ERR) << "Websocket http upgrade response header length invalid " << http_length;
             return false;
         }
-        buffer_.erase(buffer_.begin(), buffer_.begin() + header_length);
+        buffer_.erase(buffer_.begin(), buffer_.begin() + http_length);
         state_ = WSState::WSConnected;
         on_connected_();
         return true;
@@ -568,6 +571,7 @@ bool WSClientImpl::parse_ws() {
 }
 
 bool WSClientImpl::on_ws_message() {
+    LOG(DEBUG) << "on_ws_message " << (int)current_opcode_;
     bool ret = false;
     switch (current_opcode_) {
     case wsheader_type::BINARY_FRAME:
@@ -582,7 +586,7 @@ bool WSClientImpl::on_ws_message() {
             bool success = msg->ParseFromArray(current_msg_.data() + 4,
                                                static_cast<int>(current_msg_.size() - 4));
             if (!success) {
-                // error
+                LOG(ERR) << "Parse ws message failed, type: " << type;
             }
             else {
                 on_message_(type, msg);
