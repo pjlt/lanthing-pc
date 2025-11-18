@@ -163,6 +163,8 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server_transport_layer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server_transport_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/picohttpparser.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/picohttpparser.c
 )
 
 if (LT_WINDOWS)

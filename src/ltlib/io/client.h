@@ -39,7 +39,7 @@
 
 namespace ltlib {
 
-class ClientImpl;
+class IClientImpl;
 class IOLoop;
 
 class Client {
@@ -49,6 +49,7 @@ public:
         IOLoop* ioloop;
         std::string pipe_name;
         std::string host;
+        std::string url_path;
         uint16_t port = 0;
         bool is_tls = false;
         std::string cert;
@@ -72,7 +73,7 @@ public:
     void reconnect();
 
 private:
-    std::shared_ptr<ClientImpl> impl_;
+    std::shared_ptr<IClientImpl> impl_;
 };
 
 } // namespace ltlib

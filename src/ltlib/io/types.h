@@ -35,6 +35,7 @@ namespace ltlib {
 enum class StreamType {
     TCP,
     Pipe,
+    Websocket,
 };
 
 } // namespace ltlib
