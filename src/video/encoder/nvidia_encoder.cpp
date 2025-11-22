@@ -165,6 +165,7 @@ private:
     std::optional<NV_ENC_MAP_INPUT_RESOURCE> initInputFrame(void* frame);
     bool uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource);
     void releaseResources();
+    static void setVUIParameters(NV_ENC_CONFIG_H264_VUI_PARAMETERS& vui_params);
 
 private:
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
@@ -177,9 +178,6 @@ private:
     NV_ENC_INITIALIZE_PARAMS init_params_;
     NV_ENC_CONFIG encode_config_;
     void* bitstream_output_buffer_ = nullptr;
-    void* event_ = nullptr;
-    // 因为编码需求是一帧都不延迟，这个async似乎没有意义，只是想测试一下async似乎会玄学地缩短编码latency
-    bool async_ = false;
     struct EncodeResource {
         NV_ENC_REGISTER_RESOURCE reg = {NV_ENC_REGISTER_RESOURCE_VER};
         NV_ENC_MAP_INPUT_RESOURCE mapped = {NV_ENC_MAP_INPUT_RESOURCE_VER};
@@ -198,11 +196,6 @@ NvD3d11EncoderImpl::~NvD3d11EncoderImpl() {
 }
 
 bool NvD3d11EncoderImpl::init() {
-    if (isAVC(codec_type_) && (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV420_10BIT ||
-                               buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT)) {
-        LOG(ERR) << "Unsupported buffer format " << buffer_format_ << " when using h264";
-        return false;
-    }
     if (!loadNvApi()) {
         return false;
     }
@@ -229,12 +222,6 @@ bool NvD3d11EncoderImpl::init() {
         LOG(ERR) << "nvEncInitializeEncoder failed with " << status;
         return false;
     }
-    if (async_) {
-        event_ = CreateEventA(NULL, FALSE, FALSE, NULL);
-        NV_ENC_EVENT_PARAMS ev_param = {NV_ENC_EVENT_PARAMS_VER};
-        ev_param.completionEvent = event_;
-        nvfuncs_.nvEncRegisterAsyncEvent(nvencoder_, &ev_param);
-    }
 
     if (!initBuffers()) {
         return false;
@@ -244,13 +231,6 @@ bool NvD3d11EncoderImpl::init() {
 }
 
 void NvD3d11EncoderImpl::releaseResources() {
-    if (event_) {
-        NV_ENC_EVENT_PARAMS ev_param = {NV_ENC_EVENT_PARAMS_VER};
-        ev_param.completionEvent = event_;
-        nvfuncs_.nvEncUnregisterAsyncEvent(nvencoder_, &ev_param);
-        CloseHandle(event_);
-        event_ = nullptr;
-    }
     if (nvencoder_ == nullptr) {
         return;
     }
@@ -312,18 +292,11 @@ NvD3d11EncoderImpl::encodeOneFrame(void* input_frame, bool request_iframe) {
     params.inputWidth = params_.width();
     params.inputHeight = params_.height();
     params.outputBitstream = bitstream_output_buffer_;
-    params.completionEvent = event_;
     NVENCSTATUS status = nvfuncs_.nvEncEncodePicture(nvencoder_, &params);
     if (status != NV_ENC_SUCCESS) {
         // include NV_ENC_ERR_NEED_MORE_INPUT
         LOG(ERR) << "nvEncEncodePicture failed with " << status;
         return nullptr;
-    }
-    if (async_) {
-        if (WaitForSingleObject(event_, 20000) == WAIT_FAILED) {
-            LOG(ERR) << "Wait encode event timeout";
-            return nullptr;
-        }
     }
     NV_ENC_LOCK_BITSTREAM lbs = {NV_ENC_LOCK_BITSTREAM_VER};
     lbs.outputBitstream = bitstream_output_buffer_;
@@ -421,12 +394,13 @@ NvD3d11EncoderImpl::generateEncodeParams(NV_ENC_CONFIG& encode_config) {
     params.enablePTD = 1;
     params.reportSliceOffsets = 0;
     params.enableSubFrameWrite = 0;
-    params.enableEncodeAsync = async_;
+    params.enableEncodeAsync = 0;
 
     NV_ENC_PRESET_CONFIG preset_config = {NV_ENC_PRESET_CONFIG_VER, {NV_ENC_CONFIG_VER}};
     nvfuncs_.nvEncGetEncodePresetConfig(nvencoder_, params.encodeGUID, params.presetGUID,
                                         &preset_config);
     ::memcpy(params.encodeConfig, &preset_config.presetCfg, sizeof(NV_ENC_CONFIG));
+    params.encodeConfig->profileGUID = params_.profile();
     params.encodeConfig->frameIntervalP = 1;
     params.encodeConfig->gopLength = NVENC_INFINITE_GOPLENGTH;
     params.encodeConfig->rcParams.rateControlMode = params_.rc();
@@ -443,14 +417,8 @@ NvD3d11EncoderImpl::generateEncodeParams(NV_ENC_CONFIG& encode_config) {
         params.encodeConfig->rcParams.vbvInitialDelay = params_.vbvinit().value();
     }
 
-    if (params.presetGUID != NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID &&
-        params.presetGUID != NV_ENC_PRESET_LOSSLESS_HP_GUID) {
-        params.encodeConfig->rcParams.constQP = {28, 31, 25};
-    }
-
     if (params.encodeGUID == NV_ENC_CODEC_H264_GUID) {
-        if (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444 ||
-            buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT) {
+        if (false /*yuv444*/) {
             params.encodeConfig->encodeCodecConfig.h264Config.chromaFormatIDC = 3;
         }
         params.encodeConfig->encodeCodecConfig.h264Config.idrPeriod =
@@ -458,15 +426,12 @@ NvD3d11EncoderImpl::generateEncodeParams(NV_ENC_CONFIG& encode_config) {
         params.encodeConfig->encodeCodecConfig.h264Config.maxNumRefFrames = 0;
         params.encodeConfig->encodeCodecConfig.h264Config.sliceMode = 3;
         params.encodeConfig->encodeCodecConfig.h264Config.sliceModeData = 1;
+        setVUIParameters(params.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters);
     }
     else if (params.encodeGUID == NV_ENC_CODEC_HEVC_GUID) {
         params.encodeConfig->encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 =
-            (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV420_10BIT ||
-             buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT)
-                ? 2
-                : 0;
-        if (buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444 ||
-            buffer_format_ == NV_ENC_BUFFER_FORMAT_YUV444_10BIT) {
+            0; // only support ARGB
+        if (false /*yuv444*/) {
             params.encodeConfig->encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
         }
         params.encodeConfig->encodeCodecConfig.hevcConfig.idrPeriod =
@@ -474,8 +439,20 @@ NvD3d11EncoderImpl::generateEncodeParams(NV_ENC_CONFIG& encode_config) {
         params.encodeConfig->encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 0;
         params.encodeConfig->encodeCodecConfig.hevcConfig.sliceMode = 3;
         params.encodeConfig->encodeCodecConfig.hevcConfig.sliceModeData = 1;
+        setVUIParameters(params.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters);
     }
     return params;
+}
+
+void NvD3d11EncoderImpl::setVUIParameters(NV_ENC_CONFIG_H264_VUI_PARAMETERS& params) {
+    params.videoSignalTypePresentFlag = 1;
+    params.videoFormat = 5; // unspecified
+    params.videoFullRangeFlag = 1;
+    params.colourDescriptionPresentFlag = 1;
+    params.colourPrimaries = 2;         // BT.709 // TODO: from dup
+    params.transferCharacteristics = 0; // TODO: from dup
+    params.colourMatrix = 2;            // BT.709 // TODO: from dup
+                                        // chromaSampleLocationFlag ???
 }
 
 bool NvD3d11EncoderImpl::initBuffers() {
