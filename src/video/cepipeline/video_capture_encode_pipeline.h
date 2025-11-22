@@ -37,6 +37,7 @@
 #include <ltlib/system.h>
 #include <message_handler.h>
 #include <transport/transport.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -50,6 +51,8 @@ public:
         uint32_t height;
         uint32_t client_refresh_rate;
         uint32_t max_mbps;
+        ColorMatrix color_matrix;
+        bool full_range;
         ltlib::Monitor monitor;
         std::function<bool(uint32_t, const MessageHandler&)> register_message_handler;
         std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>

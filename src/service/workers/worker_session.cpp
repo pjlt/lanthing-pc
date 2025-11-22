@@ -73,6 +73,7 @@
 
 #include "worker_process.h"
 #include <lt_constants.h>
+#include <video/types.h>
 
 namespace {
 
@@ -464,6 +465,8 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
     params.client_video_codecs = client_codecs;
+    params.color_matrix = static_cast<int32_t>(ColorMatrix::BT709);
+    params.full_range = true;
     params.audio_codec = atype(transport_type_);
     params.on_failed =
         std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this, std::placeholders::_1);

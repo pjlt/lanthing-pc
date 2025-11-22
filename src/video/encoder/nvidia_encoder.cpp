@@ -455,8 +455,8 @@ void NvD3d11EncoderImpl::setVUIParameters(NV_ENC_CONFIG_H264_VUI_PARAMETERS& par
     params.videoFormat = 5; // unspecified
     params.videoFullRangeFlag = params_.full_range();
     params.colourDescriptionPresentFlag = 1;
-    params.colourPrimaries = params_.color_primaries();
-    params.transferCharacteristics = params_.transfer_characteristics();
+    params.colourPrimaries = params_.color_primaries();                  // 这有意义吗?
+    params.transferCharacteristics = params_.transfer_characteristics(); // 这有意义吗?
     params.colourMatrix = params_.color_matrix();
     // chromaSampleLocationFlag ???
 }

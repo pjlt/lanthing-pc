@@ -77,19 +77,6 @@ static CursorFormat toCursorFormat(UINT type) {
     }
 }
 
-DxgiVideoCapturer::DxgiVideoCapturer(ltlib::Monitor monitor)
-    : impl_{std::make_unique<DUPLICATIONMANAGER>()}
-    , monitor_{monitor} {}
-
-DxgiVideoCapturer::~DxgiVideoCapturer() {}
-
-bool DxgiVideoCapturer::init() {
-    if (!initD3D11()) {
-        return false;
-    }
-    return true;
-}
-
 static std::string rotationString(DXGI_MODE_ROTATION rotation) {
     switch (rotation) {
     case DXGI_MODE_ROTATION_UNSPECIFIED:
@@ -142,8 +129,16 @@ static std::string colorspaceString(DXGI_COLOR_SPACE_TYPE colorspace) {
     return names[value];
 }
 
-bool DxgiVideoCapturer::start() {
-    // xxx
+DxgiVideoCapturer::DxgiVideoCapturer(ltlib::Monitor monitor)
+    : impl_{std::make_unique<DUPLICATIONMANAGER>()}
+    , monitor_{monitor} {}
+
+DxgiVideoCapturer::~DxgiVideoCapturer() {}
+
+bool DxgiVideoCapturer::init() {
+    if (!initD3D11()) {
+        return false;
+    }
     if (!impl_->InitDupl(d3d11_dev_.Get(), monitor_)) {
         LOG(ERR) << "Failed to init DUPLICATIONMANAGER";
         return false;
@@ -166,6 +161,28 @@ bool DxgiVideoCapturer::start() {
          desc.GreenPrimary[0], desc.GreenPrimary[1], desc.BluePrimary[0], desc.BluePrimary[1],
          desc.WhitePoint[0], desc.WhitePoint[1], desc.MinLuminance, desc.MaxLuminance,
          desc.MaxFullFrameLuminance);
+    // 这对吗?
+    if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020 ||
+        desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P2020 ||
+        desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020 ||
+        desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020) {
+        LOG(WARNING) << "BT2020 unsupported yet, treat as BT709";
+        color_primaries_ = ColorPrimaries::BT709;
+    }
+    else if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709 ||
+             desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709 ||
+             desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P709 ||
+             desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709) {
+        color_primaries_ = ColorPrimaries::BT709;
+    }
+    else {
+        LOG(WARNING) << "Unsupported color space " << colorspaceString(desc.ColorSpace);
+        color_primaries_ = ColorPrimaries::Undefined;
+    }
+    return true;
+}
+
+bool DxgiVideoCapturer::start() {
     return true;
 }
 
@@ -370,6 +387,10 @@ bool DxgiVideoCapturer::setCaptureFormat(CaptureFormat format) {
         LOG(ERR) << "DxgiVideoCapturer: Unknown CaptureFormat " << (int)format;
         return false;
     }
+}
+
+ColorPrimaries DxgiVideoCapturer::colorPrimaries() {
+    return color_primaries_;
 }
 
 } // namespace video

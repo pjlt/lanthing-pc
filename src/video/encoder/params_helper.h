@@ -36,6 +36,7 @@
 #include <string>
 
 #include <transport/transport.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -59,55 +60,13 @@ public:
         AvcMain,
         HevcMain,
     };
-    // https://www.itu.int/rec/T-REC-H.265-202407-I/en
-    enum class ColorPrimaries {
-        Undefined = 0,
-        BT709 = 1,
-        Unspecified = 2,
-        Reserved = 3,
-        BT470M = 4,
-        BT470BG = 5,
-        BT601 = 6,
-        ST240M = 7, // same as BT601
-        Film = 8,
-        BT2020 = 9,
-    };
-    enum class TransferCharacteristics {
-        Undefined = 0,
-        BT709 = 1,
-        Unspecified = 2,
-        Reserved = 3,
-        BT470M = 4,
-        BT470BG = 5,
-        BT601 = 6,
-        ST240M = 7, // same as BT601 ??
-        Linear = 8,
-        Log100 = 9,
-        LogSqrt = 10,
-        IEC61966_2_4 = 11,
-        BT1361 = 12,
-        SRGB = 13,
-        BT2020_10bit = 14,
-        BT2020_12bit = 15,
-    };
-    enum class ColorMatrix {
-        Identity = 0,
-        BT709 = 1,
-        Unspecified = 2,
-        Reserved = 3,
-        FCC = 4,
-        BT470BG = 5,
-        BT601 = 6,
-        ST240M = 7, // same as BT601 ??
-        WhatIsThis = 8,
-        BT2020_NCL = 9, // non-constant luminance
-        BT2020_CL = 10, // constant luminance
-    };
 
 public:
     EncodeParamsHelper(void* d3d11_dev, void* d3d11_ctx, int64_t luid, lt::VideoCodecType c,
                        uint32_t width, uint32_t height, uint32_t fps, uint32_t bitrate,
-                       bool enable_vbv);
+                       bool enable_vbv, ColorPrimaries color_primaries,
+                       TransferCharacteristics transfer_func, ColorMatrix color_matrix,
+                       bool full_range);
     void* d3d11_dev() const { return d3d11_dev_; }
     void* d3d11_ctx() const { return d3d11_ctx_; }
     int64_t luid() const { return luid_; }
@@ -155,10 +114,10 @@ private:
     const RcMode rc_ = RcMode::VBR;
     const Preset preset_ = Preset::Speed;
     const Profile profile_;
-    const ColorPrimaries color_primaries_ = ColorPrimaries::BT601;
-    const TransferCharacteristics transfer_characteristics_ = TransferCharacteristics::BT601;
-    const ColorMatrix color_matrix_ = ColorMatrix::BT601;
-    const bool full_range_ = false;
+    const ColorPrimaries color_primaries_;
+    const TransferCharacteristics transfer_characteristics_;
+    const ColorMatrix color_matrix_;
+    const bool full_range_;
     std::array<uint32_t, 3> qmin_ = {6, 8, 25};
     std::array<uint32_t, 3> qmax_ = {40, 42, 50};
     std::optional<int> vbvbufsize_;
