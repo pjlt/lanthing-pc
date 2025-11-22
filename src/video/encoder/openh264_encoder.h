@@ -45,13 +45,14 @@ public:
     static std::unique_ptr<OpenH264Encoder> create(const EncodeParamsHelper& params);
     ~OpenH264Encoder() override = default;
 
-
     void reconfigure(const ReconfigureParams& params) override;
     CaptureFormat captureFormat() const override;
     VideoCodecType codecType() const override;
     uint32_t width() const override;
     uint32_t height() const override;
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
+    ColorMatrix colorMatrix() const override;
+    bool fullRange() const override;
 
 private:
     std::shared_ptr<OpenH264EncoderImpl> impl_;

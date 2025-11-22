@@ -54,6 +54,8 @@ public:
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeFrame(void* input_frame) override;
     bool doneFrame1() const override;
     bool doneFrame2() const override;
+    ColorMatrix colorMatrix() const override;
+    bool fullRange() const override;
 
 private:
     std::shared_ptr<AmdEncoderImpl> impl_;

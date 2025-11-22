@@ -408,6 +408,8 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));
     negotiated_params->set_rotation(monitors_[monitor_index_].rotation);
     negotiated_params->set_monitor_index(static_cast<int32_t>(monitor_index_));
+    negotiated_params->set_color_matrix(static_cast<int32_t>(video->colorMatrix()));
+    negotiated_params->set_full_range(video->fullRange());
     LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
 
     negotiated_params_ = negotiated_params;

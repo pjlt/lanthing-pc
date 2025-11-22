@@ -530,6 +530,15 @@ bool AmdEncoder::doneFrame2() const {
     return true;
 }
 
+ColorMatrix AmdEncoder::colorMatrix() const {
+    // TODO
+    return ColorMatrix::BT709;
+}
+
+bool AmdEncoder::fullRange() const {
+    return false;
+}
+
 } // namespace video
 
 } // namespace lt

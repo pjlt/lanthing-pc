@@ -102,6 +102,8 @@ public:
     void stop() override;
     VideoCodecType codec() const override;
     bool defaultOutput() override;
+    ColorMatrix colorMatrix() const override;
+    bool fullRange() const override;
 
 protected:
     VCEPipeline2();
@@ -118,6 +120,12 @@ VideoCodecType VCEPipeline2::codec() const {
 bool VCEPipeline2::defaultOutput() {
     return true;
 }
+ColorMatrix VCEPipeline2::colorMatrix() const {
+    return ColorMatrix::BT709;
+}
+bool VCEPipeline2::fullRange() const {
+    return false;
+}
 // #if !defined(LT_WINDOWS)
 std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params&) {
     return nullptr;
@@ -132,6 +140,8 @@ public:
     void stop() override;
     VideoCodecType codec() const override;
     bool defaultOutput() override;
+    ColorMatrix colorMatrix() const override;
+    bool fullRange() const override;
 
 private:
     VCEPipeline(const CaptureEncodePipeline::Params& params);
@@ -330,6 +340,14 @@ bool VCEPipeline::defaultOutput() {
     else {
         return true;
     }
+}
+
+ColorMatrix VCEPipeline::colorMatrix() const {
+    return encoder_->colorMatrix();
+}
+
+bool VCEPipeline::fullRange() const {
+    return encoder_->fullRange();
 }
 
 void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,

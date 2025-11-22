@@ -310,6 +310,14 @@ OpenH264Encoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 
+ColorMatrix OpenH264Encoder::colorMatrix() const {
+    return ColorMatrix::BT601;
+}
+
+bool OpenH264Encoder::fullRange() const {
+    return false;
+}
+
 } // namespace video
 
 } // namespace lt

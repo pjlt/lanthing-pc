@@ -85,6 +85,8 @@ public:
     std::shared_ptr<ltproto::client2worker::VideoFrame> encode(const Capturer::Frame& input_frame);
     virtual bool doneFrame1() const;
     virtual bool doneFrame2() const;
+    virtual ColorMatrix colorMatrix() const = 0;
+    virtual bool fullRange() const = 0;
 
     // static std::vector<VideoCodecType> checkSupportedCodecs(uint32_t width, uint32_t height);
     // static std::vector<VideoCodecType> checkSupportedCodecsWithLuid(int64_t luid, uint32_t width,

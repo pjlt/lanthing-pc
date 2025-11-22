@@ -163,6 +163,8 @@ public:
     uint32_t height() const { return params_.height(); }
     std::shared_ptr<ltproto::client2worker::VideoFrame> encodeOneFrame(void* input_frame,
                                                                        bool request_iframe);
+    ColorMatrix colorMatrix() const { return static_cast<ColorMatrix>(params_.color_matrix()); }
+    bool fullRange() const { return params_.full_range(); }
 
 private:
     bool loadNvApi();
@@ -544,6 +546,14 @@ uint32_t NvD3d11Encoder::height() const {
 
 std::shared_ptr<ltproto::client2worker::VideoFrame> NvD3d11Encoder::encodeFrame(void* input_frame) {
     return impl_->encodeOneFrame(input_frame, needKeyframe());
+}
+
+ColorMatrix NvD3d11Encoder::colorMatrix() const {
+    return impl_->colorMatrix();
+}
+
+bool NvD3d11Encoder::fullRange() const {
+    return impl_->fullRange();
 }
 
 } // namespace video

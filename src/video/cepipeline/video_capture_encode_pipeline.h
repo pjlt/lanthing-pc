@@ -66,6 +66,8 @@ public:
     virtual void stop() = 0;
     virtual VideoCodecType codec() const = 0;
     virtual bool defaultOutput() = 0;
+    virtual ColorMatrix colorMatrix() const = 0;
+    virtual bool fullRange() const = 0;
 
 protected:
     CaptureEncodePipeline() = default;
