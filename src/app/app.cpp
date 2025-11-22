@@ -701,9 +701,10 @@ void App::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
 #include <trusted-root.cert>
 bool App::initTcpClient() {
     ltlib::Client::Params params{};
-    params.stype = ltlib::StreamType::TCP;
+    params.stype = ltlib::StreamType::Websocket;
     params.ioloop = ioloop_.get();
     params.host = MACRO_TO_STRING(LT_SERVER_ADDR);
+    params.url_path = "/ws/controlling";
     params.port = LT_SERVER_APP_PORT;
     params.is_tls = LT_SERVER_USE_SSL;
     params.cert = kLanthingCert;
