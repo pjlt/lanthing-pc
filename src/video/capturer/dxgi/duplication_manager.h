@@ -13,6 +13,8 @@
 
 #include <video/capturer/dxgi/common_types.h>
 
+#include <dxgi1_6.h>
+
 //
 // Handles the task of duplicating an output.
 //
@@ -26,7 +28,7 @@ public:
     bool InitDupl(_In_ ID3D11Device* Device, ltlib::Monitor monitor);
     DUPL_RETURN GetMouse(_Inout_ PTR_INFO* PtrInfo, _In_ DXGI_OUTDUPL_FRAME_INFO* FrameInfo,
                          INT OffsetX, INT OffsetY);
-    void GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr);
+    DXGI_OUTPUT_DESC1 GetOutputDesc1();
     void WaitForVBlank();
     bool DefaultOutput();
     bool GetPointerShape(DXGI_OUTDUPL_POINTER_SHAPE_INFO& info, std::vector<uint8_t>& data);
@@ -42,8 +44,9 @@ private:
     _Field_size_bytes_(m_MetaDataSize) BYTE* m_MetaDataBuffer;
     UINT m_MetaDataSize;
     UINT m_OutputNumber;
-    DXGI_OUTPUT_DESC m_OutputDesc;
+    DXGI_OUTPUT_DESC1 m_OutputDesc;
+
     Microsoft::WRL::ComPtr<ID3D11Device> m_Device;
-    Microsoft::WRL::ComPtr<IDXGIOutput> m_DxgiOutput;
+    Microsoft::WRL::ComPtr<IDXGIOutput6> m_DxgiOutput;
     bool default_output_ = false;
 };

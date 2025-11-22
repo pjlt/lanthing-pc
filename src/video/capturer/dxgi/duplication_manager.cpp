@@ -73,13 +73,13 @@ bool DUPLICATIONMANAGER::InitDupl(_In_ ID3D11Device* Device, ltlib::Monitor moni
 bool DUPLICATIONMANAGER::InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdapter,
                                    ltlib::Monitor monitor) {
     m_OutputNumber = std::numeric_limits<decltype(m_OutputNumber)>::max();
-    ComPtr<IDXGIOutput> DxgiOutput;
+    ComPtr<IDXGIOutput6> DxgiOutput6;
     ComPtr<IDXGIOutputDuplication> DeskDupl;
     HRESULT hr;
     // Get output
     for (UINT i = 0;; i++) {
         ComPtr<IDXGIOutput> dxgi_output;
-        DXGI_OUTPUT_DESC desc{};
+        DXGI_OUTPUT_DESC1 desc{};
         hr = DxgiAdapter->EnumOutputs(i, dxgi_output.GetAddressOf());
         if (hr == DXGI_ERROR_NOT_FOUND) {
             break;
@@ -88,7 +88,17 @@ bool DUPLICATIONMANAGER::InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdap
             LOGF(ERR, "IDXGIOutput::EnumOutputs(%u) failed with %#x", i, hr);
             return false;
         }
-        dxgi_output->GetDesc(&desc);
+        ComPtr<IDXGIOutput6> dxgi_output6;
+        hr = dxgi_output.As(&dxgi_output6);
+        if (FAILED(hr)) {
+            LOGF(ERR, "Failed to QI for DxgiOutput6, hr: 0x%08x", hr);
+            return false;
+        }
+        hr = dxgi_output6->GetDesc1(&desc);
+        if (FAILED(hr)) {
+            LOGF(ERR, "Failed to get output desc1, hr: 0x%08x", hr);
+            return false;
+        }
         if (desc.DesktopCoordinates.left == monitor.left &&
             desc.DesktopCoordinates.top == monitor.top &&
             desc.DesktopCoordinates.right == monitor.right &&
@@ -96,36 +106,42 @@ bool DUPLICATIONMANAGER::InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdap
             LOG(INFO) << "Found match output " << i;
             m_OutputNumber = i;
             m_OutputDesc = desc;
-            DxgiOutput = dxgi_output;
             default_output_ = false;
+            DxgiOutput6 = dxgi_output6;
             break;
         }
     }
     if (m_OutputNumber == std::numeric_limits<decltype(m_OutputNumber)>::max()) {
         LOG(WARNING) << "No match output, use default one";
-        hr = DxgiAdapter->EnumOutputs(0, DxgiOutput.GetAddressOf());
+        ComPtr<IDXGIOutput> dxgi_output;
+        hr = DxgiAdapter->EnumOutputs(0, dxgi_output.GetAddressOf());
         if (FAILED(hr)) {
             LOGF(ERR, "IDXGIOutput::EnumOutputs(%d) failed with %#x", 0, hr);
             return false;
         }
-        DxgiOutput->GetDesc(&m_OutputDesc);
+        ComPtr<IDXGIOutput6> dxgi_output6;
+        hr = dxgi_output.As(&dxgi_output6);
+        if (FAILED(hr)) {
+            LOGF(ERR, "Failed to QI for DxgiOutput6, hr: 0x%08x", hr);
+            return false;
+        }
+        DXGI_OUTPUT_DESC1 desc{};
+        hr = dxgi_output6->GetDesc1(&desc);
+        if (FAILED(hr)) {
+            LOGF(ERR, "Failed to get output desc1, hr: 0x%08x", hr);
+            return false;
+        }
+        m_OutputDesc = desc;
         default_output_ = true;
+        DxgiOutput6 = dxgi_output6;
     }
-    if (DxgiOutput == nullptr) {
+    if (DxgiOutput6 == nullptr) {
         LOG(INFO) << "DxgiOutput == nullptr";
-        return false;
-    }
-    // QI for Output 1
-    ComPtr<IDXGIOutput1> DxgiOutput1;
-    hr = DxgiOutput->QueryInterface(__uuidof(IDXGIOutput1),
-                                    reinterpret_cast<void**>(DxgiOutput1.GetAddressOf()));
-    if (FAILED(hr)) {
-        LOGF(ERR, "Failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
         return false;
     }
 
     // Create desktop duplication
-    hr = DxgiOutput1->DuplicateOutput(m_Device.Get(), DeskDupl.GetAddressOf());
+    hr = DxgiOutput6->DuplicateOutput(m_Device.Get(), DeskDupl.GetAddressOf());
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
             LOGF(ERR, "There is already the maximum number of applications using the Desktop "
@@ -136,7 +152,7 @@ bool DUPLICATIONMANAGER::InitDupl2(Microsoft::WRL::ComPtr<IDXGIAdapter> DxgiAdap
         return false;
     }
     m_DeskDupl = DeskDupl;
-    m_DxgiOutput = DxgiOutput;
+    m_DxgiOutput = DxgiOutput6;
     return true;
 }
 
@@ -360,8 +376,8 @@ DUPL_RETURN DUPLICATIONMANAGER::DoneWithFrame() {
 //
 // Gets output desc into DescPtr
 //
-void DUPLICATIONMANAGER::GetOutputDesc(_Out_ DXGI_OUTPUT_DESC* DescPtr) {
-    *DescPtr = m_OutputDesc;
+DXGI_OUTPUT_DESC1 DUPLICATIONMANAGER::GetOutputDesc1() {
+    return m_OutputDesc;
 }
 
 void DUPLICATIONMANAGER::WaitForVBlank() {
@@ -380,16 +396,13 @@ DUPL_RETURN DUPLICATIONMANAGER::ResetDulp() {
     if (m_DeskDupl) {
         m_DeskDupl = nullptr;
     }
-    m_DxgiOutput->GetDesc(&m_OutputDesc);
-    ComPtr<IDXGIOutput1> DxgiOutput1;
-    HRESULT hr = m_DxgiOutput->QueryInterface(__uuidof(IDXGIOutput1),
-                                              reinterpret_cast<void**>(DxgiOutput1.GetAddressOf()));
+    HRESULT hr = m_DxgiOutput->GetDesc1(&m_OutputDesc);
     if (FAILED(hr)) {
-        LOGF(ERR, "Failed to QI for DxgiOutput1 in DUPLICATIONMANAGER, hr: 0x%08x", hr);
+        LOGF(ERR, "Failed to get output desc1, hr: 0x%08x", hr);
         return DUPL_RETURN_ERROR_UNEXPECTED;
     }
 
-    hr = DxgiOutput1->DuplicateOutput(m_Device.Get(), m_DeskDupl.GetAddressOf());
+    hr = m_DxgiOutput->DuplicateOutput(m_Device.Get(), m_DeskDupl.GetAddressOf());
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
             LOGF(ERR, "There is already the maximum number of applications using the Desktop "

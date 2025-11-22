@@ -83,6 +83,12 @@ public:
     GUID preset() const;
     GUID codec() const;
     GUID profile() const;
+    uint32_t color_primaries() const { return static_cast<uint32_t>(params_.color_primaries()); }
+    uint32_t transfer_characteristics() const {
+        return static_cast<uint32_t>(params_.transfer_characteristics());
+    }
+    uint32_t color_matrix() const { return static_cast<uint32_t>(params_.color_matrix()); }
+    bool full_range() const { return params_.full_range(); }
     void set_bitrate(uint32_t bps) { params_.set_bitrate(bps); }
     void set_fps(int f) { params_.set_fps(f); }
 
@@ -165,7 +171,7 @@ private:
     std::optional<NV_ENC_MAP_INPUT_RESOURCE> initInputFrame(void* frame);
     bool uninitInputFrame(NV_ENC_MAP_INPUT_RESOURCE& resource);
     void releaseResources();
-    static void setVUIParameters(NV_ENC_CONFIG_H264_VUI_PARAMETERS& vui_params);
+    void setVUIParameters(NV_ENC_CONFIG_H264_VUI_PARAMETERS& vui_params);
 
 private:
     Microsoft::WRL::ComPtr<ID3D11Device> d3d11_dev_;
@@ -447,12 +453,12 @@ NvD3d11EncoderImpl::generateEncodeParams(NV_ENC_CONFIG& encode_config) {
 void NvD3d11EncoderImpl::setVUIParameters(NV_ENC_CONFIG_H264_VUI_PARAMETERS& params) {
     params.videoSignalTypePresentFlag = 1;
     params.videoFormat = 5; // unspecified
-    params.videoFullRangeFlag = 1;
+    params.videoFullRangeFlag = params_.full_range();
     params.colourDescriptionPresentFlag = 1;
-    params.colourPrimaries = 2;         // BT.709 // TODO: from dup
-    params.transferCharacteristics = 0; // TODO: from dup
-    params.colourMatrix = 2;            // BT.709 // TODO: from dup
-                                        // chromaSampleLocationFlag ???
+    params.colourPrimaries = params_.color_primaries();
+    params.transferCharacteristics = params_.transfer_characteristics();
+    params.colourMatrix = params_.color_matrix();
+    // chromaSampleLocationFlag ???
 }
 
 bool NvD3d11EncoderImpl::initBuffers() {
