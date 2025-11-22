@@ -36,6 +36,8 @@
 #include <plat/video_device.h>
 #include <video/drpipeline/video_decode_render_pipeline.h>
 
+#include <ltlib/logging.h>
+
 namespace lt {
 
 namespace worker {
@@ -55,6 +57,7 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
     for (auto codec :
          {VideoCodecType::H265_420, VideoCodecType::H264_420, VideoCodecType::H264_420_SOFT}) {
         auto empty_func2 = [](uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool) {};
+        LOG(INFO) << "Checking video decoder " << ::lt::toString(codec);
         auto video_device = plat::VideoDevice::create(codec);
         if (video_device == nullptr) {
             continue;

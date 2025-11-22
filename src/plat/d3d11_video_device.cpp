@@ -150,19 +150,23 @@ bool D3D11VideoDevice::init() {
             }
             GUID guid;
             DXGI_FORMAT format;
-            guid = D3D11_DECODER_PROFILE_H264_VLD_NOFGT;
-            format = DXGI_FORMAT_NV12;
-            BOOL supported = false;
-            hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
-            if (!FAILED(hr) && supported) {
-                ability.codecs.push_back(lt::VideoCodecType::H264);
+            if (codec_ == lt::VideoCodecType::H264_420) {
+                guid = D3D11_DECODER_PROFILE_H264_VLD_NOFGT;
+                format = DXGI_FORMAT_NV12;
+                BOOL supported = false;
+                hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
+                if (!FAILED(hr) && supported) {
+                    ability.codecs.push_back(lt::VideoCodecType::H264);
+                }
             }
-            supported = false;
-            guid = D3D11_DECODER_PROFILE_HEVC_VLD_MAIN;
-            format = DXGI_FORMAT_NV12;
-            hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
-            if (!FAILED(hr) && supported) {
-                ability.codecs.push_back(lt::VideoCodecType::H265);
+            if (codec_ == lt::VideoCodecType::H265_420) {
+                guid = D3D11_DECODER_PROFILE_HEVC_VLD_MAIN;
+                format = DXGI_FORMAT_NV12;
+                BOOL supported = false;
+                hr = video_device->CheckVideoDecoderFormat(&guid, format, &supported);
+                if (!FAILED(hr) && supported) {
+                    ability.codecs.push_back(lt::VideoCodecType::H265);
+                }
             }
         }
         ability.codecs.push_back(lt::VideoCodecType::H264_420_SOFT);
