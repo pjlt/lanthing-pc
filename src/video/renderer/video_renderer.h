@@ -35,6 +35,7 @@
 
 #include <cursor_info.h>
 #include <video/decoder/video_decoder.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -52,6 +53,8 @@ public:
         uint32_t rotation;
         bool stretch;
         bool absolute_mouse;
+        ColorMatrix color_matrix;
+        bool full_range;
     };
 
     enum class RenderResult { Success2, Failed, Reset };
@@ -78,11 +81,17 @@ public:
     virtual bool detachRenderContext();
 
 protected:
-    explicit Renderer(bool absolute_mouse);
+    explicit Renderer(const Params& params);
+    struct CSCMatrix {
+        float matrix[16];
+    };
+    CSCMatrix colorMatrix(ColorMatrix matrix, bool full_range);
 
 protected:
     std::optional<lt::CursorInfo> cursor_info_;
     bool absolute_mouse_;
+    ColorMatrix color_matrix_;
+    bool full_range_;
 };
 
 } // namespace video

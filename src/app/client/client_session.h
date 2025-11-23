@@ -59,6 +59,8 @@ public:
         uint32_t audio_channels;
         uint32_t audio_freq;
         uint32_t rotation;
+        int32_t color_matrix;
+        bool full_range;
         std::vector<std::string> reflex_servers;
         int32_t transport_type;
         std::function<void()> on_exited;

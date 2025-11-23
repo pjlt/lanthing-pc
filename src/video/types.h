@@ -88,4 +88,101 @@ enum class ColorMatrix {
     BT2020_CL = 10, // constant luminance
 };
 
+inline ::std::string toString(enum ColorMatrix matrix) {
+    switch (matrix) {
+    case ColorMatrix::Identity:
+        return "Identity";
+    case ColorMatrix::BT709:
+        return "BT709";
+    case ColorMatrix::Unspecified:
+        return "Unspecified";
+    case ColorMatrix::Reserved:
+        return "Reserved";
+    case ColorMatrix::FCC:
+        return "FCC";
+    case ColorMatrix::BT470BG:
+        return "BT470BG";
+    case ColorMatrix::BT601:
+        return "BT601";
+    case ColorMatrix::ST240M:
+        return "ST240M";
+    case ColorMatrix::WhatIsThis:
+        return "WhatIsThis";
+    case ColorMatrix::BT2020_NCL:
+        return "BT2020_NCL";
+    case ColorMatrix::BT2020_CL:
+        return "BT2020_CL";
+    default:
+        return "ColorMatrix_" + std::to_string((int)matrix);
+    }
+}
+
+// 将TransferCharacteristics转换为字符串
+inline ::std::string toString(enum TransferCharacteristics tc) {
+    switch (tc) {
+    case TransferCharacteristics::Undefined:
+        return "Undefined";
+    case TransferCharacteristics::BT709:
+        return "BT709";
+    case TransferCharacteristics::Unspecified:
+        return "Unspecified";
+    case TransferCharacteristics::Reserved:
+        return "Reserved";
+    case TransferCharacteristics::BT470M:
+        return "BT470M";
+    case TransferCharacteristics::BT470BG:
+        return "BT470BG";
+    case TransferCharacteristics::BT601:
+        return "BT601";
+    case TransferCharacteristics::ST240M:
+        return "ST240M";
+    case TransferCharacteristics::Linear:
+        return "Linear";
+    case TransferCharacteristics::Log100:
+        return "Log100";
+    case TransferCharacteristics::LogSqrt:
+        return "LogSqrt";
+    case TransferCharacteristics::IEC61966_2_4:
+        return "IEC61966_2_4";
+    case TransferCharacteristics::BT1361:
+        return "BT1361";
+    case TransferCharacteristics::SRGB:
+        return "SRGB";
+    case TransferCharacteristics::BT2020_10bit:
+        return "BT2020_10bit";
+    case TransferCharacteristics::BT2020_12bit:
+        return "BT2020_12bit";
+    default:
+        return "TransferCharacteristics_" + std::to_string((int)tc);
+    }
+}
+
+// 将ColorPrimaries转换为字符串
+inline ::std::string toString(enum ColorPrimaries cp) {
+    switch (cp) {
+    case ColorPrimaries::Undefined:
+        return "Undefined";
+    case ColorPrimaries::BT709:
+        return "BT709";
+    case ColorPrimaries::Unspecified:
+        return "Unspecified";
+    case ColorPrimaries::Reserved:
+        return "Reserved";
+    case ColorPrimaries::BT470M:
+        return "BT470M";
+    case ColorPrimaries::BT470BG:
+        return "BT470BG";
+    case ColorPrimaries::BT601:
+        return "BT601";
+    case ColorPrimaries::ST240M:
+        return "ST240M";
+    case ColorPrimaries::Film:
+        return "Film";
+    case ColorPrimaries::BT2020:
+        return "BT2020";
+    default:
+        return "ColorPrimaries_" + std::to_string((int)cp);
+    }
+}
+
 } // namespace lt

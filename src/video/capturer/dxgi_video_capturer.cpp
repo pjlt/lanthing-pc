@@ -162,17 +162,11 @@ bool DxgiVideoCapturer::init() {
          desc.WhitePoint[0], desc.WhitePoint[1], desc.MinLuminance, desc.MaxLuminance,
          desc.MaxFullFrameLuminance);
     // 这对吗?
-    if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020 ||
-        desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P2020 ||
-        desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020 ||
-        desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020) {
+    if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020) {
         LOG(WARNING) << "BT2020 unsupported yet, treat as BT709";
         color_primaries_ = ColorPrimaries::BT709;
     }
-    else if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709 ||
-             desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709 ||
-             desc.ColorSpace == DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P709 ||
-             desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709) {
+    else if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709) {
         color_primaries_ = ColorPrimaries::BT709;
     }
     else {

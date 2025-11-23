@@ -46,9 +46,6 @@ namespace lt {
 namespace video {
 
 class D3D11Pipeline : public Renderer {
-    struct ColorMatrix {
-        float matrix[16];
-    };
     struct ShaderView {
         void* texture = nullptr;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> y;
@@ -77,7 +74,8 @@ public:
     };
 
 public:
-    D3D11Pipeline(const Params& params);
+    //TODO:
+    D3D11Pipeline(const Renderer::Params& params1, const D3D11Pipeline::Params& params2);
     ~D3D11Pipeline() override;
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;
@@ -108,7 +106,6 @@ private:
                                         int32_t hot_y, const std::vector<uint8_t>& data);
     bool calcVertexes();
     bool setupCursorD3DResources();
-    const ColorMatrix& getColorMatrix() const;
     std::optional<ShaderView> getShaderView(void* texture);
     RenderResult tryResetSwapChain();
     RenderResult renderVideo(int64_t frame);

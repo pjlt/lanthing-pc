@@ -38,6 +38,7 @@
 #include <cursor_info.h>
 #include <plat/pc_sdl.h>
 #include <transport/transport.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -48,6 +49,7 @@ public:
     struct Params {
         Params(lt::VideoCodecType encode, lt::VideoCodecType decode, uint32_t _width,
                uint32_t _height, uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
+               ColorMatrix _color_matrix, bool _full_range,
                std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
                    send_message,
                std::function<void()> switch_stretch, std::function<void()> reset_pipeline);
@@ -67,6 +69,8 @@ public:
         lt::plat::PcSdl* sdl = nullptr;
         void* device = nullptr;
         void* context = nullptr;
+        ColorMatrix color_matrix;
+        bool full_range;
         std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
             send_message_to_host;
         std::function<void()> switch_stretch;

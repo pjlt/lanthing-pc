@@ -281,6 +281,8 @@ void ClientManager::onRequestConnectionAck(std::shared_ptr<google::protobuf::Mes
     params.audio_channels = ack->streaming_params().audio_channels();
     params.audio_freq = ack->streaming_params().audio_sample_rate();
     params.rotation = ack->streaming_params().rotation();
+    params.color_matrix = ack->streaming_params().color_matrix();
+    params.full_range = ack->streaming_params().full_range();
     for (int i = 0; i < ack->reflex_servers_size(); i++) {
         params.reflex_servers.push_back(ack->reflex_servers(i));
     }

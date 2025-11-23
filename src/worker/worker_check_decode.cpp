@@ -63,7 +63,8 @@ WorkerCheckDecode::create(std::map<std::string, std::string> options) {
             continue;
         }
         lt::video::DecodeRenderPipeline::Params params{
-            codec, codec, 1920, 1080, 60, 0, true, empty_func2, empty_func, empty_func};
+            codec, codec,       1920,       1080,      60, 0, true, ColorMatrix::BT709,
+            true,  empty_func2, empty_func, empty_func};
         params.sdl = sdl.get();
         params.device = video_device->device();
         params.context = video_device->context();
