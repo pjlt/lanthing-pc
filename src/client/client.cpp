@@ -112,7 +112,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         options.find("-gamepad") == options.end() || options.find("-chans") == options.end() ||
         options.find("-afreq") == options.end() || options.find("-rotation") == options.end() ||
         options.find("-trans") == options.end() || options.find("-colormatrix") == options.end() ||
-        options.find("fullrange") == options.end()) {
+        options.find("-fullrange") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return nullptr;
     }

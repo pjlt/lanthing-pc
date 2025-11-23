@@ -870,7 +870,7 @@ bool D3D11Pipeline::setupPSStage() {
     }
 
     D3D11_BUFFER_DESC const_desc = {};
-    const_desc.ByteWidth = sizeof(ColorMatrix);
+    const_desc.ByteWidth = sizeof(CSCMatrix);
     const_desc.Usage = D3D11_USAGE_IMMUTABLE;
     const_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     const_desc.CPUAccessFlags = 0;
