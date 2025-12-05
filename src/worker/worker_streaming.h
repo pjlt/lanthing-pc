@@ -63,6 +63,8 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t refresh_rate;
+        int32_t color_matrix;
+        bool full_range;
         uint32_t monitor_index;
         bool need_negotiate;
         std::vector<lt::VideoCodecType> video_codecs;
@@ -116,6 +118,8 @@ private:
     const uint32_t client_width_;
     const uint32_t client_height_;
     const uint32_t client_refresh_rate_;
+    const int32_t color_matrix_;
+    const bool full_range_;
     uint32_t monitor_index_;
     const std::vector<lt::VideoCodecType> client_codec_types_;
     const std::string pipe_name_;

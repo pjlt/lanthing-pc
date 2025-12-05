@@ -36,6 +36,7 @@
 #include <string>
 
 #include <transport/transport.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -63,7 +64,9 @@ public:
 public:
     EncodeParamsHelper(void* d3d11_dev, void* d3d11_ctx, int64_t luid, lt::VideoCodecType c,
                        uint32_t width, uint32_t height, uint32_t fps, uint32_t bitrate,
-                       bool enable_vbv);
+                       bool enable_vbv, ColorPrimaries color_primaries,
+                       TransferCharacteristics transfer_func, ColorMatrix color_matrix,
+                       bool full_range);
     void* d3d11_dev() const { return d3d11_dev_; }
     void* d3d11_ctx() const { return d3d11_ctx_; }
     int64_t luid() const { return luid_; }
@@ -83,6 +86,10 @@ public:
     Preset preset() const { return preset_; }
     lt::VideoCodecType codec() const { return codec_type_; }
     Profile profile() const { return profile_; }
+    ColorPrimaries color_primaries() const { return color_primaries_; }
+    TransferCharacteristics transfer_characteristics() const { return transfer_characteristics_; }
+    ColorMatrix color_matrix() const { return color_matrix_; }
+    bool full_range() const { return full_range_; }
     void set_bitrate(uint32_t bps);
     void set_bitrate_kbps(uint32_t kbps) { set_bitrate(kbps * 1000); }
     void set_fps(int _fps);
@@ -107,6 +114,10 @@ private:
     const RcMode rc_ = RcMode::VBR;
     const Preset preset_ = Preset::Speed;
     const Profile profile_;
+    const ColorPrimaries color_primaries_;
+    const TransferCharacteristics transfer_characteristics_;
+    const ColorMatrix color_matrix_;
+    const bool full_range_;
     std::array<uint32_t, 3> qmin_ = {6, 8, 25};
     std::array<uint32_t, 3> qmax_ = {40, 42, 50};
     std::optional<int> vbvbufsize_;

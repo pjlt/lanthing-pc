@@ -96,7 +96,9 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
         options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
         options.find("-name") == options.end() || options.find("-negotiate") == options.end() ||
-        options.find("-mindex") == options.end() || options.find("-atype") == options.end()) {
+        options.find("-mindex") == options.end() || options.find("-atype") == options.end() ||
+        options.find("-colormatrix") == options.end() ||
+        options.find("-fullrange") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return {nullptr, kExitCodeInvalidParameters};
     }
@@ -106,6 +108,8 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
     int32_t freq = std::atoi(options["-freq"].c_str());
     int32_t monitor_index = std::atoi(options["-mindex"].c_str());
     int32_t atype = std::atoi(options["-atype"].c_str());
+    int32_t color_matrix = std::atoi(options["-colormatrix"].c_str());
+    int32_t full_range = std::atoi(options["-fullrange"].c_str());
     std::stringstream ss(options["-codecs"]);
 
     params.need_negotiate = std::atoi(options["-negotiate"].c_str()) != 0;
@@ -139,6 +143,8 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
         monitor_index = 0;
     }
     params.monitor_index = monitor_index;
+    params.color_matrix = color_matrix;
+    params.full_range = full_range != 0;
     std::string codec_str;
     while (std::getline(ss, codec_str, ',')) {
         VideoCodecType codec = videoCodecType(codec_str.c_str());
@@ -166,6 +172,8 @@ WorkerStreaming::WorkerStreaming(const Params& params)
     , client_width_{params.width}
     , client_height_{params.height}
     , client_refresh_rate_{params.refresh_rate}
+    , color_matrix_{params.color_matrix}
+    , full_range_{params.full_range}
     , monitor_index_{params.monitor_index}
     , client_codec_types_{params.video_codecs}
     , pipe_name_{params.name}
@@ -378,6 +386,8 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     video_params.height = static_cast<uint32_t>(monitors_[monitor_index_].height);
     video_params.client_refresh_rate = client_refresh_rate_;
     video_params.max_mbps = max_mbps_;
+    video_params.color_matrix = static_cast<ColorMatrix>(color_matrix_);
+    video_params.full_range = full_range_;
     video_params.monitor = monitors_[monitor_index_];
     video_params.send_message = std::bind(&WorkerStreaming::sendPipeMessageFromOtherThread, this,
                                           std::placeholders::_1, std::placeholders::_2);
@@ -398,6 +408,8 @@ int32_t WorkerStreaming::negotiateStreamParameters() {
     negotiated_params->add_video_codecs(toProtobuf(video->codec()));
     negotiated_params->set_rotation(monitors_[monitor_index_].rotation);
     negotiated_params->set_monitor_index(static_cast<int32_t>(monitor_index_));
+    negotiated_params->set_color_matrix(static_cast<int32_t>(video->colorMatrix()));
+    negotiated_params->set_full_range(video->fullRange());
     LOG(INFO) << "Negotiated video codec:" << toString(video->codec());
 
     negotiated_params_ = negotiated_params;

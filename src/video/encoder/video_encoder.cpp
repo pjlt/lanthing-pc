@@ -157,9 +157,19 @@ auto create_d3d11(std::optional<int64_t> luid)
 
 std::unique_ptr<lt::video::Encoder> doCreateHard(const lt::video::Encoder::InitParams& params) {
     using namespace lt::video;
-    EncodeParamsHelper params_helper{params.device,     params.context,     params.luid,
-                                     params.codec_type, params.width,       params.height,
-                                     params.freq,       params.bitrate_bps, true};
+    EncodeParamsHelper params_helper{params.device,
+                                     params.context,
+                                     params.luid,
+                                     params.codec_type,
+                                     params.width,
+                                     params.height,
+                                     params.freq,
+                                     params.bitrate_bps,
+                                     true,
+                                     params.color_primaries,
+                                     params.transfer_func,
+                                     params.color_matrix,
+                                     params.full_range};
     switch (params.vendor_id) {
     case kNvidiaVendorID:
     {
@@ -222,9 +232,19 @@ std::unique_ptr<Encoder> Encoder::createHard(const InitParams& params) {
 
 std::unique_ptr<Encoder> Encoder::createSoft(const InitParams& params) {
 #if defined(LT_WINDOWS)
-    EncodeParamsHelper params_helper{params.device,     params.context,     params.luid,
-                                     params.codec_type, params.width,       params.height,
-                                     params.freq,       params.bitrate_bps, true};
+    EncodeParamsHelper params_helper{params.device,
+                                     params.context,
+                                     params.luid,
+                                     params.codec_type,
+                                     params.width,
+                                     params.height,
+                                     params.freq,
+                                     params.bitrate_bps,
+                                     true,
+                                     params.color_primaries,
+                                     params.transfer_func,
+                                     params.color_matrix,
+                                     params.full_range};
     return OpenH264Encoder::create(params_helper);
 #else  // defined(LT_WINDOWS)
     (void)params;

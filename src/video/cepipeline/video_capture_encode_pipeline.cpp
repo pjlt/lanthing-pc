@@ -102,6 +102,8 @@ public:
     void stop() override;
     VideoCodecType codec() const override;
     bool defaultOutput() override;
+    ColorMatrix colorMatrix() const override;
+    bool fullRange() const override;
 
 protected:
     VCEPipeline2();
@@ -118,6 +120,12 @@ VideoCodecType VCEPipeline2::codec() const {
 bool VCEPipeline2::defaultOutput() {
     return true;
 }
+ColorMatrix VCEPipeline2::colorMatrix() const {
+    return ColorMatrix::BT709;
+}
+bool VCEPipeline2::fullRange() const {
+    return false;
+}
 // #if !defined(LT_WINDOWS)
 std::unique_ptr<VCEPipeline2> VCEPipeline2::create(const CaptureEncodePipeline::Params&) {
     return nullptr;
@@ -132,6 +140,8 @@ public:
     void stop() override;
     VideoCodecType codec() const override;
     bool defaultOutput() override;
+    ColorMatrix colorMatrix() const override;
+    bool fullRange() const override;
 
 private:
     VCEPipeline(const CaptureEncodePipeline::Params& params);
@@ -161,6 +171,8 @@ private:
     uint32_t max_fps_;
     uint32_t target_fps_;
     uint32_t max_bps_;
+    ColorMatrix color_matrix_;
+    bool full_range_;
     ltlib::Monitor monitor_;
     std::function<bool(uint32_t, const MessageHandler&)> register_message_handler_;
     std::function<bool(uint32_t, const std::shared_ptr<google::protobuf::MessageLite>&)>
@@ -192,6 +204,8 @@ VCEPipeline::VCEPipeline(const CaptureEncodePipeline::Params& params)
     , target_fps_{params.client_refresh_rate}
     , max_bps_{(params.max_mbps == 0 || params.max_mbps > 100) ? (100 * 1000 * 1000)
                                                                : (params.max_mbps * 1000 * 1000)}
+    , color_matrix_{params.color_matrix}
+    , full_range_{params.full_range}
     , monitor_{params.monitor}
     , register_message_handler_{params.register_message_handler}
     , send_message_{params.send_message}
@@ -242,6 +256,17 @@ bool VCEPipeline::init() {
     encode_params.device = capturer->device();
     encode_params.context = capturer->deviceContext();
     encode_params.vendor_id = capturer->vendorID();
+    encode_params.color_primaries = capturer->colorPrimaries();
+    encode_params.transfer_func = TransferCharacteristics::BT709;
+    encode_params.color_matrix = color_matrix_;
+    encode_params.full_range = full_range_;
+    if (color_matrix_ != ColorMatrix::BT601 && color_matrix_ != ColorMatrix::BT709 &&
+        color_matrix_ != ColorMatrix::BT2020_NCL && color_matrix_ != ColorMatrix::BT2020_CL) {
+        LOG(WARNING) << "Unsupported color matrix " << static_cast<int32_t>(color_matrix_)
+                     << ", use BT709 instead";
+        encode_params.color_matrix = ColorMatrix::BT709;
+    }
+
     std::unique_ptr<Encoder> encoder;
     // try hard first
     for (auto codec : client_supported_codecs_) {
@@ -315,6 +340,14 @@ bool VCEPipeline::defaultOutput() {
     else {
         return true;
     }
+}
+
+ColorMatrix VCEPipeline::colorMatrix() const {
+    return encoder_->colorMatrix();
+}
+
+bool VCEPipeline::fullRange() const {
+    return encoder_->fullRange();
 }
 
 void VCEPipeline::mainLoop(const std::function<void()>& i_am_alive,

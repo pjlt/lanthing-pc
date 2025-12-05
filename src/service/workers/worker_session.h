@@ -117,7 +117,8 @@ private:
     tp::Server* createRtc2Server();
     void createWorkerProcess(uint32_t client_width, uint32_t client_height,
                              uint32_t client_refresh_rate,
-                             std::vector<lt::VideoCodecType> client_codecs);
+                             std::vector<lt::VideoCodecType> client_codecs, int32_t color_matrix,
+                             bool full_range);
     void onClosed(CloseReason reason);
     void maybeOnCreateSessionCompleted();
     void postTask(const std::function<void()>& task);

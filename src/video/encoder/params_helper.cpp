@@ -39,7 +39,10 @@ namespace video {
 
 EncodeParamsHelper::EncodeParamsHelper(void* d3d11_dev, void* d3d11_ctx, int64_t luid,
                                        lt::VideoCodecType c, uint32_t width, uint32_t height,
-                                       uint32_t fps, uint32_t bitrate, bool enable_vbv)
+                                       uint32_t fps, uint32_t bitrate, bool enable_vbv,
+                                       ColorPrimaries color_primaries,
+                                       TransferCharacteristics transfer_func,
+                                       ColorMatrix color_matrix, bool full_range)
     : d3d11_dev_{d3d11_dev}
     , d3d11_ctx_{d3d11_ctx}
     , luid_{luid}
@@ -49,7 +52,11 @@ EncodeParamsHelper::EncodeParamsHelper(void* d3d11_dev, void* d3d11_ctx, int64_t
     , fps_{static_cast<int>(fps)} // 为什么用int？忘了
     , bitrate_{bitrate}
     , enable_vbv_{enable_vbv}
-    , profile_{codecToProfile(c)} {
+    , profile_{codecToProfile(c)}
+    , color_primaries_{color_primaries}
+    , transfer_characteristics_{transfer_func}
+    , color_matrix_{color_matrix}
+    , full_range_{full_range} {
     calc_vbv();
     std::stringstream ssQmin;
     std::stringstream ssQmax;

@@ -77,6 +77,58 @@ static CursorFormat toCursorFormat(UINT type) {
     }
 }
 
+static std::string rotationString(DXGI_MODE_ROTATION rotation) {
+    switch (rotation) {
+    case DXGI_MODE_ROTATION_UNSPECIFIED:
+        return "DXGI_MODE_ROTATION_UNSPECIFIED";
+    case DXGI_MODE_ROTATION_IDENTITY:
+        return "DXGI_MODE_ROTATION_IDENTITY";
+    case DXGI_MODE_ROTATION_ROTATE90:
+        return "DXGI_MODE_ROTATION_ROTATE90";
+    case DXGI_MODE_ROTATION_ROTATE180:
+        return "DXGI_MODE_ROTATION_ROTATE180";
+    case DXGI_MODE_ROTATION_ROTATE270:
+        return "DXGI_MODE_ROTATION_ROTATE270";
+    default:
+        return "DXGI_MODE_ROTATION_" + std::to_string((int)rotation);
+    }
+}
+
+static std::string colorspaceString(DXGI_COLOR_SPACE_TYPE colorspace) {
+    int value = (int)colorspace;
+    if (value < 0 || value > (int)DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_TOPLEFT_P2020) {
+        return "DXGI_COLOR_SPACE_TYPE_" + std::to_string(value);
+    }
+    static const char* names[] = {
+        "DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709",
+        "DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709",
+        "DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709",
+        "DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020",
+        "DXGI_COLOR_SPACE_RESERVED",
+        "DXGI_COLOR_SPACE_YCBCR_FULL_G22_NONE_P709_X601",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P601",
+        "DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P601",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709",
+        "DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P709",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020",
+        "DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_LEFT_P2020",
+        "DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_TOPLEFT_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_TOPLEFT_P2020",
+        "DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_GHLG_TOPLEFT_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_FULL_GHLG_TOPLEFT_P2020",
+        "DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P709",
+        "DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_LEFT_P709",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_LEFT_P2020",
+        "DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_TOPLEFT_P2020",
+    };
+    return names[value];
+}
+
 DxgiVideoCapturer::DxgiVideoCapturer(ltlib::Monitor monitor)
     : impl_{std::make_unique<DUPLICATIONMANAGER>()}
     , monitor_{monitor} {}
@@ -87,15 +139,44 @@ bool DxgiVideoCapturer::init() {
     if (!initD3D11()) {
         return false;
     }
-    return true;
-}
-
-bool DxgiVideoCapturer::start() {
-    // xxx
     if (!impl_->InitDupl(d3d11_dev_.Get(), monitor_)) {
         LOG(ERR) << "Failed to init DUPLICATIONMANAGER";
         return false;
     }
+    DXGI_OUTPUT_DESC1 desc = impl_->GetOutputDesc1();
+    LOGF(INFO,
+         "Current dxgi output desc DeviceName: %s, Resolution: %dx%d, "
+         "DesktopCoordinates :{top:%d, bottom:%d, left:%d, right:%d}, "
+         "AttachedToDesktop: %d, Rotation: %s, BitsPerColor: %u, ColorSpace: %s, "
+         "RedPrimary: {%f, %f}, GreenPrimary: {%f, %f}, BluePrimary: {%f, %f}, "
+         "WhitePoint: {%f, %f}, MinLuminance: %f, MaxLuminance: %f, "
+         "MaxFullFrameLuminance: %f",
+         ltlib::utf16To8(desc.DeviceName).c_str(),
+         desc.DesktopCoordinates.right - desc.DesktopCoordinates.left,
+         desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top, desc.DesktopCoordinates.top,
+         desc.DesktopCoordinates.bottom, desc.DesktopCoordinates.left,
+         desc.DesktopCoordinates.right, desc.AttachedToDesktop,
+         rotationString(desc.Rotation).c_str(), desc.BitsPerColor,
+         colorspaceString(desc.ColorSpace).c_str(), desc.RedPrimary[0], desc.RedPrimary[1],
+         desc.GreenPrimary[0], desc.GreenPrimary[1], desc.BluePrimary[0], desc.BluePrimary[1],
+         desc.WhitePoint[0], desc.WhitePoint[1], desc.MinLuminance, desc.MaxLuminance,
+         desc.MaxFullFrameLuminance);
+    // 这对吗?
+    if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020) {
+        LOG(WARNING) << "BT2020 unsupported yet, treat as BT709";
+        color_primaries_ = ColorPrimaries::BT709;
+    }
+    else if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709) {
+        color_primaries_ = ColorPrimaries::BT709;
+    }
+    else {
+        LOG(WARNING) << "Unsupported color space " << colorspaceString(desc.ColorSpace);
+        color_primaries_ = ColorPrimaries::Undefined;
+    }
+    return true;
+}
+
+bool DxgiVideoCapturer::start() {
     return true;
 }
 
@@ -300,6 +381,10 @@ bool DxgiVideoCapturer::setCaptureFormat(CaptureFormat format) {
         LOG(ERR) << "DxgiVideoCapturer: Unknown CaptureFormat " << (int)format;
         return false;
     }
+}
+
+ColorPrimaries DxgiVideoCapturer::colorPrimaries() {
+    return color_primaries_;
 }
 
 } // namespace video

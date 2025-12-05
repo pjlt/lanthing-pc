@@ -73,6 +73,7 @@
 
 #include "worker_process.h"
 #include <lt_constants.h>
+#include <video/types.h>
 
 namespace {
 
@@ -287,6 +288,8 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
     int32_t client_width = msg->streaming_params().video_width();
     int32_t client_height = msg->streaming_params().video_height();
     int32_t client_refresh_rate = msg->streaming_params().screen_refresh_rate();
+    int32_t color_matrix = msg->streaming_params().color_matrix();
+    bool full_range = msg->streaming_params().full_range();
     if (client_width <= 0 || client_height <= 0 || client_refresh_rate < 0) {
         LOG(ERR) << "Received OpenConnection with invalid streaming params";
         return false;
@@ -327,7 +330,7 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
         return false;
     }
     createWorkerProcess((uint32_t)client_width, (uint32_t)client_height,
-                        (uint32_t)client_refresh_rate, client_codecs);
+                        (uint32_t)client_refresh_rate, client_codecs, color_matrix, full_range);
     postDelayTask(10'000, std::bind(&WorkerSession::checkAcceptTimeout, this));
     return true;
 }
@@ -456,7 +459,8 @@ tp::Server* WorkerSession::createRtc2Server() {
 
 void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_height,
                                         uint32_t client_refresh_rate,
-                                        std::vector<lt::VideoCodecType> client_codecs) {
+                                        std::vector<lt::VideoCodecType> client_codecs,
+                                        int32_t color_matrix, bool full_range) {
     WorkerProcess::Params params{};
     params.pipe_name = pipe_name_;
     params.path = ltlib::getProgramFullpath();
@@ -464,6 +468,8 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.client_height = client_height;
     params.client_refresh_rate = client_refresh_rate;
     params.client_video_codecs = client_codecs;
+    params.color_matrix = color_matrix;
+    params.full_range = full_range;
     params.audio_codec = atype(transport_type_);
     params.on_failed =
         std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this, std::placeholders::_1);

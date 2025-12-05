@@ -87,6 +87,8 @@ public:
         uint32_t audio_channels;
         uint32_t rotation;
         int32_t transport_type;
+        int32_t color_matrix;
+        bool full_range;
         bool enable_driver_input;
         bool enable_gamepad;
         std::vector<std::string> reflex_servers;

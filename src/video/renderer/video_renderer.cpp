@@ -42,6 +42,8 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#include <ltlib/logging.h>
+
 namespace lt {
 
 namespace video {
@@ -62,7 +64,7 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     d3d11_params.align = params.align;
     d3d11_params.stretch = params.stretch;
     d3d11_params.absolute_mouse = params.absolute_mouse;
-    auto renderer = std::make_unique<D3D11Pipeline>(d3d11_params);
+    auto renderer = std::make_unique<D3D11Pipeline>(params, d3d11_params);
     if (!renderer->init()) {
         return nullptr;
     }
@@ -98,8 +100,58 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
 #endif //
 }
 
-Renderer::Renderer(bool absolute_mouse)
-    : absolute_mouse_{absolute_mouse} {}
+Renderer::Renderer(const Params& params)
+    : absolute_mouse_{params.absolute_mouse}
+    , color_matrix_{params.color_matrix}
+    , full_range_{params.full_range} {}
+
+// clang-format off
+Renderer::CSCMatrix Renderer::colorMatrix(ColorMatrix matrix, bool full_range) {
+    // TODO: 重新校验这些矩阵.
+    static const CSCMatrix kBT709Limited =
+        CSCMatrix{{
+                1.1643835616f, 0.0000000000f, 1.7927410714f, -0.9729450750f,
+                1.1643835616f, -0.2132486143f, -0.5329093286f, 0.3014826655f,
+                1.1643835616f, 2.1124017857f, 0.00000000000f, -1.1334022179f,
+                0.0f, 0.0f, 0.0f, 1.0f}};
+    static const CSCMatrix kBT601Limited =
+        CSCMatrix{{
+                1.1643835616f, 0.0000000000f, 1.5960267857f, -0.8707874016f,
+                1.1643835616f, -0.3917622901f, -0.8129676476f, 0.5295939845f,
+                1.1643835616f, 2.0172321429f, 0.00000000000f, -1.0813901597f,
+                0.0f, 0.0f, 0.0f, 1.0f}};
+    // ???
+    static const CSCMatrix kBT709Full =
+        CSCMatrix{{
+                1.0000000000f, 0.0000000000f, 1.5748000000f, -0.8700000000f,
+                1.0000000000f, -0.1873000000f, -0.4681000000f, 0.5307000000f,
+                1.0000000000f, 1.8556000000f, 0.00000000000f, -1.0813000000f,
+                0.0f, 0.0f, 0.0f, 1.0f}};
+    static const CSCMatrix kBT601Full =
+        CSCMatrix{{
+                1.0000000000f, 0.0000000000f, 1.4020000000f, -0.7010000000f,
+                1.0000000000f, -0.3441362865f, -0.7141362865f, 0.5291362865f,
+                1.0000000000f, 1.7720000000f, 0.00000000000f, -1.1339862865f,
+                0.0f, 0.0f, 0.0f, 1.0f}};
+    if (matrix == ColorMatrix::BT709 && full_range) {
+        return kBT709Full;
+    }
+    else if (matrix == ColorMatrix::BT709 && !full_range) {
+        return kBT709Limited;
+    }
+    else if (matrix == ColorMatrix::BT601 && full_range) {
+        return kBT601Full;
+    }
+    else if (matrix == ColorMatrix::BT601 && !full_range) {
+        return kBT601Limited;
+    }
+    else {
+        LOG(WARNING) << "Unknown color matrix " << static_cast<int>(matrix)
+                     << ", use BT601 limited as default";
+        return kBT601Limited;
+    }
+}
+// clang-format on
 
 void Renderer::updateCursor(const std::optional<lt::CursorInfo>& cursor_info) {
     if (!cursor_info.has_value()) {

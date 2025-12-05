@@ -61,6 +61,7 @@ public:
     uint32_t vendorID() override;
     bool defaultOutput() override;
     bool setCaptureFormat(CaptureFormat format) override;
+    ColorPrimaries colorPrimaries() override;
 
 private:
     bool initD3D11();
@@ -79,6 +80,7 @@ private:
     ltlib::Monitor monitor_;
     CaptureFormat capture_foramt_ = CaptureFormat::D3D11_BGRA;
     std::optional<CursorInfo> cursor_info_;
+    ColorPrimaries color_primaries_ = ColorPrimaries::Undefined;
 };
 
 } // namespace video

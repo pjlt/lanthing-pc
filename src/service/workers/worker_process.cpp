@@ -93,6 +93,8 @@ WorkerProcess::WorkerProcess(const Params& params)
     , client_width_{params.client_width}
     , client_height_{params.client_height}
     , client_refresh_rate_{params.client_refresh_rate}
+    , color_matrix_{params.color_matrix}
+    , full_range_{params.full_range}
     , client_video_codecs_{params.client_video_codecs}
     , audio_codec_{params.audio_codec}
     , on_failed_{params.on_failed}
@@ -153,7 +155,8 @@ bool WorkerProcess::launchWorkerProcess() {
        << client_width_ << " -height " << client_height_ << " -freq " << client_refresh_rate_
        << " -codecs " << ::to_string(client_video_codecs_) << " -atype "
        << static_cast<int32_t>(audio_codec_) << " -action streaming "
-       << " -mindex " << monitor_index_;
+       << " -mindex " << monitor_index_ << " -colormatrix " << color_matrix_ << " -fullrange "
+       << (full_range_ ? 1 : 0);
     if (first_launch_) {
         first_launch_ = false;
         ss << " -negotiate 1";

@@ -43,7 +43,7 @@
 
 using namespace Microsoft::WRL;
 
-#define _ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
+#define _ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 
 namespace {
 
@@ -180,8 +180,8 @@ namespace lt {
 
 namespace video {
 
-D3D11Pipeline::D3D11Pipeline(const Params& params)
-    : Renderer{params.absolute_mouse}
+D3D11Pipeline::D3D11Pipeline(const Renderer::Params& params1, const D3D11Pipeline::Params& params)
+    : Renderer{params1}
     , hwnd_{reinterpret_cast<HWND>(params.window)}
     , video_width_{params.widht}
     , video_height_{params.height}
@@ -727,7 +727,8 @@ bool D3D11Pipeline::setupRenderPipeline() {
 bool D3D11Pipeline::setupRenderTarget() {
     RECT rect;
     if (!GetClientRect(hwnd_, &rect)) {
-        LOG(ERR) << "GetClientRect failed";
+        DWORD err = GetLastError();
+        LOG(ERR) << "GetClientRect failed " << err;
         return false;
     }
     display_width_ = rect.right - rect.left;
@@ -869,13 +870,13 @@ bool D3D11Pipeline::setupPSStage() {
     }
 
     D3D11_BUFFER_DESC const_desc = {};
-    const_desc.ByteWidth = sizeof(ColorMatrix);
+    const_desc.ByteWidth = sizeof(CSCMatrix);
     const_desc.Usage = D3D11_USAGE_IMMUTABLE;
     const_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     const_desc.CPUAccessFlags = 0;
     const_desc.MiscFlags = 0;
 
-    ColorMatrix color_matrix = getColorMatrix();
+    CSCMatrix color_matrix = colorMatrix(color_matrix_, full_range_);
     D3D11_SUBRESOURCE_DATA const_data = {};
     const_data.pSysMem = &color_matrix;
 
@@ -1294,21 +1295,6 @@ bool D3D11Pipeline::setupCursorD3DResources() {
         return false;
     }
     return true;
-}
-
-const D3D11Pipeline::ColorMatrix& D3D11Pipeline::getColorMatrix() const {
-    // TODO:
-    // 颜色空间转换系数的选择，应该从编码的时候就确定，下策是从解码器中探知，下下策是乱选一个
-    // https://zhuanlan.zhihu.com/p/493035194
-    // clang-format off
-    static const ColorMatrix kBT709 =
-        ColorMatrix{{
-                1.1643835616f, 0.0000000000f, 1.7927410714f, -0.9729450750f,
-                1.1643835616f, -0.2132486143f, -0.5329093286f, 0.3014826655f,
-                1.1643835616f, 2.1124017857f, 0.00000000000f, -1.1334022179f,
-                0.0f, 0.0f, 0.0f, 1.0f}};
-    // clang-format on
-    return kBT709;
 }
 
 std::optional<D3D11Pipeline::ShaderView> D3D11Pipeline::getShaderView(void* texture) {

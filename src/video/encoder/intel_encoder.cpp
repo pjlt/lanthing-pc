@@ -670,6 +670,15 @@ std::shared_ptr<ltproto::client2worker::VideoFrame> IntelEncoder::encodeFrame(vo
     return impl_->encodeOneFrame(input_frame, needKeyframe());
 }
 
+ColorMatrix IntelEncoder::colorMatrix() const {
+    // TODO
+    return ColorMatrix::BT709;
+}
+
+bool IntelEncoder::fullRange() const {
+    return false;
+}
+
 } // namespace video
 
 } // namespace lt

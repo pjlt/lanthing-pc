@@ -57,6 +57,8 @@ public:
         uint32_t client_width;
         uint32_t client_height;
         uint32_t client_refresh_rate;
+        int32_t color_matrix;
+        bool full_range;
         std::vector<lt::VideoCodecType> client_video_codecs;
         lt::AudioCodecType audio_codec;
         std::function<void(int32_t)> on_failed;
@@ -83,6 +85,8 @@ private:
     uint32_t client_height_;
     uint32_t client_refresh_rate_;
     uint32_t monitor_index_ = 0;
+    int32_t color_matrix_;
+    bool full_range_;
     std::vector<lt::VideoCodecType> client_video_codecs_;
     lt::AudioCodecType audio_codec_;
     std::function<void(int32_t)> on_failed_;

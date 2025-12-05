@@ -82,7 +82,9 @@ bool ClientSession::start() {
        << " -gamepad " << (params_.enable_gamepad ? 1 : 0)
         << " -chans " << params_.audio_channels
         << " -afreq " << params_.audio_freq
-        << " -rotation " << params_.rotation;
+        << " -rotation " << params_.rotation
+        << " -colormatrix " << params_.color_matrix
+        << " -fullrange " << (params_.full_range ? 1 : 0);
     // clang-format on
     if (!params_.reflex_servers.empty()) {
         ss << " -reflexs ";
@@ -227,6 +229,10 @@ bool ClientSession::start() {
         args.push_back(std::to_string(params_.audio_freq));
         args.push_back("-rotation");
         args.push_back("0");
+        args.push_back("-colormatrix");
+        args.push_back(std::to_string(params_.color_matrix));
+        args.push_back("-fullrange");
+        args.push_back(params_.full_range ? "1" : "0");
         for (auto& arg : args) {
             argv.push_back(arg.data());
         }

@@ -36,6 +36,7 @@
 #include <optional>
 
 #include <ltlib/system.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -87,6 +88,7 @@ public:
     virtual uint32_t vendorID() = 0;
     virtual bool defaultOutput() = 0;
     virtual bool setCaptureFormat(CaptureFormat format) = 0;
+    virtual ColorPrimaries colorPrimaries() = 0;
 
 protected:
     Capturer();

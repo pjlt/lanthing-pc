@@ -60,8 +60,39 @@ public:
     int64_t gop() const { return params_.gop() < 0 ? 0 : params_.gop(); }
     int64_t bitrate() const { return params_.bitrate(); }
     int64_t max_bitrate() const { return params_.maxbitrate(); }
-    int64_t qmin() const { return params_.qmin()[0]; }
-    int64_t qmax() const { return params_.qmax()[0]; }
+    int64_t qminI() const { return params_.qmin()[0]; }
+    int64_t qmaxI() const { return params_.qmax()[0]; }
+    int64_t qminP() const { return params_.qmin()[1]; }
+    int64_t qmaxP() const { return params_.qmax()[1]; }
+    AMF_COLOR_PRIMARIES_ENUM color_primaries() const {
+        return static_cast<AMF_COLOR_PRIMARIES_ENUM>(params_.color_primaries());
+    }
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM transfer_characteristics() const {
+        return static_cast<AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM>(
+            params_.transfer_characteristics());
+    }
+    AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM color_matrix() const {
+        if (params_.full_range()) {
+            switch (params_.color_matrix()) {
+            case lt::ColorMatrix::BT709:
+                return AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
+            case lt::ColorMatrix::BT601:
+                return AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601;
+            default:
+                return AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
+            }
+        }
+        else {
+            switch (params_.color_matrix()) {
+            case lt::ColorMatrix::BT709:
+                return AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
+            case lt::ColorMatrix::BT601:
+                return AMF_VIDEO_CONVERTER_COLOR_PROFILE_601;
+            default:
+                return AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
+            }
+        }
+    }
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM rc() const;
     AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM presetAvc() const;
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM presetHevc() const;
@@ -346,12 +377,12 @@ bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
     }
-    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, params.qmin());
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MIN_QP, params.qminP());
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_MIN_QP failed with " << result;
         return false;
     }
-    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, params.qmax());
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_MAX_QP, params.qmaxP());
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_MAX_QP failed with " << result;
         return false;
@@ -394,6 +425,43 @@ bool AmdEncoderImpl::setAvcEncodeParams(const AmfParamsHelper& params) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_LOWLATENCY_MODE failed with " << result;
         return false;
     }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_INPUT_COLOR_PROFILE,
+                                   params_.color_matrix());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_INPUT_COLOR_PROFILE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_OUTPUT_COLOR_PROFILE,
+                                   params_.color_matrix());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_OUTPUT_COLOR_PROFILE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_INPUT_COLOR_PRIMARIES,
+                                   params_.color_primaries());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_INPUT_COLOR_PRIMARIES failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_OUTPUT_COLOR_PRIMARIES,
+                                   params_.color_primaries());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_OUTPUT_COLOR_PRIMARIES failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_INPUT_TRANSFER_CHARACTERISTIC,
+                                   params_.transfer_characteristics());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_INPUT_TRANSFER_CHARACTERISTIC failed with "
+                 << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_OUTPUT_TRANSFER_CHARACTERISTIC,
+                                   params_.transfer_characteristics());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_OUTPUT_TRANSFER_CHARACTERISTIC failed with " << result;
+        return false;
+    }
     return true;
 }
 
@@ -418,12 +486,22 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_TARGET_BITRATE failed with " << result;
     }
-    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MIN_QP_P, params.qmin());
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MIN_QP_I, params.qminI());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_MIN_QP_I failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MAX_QP_I, params.qmaxI());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_MAX_QP_I failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MIN_QP_P, params.qminP());
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_MIN_QP_P failed with " << result;
         return false;
     }
-    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MAX_QP_P, params.qmax());
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_MAX_QP_P, params.qmaxP());
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_MAX_QP_P failed with " << result;
         return false;
@@ -463,6 +541,43 @@ bool AmdEncoderImpl::setHevcEncodeParams(const AmfParamsHelper& params) {
     result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
     if (result != AMF_OK) {
         LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PROFILE,
+                                   params_.color_matrix());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PROFILE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PROFILE,
+                                   params_.color_matrix());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PROFILE failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PRIMARIES,
+                                   params_.color_primaries());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PRIMARIES failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES,
+                                   params_.color_primaries());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_INPUT_TRANSFER_CHARACTERISTIC,
+                                   params_.transfer_characteristics());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_INPUT_TRANSFER_CHARACTERISTIC failed with " << result;
+        return false;
+    }
+    result = encoder_->SetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC,
+                                   params_.transfer_characteristics());
+    if (result != AMF_OK) {
+        LOG(ERR) << "Set AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC failed with "
+                 << result;
         return false;
     }
     return true;
@@ -528,6 +643,15 @@ bool AmdEncoder::doneFrame1() const {
 
 bool AmdEncoder::doneFrame2() const {
     return true;
+}
+
+ColorMatrix AmdEncoder::colorMatrix() const {
+    // TODO
+    return ColorMatrix::BT709;
+}
+
+bool AmdEncoder::fullRange() const {
+    return false;
 }
 
 } // namespace video

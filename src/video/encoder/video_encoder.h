@@ -40,6 +40,7 @@
 
 #include <transport/transport.h>
 #include <video/capturer/video_capturer.h>
+#include <video/types.h>
 
 namespace lt {
 
@@ -58,6 +59,10 @@ public:
         uint32_t height = 0;
         uint32_t bitrate_bps = 0;
         uint32_t freq = 0;
+        ColorPrimaries color_primaries = ColorPrimaries::BT709;
+        ColorMatrix color_matrix = ColorMatrix::BT709;
+        TransferCharacteristics transfer_func = TransferCharacteristics::BT709;
+        bool full_range = false;
 
         bool validate() const;
     };
@@ -80,6 +85,8 @@ public:
     std::shared_ptr<ltproto::client2worker::VideoFrame> encode(const Capturer::Frame& input_frame);
     virtual bool doneFrame1() const;
     virtual bool doneFrame2() const;
+    virtual ColorMatrix colorMatrix() const = 0;
+    virtual bool fullRange() const = 0;
 
     // static std::vector<VideoCodecType> checkSupportedCodecs(uint32_t width, uint32_t height);
     // static std::vector<VideoCodecType> checkSupportedCodecsWithLuid(int64_t luid, uint32_t width,

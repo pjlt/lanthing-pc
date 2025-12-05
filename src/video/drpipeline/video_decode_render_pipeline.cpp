@@ -209,6 +209,8 @@ private:
     void* device_;  // not ref
     void* context_; // not ref
     bool show_overlay_;
+    ColorMatrix color_matrix_;
+    bool full_range_;
 };
 
 VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
@@ -229,7 +231,9 @@ VDRPipeline::VDRPipeline(const DecodeRenderPipeline::Params& params)
     , status_color_{params.status_color}
     , device_{params.device}
     , context_{params.context}
-    , show_overlay_{params.show_overlay} {
+    , show_overlay_{params.show_overlay}
+    , color_matrix_{params.color_matrix}
+    , full_range_{params.full_range} {
     window_ = params.sdl->window();
 }
 
@@ -252,8 +256,14 @@ VDRPipeline::~VDRPipeline() {
 }
 
 bool VDRPipeline::init() {
-    LOGF(INFO, "VDRPipeline w:%u, h:%u, r:%u codec:%s", width_, height_, rotation_,
-         toString(decode_codec_type_));
+    if (color_matrix_ != ColorMatrix::BT709 && color_matrix_ != ColorMatrix::BT601) {
+        LOG(WARNING) << "Unsupported color matrix " << toString(color_matrix_)
+                     << ", use BT709 instead";
+        color_matrix_ = ColorMatrix::BT709;
+    }
+    LOGF(INFO, "VDRPipeline w:%u, h:%u, r:%u codec:%s, color_matrix:%s, full_range:%d", width_,
+         height_, rotation_, toString(decode_codec_type_), toString(color_matrix_).c_str(),
+         full_range_);
     Renderer::Params render_params{};
     uint32_t video_width = width_;
     uint32_t video_height = height_;
@@ -269,6 +279,8 @@ bool VDRPipeline::init() {
     render_params.rotation = rotation_;
     render_params.stretch = is_stretch_;
     render_params.absolute_mouse = absolute_mouse_;
+    render_params.color_matrix = color_matrix_;
+    render_params.full_range = full_range_;
     render_params.align = Decoder::align(decode_codec_type_);
 
     video_renderer_ = Renderer::create(render_params);
@@ -599,7 +611,8 @@ void VDRPipeline::renderLoop(const std::function<void()>& i_am_alive) {
 
 DecodeRenderPipeline::Params::Params(
     lt::VideoCodecType encode, lt::VideoCodecType decode, uint32_t _width, uint32_t _height,
-    uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch,
+    uint32_t _screen_refresh_rate, uint32_t _rotation, bool _stretch, ColorMatrix _color_matrix,
+    bool _full_range,
     std::function<void(uint32_t, std::shared_ptr<google::protobuf::MessageLite>, bool)>
         send_message,
     std::function<void()> _switch_stretch, std::function<void()> _reset_pipeline)
@@ -610,6 +623,8 @@ DecodeRenderPipeline::Params::Params(
     , screen_refresh_rate(_screen_refresh_rate)
     , rotation(_rotation)
     , stretch(_stretch)
+    , color_matrix(_color_matrix)
+    , full_range(_full_range)
     , send_message_to_host(send_message)
     , switch_stretch(_switch_stretch)
     , reset_pipeline(_reset_pipeline) {

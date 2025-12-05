@@ -111,7 +111,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
         options.find("-freq") == options.end() || options.find("-dinput") == options.end() ||
         options.find("-gamepad") == options.end() || options.find("-chans") == options.end() ||
         options.find("-afreq") == options.end() || options.find("-rotation") == options.end() ||
-        options.find("-trans") == options.end()) {
+        options.find("-trans") == options.end() || options.find("-colormatrix") == options.end() ||
+        options.find("-fullrange") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return nullptr;
     }
@@ -131,6 +132,8 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     int32_t audio_freq = std::atoi(options["-afreq"].c_str());
     int32_t audio_channels = std::atoi(options["-chans"].c_str());
     int32_t rotation = std::atoi(options["-rotation"].c_str());
+    params.color_matrix = std::atoi(options["-colormatrix"].c_str());
+    params.full_range = std::atoi(options["-fullrange"].c_str()) != 0;
     params.enable_driver_input = std::atoi(options["-dinput"].c_str()) != 0;
     params.enable_gamepad = std::atoi(options["-gamepad"].c_str()) != 0;
 
@@ -210,6 +213,8 @@ Client::Client(const Params& params)
                     params.screen_refresh_rate,
                     params.rotation,
                     is_stretch_,
+                    static_cast<ColorMatrix>(params.color_matrix),
+                    params.full_range,
                     std::bind(&Client::sendMessageToHostFromOtherModule, this,
                               std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                     std::bind(&Client::onUserSwitchStretch, this),
