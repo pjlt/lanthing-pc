@@ -192,7 +192,7 @@ void ClientManager::connect(int64_t peerDeviceID, const std::string& accessToken
     params->set_video_width(display_output_desc.width);
     params->set_video_height(display_output_desc.height);
     params->set_color_matrix(1);
-    params->set_full_range(true);
+    params->set_full_range(false);
     for (auto codec : codec_priority_) {
         using CodecType = ltproto::common::VideoCodecType;
         switch (codec) {
