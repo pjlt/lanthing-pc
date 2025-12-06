@@ -54,7 +54,7 @@ public:
     };
 
 public:
-    VtbGlPipeline(const Params& params);
+    VtbGlPipeline(const Renderer::Params& params1, const Params& params2);
     ~VtbGlPipeline() override;
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;

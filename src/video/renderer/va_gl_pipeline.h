@@ -58,7 +58,7 @@ public:
     };
 
 public:
-    VaGlPipeline(const Params& params);
+    VaGlPipeline(const Renderer::Params& params1, const Params& params2);
     ~VaGlPipeline() override;
     bool init();
     bool bindTextures(const std::vector<void*>& textures) override;

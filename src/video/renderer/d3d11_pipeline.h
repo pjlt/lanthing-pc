@@ -74,7 +74,7 @@ public:
     };
 
 public:
-    //TODO:
+    // TODO:
     D3D11Pipeline(const Renderer::Params& params1, const D3D11Pipeline::Params& params2);
     ~D3D11Pipeline() override;
     bool init();

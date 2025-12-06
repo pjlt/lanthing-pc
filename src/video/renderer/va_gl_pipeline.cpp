@@ -11,11 +11,11 @@
 #include <EGL/eglext.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <libdrm/drm_fourcc.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
-#include <va/va_x11.h>
 #include <va/va_wayland.h>
-#include <libdrm/drm_fourcc.h>
+#include <va/va_x11.h>
 
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -27,7 +27,7 @@
 
 // TODO: 1. 回收资源 2.整理OpenGL渲染管线 3.vsync相关问题.
 
-#define _ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
+#define _ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 
 namespace {
 struct AutoGuard {
@@ -48,8 +48,8 @@ namespace lt {
 
 namespace video {
 
-VaGlPipeline::VaGlPipeline(const Params& params)
-    : Renderer{params.absolute_mouse}
+VaGlPipeline::VaGlPipeline(const Renderer::Params& params1, const Params& params)
+    : Renderer{params}
     , sdl_window_{params.window}
     , video_width_{params.width}
     , video_height_{params.height}
@@ -126,17 +126,20 @@ bool VaGlPipeline::attachRenderContext() {
     if (egl_ret != EGL_TRUE) {
         LOG(ERR) << "eglMakeCurrent return " << egl_ret << " error: " << eglGetError();
         return false;
-    } else {
+    }
+    else {
         return true;
     }
 }
 
 bool VaGlPipeline::detachRenderContext() {
-    EGLBoolean egl_ret =  eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    EGLBoolean egl_ret =
+        eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     if (egl_ret != EGL_TRUE) {
         LOG(ERR) << "eglMakeCurrent(null) return " << egl_ret << " error: " << eglGetError();
         return false;
-    } else {
+    }
+    else {
         return true;
     }
 }
@@ -161,7 +164,7 @@ Renderer::RenderResult VaGlPipeline::render(int64_t frame) {
     }
     RenderResult cursor_result = renderCursor();
     if (cursor_result == RenderResult::Failed) {
-       return cursor_result;
+        return cursor_result;
     }
     return RenderResult::Success2;
 }
@@ -257,8 +260,10 @@ EGLImage VaGlPipeline::createEGLImage(EGLint attr[]) {
             vattr.push_back(static_cast<EGLAttrib>(attr[i]));
         }
         vattr.push_back(EGL_NONE);
-        return eglCreateImage_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, vattr.data());
-    } else {
+        return eglCreateImage_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL,
+                               vattr.data());
+    }
+    else {
         return eglCreateImageKHR_(egl_display_, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attr);
     }
 }
@@ -266,7 +271,8 @@ EGLImage VaGlPipeline::createEGLImage(EGLint attr[]) {
 void VaGlPipeline::destroyEGLImage(EGLImage image) {
     if (eglDestroyImage_) {
         eglDestroyImage_(egl_display_, image);
-    } else {
+    }
+    else {
         eglDestroyImageKHR_(egl_display_, image);
     }
 }
@@ -490,8 +496,7 @@ bool VaGlPipeline::loadFuncs() {
     if (eglDestroyImageKHR_ == nullptr) {
         LOG(WARNING) << "eglGetProcAddress(eglDestroyImageKHR) failed";
     }
-    eglCreateImage_ =
-        reinterpret_cast<PFNEGLCREATEIMAGEPROC>(eglGetProcAddress("eglCreateImage"));
+    eglCreateImage_ = reinterpret_cast<PFNEGLCREATEIMAGEPROC>(eglGetProcAddress("eglCreateImage"));
     if (eglCreateImage_ == nullptr) {
         LOG(WARNING) << "eglGetProcAddress(eglCreateImage) failed";
     }
@@ -500,8 +505,10 @@ bool VaGlPipeline::loadFuncs() {
     if (eglDestroyImage_ == nullptr) {
         LOG(WARNING) << "eglGetProcAddress(eglDestroyImage) failed";
     }
-    if ((eglCreateImageKHR_ == nullptr || eglDestroyImageKHR_ == nullptr) && (eglCreateImage_ == nullptr || eglDestroyImage_ == nullptr)) {
-        LOG(WARNING) << "eglGetProcAddress(eglCreateImage, eglDestroyImage, eglCreateImageKHR, eglDestroyImageKHR) failed";
+    if ((eglCreateImageKHR_ == nullptr || eglDestroyImageKHR_ == nullptr) &&
+        (eglCreateImage_ == nullptr || eglDestroyImage_ == nullptr)) {
+        LOG(WARNING) << "eglGetProcAddress(eglCreateImage, eglDestroyImage, eglCreateImageKHR, "
+                        "eglDestroyImageKHR) failed";
         return false;
     }
     glEGLImageTargetTexture2DOES_ = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
@@ -542,18 +549,21 @@ bool VaGlPipeline::initVa() {
             LOG(ERR) << "vaGetDisplay failed";
             return false;
         }
-    } else if (info.subsystem == SDL_SYSWM_WAYLAND) {
+    }
+    else if (info.subsystem == SDL_SYSWM_WAYLAND) {
         va_display_ = vaGetDisplayWl(info.info.wl.display);
         if (va_display_ == nullptr) {
             LOG(ERR) << "vaGetDisplayWl failed";
             return false;
         }
-    } else {
+    }
+    else {
         LOG(ERR) << "Unknown Window subsystem " << (int)info.subsystem;
         return false;
     }
-    std::vector<std::string> paths { "", "/usr/lib64/va/drivers:/usr/lib/x86_64-linux-gnu/dri:/usr/lib64/dri"};
-    std::vector<std::string> drivers { "", "iHD", "i965", "radeonsi", "nvidia" };
+    std::vector<std::string> paths{
+        "", "/usr/lib64/va/drivers:/usr/lib/x86_64-linux-gnu/dri:/usr/lib64/dri"};
+    std::vector<std::string> drivers{"", "iHD", "i965", "radeonsi", "nvidia"};
     for (auto& path : paths) {
         if (!path.empty()) {
             ltlib::putenv("LIBVA_DRIVERS_PATH", path);
@@ -567,9 +577,11 @@ bool VaGlPipeline::initVa() {
             if (vastatus == VA_STATUS_SUCCESS) {
                 LOG(INFO) << "vaInitialize success with driver:" << driver << ", path:" << path;
                 return true;
-            } else {
-                LOG(WARNING) << "vaInitialize failed with " << (int)vastatus << ", LIBVA_DRIVER_NAME: "
-                             << std::getenv("LIBVA_DRIVER_NAME") << ", LIBVA_DRIVERS_PATH: " << std::getenv("LIBVA_DRIVERS_PATH") ;
+            }
+            else {
+                LOG(WARNING) << "vaInitialize failed with " << (int)vastatus
+                             << ", LIBVA_DRIVER_NAME: " << std::getenv("LIBVA_DRIVER_NAME")
+                             << ", LIBVA_DRIVERS_PATH: " << std::getenv("LIBVA_DRIVERS_PATH");
             }
         }
     }

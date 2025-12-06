@@ -39,7 +39,7 @@
 #include <ltlib/logging.h>
 #include <video/renderer/vtb_gl_pipeline_plat.h>
 
-#define _ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
+#define _ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 
 namespace {
 struct AutoGuard {
@@ -60,8 +60,8 @@ namespace lt {
 
 namespace video {
 
-VtbGlPipeline::VtbGlPipeline(const Params& params)
-    : Renderer{params.absolute_mouse}
+VtbGlPipeline::VtbGlPipeline(const Renderer::Params& params1, const Params& params)
+    : Renderer{params1}
     , sdl_window_{params.window}
     , video_width_{params.width}
     , video_height_{params.height}
@@ -186,10 +186,10 @@ Renderer::RenderResult VtbGlPipeline::renderDataCursor(const lt::CursorInfo& c, 
     const float y = 1.0f * c.y / c.screen_h;
     const float width = 1.0f * c.w / window_width_;
     const float height = 1.0f * c.h / window_height_;
-    float verts[] = {(x - .5f) * 2.f, (.5f - y) * 2.f, 0.0f, 0.0f,
-                     (x - .5f + width) * 2.f, (.5f - y) * 2.f, 1.0f, 0.0f,
+    float verts[] = {(x - .5f) * 2.f,         (.5f - y) * 2.f,          0.0f, 0.0f,
+                     (x - .5f + width) * 2.f, (.5f - y) * 2.f,          1.0f, 0.0f,
                      (x - .5f + width) * 2.f, (.5f - y - height) * 2.f, 1.0f, 1.0f,
-                     (x - .5f) * 2.f, (.5f - y - height) * 2.f, 0.0f, 1.0f};
+                     (x - .5f) * 2.f,         (.5f - y - height) * 2.f, 0.0f, 1.0f};
     glUseProgram(cursor_shader_);
     glBindVertexArray(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
@@ -325,7 +325,7 @@ void VtbGlPipeline::switchStretchMode(bool stretch) {
 }
 
 void VtbGlPipeline::resetRenderTarget() {
-    //SDL_GL_GetDrawableSize();
+    // SDL_GL_GetDrawableSize();
     SDL_Window* sdl_window = reinterpret_cast<SDL_Window*>(sdl_window_);
     int window_width, window_height;
     SDL_GetWindowSize(sdl_window, &window_width, &window_height);
@@ -545,10 +545,8 @@ void main() {
     glBindVertexArray(cursor_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo_);
     // 不赋值行不行?
-    float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f,
-                            .1f, .1f, 1.0f, 0.0f,
-                            .1f, -.1, 1.0f, 1.0f,
-                            -.1f, -.1f, 0.0f, 1.0f};
+    float verts_cursor[] = {-.1f, .1f, 0.0f, 0.0f, .1f,  .1f,  1.0f, 0.0f,
+                            .1f,  -.1, 1.0f, 1.0f, -.1f, -.1f, 0.0f, 1.0f};
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts_cursor), verts_cursor, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cursor_ebo_);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_DYNAMIC_DRAW);

@@ -8,10 +8,10 @@ exit_if_fail() {
 
 cmake_configure() {
     if [ -z "$LT_DUMP_URL" ]; then
-        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
+        cmake -B build/$build_type -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
     exit_if_fail
     else
-        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DLT_DUMP=ON -DLT_DUMP_URL="$LT_DUMP_URL" -DCMAKE_INSTALL_PREFIX=install/$build_type
+        cmake -B build/$build_type -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=$build_type -DLT_DUMP=ON -DLT_DUMP_URL="$LT_DUMP_URL" -DCMAKE_INSTALL_PREFIX=install/$build_type
     exit_if_fail
     fi
 }
