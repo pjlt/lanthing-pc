@@ -77,7 +77,7 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     va_gl_params.height = params.video_height;
     va_gl_params.rotation = params.rotation;
     va_gl_params.align = params.align;
-    auto renderer = std::make_unique<VaGlPipeline>(va_gl_params);
+    auto renderer = std::make_unique<VaGlPipeline>(params, va_gl_params);
     if (!renderer->init()) {
         return nullptr;
     }
@@ -89,7 +89,7 @@ std::unique_ptr<Renderer> Renderer::create(const Params& params) {
     vtb_gl_params.height = params.video_height;
     vtb_gl_params.rotation = params.rotation;
     vtb_gl_params.align = params.align;
-    auto renderer = std::make_unique<VtbGlPipeline>(vtb_gl_params);
+    auto renderer = std::make_unique<VtbGlPipeline>(params, vtb_gl_params);
     if (!renderer->init()) {
         return nullptr;
     }
