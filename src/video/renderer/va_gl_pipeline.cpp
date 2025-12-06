@@ -49,7 +49,7 @@ namespace lt {
 namespace video {
 
 VaGlPipeline::VaGlPipeline(const Renderer::Params& params1, const Params& params)
-    : Renderer{params}
+    : Renderer{params1}
     , sdl_window_{params.window}
     , video_width_{params.width}
     , video_height_{params.height}
