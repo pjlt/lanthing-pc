@@ -68,8 +68,10 @@ using namespace ltlib::time;
 
 namespace {
 
+#if defined(LT_WINDOWS) && LT_RUN_AS_SERVICE
 const std::string kServiceName = "Lanthing";
 const std::string kDisplayName = "Lanthing Service";
+#endif
 
 #if defined(LT_WINDOWS)
 void logFunc(NbClipLogLevel level, const char* format, ...) {
