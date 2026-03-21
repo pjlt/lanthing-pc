@@ -23,7 +23,7 @@ namespace {
 const std::string file_name_time_formatted = "%Y%m%d-%H%M%S";
 const std::string time_formatted = "%H:%M:%S.%f3";
 const std::string date_formatted = "%Y/%m/%d";
-//const std::string kFractionalIdentier = "%f";
+const std::string kFractionalIdentier = "%f";
 //const size_t kFractionalIdentierSize = 2;
 
 std::string header(const std::string& headerFormat) {

@@ -528,19 +528,18 @@ void MainWindow::setupOtherCallbacks() {
     connect(ui->btnShowToken, &QPushButton::pressed, this, &MainWindow::onShowTokenPressed);
     connect(ui->btnRefreshToken, &QPushButton::clicked, this, &MainWindow::onRefreshTokenClicked);
     connect(ui->btnConnect, &QPushButton::clicked, this, &MainWindow::onConnectBtnClicked);
-    connect(ui->checkboxService, &QCheckBox::checkStateChanged,
-            [this]() { params_.enable_run_as_service(ui->checkboxService->isChecked()); });
-    connect(ui->checkBoxTCP, &QCheckBox::checkStateChanged,
-            [this]() { params_.enable_tcp(ui->checkBoxTCP->isChecked()); });
-
-    connect(ui->checkboxRefreshPassword, &QCheckBox::checkStateChanged, [this]() {
+    connect(ui->checkboxService, &QCheckBox::stateChanged,
+            [this](int) { params_.enable_run_as_service(ui->checkboxService->isChecked()); });
+    connect(ui->checkboxRefreshPassword, &QCheckBox::stateChanged, [this](int) {
         params_.enable_auto_refresh_access_token(ui->checkboxRefreshPassword->isChecked());
     });
-    connect(ui->checkboxShareClipboard, &QCheckBox::checkStateChanged, [this]() {
+    connect(ui->checkboxShareClipboard, &QCheckBox::stateChanged, [this](int) {
         params_.enable_share_clipboard(ui->checkboxShareClipboard->isChecked());
     });
     connect(ui->radioWindowedFullscreen, &QRadioButton::toggled,
             [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
+    connect(ui->checkBoxTCP, &QCheckBox::stateChanged,
+            [this](int) { params_.enable_tcp(ui->checkBoxTCP->isChecked()); });
     connect(ui->leditRelay, &QLineEdit::textChanged, [this](const QString& _text) {
         if (_text.isEmpty()) {
             ui->btnRelay->setEnabled(true);
@@ -648,8 +647,8 @@ void MainWindow::setupOtherCallbacks() {
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
     connect(ui->leditBlue, &QLineEdit::textChanged,
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(ui->checkBoxOverlay, &QCheckBox::checkStateChanged,
-            [this]() { params_.set_show_overlay(ui->checkBoxOverlay->isChecked()); });
+    connect(ui->checkBoxOverlay, &QCheckBox::stateChanged,
+            [this](int) { params_.set_show_overlay(ui->checkBoxOverlay->isChecked()); });
     connect(ui->btnStatusColor, &QPushButton::clicked, [this]() {
         ui->btnStatusColor->setEnabled(false);
         if (ui->leditRed->text().isEmpty() && ui->leditGreen->text().isEmpty() &&
@@ -1077,7 +1076,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // gamepad
     QCheckBox* gamepad_item = new QCheckBox();
     gamepad_item->setChecked(gamepad);
-    connect(gamepad_item, &QCheckBox::checkStateChanged, [this, gamepad_item, device_id]() {
+    connect(gamepad_item, &QCheckBox::stateChanged, [this, gamepad_item, device_id](int) {
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Gamepad,
                                          gamepad_item->isChecked());
     });
@@ -1085,7 +1084,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // mouse
     QCheckBox* mouse_item = new QCheckBox();
     mouse_item->setChecked(mouse);
-    connect(mouse_item, &QCheckBox::checkStateChanged, [this, mouse_item, device_id]() {
+    connect(mouse_item, &QCheckBox::stateChanged, [this, mouse_item, device_id](int) {
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Mouse,
                                          mouse_item->isChecked());
     });
@@ -1093,7 +1092,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // keyboard
     QCheckBox* keyboard_item = new QCheckBox();
     keyboard_item->setChecked(keyboard);
-    connect(keyboard_item, &QCheckBox::checkStateChanged, [this, keyboard_item, device_id]() {
+    connect(keyboard_item, &QCheckBox::stateChanged, [this, keyboard_item, device_id](int) {
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Keyboard,
                                          keyboard_item->isChecked());
     });
