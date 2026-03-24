@@ -1,0 +1,40 @@
+flowchart TD
+    S0[User launches lanthing] --> S1[main.cpp parses -type]
+    S1 -->|app| A0[App process starts GUI and managers]
+    S1 -->|service| H0[Service process starts io loop]
+
+    A0 --> A1[App requests connection to target device]
+    A1 --> A2[Send RequestConnection to Lanthing server]
+
+    A2 --> H1[Server pushes OpenConnection to controlled Service]
+    H1 --> H2[Service creates WorkerSession]
+    H2 --> H3[WorkerSession starts WorkerProcess]
+
+    H3 --> W0[Worker process action=streaming]
+    W0 --> W1[Capture + encode + input executor prepared]
+
+    A2 --> C0[Requester side starts Client process]
+    C0 --> C1[Client initializes decode/render pipeline]
+
+    H2 --> N0[Service and Client join signaling room]
+    C1 --> N0
+    N0 --> N1[Exchange signaling messages]
+    N1 --> N2{Transport type}
+
+    N2 -->|RTC/RTC2| T0[P2P/Relay negotiation]
+    N2 -->|TCP| T1[Direct TCP media path]
+
+    T0 --> X0[StartTransmission and ACK]
+    T1 --> X0
+
+    X0 --> M0[Worker sends video/audio frames]
+    M0 --> M1[Client receives and renders]
+    M1 --> M2[Client sends input events back]
+    M2 --> M0
+
+    M0 --> K0[KeepAlive and stats loop]
+    K0 --> N1
+
+    M0 --> E0{Disconnect or error?}
+    E0 -->|No| M1
+    E0 -->|Yes| E1[Service closes session and notifies App]

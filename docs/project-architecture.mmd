@@ -1,0 +1,70 @@
+flowchart LR
+    entry[main.cpp role dispatch]
+
+    subgraph Runtime_Processes
+        app[App process]
+        svc[Service process]
+        cli[Client process]
+        wk[Worker process]
+    end
+
+    subgraph Shared_Libraries
+        ltlib[ltlib io settings threads]
+        proto[ltproto protobuf messages]
+    end
+
+    subgraph Media_and_Input
+        video[video capture encode decode render]
+        audio[audio capturer player]
+        input[inputs capturer executor]
+        platform[plat sdl and video device]
+    end
+
+    subgraph Transport
+        tcp[TCP transport]
+        rtc[RTC transport]
+        rtc2[RTC2 transport]
+    end
+
+    subgraph External_Services
+        lanthing[Lanthing server]
+        signaling[Signaling service]
+        relay[Relay stun reflex]
+    end
+
+    entry --> app
+    entry --> svc
+    entry --> cli
+    entry --> wk
+
+    app --> ltlib
+    svc --> ltlib
+    cli --> ltlib
+    wk --> ltlib
+
+    app --> proto
+    svc --> proto
+    cli --> proto
+    wk --> proto
+
+    svc --> wk
+    svc --> rtc
+    svc --> tcp
+    svc --> rtc2
+    cli --> rtc
+    cli --> tcp
+    cli --> rtc2
+
+    wk --> video
+    wk --> audio
+    wk --> input
+    cli --> video
+    cli --> audio
+    cli --> platform
+
+    app --> lanthing
+    svc --> lanthing
+    svc --> signaling
+    cli --> signaling
+    rtc --> relay
+    rtc2 --> relay

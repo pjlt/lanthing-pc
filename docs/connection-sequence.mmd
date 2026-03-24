@@ -1,0 +1,53 @@
+sequenceDiagram
+    autonumber
+    participant User as User
+    participant App as App Process
+    participant Srv as Lanthing Server
+    participant Svc as Service Process
+    participant Sess as WorkerSession
+    participant Wkr as Worker Process
+    participant Sig as Signaling Service
+    participant Cli as Client Process
+    participant Tp as Transport RTC/TCP
+
+    User->>App: Launch app and request remote control
+    App->>Srv: RequestConnection(peerDeviceID, token)
+
+    Srv->>Svc: OpenConnection(streaming params)
+    Svc->>Sess: Create session from open request
+    Sess->>Wkr: Start worker process(action=streaming)
+    Wkr-->>Sess: Worker ready (pipe + capabilities)
+    Svc-->>Srv: OpenConnectionAck
+    Srv-->>App: RequestConnectionAck
+
+    par Signaling join
+        Sess->>Sig: Join room as controlled side
+    and Requester side startup
+        App->>Cli: Spawn client process with params
+        Cli->>Sig: Join room as requester side
+    end
+
+    Sig-->>Sess: SignalingMessage(candidate/sdp)
+    Sig-->>Cli: SignalingMessage(candidate/sdp)
+    Sess->>Tp: Build server transport(RTC/RTC2/TCP)
+    Cli->>Tp: Build client transport(RTC/RTC2/TCP)
+    Tp-->>Sess: Connected(link type)
+    Tp-->>Cli: Connected(link type)
+
+    Cli->>Sess: StartTransmission
+    Sess-->>Cli: StartTransmissionAck
+
+    loop Streaming session
+        Wkr->>Sess: Encoded video/audio frames
+        Sess->>Cli: Media frames over transport
+        Cli-->>Sess: Input events + control messages
+        Sess-->>Cli: Cursor/stat/keepalive updates
+    end
+
+    alt Disconnect or error
+        Cli->>Sess: Close / transport failed
+        Sess->>Svc: Session closed(reason)
+        Svc->>App: DisconnectedConnection notification
+    else Continue
+        Sess-->>Cli: KeepAliveAck
+    end
