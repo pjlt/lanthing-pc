@@ -1,0 +1,64 @@
+sequenceDiagram
+    autonumber
+    participant User as User
+    participant App as App Process
+    participant Srv as Lanthing Server
+    participant Svc as Service Process
+    participant Sess as WorkerSession
+    participant Wkr as Worker Process
+    participant Sig as Signaling Service
+    participant Cli as Client Process
+    participant Tp as Transport RTC/TCP
+
+    User->>App: Launch app and request remote control
+    App->>Srv: RequestConnection(peerDeviceID, token)
+    Srv->>Svc: OpenConnection(streaming params)
+    Svc->>Sess: Create session
+    Sess->>Wkr: Start worker(action=streaming)
+    Wkr-->>Sess: Ready
+    Svc-->>Srv: OpenConnectionAck
+    Srv-->>App: RequestConnectionAck
+
+    par Join signaling
+        Sess->>Sig: Join room(controlled)
+    and Start requester side
+        App->>Cli: Spawn client process
+        Cli->>Sig: Join room(requester)
+    end
+
+    Sig-->>Sess: SignalingMessage(sdp/candidate)
+    Sig-->>Cli: SignalingMessage(sdp/candidate)
+    Sess->>Tp: Build server transport
+    Cli->>Tp: Build client transport
+    Tp-->>Sess: Connected(link type)
+    Tp-->>Cli: Connected(link type)
+
+    Cli->>Sess: StartTransmission
+    Sess-->>Cli: StartTransmissionAck
+
+    loop Normal streaming
+        Wkr->>Sess: Video/audio frames
+        Sess->>Cli: Media frames
+        Cli-->>Sess: Input events and control
+        Sess-->>Cli: KeepAliveAck and stats
+    end
+
+    alt Transport interruption detected
+        Tp-->>Cli: Disconnected / degraded
+        Tp-->>Sess: Disconnected / degraded
+        Cli->>Sig: Rejoin room and resend signaling
+        Sess->>Sig: Rejoin room and resend signaling
+        Sig-->>Cli: New signaling payload
+        Sig-->>Sess: New signaling payload
+        Cli->>Tp: Recreate transport client
+        Sess->>Tp: Recreate transport server
+        Tp-->>Cli: Reconnected(new link type)
+        Tp-->>Sess: Reconnected(new link type)
+        Cli->>Sess: StartTransmission(recover)
+        Sess-->>Cli: StartTransmissionAck(recover)
+        Note over Cli,Sess: Resume streaming without restarting app/service
+    else Reconnect failed
+        Sess->>Svc: Session closed(reason=reconnect_timeout)
+        Svc->>App: DisconnectedConnection
+        App-->>User: Show reconnect failed and prompt retry
+    end
