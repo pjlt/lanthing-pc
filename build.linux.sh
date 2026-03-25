@@ -1,13 +1,9 @@
 #!/usr/bin/bash
 
-exit_if_fail() {
-    if [ $? -ne 0 ]; then
-        exit -1
-    fi
-}
+set -euo pipefail
 
 cmake_configure() {
-    if [ -z "$LT_DUMP_URL" ]; then
+    if [ -z "${LT_DUMP_URL:-}" ]; then
         cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
     else
         cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DLT_DUMP=ON -DLT_DUMP_URL="$LT_DUMP_URL" -DCMAKE_INSTALL_PREFIX=install/$build_type
@@ -96,7 +92,7 @@ make_appimage() {
 
 prebuilt_clean() {
     rm -rf third_party/prebuilt
-    rm -rf transport/rtc
+    rm -rf src/transport/rtc
 }
 
 print_usage() {

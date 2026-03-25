@@ -1,4 +1,6 @@
 $root_dir = (Get-Location).Path
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
 function exit_if_fail {
     if ($LastExitCode -ne 0) {
@@ -24,6 +26,7 @@ function cmake_build() {
 
 function cmake_clean() {
     Invoke-Expression "cmake --build build/$script:build_type --target clean"
+    exit_if_fail
 }
 
 function check_build_type() {
@@ -44,7 +47,9 @@ function rtc_fetch() {
     New-Item -ItemType Directory -ErrorAction SilentlyContinue src/transport/rtc/win
     echo "Fetch $RtcUri"
     Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.win.zip
+    exit_if_fail
     Expand-Archive ./third_party/prebuilt/rtc.win.zip -DestinationPath ./src/transport/rtc/win
+    exit_if_fail
 }
 
 class BuiltLib {
@@ -81,18 +86,22 @@ function prebuilt_fetch() {
         $LibUri = $lib.Uri
         echo "Fetch $LibUri"
         Invoke-WebRequest -Uri $lib.Uri -OutFile ./third_party/prebuilt/$LibName.win.zip
-        # exit_if_fail
+        exit_if_fail
         echo "Unzip $LibName.win.zip"
         Expand-Archive ./third_party/prebuilt/$LibName.win.zip -DestinationPath ./third_party/prebuilt/$LibName/win
-        # exit_if_fail
+        exit_if_fail
     }
 
     rtc_fetch
 }
 
 function prebuilt_clean() {
-    Remove-Item -Force -Recurse third_party/prebuilt
-    Remove-Item -Force -Recurse transport/rtc
+    if (Test-Path third_party/prebuilt) {
+        Remove-Item -Force -Recurse third_party/prebuilt
+    }
+    if (Test-Path src/transport/rtc) {
+        Remove-Item -Force -Recurse src/transport/rtc
+    }
 }
 
 function print_usage() {
