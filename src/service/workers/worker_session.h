@@ -146,6 +146,7 @@ private:
     void onPipeDisconnected(uint32_t fd);
     void onPipeMessage(uint32_t fd, uint32_t type,
                        std::shared_ptr<google::protobuf::MessageLite> msg);
+    bool sendBootstrapToWorker();
     void startWorking();
     void onStartWorkingAck(std::shared_ptr<google::protobuf::MessageLite> msg);
     void sendToWorker(uint32_t type, std::shared_ptr<google::protobuf::MessageLite> msg);
@@ -246,6 +247,14 @@ private:
     std::string ignored_nic_;
     bool first_start_working_ack_received_ = false;
     std::vector<lt::VideoCodecType> client_video_codecs_;
+    uint32_t worker_bootstrap_width_ = 0;
+    uint32_t worker_bootstrap_height_ = 0;
+    uint32_t worker_bootstrap_refresh_rate_ = 0;
+    uint32_t worker_bootstrap_monitor_index_ = 0;
+    int32_t worker_bootstrap_color_matrix_ = 0;
+    bool worker_bootstrap_full_range_ = false;
+    bool worker_bootstrap_need_negotiate_ = false;
+    lt::AudioCodecType worker_bootstrap_audio_codec_ = lt::AudioCodecType::OPUS;
 
     std::atomic<bool> enable_gamepad_;
     std::atomic<bool> enable_keyboard_;

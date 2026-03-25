@@ -60,15 +60,6 @@ class WorkerStreaming : public Worker {
 public:
     struct Params {
         std::string name;
-        uint32_t width;
-        uint32_t height;
-        uint32_t refresh_rate;
-        int32_t color_matrix;
-        bool full_range;
-        uint32_t monitor_index;
-        bool need_negotiate;
-        std::vector<lt::VideoCodecType> video_codecs;
-        lt::AudioCodecType audio_codec;
     };
 
 public:
@@ -107,6 +98,7 @@ private:
     void onPipeDisconnected();
     void onPipeReconnecting();
     void onPipeConnected();
+    void onWorkerBootstrap(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onStopWorking(const std::shared_ptr<google::protobuf::MessageLite>& msg);
     void onKeepAlive(const std::shared_ptr<google::protobuf::MessageLite>& msg);
@@ -114,16 +106,18 @@ private:
     void onSwitchMonitor(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
-    const bool need_negotiate_;
-    const uint32_t client_width_;
-    const uint32_t client_height_;
-    const uint32_t client_refresh_rate_;
-    const int32_t color_matrix_;
-    const bool full_range_;
-    uint32_t monitor_index_;
-    const std::vector<lt::VideoCodecType> client_codec_types_;
+    bool need_negotiate_ = false;
+    uint32_t client_width_ = 0;
+    uint32_t client_height_ = 0;
+    uint32_t client_refresh_rate_ = 0;
+    int32_t color_matrix_ = 0;
+    bool full_range_ = false;
+    uint32_t monitor_index_ = 0;
+    std::vector<lt::VideoCodecType> client_codec_types_;
     const std::string pipe_name_;
-    const AudioCodecType audio_codec_type_;
+    AudioCodecType audio_codec_type_ = AudioCodecType::OPUS;
+    bool bootstrap_received_ = false;
+    int64_t bootstrap_timeout_deadline_ms_ = 0;
     bool connected_to_service_ = false;
     std::shared_mutex mutex_;
     std::unique_ptr<SessionChangeObserver> session_observer_;

@@ -61,6 +61,7 @@
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
 #include <ltproto/worker2service/stop_working.pb.h>
+#include <ltproto/worker2service/worker_bootstrap.pb.h>
 
 #include <ltlib/system.h>
 #include <ltlib/times.h>
@@ -107,6 +108,25 @@ lt::VideoCodecType toLtrtc(ltproto::common::VideoCodecType codec) {
         return lt::VideoCodecType::H264_420_SOFT;
     default:
         return lt::VideoCodecType::Unknown;
+    }
+}
+
+ltproto::common::VideoCodecType toProtobuf(lt::VideoCodecType codec_type) {
+    switch (codec_type) {
+    case lt::VideoCodecType::H264_420:
+        return ltproto::common::VideoCodecType::AVC;
+    case lt::VideoCodecType::H265_420:
+        return ltproto::common::VideoCodecType::HEVC;
+    case lt::VideoCodecType::H264_444:
+        return ltproto::common::VideoCodecType::AVC_444;
+    case lt::VideoCodecType::H265_444:
+        return ltproto::common::VideoCodecType::HEVC_444;
+    case lt::VideoCodecType::AV1:
+        return ltproto::common::VideoCodecType::AV1;
+    case lt::VideoCodecType::H264_420_SOFT:
+        return ltproto::common::VideoCodecType::AVC_SOFT;
+    default:
+        return ltproto::common::VideoCodecType::UnknownVCT;
     }
 }
 
@@ -473,6 +493,16 @@ void WorkerSession::createWorkerProcess(uint32_t client_width, uint32_t client_h
     params.audio_codec = atype(transport_type_);
     params.on_failed =
         std::bind(&WorkerSession::onWorkerFailedFromOtherThread, this, std::placeholders::_1);
+
+    worker_bootstrap_width_ = client_width;
+    worker_bootstrap_height_ = client_height;
+    worker_bootstrap_refresh_rate_ = client_refresh_rate;
+    worker_bootstrap_monitor_index_ = 0;
+    worker_bootstrap_color_matrix_ = color_matrix;
+    worker_bootstrap_full_range_ = full_range;
+    worker_bootstrap_need_negotiate_ = false;
+    worker_bootstrap_audio_codec_ = params.audio_codec;
+
     worker_process_ = WorkerProcess::create(params);
 }
 
@@ -732,6 +762,39 @@ void WorkerSession::onPipeAccepted(uint32_t fd) {
     }
     pipe_client_fd_ = fd;
     LOG(INFO) << "Pipe server accpeted worker(" << fd << ")";
+    if (!sendBootstrapToWorker()) {
+        LOG(ERR) << "Send bootstrap to worker failed";
+        onClosed(CloseReason::WorkerFailed);
+    }
+}
+
+bool WorkerSession::sendBootstrapToWorker() {
+    if (pipe_client_fd_ == std::numeric_limits<uint32_t>::max()) {
+        LOG(ERR) << "Cannot send worker bootstrap: pipe not connected";
+        return false;
+    }
+
+    constexpr uint32_t kWorkerBootstrapVersion = 1;
+    auto msg = std::make_shared<ltproto::worker2service::WorkerBootstrap>();
+    msg->set_version(kWorkerBootstrapVersion);
+    msg->set_pipe_name(pipe_name_);
+    msg->set_width(worker_bootstrap_width_);
+    msg->set_height(worker_bootstrap_height_);
+    msg->set_refresh_rate(worker_bootstrap_refresh_rate_);
+    for (auto codec : client_video_codecs_) {
+        auto pcodec = toProtobuf(codec);
+        if (pcodec != ltproto::common::VideoCodecType::UnknownVCT) {
+            msg->add_video_codecs(pcodec);
+        }
+    }
+    msg->set_audio_codec(static_cast<int32_t>(worker_bootstrap_audio_codec_));
+    msg->set_monitor_index(worker_bootstrap_monitor_index_);
+    msg->set_color_matrix(worker_bootstrap_color_matrix_);
+    msg->set_full_range(worker_bootstrap_full_range_);
+    msg->set_need_negotiate(worker_bootstrap_need_negotiate_);
+
+    sendToWorker(ltproto::id(msg), msg);
+    return true;
 }
 
 void WorkerSession::onPipeDisconnected(uint32_t fd) {
@@ -839,6 +902,9 @@ void WorkerSession::onWorkerStreamingParams(std::shared_ptr<google::protobuf::Me
             auto msg2 = std::static_pointer_cast<ltproto::common::StreamingParams>(msg);
             worker_process_->changeResolution(msg2->video_width(), msg2->video_height(),
                                               msg2->monitor_index());
+            worker_bootstrap_width_ = static_cast<uint32_t>(msg2->video_width());
+            worker_bootstrap_height_ = static_cast<uint32_t>(msg2->video_height());
+            worker_bootstrap_monitor_index_ = static_cast<uint32_t>(msg2->monitor_index());
         }
         maybeOnCreateSessionCompleted();
     }
@@ -1268,6 +1334,9 @@ void WorkerSession::onChangeStreamingParams(std::shared_ptr<google::protobuf::Me
     if (worker_process_) {
         // 改为不协商后，传回去的widht、height已经没多大用。不过将来可能会加回协商逻辑。。。
         worker_process_->changeResolution(width, height, mindex);
+        worker_bootstrap_width_ = width;
+        worker_bootstrap_height_ = height;
+        worker_bootstrap_monitor_index_ = mindex;
     }
     else {
         LOG(ERR) << "Received ChangeStreamingParams but worker_process_ == nullptr";

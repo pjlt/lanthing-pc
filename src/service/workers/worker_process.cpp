@@ -43,40 +43,6 @@
 
 int getLtFlushLogLines();
 
-namespace {
-
-std::string to_string(std::vector<lt::VideoCodecType> codecs) {
-    std::string str;
-    for (size_t i = 0; i < codecs.size(); i++) {
-        switch (codecs[i]) {
-        case lt::VideoCodecType::H264_420:
-            str += lt::toString(lt::VideoCodecType::H264_420);
-            break;
-        case lt::VideoCodecType::H265_420:
-            str += lt::toString(lt::VideoCodecType::H265_420);
-            break;
-        case lt::VideoCodecType::H264_444:
-            str += lt::toString(lt::VideoCodecType::H264_444);
-            break;
-        case lt::VideoCodecType::H265_444:
-            str += lt::toString(lt::VideoCodecType::H265_444);
-            break;
-        case lt::VideoCodecType::H264_420_SOFT:
-            str += lt::toString(lt::VideoCodecType::H264_420_SOFT);
-            break;
-        default:
-            str += lt::toString(lt::VideoCodecType::Unknown);
-            break;
-        }
-        if (i != codecs.size() - 1) {
-            str += ",";
-        }
-    }
-    return str;
-}
-
-} // namespace
-
 namespace lt {
 
 namespace svc {
@@ -151,19 +117,8 @@ void WorkerProcess::mainLoop(const std::function<void()>& i_am_alive) {
 bool WorkerProcess::launchWorkerProcess() {
     std::stringstream ss;
     ss << path_ << " -type worker "
-       << " -flushlog " << getLtFlushLogLines() << " -name " << pipe_name_ << " -width "
-       << client_width_ << " -height " << client_height_ << " -freq " << client_refresh_rate_
-       << " -codecs " << ::to_string(client_video_codecs_) << " -atype "
-       << static_cast<int32_t>(audio_codec_) << " -action streaming "
-       << " -mindex " << monitor_index_ << " -colormatrix " << color_matrix_ << " -fullrange "
-       << (full_range_ ? 1 : 0);
-    if (first_launch_) {
-        first_launch_ = false;
-        ss << " -negotiate 1";
-    }
-    else {
-        ss << " -negotiate 0";
-    }
+       << " -flushlog " << getLtFlushLogLines() << " -name " << pipe_name_
+       << " -action streaming";
     std::wstring cmd = ltlib::utf8To16(ss.str());
     if (process_handle_) {
         CloseHandle(process_handle_);

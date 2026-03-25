@@ -39,6 +39,7 @@
 #include <ltproto/worker2service/network_changed.pb.h>
 #include <ltproto/worker2service/start_working.pb.h>
 #include <ltproto/worker2service/start_working_ack.pb.h>
+#include <ltproto/worker2service/worker_bootstrap.pb.h>
 
 #include <lt_constants.h>
 #include <ltlib/logging.h>
@@ -93,67 +94,14 @@ namespace worker {
 
 std::tuple<std::unique_ptr<WorkerStreaming>, int32_t>
 WorkerStreaming::create(std::map<std::string, std::string> options) {
-    if (options.find("-width") == options.end() || options.find("-height") == options.end() ||
-        options.find("-freq") == options.end() || options.find("-codecs") == options.end() ||
-        options.find("-name") == options.end() || options.find("-negotiate") == options.end() ||
-        options.find("-mindex") == options.end() || options.find("-atype") == options.end() ||
-        options.find("-colormatrix") == options.end() ||
-        options.find("-fullrange") == options.end()) {
+    if (options.find("-name") == options.end()) {
         LOG(ERR) << "Parameter invalid";
         return {nullptr, kExitCodeInvalidParameters};
     }
     Params params{};
-    int32_t width = std::atoi(options["-width"].c_str());
-    int32_t height = std::atoi(options["-height"].c_str());
-    int32_t freq = std::atoi(options["-freq"].c_str());
-    int32_t monitor_index = std::atoi(options["-mindex"].c_str());
-    int32_t atype = std::atoi(options["-atype"].c_str());
-    int32_t color_matrix = std::atoi(options["-colormatrix"].c_str());
-    int32_t full_range = std::atoi(options["-fullrange"].c_str());
-    std::stringstream ss(options["-codecs"]);
-
-    params.need_negotiate = std::atoi(options["-negotiate"].c_str()) != 0;
     params.name = options["-name"];
     if (params.name.empty()) {
         LOG(ERR) << "Parameter invalid: name";
-        return {nullptr, kExitCodeInvalidParameters};
-    }
-    if (atype != (int)lt::AudioCodecType::OPUS && atype != (int)lt::AudioCodecType::PCM) {
-        LOG(ERR) << "Parameter invalid: atype";
-        return {nullptr, kExitCodeInvalidParameters};
-    }
-    params.audio_codec = static_cast<lt::AudioCodecType>(atype);
-    if (width <= 0) {
-        LOG(ERR) << "Parameter invalid: width " << width;
-        return {nullptr, kExitCodeInvalidParameters};
-    }
-    params.width = static_cast<uint32_t>(width);
-    if (height <= 0) {
-        LOG(ERR) << "Parameter invalid: height " << height;
-        return {nullptr, kExitCodeInvalidParameters};
-    }
-    params.height = static_cast<uint32_t>(height);
-    if (freq <= 0) {
-        LOG(ERR) << "Parameter invalid: freq " << freq;
-        return {nullptr, kExitCodeInvalidParameters};
-    }
-    params.refresh_rate = static_cast<uint32_t>(freq);
-    if (monitor_index < 0 || monitor_index >= 10) {
-        LOG(ERR) << "Parameter invalid: mindex " << monitor_index << ", change to 0";
-        monitor_index = 0;
-    }
-    params.monitor_index = monitor_index;
-    params.color_matrix = color_matrix;
-    params.full_range = full_range != 0;
-    std::string codec_str;
-    while (std::getline(ss, codec_str, ',')) {
-        VideoCodecType codec = videoCodecType(codec_str.c_str());
-        if (codec != VideoCodecType::Unknown) {
-            params.video_codecs.push_back(codec);
-        }
-    }
-    if (params.video_codecs.empty()) {
-        LOG(ERR) << "Parameter invalid: codecs";
         return {nullptr, kExitCodeInvalidParameters};
     }
 
@@ -168,16 +116,7 @@ WorkerStreaming::create(std::map<std::string, std::string> options) {
 }
 
 WorkerStreaming::WorkerStreaming(const Params& params)
-    : need_negotiate_{params.need_negotiate}
-    , client_width_{params.width}
-    , client_height_{params.height}
-    , client_refresh_rate_{params.refresh_rate}
-    , color_matrix_{params.color_matrix}
-    , full_range_{params.full_range}
-    , monitor_index_{params.monitor_index}
-    , client_codec_types_{params.video_codecs}
-    , pipe_name_{params.name}
-    , audio_codec_type_{params.audio_codec}
+    : pipe_name_{params.name}
     , last_time_received_from_service_{ltlib::steady_now_ms()} {}
 
 WorkerStreaming::~WorkerStreaming() {
@@ -223,30 +162,10 @@ int32_t WorkerStreaming::init() {
         return kExitCodeInitWorkerFailed;
     }
     getUserMaxMbps();
-#if 0 // 引入多屏支持后，协商变得很麻烦
-    if (need_negotiate_) {
-        if (!negotiateAllParameters()) {
-            return false;
-        }
-    }
-    else {
-        negotiated_display_setting_.width = client_width_;
-        negotiated_display_setting_.height = client_height_;
-        negotiated_display_setting_.refrash_rate = client_refresh_rate_;
-        if (!negotiateStreamParameters()) {
-            return false;
-        }
-    }
-#else
-    int32_t ec = negotiateStreamParameters();
-    if (ec != kExitCodeOK) {
-        return ec;
-    }
-#endif
-
     namespace ltype = ltproto::type;
     namespace ph = std::placeholders;
     const std::pair<uint32_t, MessageHandler> handlers[] = {
+        {ltype::kWorkerBootstrap, std::bind(&WorkerStreaming::onWorkerBootstrap, this, ph::_1)},
         {ltype::kStartWorking, std::bind(&WorkerStreaming::onStartWorking, this, ph::_1)},
         {ltype::kStopWorking, std::bind(&WorkerStreaming::onStopWorking, this, ph::_1)},
         {ltype::kKeepAlive, std::bind(&WorkerStreaming::onKeepAlive, this, ph::_1)},
@@ -505,6 +424,12 @@ void WorkerStreaming::printStats() {}
 void WorkerStreaming::checkCimeout() {
     constexpr int64_t kTimeout = 10'000;
     auto now = ltlib::steady_now_ms();
+    if (!bootstrap_received_ && bootstrap_timeout_deadline_ms_ > 0 &&
+        now > bootstrap_timeout_deadline_ms_) {
+        LOG(WARNING) << "Worker bootstrap timeout, worker exit.";
+        stop(kExitCodeInvalidParameters);
+        return;
+    }
     if (now - last_time_received_from_service_ > kTimeout) {
         LOG(WARNING) << "No packet from service for " << now - last_time_received_from_service_
                      << "ms, worker exit.";
@@ -550,9 +475,79 @@ void WorkerStreaming::onPipeConnected() {
         LOG(INFO) << "Connected to service";
     }
     connected_to_service_ = true;
-    // 连上第一时间，向service发送协商好的串流参数
-    auto params = std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_params_);
-    sendPipeMessage(ltproto::id(params), params);
+    bootstrap_timeout_deadline_ms_ = ltlib::steady_now_ms() + 5000;
+    if (bootstrap_received_ && negotiated_params_) {
+        auto params = std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_params_);
+        sendPipeMessage(ltproto::id(params), params);
+    }
+}
+
+void WorkerStreaming::onWorkerBootstrap(
+    const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
+    auto msg = std::static_pointer_cast<ltproto::worker2service::WorkerBootstrap>(_msg);
+    constexpr uint32_t kWorkerBootstrapVersion = 1;
+    if (msg->version() != kWorkerBootstrapVersion) {
+        LOG(ERR) << "Unsupported worker bootstrap version: " << msg->version();
+        stop(kExitCodeInvalidParameters);
+        return;
+    }
+    if (bootstrap_received_) {
+        LOG(WARNING) << "Received duplicate worker bootstrap, ignore";
+        return;
+    }
+
+    int32_t atype = msg->audio_codec();
+    if (atype != static_cast<int32_t>(lt::AudioCodecType::OPUS) &&
+        atype != static_cast<int32_t>(lt::AudioCodecType::PCM)) {
+        LOG(ERR) << "Parameter invalid: atype";
+        stop(kExitCodeInvalidParameters);
+        return;
+    }
+    if (msg->width() == 0 || msg->height() == 0 || msg->refresh_rate() == 0) {
+        LOG(ERR) << "Parameter invalid: width/height/freq";
+        stop(kExitCodeInvalidParameters);
+        return;
+    }
+
+    need_negotiate_ = msg->need_negotiate();
+    client_width_ = msg->width();
+    client_height_ = msg->height();
+    client_refresh_rate_ = msg->refresh_rate();
+    monitor_index_ = msg->monitor_index();
+    color_matrix_ = msg->color_matrix();
+    full_range_ = msg->full_range();
+    audio_codec_type_ = static_cast<lt::AudioCodecType>(atype);
+
+    if (monitor_index_ >= monitors_.size()) {
+        LOG(WARNING) << "Parameter invalid: mindex " << monitor_index_ << ", change to 0";
+        monitor_index_ = 0;
+    }
+
+    client_codec_types_.clear();
+    for (auto codec : msg->video_codecs()) {
+        auto ltc = toLtrtc(static_cast<ltproto::common::VideoCodecType>(codec));
+        if (ltc != lt::VideoCodecType::Unknown) {
+            client_codec_types_.push_back(ltc);
+        }
+    }
+    if (client_codec_types_.empty()) {
+        LOG(ERR) << "Parameter invalid: codecs";
+        stop(kExitCodeInvalidParameters);
+        return;
+    }
+
+    int32_t ec = negotiateStreamParameters();
+    if (ec != kExitCodeOK) {
+        LOG(ERR) << "negotiateStreamParameters failed: " << ec;
+        stop(ec);
+        return;
+    }
+
+    bootstrap_received_ = true;
+    if (connected_to_service_) {
+        auto params = std::static_pointer_cast<ltproto::common::StreamingParams>(negotiated_params_);
+        sendPipeMessage(ltproto::id(params), params);
+    }
 }
 
 void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
@@ -560,6 +555,11 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
     auto ack = std::make_shared<ltproto::worker2service::StartWorkingAck>();
     int32_t error_code = kExitCodeInitWorkerFailed;
     do {
+        if (!bootstrap_received_ || !video_ || !audio_) {
+            ack->set_err_code(ltproto::ErrorCode::InvalidParameter);
+            error_code = kExitCodeInvalidParameters;
+            break;
+        }
         if (!video_->start()) {
             ack->set_err_code(ltproto::ErrorCode::WrokerInitVideoFailed);
             error_code = kExitCodeInitVideoFailed;

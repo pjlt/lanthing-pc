@@ -97,7 +97,6 @@ private:
     void* process_handle_ = nullptr;
     void* thread_handle_ = nullptr;
     ltproto::Parser parser_;
-    bool first_launch_ = true;
 };
 
 } // namespace svc
