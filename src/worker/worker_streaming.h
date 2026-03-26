@@ -106,6 +106,7 @@ private:
     void onSwitchMonitor(const std::shared_ptr<google::protobuf::MessageLite>& msg);
 
 private:
+    std::string trace_id_;
     bool need_negotiate_ = false;
     uint32_t client_width_ = 0;
     uint32_t client_height_ = 0;
@@ -135,6 +136,7 @@ private:
     std::unique_ptr<ltlib::Settings> settings_;
     std::vector<ltlib::Monitor> monitors_;
     uint32_t max_mbps_ = 0;
+    bool first_video_sent_logged_ = false;
     bool stoped_ = false;
 };
 } // namespace worker

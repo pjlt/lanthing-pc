@@ -34,6 +34,7 @@
 #include <array>
 
 #include <ltlib/logging.h>
+#include <ltlib/times.h>
 #include <ltproto/client2worker/controller_added_removed.pb.h>
 #include <ltproto/client2worker/controller_status.pb.h>
 #include <ltproto/client2worker/keyboard_event.pb.h>
@@ -221,6 +222,7 @@ void CapturerImpl::handleKeyboardUpDown(const KeyboardEvent& ev) {
     auto msg = std::make_shared<ltproto::client2worker::KeyboardEvent>();
     msg->set_key(ev.scan_code);
     msg->set_down(ev.is_pressed);
+    msg->set_client_send_timestamp_us(ltlib::steady_now_us());
     sendMessageToHost(ltproto::id(msg), msg, true);
     LOG(DEBUG) << "Key:" << ev.scan_code << ", down:" << ev.is_pressed;
 }
@@ -254,6 +256,7 @@ void CapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
     }
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_key_falg(key_flag);
+    msg->set_client_send_timestamp_us(ltlib::steady_now_us());
     auto [x, y] = calcAbsPos(ev.x, ev.y, static_cast<int32_t>(ev.window_width),
                              static_cast<int32_t>(ev.window_height));
     if (x < 0.f || x > 1.f || y < 0.f || y > 1.f) {
@@ -267,6 +270,7 @@ void CapturerImpl::handleMouseButton(const MouseButtonEvent& ev) {
 void CapturerImpl::handleMouseWheel(const MouseWheelEvent& ev) {
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
     msg->set_delta_z(ev.amount);
+    msg->set_client_send_timestamp_us(ltlib::steady_now_us());
     sendMessageToHost(ltproto::id(msg), msg, true);
 }
 
@@ -274,6 +278,7 @@ void CapturerImpl::handleMouseMove(const MouseMoveEvent& ev) {
 
     // TODO: 相对模式可能要累积一段再发出去
     auto msg = std::make_shared<ltproto::client2worker::MouseEvent>();
+    msg->set_client_send_timestamp_us(ltlib::steady_now_us());
     auto [x, y] = calcAbsPos(ev.x, ev.y, static_cast<int32_t>(ev.window_width),
                              static_cast<int32_t>(ev.window_height));
     if (x < 0.f || x > 1.f || y < 0.f || y > 1.f) {

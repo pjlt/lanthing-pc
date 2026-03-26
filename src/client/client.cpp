@@ -55,6 +55,7 @@
 #include <lt_constants.h>
 #include <ltlib/logging.h>
 #include <ltlib/system.h>
+#include <ltlib/times.h>
 #include <ltlib/time_sync.h>
 
 #include <transport/transport_rtc.h>
@@ -96,6 +97,13 @@ std::string toTitle(lt::LinkType type) {
     }
 }
 
+void logLtStage(const std::string& trace_id, const char* stage, int64_t start_ms, int64_t end_ms,
+                const char* result) {
+    LOG(INFO) << "lt_stage=" << stage << " trace_id=" << trace_id << " t0_ms=" << start_ms
+              << " t1_ms=" << end_ms << " cost_ms=" << (end_ms - start_ms)
+              << " result=" << result;
+}
+
 } // namespace
 
 namespace lt {
@@ -119,6 +127,9 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
     Params params{};
     params.client_id = options["-cid"];
     params.room_id = options["-rid"];
+    if (options.find("-traceid") != options.end()) {
+        params.trace_id = options["-traceid"];
+    }
     params.auth_token = options["-token"];
     params.signaling_addr = options["-addr"];
     params.user = options["-user"];
@@ -202,6 +213,7 @@ std::unique_ptr<Client> Client::create(std::map<std::string, std::string> option
 
 Client::Client(const Params& params)
     : auth_token_{params.auth_token}
+    , trace_id_{params.trace_id}
     , p2p_username_{params.user}
     , p2p_password_{params.pwd}
     , signaling_params_{params.client_id, params.room_id, params.signaling_addr,
@@ -565,6 +577,7 @@ void Client::onSignalingReconnecting() {
 
 void Client::onSignalingConnected() {
     LOG(INFO) << "Connected to signaling server";
+    join_start_ms_ = ltlib::steady_now_ms();
     auto msg = std::make_shared<ltproto::signaling::JoinRoom>();
     msg->set_session_id(signaling_params_.client_id);
     msg->set_room_id(signaling_params_.room_id);
@@ -583,6 +596,11 @@ void Client::onJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) 
         return;
     }
     LOG(INFO) << "Join signaling room success";
+    join_done_ms_ = ltlib::steady_now_ms();
+    if (join_start_ms_ > 0) {
+        logLtStage(trace_id_.empty() ? "na" : trace_id_, "signaling_join", join_start_ms_,
+               join_done_ms_, "ok");
+    }
     // initTransport必须在sdl_创建之后调用，因为onTpConnected会用到sdl_
     if (!initTransport()) {
         LOG(INFO) << "Initialize rtc failed";
@@ -776,6 +794,13 @@ void Client::onTpData(void* user_data, const uint8_t* data, uint32_t size, bool 
 void Client::onTpVideoFrame(void* user_data, const lt::VideoFrame& frame) {
     // 跑在video线程
     auto that = reinterpret_cast<Client*>(user_data);
+    if (!that->first_decode_logged_) {
+        that->first_decode_logged_ = true;
+        const int64_t now_ms = ltlib::steady_now_ms();
+        const int64_t base_ms = that->transport_up_ms_ > 0 ? that->transport_up_ms_ : now_ms;
+        logLtStage(that->trace_id_.empty() ? "na" : that->trace_id_, "first_frame_decode",
+               base_ms, now_ms, "ok");
+    }
     video::DecodeRenderPipeline::Action action = video::DecodeRenderPipeline::Action::NONE;
     {
         std::lock_guard lock{that->dr_mutex_};
@@ -811,6 +836,11 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     // 跑在数据通道线程
     LOG(INFO) << "Connected, LinkType " << toString(link_type);
     auto that = reinterpret_cast<Client*>(user_data);
+    that->transport_up_ms_ = ltlib::steady_now_ms();
+    if (that->join_done_ms_ > 0) {
+        logLtStage(that->trace_id_.empty() ? "na" : that->trace_id_, "transport_up",
+               that->join_done_ms_, that->transport_up_ms_, "ok");
+    }
     that->video_params_.sdl = that->sdl_.get();
     that->input_params_.sdl = that->sdl_.get();
     if (that->video_device_ == nullptr) {
@@ -862,6 +892,9 @@ void Client::onTpConnected(void* user_data, lt::LinkType link_type) {
     auto start = std::make_shared<ltproto::client2worker::StartTransmission>();
     start->set_client_os(ltproto::client2worker::StartTransmission_ClientOS_Windows);
     start->set_token(that->auth_token_);
+    if (!that->trace_id_.empty()) {
+        start->set_trace_id(that->trace_id_);
+    }
     that->sendMessageToHost(ltproto::id(start), start, true);
     that->postTask(std::bind(&Client::syncTime, that));
 
@@ -989,6 +1022,9 @@ void Client::sendMessageToHostFromOtherModule(
 
 void Client::onStartTransmissionAck(const std::shared_ptr<google::protobuf::MessageLite>& _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmissionAck>(_msg);
+    if (!msg->trace_id().empty() && trace_id_.empty()) {
+        trace_id_ = msg->trace_id();
+    }
     if (msg->err_code() == ltproto::ErrorCode::Success) {
         LOG(INFO) << "Received StartTransmissionAck with success";
         auto switch_mouse = std::make_shared<ltproto::client2worker::SwitchMouseMode>();
@@ -1020,6 +1056,21 @@ void Client::onTimeSync(std::shared_ptr<google::protobuf::MessageLite> _msg) {
 
 void Client::onSendSideStat(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::client2worker::SendSideStat>(_msg);
+    if (!msg->trace_id().empty() && trace_id_.empty()) {
+        trace_id_ = msg->trace_id();
+    }
+    if (!first_input_roundtrip_logged_ && msg->first_input_client_send_timestamp_us() > 0 &&
+        msg->first_input_service_ack_timestamp_us() > 0) {
+        first_input_roundtrip_logged_ = true;
+        const int64_t client_send_us = msg->first_input_client_send_timestamp_us();
+        const int64_t service_ack_us = msg->first_input_service_ack_timestamp_us();
+        const int64_t now_ms = ltlib::steady_now_ms();
+        LOG(INFO) << "lt_stage=first_input_roundtrip trace_id="
+                  << (trace_id_.empty() ? "na" : trace_id_) << " client_send_us="
+                  << client_send_us << " service_ack_us=" << service_ack_us
+                  << " est_roundtrip_us=" << (service_ack_us - client_send_us)
+                  << " t1_ms=" << now_ms << " result=ok";
+    }
     std::lock_guard lock{dr_mutex_};
     if (video_pipeline_) {
         video_pipeline_->setNack(static_cast<uint32_t>(msg->nack()));

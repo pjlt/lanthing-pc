@@ -45,6 +45,7 @@ public:
         uint32_t flush_logs;
         std::string client_id;
         std::string room_id;
+        std::string trace_id;
         std::string auth_token;
         std::string p2p_username;
         std::string p2p_password;

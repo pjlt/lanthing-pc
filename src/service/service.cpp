@@ -305,6 +305,9 @@ void Service::onOpenConnection(std::shared_ptr<google::protobuf::MessageLite> _m
     LOG(INFO) << "Received OpenConnection";
     // 1. 校验参数
     auto msg = std::static_pointer_cast<ltproto::server::OpenConnection>(_msg);
+    if (msg->trace_id().empty()) {
+        msg->set_trace_id("svc-" + ltlib::randomStr(12));
+    }
     auto ack = std::make_shared<ltproto::server::OpenConnectionAck>();
     int64_t client_version = msg->client_version();
     int64_t client_required_version = msg->required_version();

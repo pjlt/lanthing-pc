@@ -217,6 +217,7 @@ private:
     int64_t client_device_id_ = 0;
     std::string service_id_;
     std::string room_id_;
+    std::string trace_id_;
     std::string auth_token_;
     std::string p2p_username_;
     std::string p2p_password_;
@@ -246,6 +247,11 @@ private:
     uint16_t max_port_ = 0;
     std::string ignored_nic_;
     bool first_start_working_ack_received_ = false;
+    bool first_encoded_logged_ = false;
+    bool first_input_reported_ = false;
+    int64_t signaling_join_start_ms_ = 0;
+    int64_t signaling_join_done_ms_ = 0;
+    int64_t transport_up_ms_ = 0;
     std::vector<lt::VideoCodecType> client_video_codecs_;
     uint32_t worker_bootstrap_width_ = 0;
     uint32_t worker_bootstrap_height_ = 0;
@@ -255,6 +261,7 @@ private:
     bool worker_bootstrap_full_range_ = false;
     bool worker_bootstrap_need_negotiate_ = false;
     lt::AudioCodecType worker_bootstrap_audio_codec_ = lt::AudioCodecType::OPUS;
+    int64_t first_input_client_send_ts_us_ = 0;
 
     std::atomic<bool> enable_gamepad_;
     std::atomic<bool> enable_keyboard_;

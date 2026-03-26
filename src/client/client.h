@@ -74,6 +74,7 @@ public:
     struct Params {
         std::string client_id;
         std::string room_id;
+        std::string trace_id;
         std::string auth_token;
         std::string user;
         std::string pwd;
@@ -173,6 +174,7 @@ private:
 private:
     std::unique_ptr<ltlib::Settings> settings_;
     std::string auth_token_;
+    std::string trace_id_;
     std::string p2p_username_;
     std::string p2p_password_;
 #if LT_WINDOWS
@@ -209,6 +211,11 @@ private:
     bool absolute_mouse_ = true;
     bool last_w_or_h_is_0_ = false;
     int64_t last_received_keepalive_ = 0;
+    int64_t join_start_ms_ = 0;
+    int64_t join_done_ms_ = 0;
+    int64_t transport_up_ms_ = 0;
+    bool first_decode_logged_ = false;
+    bool first_input_roundtrip_logged_ = false;
     bool connected_to_app_ = false;
     std::string ignored_nic_;
     bool stoped_ = false;

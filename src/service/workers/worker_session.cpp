@@ -40,6 +40,7 @@
 #include <ltproto/client2service/time_sync.pb.h>
 #include <ltproto/client2worker/audio_data.pb.h>
 #include <ltproto/client2worker/change_streaming_params.pb.h>
+#include <ltproto/client2worker/keyboard_event.pb.h>
 #include <ltproto/client2worker/mouse_event.pb.h>
 #include <ltproto/client2worker/request_keyframe.pb.h>
 #include <ltproto/client2worker/send_side_stat.pb.h>
@@ -128,6 +129,13 @@ ltproto::common::VideoCodecType toProtobuf(lt::VideoCodecType codec_type) {
     default:
         return ltproto::common::VideoCodecType::UnknownVCT;
     }
+}
+
+void logLtStage(const std::string& trace_id, const char* stage, int64_t start_ms, int64_t end_ms,
+                const char* result) {
+    LOG(INFO) << "lt_stage=" << stage << " trace_id=" << trace_id << " t0_ms=" << start_ms
+              << " t1_ms=" << end_ms << " cost_ms=" << (end_ms - start_ms)
+              << " result=" << result;
 }
 
 } // namespace
@@ -281,6 +289,10 @@ bool WorkerSession::init(std::shared_ptr<google::protobuf::MessageLite> _msg,
     auth_token_ = msg->auth_token();
     service_id_ = msg->service_id();
     room_id_ = msg->room_id();
+    trace_id_ = msg->trace_id();
+    if (trace_id_.empty()) {
+        trace_id_ = "svc-" + session_name_;
+    }
     p2p_username_ = msg->p2p_username();
     p2p_password_ = msg->p2p_password();
     signaling_addr_ = msg->signaling_addr();
@@ -642,6 +654,7 @@ void WorkerSession::onSignalingReconnecting() {
 
 void WorkerSession::onSignalingConnected() {
     LOG(INFO) << "Connected to signaling server";
+    signaling_join_start_ms_ = ltlib::steady_now_ms();
     auto msg = std::make_shared<ltproto::signaling::JoinRoom>();
     msg->set_session_id(service_id_);
     msg->set_room_id(room_id_);
@@ -656,6 +669,7 @@ void WorkerSession::onSignalingConnected() {
 
 void WorkerSession::onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::MessageLite> _msg) {
     auto msg = std::static_pointer_cast<ltproto::signaling::JoinRoomAck>(_msg);
+    signaling_join_done_ms_ = ltlib::steady_now_ms();
     if (msg->err_code() != ltproto::ErrorCode::Success) {
         LOG(ERR) << "Join signaling room failed, room:" << room_id_;
         join_signaling_room_success_ = false;
@@ -663,6 +677,10 @@ void WorkerSession::onSignalingJoinRoomAck(std::shared_ptr<google::protobuf::Mes
     else {
         LOG(INFO) << "Join signaling room success, room:" << room_id_;
         join_signaling_room_success_ = true;
+        if (signaling_join_start_ms_ > 0) {
+            logLtStage(trace_id_, "signaling_join", signaling_join_start_ms_,
+                       signaling_join_done_ms_, "ok");
+        }
     }
     maybeOnCreateSessionCompleted();
 }
@@ -792,6 +810,7 @@ bool WorkerSession::sendBootstrapToWorker() {
     msg->set_color_matrix(worker_bootstrap_color_matrix_);
     msg->set_full_range(worker_bootstrap_full_range_);
     msg->set_need_negotiate(worker_bootstrap_need_negotiate_);
+    msg->set_trace_id(trace_id_);
 
     sendToWorker(ltproto::id(msg), msg);
     return true;
@@ -854,6 +873,7 @@ void WorkerSession::onStartWorkingAck(std::shared_ptr<google::protobuf::MessageL
     if (!first_start_working_ack_received_) {
         first_start_working_ack_received_ = true;
         auto ack = std::make_shared<ltproto::client2worker::StartTransmissionAck>();
+        ack->set_trace_id(trace_id_);
         if (msg->err_code() == ltproto::ErrorCode::Success) {
             ack->set_err_code(ltproto::ErrorCode::Success);
             for (uint32_t type : msg->msg_type()) {
@@ -970,6 +990,11 @@ void WorkerSession::onTpAccepted(void* user_data, lt::LinkType link_type) {
     auto that = reinterpret_cast<WorkerSession*>(user_data);
     that->postTask([that, link_type]() {
         LOG(INFO) << "Accepted client, LinkType " << toString(link_type);
+        that->transport_up_ms_ = ltlib::steady_now_ms();
+        if (that->signaling_join_done_ms_ > 0) {
+            logLtStage(that->trace_id_, "transport_up", that->signaling_join_done_ms_,
+                       that->transport_up_ms_, "ok");
+        }
         that->is_p2p_ = link_type != lt::LinkType::RelayUDP;
         that->updateLastRecvTime();
         that->syncTime();
@@ -1048,6 +1073,12 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
         return;
     }
     auto encoded_frame = std::static_pointer_cast<ltproto::client2worker::VideoFrame>(_msg);
+    if (!first_encoded_logged_) {
+        first_encoded_logged_ = true;
+        const int64_t now_ms = ltlib::steady_now_ms();
+        const int64_t base_ms = transport_up_ms_ > 0 ? transport_up_ms_ : now_ms;
+        logLtStage(trace_id_, "first_frame_encode", base_ms, now_ms, "ok");
+    }
     LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame->capture_timestamp_us(),
          encoded_frame->start_encode_timestamp_us(), encoded_frame->end_encode_timestamp_us());
     lt::VideoFrame video_frame{};
@@ -1121,6 +1152,15 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
     case ltype::kMouseEvent:
     {
         auto mouse_msg = std::static_pointer_cast<ltproto::client2worker::MouseEvent>(msg);
+        if (!first_input_reported_ && mouse_msg->client_send_timestamp_us() > 0) {
+            first_input_reported_ = true;
+            first_input_client_send_ts_us_ = mouse_msg->client_send_timestamp_us();
+            auto stat = std::make_shared<ltproto::client2worker::SendSideStat>();
+            stat->set_trace_id(trace_id_);
+            stat->set_first_input_client_send_timestamp_us(first_input_client_send_ts_us_);
+            stat->set_first_input_service_ack_timestamp_us(ltlib::steady_now_us());
+            sendMessageToRemoteClient(ltproto::id(stat), stat, true);
+        }
         if (mouse_msg->has_key_falg()) {
             postTask(
                 std::bind(&WorkerSession::sendConnectionStatus, this, false, false, false, true));
@@ -1139,11 +1179,23 @@ void WorkerSession::dispatchDcMessage(uint32_t type,
         break;
     }
     case ltype::kKeyboardEvent:
+    {
+        auto kb_msg = std::static_pointer_cast<ltproto::client2worker::KeyboardEvent>(msg);
+        if (!first_input_reported_ && kb_msg->client_send_timestamp_us() > 0) {
+            first_input_reported_ = true;
+            first_input_client_send_ts_us_ = kb_msg->client_send_timestamp_us();
+            auto stat = std::make_shared<ltproto::client2worker::SendSideStat>();
+            stat->set_trace_id(trace_id_);
+            stat->set_first_input_client_send_timestamp_us(first_input_client_send_ts_us_);
+            stat->set_first_input_service_ack_timestamp_us(ltlib::steady_now_us());
+            sendMessageToRemoteClient(ltproto::id(stat), stat, true);
+        }
         postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, false, true, false));
         if (!enable_keyboard_) {
             return;
         }
         break;
+    }
     case ltype::kControllerStatus:
         postTask(std::bind(&WorkerSession::sendConnectionStatus, this, false, true, false, false));
         if (!enable_gamepad_) {
@@ -1167,6 +1219,9 @@ void WorkerSession::onStartTransmission(std::shared_ptr<google::protobuf::Messag
     }
     client_connected_ = true;
     auto msg = std::static_pointer_cast<ltproto::client2worker::StartTransmission>(_msg);
+    if (trace_id_.empty() && !msg->trace_id().empty()) {
+        trace_id_ = msg->trace_id();
+    }
     if (msg->token() != auth_token_) {
         LOG(ERR) << "Received SetupConnection with invalid token: " << msg->token();
         ack->set_err_code(ltproto::ErrorCode::AuthFailed);

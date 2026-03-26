@@ -68,6 +68,7 @@ bool ClientSession::start() {
        << " -type client"
        << " -cid " << params_.client_id
        << " -rid " << params_.room_id
+    << " -traceid " << params_.trace_id
        << " -token " << params_.auth_token
        << " -user " << params_.p2p_username
        << " -pwd " << params_.p2p_password
@@ -199,6 +200,8 @@ bool ClientSession::start() {
         args.push_back(params_.client_id);
         args.push_back("-rid");
         args.push_back(params_.room_id);
+        args.push_back("-traceid");
+        args.push_back(params_.trace_id);
         args.push_back("-token");
         args.push_back(params_.auth_token);
         args.push_back("-user");

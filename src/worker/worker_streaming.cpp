@@ -86,6 +86,11 @@ ltproto::common::VideoCodecType toProtobuf(lt::VideoCodecType codec_type) {
     }
 }
 
+void logLtStage(const std::string& trace_id, const char* stage, int64_t t_ms) {
+    LOG(INFO) << "lt_stage=" << stage << " trace_id=" << trace_id << " t1_ms=" << t_ms
+              << " result=ok";
+}
+
 } // namespace
 
 namespace lt {
@@ -415,6 +420,11 @@ bool WorkerStreaming::sendPipeMessage(uint32_t type,
 // FIXME: 返回值
 bool WorkerStreaming::sendPipeMessageFromOtherThread(
     uint32_t type, const std::shared_ptr<google::protobuf::MessageLite>& msg) {
+    if (type == ltproto::type::kVideoFrame && !first_video_sent_logged_) {
+        first_video_sent_logged_ = true;
+        logLtStage(trace_id_.empty() ? "na" : trace_id_, "first_frame_encode",
+               ltlib::steady_now_ms());
+    }
     postTask([type, msg, this]() { sendPipeMessage(type, msg); });
     return true;
 }
@@ -510,6 +520,7 @@ void WorkerStreaming::onWorkerBootstrap(
     }
 
     need_negotiate_ = msg->need_negotiate();
+    trace_id_ = msg->trace_id();
     client_width_ = msg->width();
     client_height_ = msg->height();
     client_refresh_rate_ = msg->refresh_rate();
