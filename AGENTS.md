@@ -3,6 +3,7 @@
 
 ## 项目指令
 - 不允许修改`./third_party`内的文件
+- 执行`git status`命令无需征求同意
 
 ## 编译构建
 - `./docs/build.md`
@@ -13,7 +14,4 @@
 - 如果仍未找到，则使用`./docs/rules/.clang-format`
 
 ## 规则
-项目规则和文档存放在`./docs`目录下，后续生成新文档、更新文档都在该目录下操作
-- 项目架构图在`./docs/project-architecture.mmd`
-- 连接时序图在`./docs/connection-sequence.mmd`
-- 项目待优化报告在`./docs/optimization-report.md`
+- 项目规则和文档存放在`./docs`目录下，后续生成新文档、更新文档都在该目录下操作
