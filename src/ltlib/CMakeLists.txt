@@ -1,127 +1,97 @@
-cmake_minimum_required(VERSION 3.21)
-project(ltlib)
-
-if (LT_WINDOWS)
-    set(PLAT_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/win_service.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/win_service.cpp
-    )
-    set(PLAT_LIBS
-        winmm.lib
-    )
-elseif (LT_LINUX)
-    set(PLAT_SRCS)
-    set(PLAT_LIBS)
-else()
-    set(PLAT_SRCS)
-    set(PLAT_LIBS)
-endif()
-
-
-set(LTLIB_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/strings.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/system.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/event.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/load_library.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/threads.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/times.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/spin_mutex.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/reconnect_interval.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/settings.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/time_sync.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/logging.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/singleton_process.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/transform.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/versions.h
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/client.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/server.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/ioloop.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/io/types.h
-
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/strings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/threads.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/times.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/reconnect_interval.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/time_sync.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/transform.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/buffer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/ioloop.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_secure_layer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_secure_layer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_layer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_layer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_error.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.cpp
+set(LT_MODULE_LTLIB_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/strings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/strings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/system.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/event.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/load_library.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/threads.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/threads.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/times.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/times.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spin_mutex.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/reconnect_interval.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/reconnect_interval.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/settings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/settings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/time_sync.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/time_sync.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/logging.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/logging.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/singleton_process.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/transform.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/transform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/versions.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/server.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/server.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/ioloop.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/ioloop.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/buffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client_secure_layer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client_secure_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client_transport_layer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client_transport_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/client_transport_error.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/server_transport_layer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/server_transport_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/picohttpparser.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/io/picohttpparser.c
 )
 
 if (LT_WINDOWS)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/system_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/event_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/thread_name_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/times_platform_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_error_win.cpp
+    list(APPEND LT_MODULE_LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/system_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/event_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/load_library_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/singleton_process_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/thread_name_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/times_platform_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/io/client_transport_error_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/win_service.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/win_service.cpp
     )
 else()
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/thread_name_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/times_platform_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/event_stub.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_error_posix.cpp
+    list(APPEND LT_MODULE_LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/thread_name_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/times_platform_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/event_stub.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/load_library_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/singleton_process_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/io/client_transport_error_posix.cpp
     )
 endif()
 
 if (LT_LINUX)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/system_linux.cpp
+    list(APPEND LT_MODULE_LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/system_linux.cpp
     )
 elseif (LT_MAC)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/system_mac.cpp
+    list(APPEND LT_MODULE_LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/system_mac.cpp
     )
 endif()
 
-if (LT_WINDOWS)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ltlib/win_service.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/win_service.cpp
-    )
-endif()
-
-add_library(${PROJECT_NAME} STATIC
-    ${LTLIB_SRCS}
+add_library(lt_module_ltlib STATIC
+    ${LT_MODULE_LTLIB_SRCS}
 )
 
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${LTLIB_SRCS})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src FILES ${LT_MODULE_LTLIB_SRCS})
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(lt_module_ltlib
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
 )
 
-if(LT_WINDOWS)
-set(PLATFORM_LIBS)
-elseif(LT_LINUX)
-set(PLATFORM_LIBS PkgConfig::X11)
+if (LT_LINUX)
+    set(LT_MODULE_LTLIB_PLATFORM_LIBS PkgConfig::X11)
 else()
-set(PLATFORM_LIBS)
+    set(LT_MODULE_LTLIB_PLATFORM_LIBS)
 endif()
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(lt_module_ltlib
     PRIVATE
-        ${PLAT_LIBS}
         utf8cpp
         sqlite3
         protobuf::libprotobuf-lite
@@ -132,29 +102,28 @@ target_link_libraries(${PROJECT_NAME}
         MbedTLS::mbedcrypto
         MbedTLS::mbedx509
         ltproto
-        ${PLATFORM_LIBS}
+        ${LT_MODULE_LTLIB_PLATFORM_LIBS}
 )
 
-set_code_analysis(${PROJECT_NAME} ${LT_ENABLE_CODE_ANALYSIS})
+set_code_analysis(lt_module_ltlib ${LT_ENABLE_CODE_ANALYSIS})
 
+if (${LT_ENABLE_TEST})
+    if (LT_LINUX)
+        set(LT_MODULE_LTLIB_TEST_PLAT_LIBS m)
+    else()
+        set(LT_MODULE_LTLIB_TEST_PLAT_LIBS)
+    endif()
 
-if(${LT_ENABLE_TEST})
-if (LT_LINUX)
-set(PLAT_LIBS m)
-else()
-set(PLAT_LIBS)
+    add_executable(test_settings
+        ${CMAKE_CURRENT_SOURCE_DIR}/settings_tests.cpp
+    )
+    target_link_libraries(test_settings
+        g3log
+        sqlite3
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_ltlib
+        ${LT_MODULE_LTLIB_TEST_PLAT_LIBS}
+    )
+    add_test(NAME test_settings COMMAND test_settings)
 endif()
-add_executable(test_settings
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/settings_tests.cpp
-)
-target_link_libraries(test_settings
-    g3log
-    sqlite3
-    GTest::gtest
-    GTest::gtest_main
-    ${PROJECT_NAME}
-    ${PLAT_LIBS}
-)
-add_test(NAME test_settings COMMAND test_settings)
-
-endif() # if(${LT_ENABLE_TEST})

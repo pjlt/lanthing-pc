@@ -331,8 +331,6 @@ set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
 
-    ${LTLIB_SRCS}
-
     ${LT_WORKER_SRCS}
 
     ${LT_DAEMON_SRCS}
@@ -369,6 +367,8 @@ if (LT_WINDOWS)
 
     set(LT_LANTHING_RC ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc)
 endif()
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib)
 
 add_executable(${PROJECT_NAME}
     ${LT_LANTHING_RC}
@@ -440,6 +440,7 @@ if(LT_HAS_RTC2)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
+    lt_module_ltlib
     Qt6::Widgets
     Qt6::Gui
     g3log
