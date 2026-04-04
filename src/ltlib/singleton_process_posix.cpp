@@ -1,0 +1,68 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2026 Zhennan Tu <zhennan.tu@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <pwd.h>
+#include <sys/file.h>
+#include <unistd.h>
+
+#include <cstring>
+#include <filesystem>
+#include <optional>
+#include <sstream>
+#include <string>
+
+#include <ltlib/singleton_process.h>
+
+namespace ltlib {
+
+bool makeSingletonProcess(const std::string& name) {
+    static std::optional<bool> no_other_process;
+    if (no_other_process.has_value()) {
+        return no_other_process.value();
+    }
+    std::stringstream ss;
+    ss << getpwuid(getuid())->pw_dir << "/.lanthing";
+    std::string folder = ss.str();
+    std::error_code ec;
+    std::filesystem::create_directories(folder, ec);
+    ss << "/" << name << ".pid";
+    int pid_file = open(ss.str().c_str(), O_CREAT | O_RDWR, 0666);
+    if (lockf(pid_file, F_TLOCK, 0) < 0) {
+        no_other_process = false;
+        return false;
+    }
+    char str[64] = {0};
+    snprintf(str, 64, "%d", getpid());
+    auto ret = write(pid_file, str, strlen(str));
+    (void)ret;
+    return true;
+}
+
+} // namespace ltlib

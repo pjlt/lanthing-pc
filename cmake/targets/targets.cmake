@@ -128,9 +128,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/threads.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/threads.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times.h
@@ -145,7 +143,6 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/logging.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/logging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/transform.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/transform.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/versions.h
@@ -168,6 +165,11 @@ set(LTLIB_SRCS
 )
 
 if (LT_WINDOWS)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process_win.cpp
+    )
     list(APPEND LT_VIDEO_RENDERER_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.cpp
@@ -195,6 +197,14 @@ elseif (LT_MAC)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline_plat.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline_plat.m
+    )
+endif()
+
+if (NOT LT_WINDOWS)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event_stub.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process_posix.cpp
     )
 endif()
 

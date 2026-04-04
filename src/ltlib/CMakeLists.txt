@@ -42,15 +42,12 @@ set(LTLIB_SRCS
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/strings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/event.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/threads.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/times.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/reconnect_interval.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/time_sync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/transform.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/buffer.h
@@ -64,6 +61,20 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.cpp
 )
+
+if (LT_WINDOWS)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/event_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process_win.cpp
+    )
+else()
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/event_stub.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process_posix.cpp
+    )
+endif()
 
 if (LT_WINDOWS)
     list(APPEND LTLIB_SRCS
