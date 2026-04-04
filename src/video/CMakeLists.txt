@@ -83,6 +83,7 @@ target_include_directories(lt_module_video
 
 target_link_libraries(lt_module_video
     PRIVATE
+        lt_build_config
         lt_module_ltlib
         lt_module_audio
         lt_module_inputs

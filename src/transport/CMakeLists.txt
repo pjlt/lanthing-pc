@@ -21,6 +21,7 @@ target_link_libraries(${PROJECT_NAME}
 	PUBLIC
 		${PROJECT_NAME}_api
 	PRIVATE
+		lt_build_config
 		protobuf::libprotobuf-lite
 		g3log
 		uv_a

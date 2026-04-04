@@ -95,6 +95,7 @@ if(LT_HAS_RTC2)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
+    lt_build_config
     lt_module_ltlib
     lt_module_audio
     lt_module_inputs

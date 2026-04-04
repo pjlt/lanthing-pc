@@ -108,9 +108,18 @@ target_compile_definitions(${PROJECT_NAME}
 )
 
 if (LT_WINDOWS)
-    target_link_libraries(${PROJECT_NAME} wininet)
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            lt_build_config
+            wininet
+    )
 else()
-    target_link_libraries(${PROJECT_NAME} dl pthread)
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            lt_build_config
+            dl
+            pthread
+    )
 endif(LT_WINDOWS)
 
 install(

@@ -16,6 +16,7 @@ target_include_directories(lt_module_client
 
 target_link_libraries(lt_module_client
     PRIVATE
+        lt_build_config
         lt_module_ltlib
         g3log
         protobuf::libprotobuf-lite

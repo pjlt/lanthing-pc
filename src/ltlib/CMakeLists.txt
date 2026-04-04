@@ -92,6 +92,7 @@ endif()
 
 target_link_libraries(lt_module_ltlib
     PRIVATE
+        lt_build_config
         utf8cpp
         sqlite3
         protobuf::libprotobuf-lite
