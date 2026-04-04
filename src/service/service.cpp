@@ -34,7 +34,9 @@
 #include <ltlib/logging.h>
 #include <ltlib/strings.h>
 #include <ltlib/versions.h>
+#if LT_WINDOWS
 #include <ltlib/win_service.h>
+#endif
 
 #include <ltproto/app/file_chunk.pb.h>
 #include <ltproto/app/file_chunk_ack.pb.h>
@@ -230,7 +232,7 @@ void Service::postDelayTask(int64_t delay_ms, const std::function<void()>& task)
 }
 
 void Service::checkRunAsService() {
-#if LT_RUN_AS_SERVICE
+#if LT_WINDOWS && LT_RUN_AS_SERVICE
     if (app_connected_) {
         app_not_connected_count_ = 0;
     }

@@ -84,6 +84,14 @@ target_include_directories(lt_module_ltlib
         ${CMAKE_SOURCE_DIR}/src
 )
 
+set(LT_LIBUV_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/prebuilt/libuv/${LT_THIRD_POSTFIX}/include)
+if (EXISTS ${LT_LIBUV_INCLUDE_DIR}/uv.h)
+    target_include_directories(lt_module_ltlib
+        PRIVATE
+            ${LT_LIBUV_INCLUDE_DIR}
+    )
+endif()
+
 if (LT_LINUX)
     set(LT_MODULE_LTLIB_PLATFORM_LIBS PkgConfig::X11)
 else()

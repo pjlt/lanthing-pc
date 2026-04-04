@@ -17,6 +17,14 @@ endif(LT_HAS_RTC2)
 
 add_library(${PROJECT_NAME} ${SRCS})
 
+set(LT_LIBUV_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/prebuilt/libuv/${LT_THIRD_POSTFIX}/include)
+if (EXISTS ${LT_LIBUV_INCLUDE_DIR}/uv.h)
+	target_include_directories(${PROJECT_NAME}
+		PRIVATE
+			${LT_LIBUV_INCLUDE_DIR}
+	)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
 	PUBLIC
 		${PROJECT_NAME}_api
