@@ -87,6 +87,8 @@ if (NOT LT_WINDOWS)
         ${CMAKE_CURRENT_SOURCE_DIR}/encoder/intel_encoder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/encoder/nvidia_encoder.h
         ${CMAKE_CURRENT_SOURCE_DIR}/encoder/nvidia_encoder.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/openh264_encoder.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/openh264_encoder.cpp
     )
 endif()
 

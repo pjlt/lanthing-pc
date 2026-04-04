@@ -53,11 +53,11 @@ using Microsoft::WRL::ComPtr;
 
 namespace {
 
+#if defined(LT_WINDOWS)
 constexpr uint32_t kAMDVendorID = 0x1002;
 constexpr uint32_t kIntelVendorID = 0x8086;
 constexpr uint32_t kNvidiaVendorID = 0x10DE;
 
-#if defined(LT_WINDOWS)
 auto createD3d11()
     -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
     // TODO: 遍历每个GPU
