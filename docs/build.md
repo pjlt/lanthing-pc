@@ -18,6 +18,27 @@ Supported wrapper scripts:
 - macOS: `build.mac.sh`
 - Windows: `build.win.ps1`
 
+## Deployment flow (Windows)
+
+Windows now uses a split deployment strategy to avoid duplicate runtime-copy logic:
+- Development-time deployment (post-build): optional, for running directly from build output.
+- Install/package-time deployment: preferred path for release artifacts.
+
+Key CMake options:
+- `LT_ENABLE_POST_BUILD_DEPLOYMENT` (default `ON`)
+- `LT_ENABLE_INSTALL_RUNTIME_DEPLOYMENT` (default `ON`)
+
+Current install-time deployment path uses:
+- `install(TARGETS ... RUNTIME_DEPENDENCY_SET ...)`
+- `install(RUNTIME_DEPENDENCY_SET ...)`
+- shared `windeployqt` argument set for both post-build and install-time execution.
+
+If you want faster local iteration and do not need runnable build output tree, disable post-build deployment:
+
+```powershell
+cmake -S . -B build/Debug -DLT_ENABLE_POST_BUILD_DEPLOYMENT=OFF
+```
+
 ## Fail-fast policy
 
 All wrapper scripts are configured to stop immediately on any failed step.

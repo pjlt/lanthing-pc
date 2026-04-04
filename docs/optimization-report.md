@@ -106,6 +106,12 @@ Suggestion:
 - Consolidate deployment in one path per platform.
 - Prefer install(TARGETS ...) plus modern runtime dependency set handling.
 
+Implementation status (2026-04-05):
+- In progress on Windows path.
+- Replaced manual `file(GET_RUNTIME_DEPENDENCIES)` flow with install-time runtime dependency set handling in CMake helper layer.
+- Unified `windeployqt` arguments so post-build and install-time deployment paths share one source of truth.
+- Added toggles to separate development-time post-build deployment from install/package-time deployment.
+
 ### D. Make protobuf generation explicitly incremental and robust
 Current state:
 - ltproto generation uses custom command and a long static proto list.

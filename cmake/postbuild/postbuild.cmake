@@ -1,40 +1,32 @@
-install(
-    TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION .
-    ARCHIVE DESTINATION .
-)
+option(LT_ENABLE_POST_BUILD_DEPLOYMENT "Deploy runtime dependencies after build for local runs" ON)
+option(LT_ENABLE_INSTALL_RUNTIME_DEPLOYMENT "Deploy runtime dependencies during install/package" ON)
+
+if (LT_WINDOWS AND LT_ENABLE_INSTALL_RUNTIME_DEPLOYMENT)
+    install_target_with_runtime_deps(${PROJECT_NAME})
+else()
+    install(
+        TARGETS ${PROJECT_NAME}
+        BUNDLE DESTINATION .
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION .
+        ARCHIVE DESTINATION .
+    )
+endif()
 
 if (LT_WINDOWS)
-    install(CODE "execute_process(COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-quick-import --pdb ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${PROJECT_NAME}.exe)")
+    if (LT_ENABLE_INSTALL_RUNTIME_DEPLOYMENT)
+        install_qt6_runtime(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
+    endif()
+
     install(
         FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
         DESTINATION ${CMAKE_INSTALL_PREFIX}/pdb
     )
+
+    if (LT_ENABLE_POST_BUILD_DEPLOYMENT)
+        deploy_runtime_dlls_post_build(${PROJECT_NAME})
+        deploy_qt6_post_build(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
+    endif()
+
+    include(InstallRequiredSystemLibraries)
 endif()
-
-
-if (LT_WINDOWS)
-install(CODE [[
-    file(GET_RUNTIME_DEPENDENCIES
-        RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
-        UNRESOLVED_DEPENDENCIES_VAR UNRESOLVED_DEPS
-        EXECUTABLES $<TARGET_FILE:lanthing>
-        DIRECTORIES ${CMAKE_SOURCE_DIR}
-        PRE_INCLUDE_REGEXES ${CMAKE_SOURCE_DIR}
-        POST_INCLUDE_REGEXES ${CMAKE_SOURCE_DIR}
-        PRE_EXCLUDE_REGEXES "system32"
-        POST_EXCLUDE_REGEXES "system32"
-    )
-    foreach(DEP_LIB ${RESOLVED_DEPS})
-        file(INSTALL ${DEP_LIB} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-    endforeach()
-]])
-endif()
-
-if (LT_WINDOWS)
-deploy_dlls(${PROJECT_NAME})
-deploy_qt6(${PROJECT_NAME} ${WINDEPLOYQT_EXECUTABLE})
-include(InstallRequiredSystemLibraries)
-endif(LT_WINDOWS)
