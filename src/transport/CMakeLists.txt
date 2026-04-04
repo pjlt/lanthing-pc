@@ -32,7 +32,7 @@ target_link_libraries(${PROJECT_NAME}
 		lt_build_config
 		protobuf::libprotobuf-lite
 		g3log
-		uv_a
+		${LT_LIBUV_TARGET}
 		ltproto
 )
 

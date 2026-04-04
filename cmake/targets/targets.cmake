@@ -113,7 +113,7 @@ target_link_libraries(${PROJECT_NAME}
     ffmpeg
     Opus::opus
     amf
-    uv_a
+    ${LT_LIBUV_TARGET}
     breakpad
     imgui
     utf8cpp

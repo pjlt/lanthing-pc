@@ -104,7 +104,7 @@ target_link_libraries(lt_module_ltlib
         utf8cpp
         sqlite3
         protobuf::libprotobuf-lite
-        uv_a
+        ${LT_LIBUV_TARGET}
         tomlpp
         g3log
         MbedTLS::mbedtls

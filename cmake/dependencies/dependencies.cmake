@@ -18,6 +18,43 @@ find_package(libuv REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebui
 find_package(SDL2 REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/sdl/${LT_THIRD_POSTFIX})
 find_package(Opus REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/opus/${LT_THIRD_POSTFIX})
 
+set(LT_LIBUV_TARGET)
+if (TARGET uv_a)
+    set(LT_LIBUV_TARGET uv_a)
+elseif (TARGET uv)
+    set(LT_LIBUV_TARGET uv)
+elseif (TARGET libuv::uv_a)
+    set(LT_LIBUV_TARGET libuv::uv_a)
+elseif (TARGET libuv::uv)
+    set(LT_LIBUV_TARGET libuv::uv)
+else()
+    set(LT_LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/libuv/${LT_THIRD_POSTFIX})
+    if (LT_WINDOWS)
+        if (EXISTS ${LT_LIBUV_ROOT}/lib/uv_a.lib)
+            set(LT_LIBUV_LIBRARY ${LT_LIBUV_ROOT}/lib/uv_a.lib)
+        elseif (EXISTS ${LT_LIBUV_ROOT}/lib/uv.lib)
+            set(LT_LIBUV_LIBRARY ${LT_LIBUV_ROOT}/lib/uv.lib)
+        endif()
+    else()
+        if (EXISTS ${LT_LIBUV_ROOT}/lib/libuv_a.a)
+            set(LT_LIBUV_LIBRARY ${LT_LIBUV_ROOT}/lib/libuv_a.a)
+        elseif (EXISTS ${LT_LIBUV_ROOT}/lib/libuv.a)
+            set(LT_LIBUV_LIBRARY ${LT_LIBUV_ROOT}/lib/libuv.a)
+        endif()
+    endif()
+
+    if (LT_LIBUV_LIBRARY)
+        add_library(lt_libuv_fallback STATIC IMPORTED GLOBAL)
+        set_target_properties(lt_libuv_fallback PROPERTIES
+            IMPORTED_LOCATION ${LT_LIBUV_LIBRARY}
+            INTERFACE_INCLUDE_DIRECTORIES ${LT_LIBUV_ROOT}/include
+        )
+        set(LT_LIBUV_TARGET lt_libuv_fallback)
+    else()
+        message(FATAL_ERROR "libuv target not found and fallback library missing under ${LT_LIBUV_ROOT}")
+    endif()
+endif()
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui_builder)
 
 add_subdirectory(ltproto)

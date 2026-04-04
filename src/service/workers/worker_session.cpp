@@ -30,6 +30,7 @@
 
 #include "worker_session.h"
 
+#include <cinttypes>
 #include <fstream>
 
 #include <ltlib/logging.h>
@@ -1080,7 +1081,8 @@ void WorkerSession::onCapturedVideo(std::shared_ptr<google::protobuf::MessageLit
         const int64_t base_ms = transport_up_ms_ > 0 ? transport_up_ms_ : now_ms;
         logLtStage(trace_id_, "first_frame_encode", base_ms, now_ms, "ok");
     }
-    LOGF(DEBUG, "capture:%lld, start_enc:%lld, end_enc:%lld", encoded_frame->capture_timestamp_us(),
+        LOGF(DEBUG, "capture:%" PRId64 ", start_enc:%" PRId64 ", end_enc:%" PRId64,
+            encoded_frame->capture_timestamp_us(),
          encoded_frame->start_encode_timestamp_us(), encoded_frame->end_encode_timestamp_us());
     lt::VideoFrame video_frame{};
     video_frame.capture_timestamp_us = encoded_frame->capture_timestamp_us();
