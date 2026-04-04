@@ -1,134 +1,12 @@
-set(LT_APP_SRCS
-    # root
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/app.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/app.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/check_decode_ability.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/check_decode_ability.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_session.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_session.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_manager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/client/client_manager.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/service/service_manager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/service/service_manager.cpp
-
-    # gui
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/resources.qrc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/gui.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/gui.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/friendly_error_code.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/friendly_error_code.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/progress_widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/progress_widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/clickable_label.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/access_token_validator.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/components/access_token_validator.cpp
-)
-
-set(LT_APP_UI_VIEWS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.ui
-)
-
-set(LTLIB_SRCS
-    # ltlib
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/strings.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/strings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/threads.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/threads.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/spin_mutex.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/reconnect_interval.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/reconnect_interval.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/settings.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/settings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/time_sync.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/time_sync.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/logging.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/logging.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/transform.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/transform.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/versions.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/ioloop.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/ioloop.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/buffer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_secure_layer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_secure_layer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_layer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_layer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_error.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server_transport_layer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server_transport_layer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/picohttpparser.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/picohttpparser.c
-)
-
-if (LT_WINDOWS)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/thread_name_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times_platform_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_error_win.cpp
-    )
-    list(APPEND LT_APP_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/select_gpu.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/select_gpu.cpp
-    )
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/win_service.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/win_service.cpp
-    )
-elseif (LT_LINUX)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system_linux.cpp
-    )
-elseif (LT_MAC)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system_mac.cpp
-    )
-endif()
-
-if (NOT LT_WINDOWS)
-    list(APPEND LTLIB_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/thread_name_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times_platform_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event_stub.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process_posix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_error_posix.cpp
-    )
-endif()
-
 set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lt_constants.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
-    
-    ${LT_APP_SRCS}
-    ${LT_APP_UI_VIEWS}
 )
 
 if (LT_WINDOWS)
-    list(APPEND LT_SRCS
-    )
-
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc.in
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
@@ -145,6 +23,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/client)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/service)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/worker)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/video)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/app)
 
 add_executable(${PROJECT_NAME}
     ${LT_LANTHING_RC}
@@ -224,6 +103,7 @@ target_link_libraries(${PROJECT_NAME}
     lt_module_service
     lt_module_worker
     lt_module_video
+    lt_module_app
     Qt6::Widgets
     Qt6::Gui
     g3log
