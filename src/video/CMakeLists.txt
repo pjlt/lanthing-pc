@@ -113,6 +113,10 @@ if (TARGET nvcodec)
     list(APPEND LT_MODULE_VIDEO_PLATFORM_LIBS nvcodec)
 endif()
 
+if (TARGET openh264)
+    list(APPEND LT_MODULE_VIDEO_PLATFORM_LIBS openh264)
+endif()
+
 target_link_libraries(lt_module_video
     PRIVATE
         lt_build_config
@@ -127,7 +131,6 @@ target_link_libraries(lt_module_video
         rtc
         SDL2::SDL2-static
         ffmpeg
-        openh264
         amf
         imgui
         ${LT_MODULE_VIDEO_PLATFORM_LIBS}
