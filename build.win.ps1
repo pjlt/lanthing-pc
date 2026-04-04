@@ -13,8 +13,10 @@ function exit_if_fail {
 }
 
 function cmake_configure() {
-    if ($LT_DUMP_URL) {
-        Invoke-Expression "cmake -B build/$script:build_type -DLT_DUMP=ON -DLT_DUMP_URL=`"$LT_DUMP_URL`" -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
+    $dumpUrl = $env:LT_DUMP_URL
+
+    if (-not [string]::IsNullOrWhiteSpace($dumpUrl)) {
+        Invoke-Expression "cmake -B build/$script:build_type -DLT_DUMP=ON -DLT_DUMP_URL=`\"$dumpUrl`\" -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     } else {
         Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
     }
