@@ -51,6 +51,8 @@ jobs:
           host: 'linux'
           target: 'desktop'
           arch: 'gcc_64'
+      - name: Check Windows include guards
+        run: bash docs/check-win-header-guards.sh . --fail
       - name: Fetch prebuilt
         run: bash build.linux.sh prebuilt fetch
       - name: Build lanthing-pc
@@ -71,6 +73,8 @@ jobs:
           host: 'mac'
           target: 'desktop'
           arch: 'clang_64'
+      - name: Check Windows include guards
+        run: bash docs/check-win-header-guards.sh . --fail
       - name: Fetch prebuilt
         run: bash build.mac.sh prebuilt fetch
       - name: Build lanthing-pc

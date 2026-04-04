@@ -28,26 +28,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <d3d11_1.h>
-#include <dxgi1_3.h>
-#include <wrl/client.h>
-
 #include <ltlib/logging.h>
 
 #include <ltlib/strings.h>
 #include <ltlib/times.h>
 
+#if defined(LT_WINDOWS)
+#include <d3d11_1.h>
+#include <dxgi1_3.h>
+#include <wrl/client.h>
+
 #include "amd_encoder.h"
 #include "intel_encoder.h"
 #include "nvidia_encoder.h"
 #include "params_helper.h"
-#include "video_encoder.h"
-
-#if defined(LT_WINDOWS)
 #include "openh264_encoder.h"
 #endif // defined(LT_WINDOWS)
 
+#include "video_encoder.h"
+
+#if defined(LT_WINDOWS)
 using Microsoft::WRL::ComPtr;
+#endif // defined(LT_WINDOWS)
 
 namespace {
 
@@ -55,6 +57,7 @@ constexpr uint32_t kAMDVendorID = 0x1002;
 constexpr uint32_t kIntelVendorID = 0x8086;
 constexpr uint32_t kNvidiaVendorID = 0x10DE;
 
+#if defined(LT_WINDOWS)
 auto createD3d11()
     -> std::tuple<ComPtr<ID3D11Device>, ComPtr<ID3D11DeviceContext>, uint32_t, int64_t> {
     // TODO: 遍历每个GPU
@@ -215,6 +218,7 @@ std::unique_ptr<lt::video::Encoder> doCreateHard(const lt::video::Encoder::InitP
         return nullptr;
     }
 }
+#endif // defined(LT_WINDOWS)
 
 } // namespace
 
@@ -223,11 +227,16 @@ namespace lt {
 namespace video {
 
 std::unique_ptr<Encoder> Encoder::createHard(const InitParams& params) {
+#if defined(LT_WINDOWS)
     if (!params.validate()) {
         LOG(ERR) << "Create Hard VideoEncoder failed: invalid parameters";
         return nullptr;
     }
     return doCreateHard(params);
+#else
+    (void)params;
+    return nullptr;
+#endif // defined(LT_WINDOWS)
 }
 
 std::unique_ptr<Encoder> Encoder::createSoft(const InitParams& params) {

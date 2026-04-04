@@ -79,6 +79,14 @@ if (NOT LT_WINDOWS)
         ${CMAKE_CURRENT_SOURCE_DIR}/capturer/dxgi/common_types.h
         ${CMAKE_CURRENT_SOURCE_DIR}/cepipeline/video_capture_encode_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/cepipeline/video_capture_encode_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/amd_encoder.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/amd_encoder.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/intel_allocator.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/intel_allocator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/intel_encoder.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/intel_encoder.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/nvidia_encoder.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/encoder/nvidia_encoder.cpp
     )
 endif()
 
