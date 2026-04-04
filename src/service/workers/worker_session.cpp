@@ -173,13 +173,14 @@ WorkerSession::WorkerSession(const Params& params)
     , user_defined_relay_server_(params.user_defined_relay_server)
     , on_create_session_completed_(params.on_create_completed)
     , on_closed_(params.on_closed)
-    , enable_gamepad_(params.enable_gamepad)
-    , enable_keyboard_(params.enable_keyboard)
-    , enable_mouse_(params.enable_mouse)
     , transport_type_(params.transport_type)
     , min_port_(params.min_port)
     , max_port_(params.max_port)
-    , ignored_nic_(params.ignored_nic) {
+    , ignored_nic_(params.ignored_nic)
+    , enable_gamepad_(params.enable_gamepad)
+    , enable_keyboard_(params.enable_keyboard)
+    , enable_mouse_(params.enable_mouse)
+    {
     constexpr int kRandLength = 4;
     pipe_name_ = "Lanthing_worker_";
     for (int i = 0; i < kRandLength; ++i) {
@@ -579,7 +580,7 @@ void WorkerSession::maybeOnCreateSessionCompleted() {
 
 void WorkerSession::postTask(const std::function<void()>& task) {
     auto weak_this = weak_from_this();
-    post_task_([this, weak_this, task]() {
+    post_task_([weak_this, task]() {
         auto shared_this = weak_this.lock();
         if (shared_this) {
             task();
@@ -589,7 +590,7 @@ void WorkerSession::postTask(const std::function<void()>& task) {
 
 void WorkerSession::postDelayTask(int64_t delay_ms, const std::function<void()>& task) {
     auto weak_this = weak_from_this();
-    post_delay_task_(delay_ms, [this, weak_this, task]() {
+    post_delay_task_(delay_ms, [weak_this, task]() {
         auto shared_this = weak_this.lock();
         if (shared_this) {
             task();
