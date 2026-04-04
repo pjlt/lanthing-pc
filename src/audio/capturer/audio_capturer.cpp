@@ -40,7 +40,9 @@
 #include <ltproto/ltproto.h>
 
 #include "fake_audio_capturer.h"
+#if LT_WINDOWS
 #include "win_audio_capturer.h"
+#endif
 
 namespace lt {
 

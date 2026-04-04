@@ -3,17 +3,23 @@ set(LT_MODULE_SERVICE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/daemon/daemon.h
     ${CMAKE_CURRENT_SOURCE_DIR}/workers/worker_process.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/workers/worker_process.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/workers/worker_session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/workers/worker_session.cpp
 )
 
 if (LT_WINDOWS)
     list(APPEND LT_MODULE_SERVICE_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/workers/worker_process.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/daemon/daemon_win.h
         ${CMAKE_CURRENT_SOURCE_DIR}/daemon/daemon_win.cpp
     )
-elseif (LT_LINUX)
+else()
+    list(APPEND LT_MODULE_SERVICE_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/workers/worker_process_stub.cpp
+    )
+endif()
+
+if (LT_LINUX)
     list(APPEND LT_MODULE_SERVICE_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/daemon/daemon_linux.h
     )

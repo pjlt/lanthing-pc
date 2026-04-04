@@ -34,13 +34,16 @@
 
 #include <ltlib/times.h>
 
+#if LT_WINDOWS
 #include "dxgi_video_capturer.h"
+#endif
 
 namespace lt {
 
 namespace video {
 
 std::unique_ptr<Capturer> Capturer::create(Backend backend, ltlib::Monitor monitor) {
+#if LT_WINDOWS
     if (backend != Backend::Dxgi) {
         LOG(FATAL) << "Only support dxgi video capturer!";
         return nullptr;
@@ -50,6 +53,12 @@ std::unique_ptr<Capturer> Capturer::create(Backend backend, ltlib::Monitor monit
         return nullptr;
     }
     return capturer;
+#else
+    (void)backend;
+    (void)monitor;
+    LOG(ERR) << "Video capturer is only available on Windows";
+    return nullptr;
+#endif
 }
 
 Capturer::Capturer() = default;

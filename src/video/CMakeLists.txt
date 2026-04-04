@@ -70,6 +70,18 @@ elseif (LT_MAC)
     )
 endif()
 
+if (NOT LT_WINDOWS)
+    list(REMOVE_ITEM LT_MODULE_VIDEO_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/dxgi_video_capturer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/dxgi_video_capturer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/dxgi/duplication_manager.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/dxgi/duplication_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/dxgi/common_types.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/cepipeline/video_capture_encode_pipeline.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/cepipeline/video_capture_encode_pipeline.cpp
+    )
+endif()
+
 add_library(lt_module_video STATIC
     ${LT_MODULE_VIDEO_SRCS}
 )
