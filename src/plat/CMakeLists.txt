@@ -32,6 +32,7 @@ target_include_directories(lt_module_plat
 target_link_libraries(lt_module_plat
     PRIVATE
         lt_build_config
+        lt_module_inputs
         SDL2::SDL2-static
     g3log
     transport_api
