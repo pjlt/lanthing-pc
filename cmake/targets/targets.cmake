@@ -32,42 +32,6 @@ set(LT_APP_UI_VIEWS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app/views/mainwindow/mainwindow.ui
 )
 
-set(LT_SVC_SRCS
-    # Service
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/service.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon.h
-    # Service->workers
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_process.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_process.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service/workers/worker_session.cpp
-)
-
-set(LT_WORKER_WIN_SRCS
-    # Worker
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_streaming.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_streaming.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_setting.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_clipboard.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_dupl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_dupl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/display_setting.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/session_change_observer.cpp
-)
-
-set(LT_WORKER_SRCS
-    # Worker
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/worker/worker_check_decode.cpp
-)
-
 set(LT_VIDEO_ENCODER_SRCS
     # video->encoder
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/encoder/video_encoder.h
@@ -246,104 +210,17 @@ set(LT_VIDEO_WIDGET_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/video/widgets/status_widget.cpp
 )
 
-set(LT_AUDIO_CAPTURER_SRCS
-    # audio->capturer
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/audio_capturer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/win_audio_capturer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/fake_audio_capturer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/capturer/fake_audio_capturer.cpp
-)
-
-set(LT_AUDIO_PLAYER_SRCS
-    # audio->player
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/audio_player.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/audio_player.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/sdl_audio_player.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/player/sdl_audio_player.cpp
-)
-
-set(LT_INPUT_CAPTURER_SRCS
-    # input->capturer
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_capturer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_event.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/capturer/input_event.cpp
-)
-
-set(LT_INPUT_EXECUTOR_SRCS
-    # input->executor
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/input_executor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_send_input.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_touch_input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/win_touch_input.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/inputs/executor/gamepad.cpp
-)
-
-set(LT_CLIENT_SRCS
-    # Client
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client.cpp
-)
-
-set(LT_PLAT_SRCS
-    # platforms
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl_input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/pc_sdl_input.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/video_device.h
-)
-
-if (LT_WINDOWS)
-    list(APPEND LT_PLAT_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/video_device_win.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/d3d11_video_device.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/d3d11_video_device.cpp
-    )
-else()
-    list(APPEND LT_PLAT_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/plat/video_device_stub.cpp
-    )
-endif(LT_WINDOWS)
-
-if(LT_WINDOWS)
-    set(LT_DAEMON_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon_win.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon_win.cpp
-    )
-elseif(LT_LINUX)
-    set(LT_DAEMON_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/service/daemon/daemon_linux.h
-    )
-else()
-    set(LT_DAEMON_SRCS)
-endif()
-
 set(LT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lt_constants.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/firewall.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/message_handler.h
-
-    ${LT_WORKER_SRCS}
-
-    ${LT_DAEMON_SRCS}
-
-    ${LT_CLIENT_SRCS}
-    ${LT_PLAT_SRCS}
     
     ${LT_VIDEO_DR_PIPELINE_SRCS}
     ${LT_VIDEO_DECODER_SRCS}
     ${LT_VIDEO_RENDERER_SRCS}
     ${LT_VIDEO_WIDGET_SRCS}
-    ${LT_AUDIO_PLAYER_SRCS}
-    ${LT_INPUT_CAPTURER_SRCS}
 
     ${LT_APP_SRCS}
     ${LT_APP_UI_VIEWS}
@@ -351,13 +228,9 @@ set(LT_SRCS
 
 if (LT_WINDOWS)
     list(APPEND LT_SRCS
-        ${LT_SVC_SRCS}
-        ${LT_WORKER_WIN_SRCS}
         ${LT_VIDEO_ENCODER_SRCS}
         ${LT_VIDEO_CAPTURER_SRCS}
         ${LT_VIDEO_CE_PIPELINE_SRCS}
-        ${LT_AUDIO_CAPTURER_SRCS}
-        ${LT_INPUT_EXECUTOR_SRCS}
     )
 
     configure_file(
@@ -369,6 +242,12 @@ if (LT_WINDOWS)
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/audio)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/inputs)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/plat)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/client)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/service)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/worker)
 
 add_executable(${PROJECT_NAME}
     ${LT_LANTHING_RC}
@@ -441,6 +320,12 @@ endif()
 
 target_link_libraries(${PROJECT_NAME}
     lt_module_ltlib
+    lt_module_audio
+    lt_module_inputs
+    lt_module_plat
+    lt_module_client
+    lt_module_service
+    lt_module_worker
     Qt6::Widgets
     Qt6::Gui
     g3log
