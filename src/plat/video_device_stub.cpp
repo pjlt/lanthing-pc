@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2024 Zhennan Tu <zhennan.tu@gmail.com>
+ * Copyright (c) 2026 Zhennan Tu <zhennan.tu@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,22 +30,15 @@
 
 #include <plat/video_device.h>
 
-#if LT_WINDOWS
-#include <plat/d3d11_video_device.h>
-#endif // LT_WINDOWS
-
 namespace lt {
 
 namespace plat {
 
 std::unique_ptr<VideoDevice> VideoDevice::create(lt::VideoCodecType codec) {
-#ifdef LT_WINDOWS
-    return D3D11VideoDevice::create(codec);
-#else
     (void)codec;
     return std::make_unique<VideoDevice>();
-#endif
 }
+
 VideoDevice::~VideoDevice() = default;
 
 void* VideoDevice::device() {

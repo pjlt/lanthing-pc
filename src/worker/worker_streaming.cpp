@@ -582,8 +582,6 @@ void WorkerStreaming::onStartWorking(const std::shared_ptr<google::protobuf::Mes
         audio_->start();
 
         input::Executor::Params input_params{};
-        input_params.types = static_cast<uint8_t>(input::Executor::Type::WIN32_MESSAGE) |
-                             static_cast<uint8_t>(input::Executor::Type::WIN32_DRIVER);
         input_params.monitor = monitors_[monitor_index_];
         input_params.screen_width = static_cast<uint32_t>(input_params.monitor.width);
         input_params.screen_height = static_cast<uint32_t>(input_params.monitor.height);

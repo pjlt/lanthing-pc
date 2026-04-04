@@ -107,6 +107,24 @@ If a command fails, fix the issue and rerun the same command.
 3. Run packaging step (Linux/macOS)
 4. Ensure artifacts exist under `install/<BuildType>/`
 
+## Platform macro boundary check
+
+To monitor platform-specific macro spread (for example `LT_WINDOWS`, `_WIN32`, `WIN32`) outside
+adapter boundaries, run:
+
+```powershell
+./docs/check-platform-macro-spread.ps1
+```
+
+To enforce CI failure when leaks are detected, run:
+
+```powershell
+./docs/check-platform-macro-spread.ps1 -FailOnLeak
+```
+
+Current allowed boundary prefixes are maintained in the script and include `src/plat/` and
+Windows input adapter files under `src/inputs/executor/win_*`.
+
 ## Notes
 
 - Script input accepts `Debug` and `Release` (Release is normalized to `RelWithDebInfo` internally).

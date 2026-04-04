@@ -52,12 +52,31 @@ namespace lt {
 
 namespace input {
 
+namespace {
+
+enum class BackendType : uint8_t {
+    WIN32_MESSAGE = 1,
+    WIN32_DRIVER = 2,
+};
+
+uint8_t defaultInputTypes() {
+#if defined(LT_WINDOWS)
+    return static_cast<uint8_t>(BackendType::WIN32_MESSAGE) |
+           static_cast<uint8_t>(BackendType::WIN32_DRIVER);
+#else
+    return 0;
+#endif
+}
+
+} // namespace
+
 std::unique_ptr<Executor> Executor::create(const Params& params) {
     if (params.register_message_handler == nullptr || params.send_message == nullptr) {
         return nullptr;
     }
+    const uint8_t input_types = defaultInputTypes();
     std::unique_ptr<Executor> input;
-    if (params.types & static_cast<uint8_t>(Type::WIN32_MESSAGE)) {
+    if (input_types & static_cast<uint8_t>(BackendType::WIN32_MESSAGE)) {
         input = std::make_unique<Win32SendInput>(params.screen_width, params.screen_height,
                                                  params.monitor);
     }

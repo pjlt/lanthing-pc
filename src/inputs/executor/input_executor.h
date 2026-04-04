@@ -50,12 +50,7 @@ class WinTouch;
 
 class Executor {
 public:
-    enum class Type : uint8_t {
-        WIN32_MESSAGE = 1,
-        WIN32_DRIVER = 2,
-    };
     struct Params {
-        uint8_t types = 0;
         uint32_t screen_width = 0;
         uint32_t screen_height = 0;
         ltlib::Monitor monitor;
