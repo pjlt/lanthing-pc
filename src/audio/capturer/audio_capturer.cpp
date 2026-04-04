@@ -144,7 +144,7 @@ void Capturer::onCapturedData(const uint8_t* data, uint32_t frames) {
             return;
         }
     }
-    for (index; index < total_size; index += bytes_per_10ms) {
+    for (; index < total_size; index += bytes_per_10ms) {
         if (index + bytes_per_10ms >= total_size) {
             break;
         }

@@ -93,6 +93,16 @@ target_include_directories(lt_module_video
         ${CMAKE_SOURCE_DIR}/src
 )
 
+set(LT_MODULE_VIDEO_PLATFORM_LIBS)
+
+if (TARGET VPL::dispatcher)
+    list(APPEND LT_MODULE_VIDEO_PLATFORM_LIBS VPL::dispatcher)
+endif()
+
+if (TARGET nvcodec)
+    list(APPEND LT_MODULE_VIDEO_PLATFORM_LIBS nvcodec)
+endif()
+
 target_link_libraries(lt_module_video
     PRIVATE
         lt_build_config
@@ -110,8 +120,7 @@ target_link_libraries(lt_module_video
         openh264
         amf
         imgui
-        VPL::dispatcher
-        nvcodec
+        ${LT_MODULE_VIDEO_PLATFORM_LIBS}
 )
 
 if (LT_HAS_RTC2)
