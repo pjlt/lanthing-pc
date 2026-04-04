@@ -126,7 +126,6 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/strings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/strings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/threads.h
@@ -158,6 +157,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_secure_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_layer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_error.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server_transport_layer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/server_transport_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/picohttpparser.h
@@ -166,9 +166,13 @@ set(LTLIB_SRCS
 
 if (LT_WINDOWS)
     list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system_win.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event_win.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library_win.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/thread_name_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times_platform_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_error_win.cpp
     )
     list(APPEND LT_VIDEO_RENDERER_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/d3d11_pipeline.h
@@ -187,11 +191,17 @@ if (LT_WINDOWS)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/win_service.cpp
     )
 elseif (LT_LINUX)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system_linux.cpp
+    )
     list(APPEND LT_VIDEO_RENDERER_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/va_gl_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/va_gl_pipeline.cpp
     )
 elseif (LT_MAC)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/system_mac.cpp
+    )
     list(APPEND LT_VIDEO_RENDERER_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video/renderer/vtb_gl_pipeline.cpp
@@ -202,9 +212,12 @@ endif()
 
 if (NOT LT_WINDOWS)
     list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/thread_name_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/times_platform_posix.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/event_stub.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/load_library_posix.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/singleton_process_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib/io/client_transport_error_posix.cpp
     )
 endif()
 

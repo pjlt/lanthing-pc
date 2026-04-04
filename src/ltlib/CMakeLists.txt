@@ -41,7 +41,6 @@ set(LTLIB_SRCS
 
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/strings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/threads.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/times.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/reconnect_interval.cpp
@@ -57,6 +56,7 @@ set(LTLIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_secure_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_layer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_error.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io/server_transport_layer.cpp
@@ -64,15 +64,32 @@ set(LTLIB_SRCS
 
 if (LT_WINDOWS)
     list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system_win.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/event_win.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library_win.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/thread_name_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/times_platform_win.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_error_win.cpp
     )
 else()
     list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/thread_name_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/times_platform_posix.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/event_stub.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/load_library_posix.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/singleton_process_posix.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/io/client_transport_error_posix.cpp
+    )
+endif()
+
+if (LT_LINUX)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system_linux.cpp
+    )
+elseif (LT_MAC)
+    list(APPEND LTLIB_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system_mac.cpp
     )
 endif()
 

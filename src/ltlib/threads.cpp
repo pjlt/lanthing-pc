@@ -28,69 +28,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(LT_WINDOWS)
-#include <Windows.h>
-#elif defined(LT_LINUX)
-#include <sys/prctl.h>
-#endif
-
 #include <atomic>
 #include <sstream>
 
 #include <ltlib/logging.h>
 #include <ltlib/pragma_warning.h>
+#include <ltlib/thread_name_internal.h>
 #include <ltlib/threads.h>
 #include <ltlib/times.h>
 
 namespace {
-
-#if defined(LT_WINDOWS)
-using SetThreadDescriptionFunc = HRESULT(WINAPI*)(HANDLE hThread, PCWSTR lpThreadDescription);
-#endif // LT_WINDOWS
-
-// Credit: WebRTC
-void set_current_thread_name(const char* name) {
-#if defined(LT_WINDOWS)
-    static auto set_thread_description_func = reinterpret_cast<SetThreadDescriptionFunc>(
-        ::GetProcAddress(::GetModuleHandleA("Kernel32.dll"), "SetThreadDescription"));
-    if (set_thread_description_func) {
-        // Convert from ASCII to UTF-16.
-        wchar_t wide_thread_name[64];
-        for (size_t i = 0; i < (sizeof(wide_thread_name) / sizeof(wide_thread_name[0])) - 1; ++i) {
-            wide_thread_name[i] = name[i];
-            if (wide_thread_name[i] == L'\0')
-                break;
-        }
-        // Guarantee null-termination.
-        wide_thread_name[sizeof(wide_thread_name) / sizeof(wide_thread_name[0]) - 1] = L'\0';
-        set_thread_description_func(::GetCurrentThread(), wide_thread_name);
-    }
-
-    // For details see:
-    // https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code
-#pragma pack(push, 8)
-    struct {
-        DWORD dwType;
-        LPCSTR szName;
-        DWORD dwThreadID;
-        DWORD dwFlags;
-    } threadname_info = {0x1000, name, static_cast<DWORD>(-1), 0};
-#pragma pack(pop)
-
-#pragma warning(push)
-#pragma warning(disable : 6320 6322)
-    __try {
-        ::RaiseException(0x406D1388, 0, sizeof(threadname_info) / sizeof(ULONG_PTR),
-                         reinterpret_cast<ULONG_PTR*>(&threadname_info));
-    } __except (EXCEPTION_EXECUTE_HANDLER) { // NOLINT
-    }
-#pragma warning(pop)
-#elif defined(LT_LINUX) || defined(LT_ANDROID)
-    prctl(PR_SET_NAME, reinterpret_cast<unsigned long>(name));
-#elif defined(LT_MAC) || defined(LT_IOS)
-    pthread_setname_np(name);
-#endif
-}
 
 void crash_me() {
     WARNING_DISABLE(6011)
@@ -189,7 +136,7 @@ std::thread::id ThreadWatcher::doGetMainThreadID() {
 }
 
 void ThreadWatcher::checkLoop() {
-    set_current_thread_name("dead_thread_checker");
+    ltlib::internal::set_current_thread_name("dead_thread_checker");
     int64_t last_check_time = steady_now_ms();
     int64_t next_sleep_ms = 700;
     constexpr int64_t kOneMinute = 60'000;
@@ -297,7 +244,7 @@ void BlockingThread::i_am_alive() {
 }
 
 void BlockingThread::set_thread_name() {
-    ::set_current_thread_name(name_.c_str());
+    ltlib::internal::set_current_thread_name(name_.c_str());
 }
 
 std::unique_ptr<TaskThread> TaskThread::create(const std::string& prefix) {
@@ -420,7 +367,7 @@ void TaskThread::unregister_from_thread_watcher() {
 }
 
 void TaskThread::set_thread_name() {
-    ::set_current_thread_name(name_.c_str());
+    ltlib::internal::set_current_thread_name(name_.c_str());
 }
 
 std::deque<TaskThread::Task> TaskThread::get_pending_tasks() {
