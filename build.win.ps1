@@ -14,11 +14,17 @@ function exit_if_fail {
 
 function cmake_configure() {
     $dumpUrl = $env:LT_DUMP_URL
+    $enableTest = $env:LT_ENABLE_TEST
+    $testArg = ""
+
+    if (-not [string]::IsNullOrWhiteSpace($enableTest)) {
+        $testArg = " -DLT_ENABLE_TEST=$enableTest"
+    }
 
     if (-not [string]::IsNullOrWhiteSpace($dumpUrl)) {
-        Invoke-Expression "cmake -B build/$script:build_type -DLT_DUMP=ON -DLT_DUMP_URL=`\"$dumpUrl`\" -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
+        Invoke-Expression "cmake -B build/$script:build_type -DLT_DUMP=ON -DLT_DUMP_URL=`\"$dumpUrl`\" -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type$testArg"
     } else {
-        Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type"
+        Invoke-Expression "cmake -B build/$script:build_type -DCMAKE_BUILD_TYPE=$script:build_type -DCMAKE_INSTALL_PREFIX=install/$script:build_type$testArg"
     }
     exit_if_fail
 }

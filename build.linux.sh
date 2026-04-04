@@ -3,10 +3,15 @@
 set -euo pipefail
 
 cmake_configure() {
+    local test_arg=""
+    if [ -n "${LT_ENABLE_TEST:-}" ]; then
+        test_arg=" -DLT_ENABLE_TEST=${LT_ENABLE_TEST}"
+    fi
+
     if [ -z "${LT_DUMP_URL:-}" ]; then
-        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type
+        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=install/$build_type${test_arg}
     else
-        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DLT_DUMP=ON -DLT_DUMP_URL="$LT_DUMP_URL" -DCMAKE_INSTALL_PREFIX=install/$build_type
+        cmake -B build/$build_type -DCMAKE_BUILD_TYPE=$build_type -DLT_DUMP=ON -DLT_DUMP_URL="$LT_DUMP_URL" -DCMAKE_INSTALL_PREFIX=install/$build_type${test_arg}
     fi
 }
 

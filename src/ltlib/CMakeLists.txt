@@ -116,7 +116,7 @@ target_link_libraries(lt_module_ltlib
 
 set_code_analysis(lt_module_ltlib ${LT_ENABLE_CODE_ANALYSIS})
 
-if (${LT_ENABLE_TEST})
+if (LT_ENABLE_TEST AND BUILD_TESTING)
     if (LT_LINUX)
         set(LT_MODULE_LTLIB_TEST_PLAT_LIBS m)
     else()

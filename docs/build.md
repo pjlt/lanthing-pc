@@ -115,6 +115,14 @@ If a command fails, fix the issue and rerun the same command.
 ./build.win.ps1 build Release
 ```
 
+### Build with tests enabled
+```powershell
+$Env:LT_ENABLE_TEST = "ON"
+./build.win.ps1 build Release
+cd ./build/RelWithDebInfo
+ctest -C RelWithDebInfo --output-on-failure
+```
+
 ### Clean
 ```powershell
 ./build.win.ps1 clean Release
@@ -125,8 +133,9 @@ If a command fails, fix the issue and rerun the same command.
 
 1. Fetch prebuilt dependencies
 2. Configure + build `Release` via platform script
-3. Run packaging step (Linux/macOS)
-4. Ensure artifacts exist under `install/<BuildType>/`
+3. Optional: set `LT_ENABLE_TEST=ON` and run `ctest` in the build directory
+4. Run packaging step (Linux/macOS)
+5. Ensure artifacts exist under `install/<BuildType>/`
 
 ## Platform macro boundary check
 
