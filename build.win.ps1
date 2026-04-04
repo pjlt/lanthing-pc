@@ -3,7 +3,10 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 function exit_if_fail {
-    if ($LastExitCode -ne 0) {
+    $lastCommandSucceeded = $?
+    $hasLastExitCode = Test-Path Variable:LASTEXITCODE
+
+    if ((-not $lastCommandSucceeded) -or ($hasLastExitCode -and $LastExitCode -ne 0)) {
         Write-Host -ForegroundColor Red Sub cmd failed!
         Exit -1
     }
