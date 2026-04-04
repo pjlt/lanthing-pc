@@ -56,7 +56,7 @@ function check_build_type() {
 function rtc_fetch() {
     $RtcUri = "https://github.com/numbaa/rtc-prebuilt/releases/download/v0.7.9/rtc.win.zip"
     New-Item -ItemType Directory -ErrorAction SilentlyContinue src/transport/rtc/win
-    echo "Fetch $RtcUri"
+    Write-Host "Fetch $RtcUri"
     Invoke-WebRequest -Uri $RtcUri -OutFile ./third_party/prebuilt/rtc.win.zip
     exit_if_fail
     Expand-Archive ./third_party/prebuilt/rtc.win.zip -DestinationPath ./src/transport/rtc/win
@@ -95,10 +95,10 @@ function prebuilt_fetch() {
     foreach ($lib in $libs) {
         $LibName = $lib.Name
         $LibUri = $lib.Uri
-        echo "Fetch $LibUri"
+        Write-Host "Fetch $LibUri"
         Invoke-WebRequest -Uri $lib.Uri -OutFile ./third_party/prebuilt/$LibName.win.zip
         exit_if_fail
-        echo "Unzip $LibName.win.zip"
+        Write-Host "Unzip $LibName.win.zip"
         Expand-Archive ./third_party/prebuilt/$LibName.win.zip -DestinationPath ./third_party/prebuilt/$LibName/win
         exit_if_fail
     }

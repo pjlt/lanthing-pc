@@ -12,42 +12,53 @@ sequenceDiagram
 
     User->>App: Launch app and request remote control
     App->>Srv: RequestConnection(peerDeviceID, token)
-
     Srv->>Svc: OpenConnection(streaming params)
-    Svc->>Sess: Create session from open request
-    Sess->>Wkr: Start worker process(action=streaming)
-    Wkr-->>Sess: Worker ready (pipe + capabilities)
+    Svc->>Sess: Create session
+    Sess->>Wkr: Start worker(action=streaming)
+    Wkr-->>Sess: Ready
     Svc-->>Srv: OpenConnectionAck
     Srv-->>App: RequestConnectionAck
 
-    par Signaling join
-        Sess->>Sig: Join room as controlled side
-    and Requester side startup
-        App->>Cli: Spawn client process with params
-        Cli->>Sig: Join room as requester side
+    par Join signaling
+        Sess->>Sig: Join room(controlled)
+    and Start requester side
+        App->>Cli: Spawn client process
+        Cli->>Sig: Join room(requester)
     end
 
-    Sig-->>Sess: SignalingMessage(candidate/sdp)
-    Sig-->>Cli: SignalingMessage(candidate/sdp)
-    Sess->>Tp: Build server transport(RTC/RTC2/TCP)
-    Cli->>Tp: Build client transport(RTC/RTC2/TCP)
+    Sig-->>Sess: SignalingMessage(sdp/candidate)
+    Sig-->>Cli: SignalingMessage(sdp/candidate)
+    Sess->>Tp: Build server transport
+    Cli->>Tp: Build client transport
     Tp-->>Sess: Connected(link type)
     Tp-->>Cli: Connected(link type)
 
     Cli->>Sess: StartTransmission
     Sess-->>Cli: StartTransmissionAck
 
-    loop Streaming session
-        Wkr->>Sess: Encoded video/audio frames
-        Sess->>Cli: Media frames over transport
-        Cli-->>Sess: Input events + control messages
-        Sess-->>Cli: Cursor/stat/keepalive updates
+    loop Normal streaming
+        Wkr->>Sess: Video/audio frames
+        Sess->>Cli: Media frames
+        Cli-->>Sess: Input events and control
+        Sess-->>Cli: KeepAliveAck and stats
     end
 
-    alt Disconnect or error
-        Cli->>Sess: Close / transport failed
-        Sess->>Svc: Session closed(reason)
-        Svc->>App: DisconnectedConnection notification
-    else Continue
-        Sess-->>Cli: KeepAliveAck
+    alt Transport interruption detected
+        Tp-->>Cli: Disconnected / degraded
+        Tp-->>Sess: Disconnected / degraded
+        Cli->>Sig: Rejoin room and resend signaling
+        Sess->>Sig: Rejoin room and resend signaling
+        Sig-->>Cli: New signaling payload
+        Sig-->>Sess: New signaling payload
+        Cli->>Tp: Recreate transport client
+        Sess->>Tp: Recreate transport server
+        Tp-->>Cli: Reconnected(new link type)
+        Tp-->>Sess: Reconnected(new link type)
+        Cli->>Sess: StartTransmission(recover)
+        Sess-->>Cli: StartTransmissionAck(recover)
+        Note over Cli,Sess: Resume streaming without restarting app/service
+    else Reconnect failed
+        Sess->>Svc: Session closed(reason=reconnect_timeout)
+        Svc->>App: DisconnectedConnection
+        App-->>User: Show reconnect failed and prompt retry
     end
