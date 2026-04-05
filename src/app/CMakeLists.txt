@@ -2,7 +2,7 @@ file(GLOB_RECURSE LT_APP_UI_FILES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/*.ui
 )
 list(REMOVE_ITEM LT_APP_UI_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.ui
 )
 if (LT_APP_UI_FILES)
     message(FATAL_ERROR "New Qt .ui files are forbidden. Build UI in C++ code instead.")
@@ -24,9 +24,16 @@ set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/gui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/friendly_error_code.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/friendly_error_code.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_pages.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_callbacks.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_clipboard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_trusted_devices.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_private.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/progress_widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/progress_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/clickable_label.h

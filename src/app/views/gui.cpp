@@ -49,7 +49,7 @@
 #include <ltproto/service2app/accepted_connection.pb.h>
 
 #include "friendly_error_code.h"
-#include "mainwindow/mainwindow.h"
+#include "main_window/main_window.h"
 
 namespace {
 
