@@ -1,3 +1,13 @@
+file(GLOB_RECURSE LT_APP_UI_FILES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/*.ui
+)
+list(REMOVE_ITEM LT_APP_UI_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.ui
+)
+if (LT_APP_UI_FILES)
+    message(FATAL_ERROR "New Qt .ui files are forbidden. Build UI in C++ code instead.")
+endif()
+
 set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/app.h
     ${CMAKE_CURRENT_SOURCE_DIR}/app.cpp

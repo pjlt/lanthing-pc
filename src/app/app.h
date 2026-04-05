@@ -35,6 +35,7 @@
 
 #include <random>
 #include <shared_mutex>
+#include <thread>
 
 #include <QApplication>
 #include <google/protobuf/message_lite.h>
@@ -104,6 +105,8 @@ private:
     void clearLastAccessToken();
     void postTask(const std::function<void()>& task);
     void postDelayTask(int64_t delay_ms, const std::function<void()>& task);
+    bool isAppThread() const;
+    void assertAppThread() const;
 
     // tcp client
     bool initTcpClient();
@@ -182,6 +185,7 @@ private:
     std::uniform_int_distribution<size_t> rand_distrib_;
     bool signaling_keepalive_inited_ = false;
     bool stoped_ = false;
+    std::thread::id app_thread_id_{};
     uint32_t decode_abilities_ = 0;
     bool service_started_ = false;
 };

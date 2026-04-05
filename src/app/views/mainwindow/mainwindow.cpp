@@ -71,24 +71,6 @@
 #include <app/views/components/access_token_validator.h>
 
 namespace {
-
-void dispatchToUiThread(std::function<void()> callback) {
-    if (qApp->thread() == QThread::currentThread()) {
-        callback();
-        return;
-    }
-    // any thread
-    QTimer* timer = new QTimer();
-    timer->moveToThread(qApp->thread());
-    timer->setSingleShot(true);
-    QObject::connect(timer, &QTimer::timeout, [=]() {
-        // main thread
-        callback();
-        timer->deleteLater();
-    });
-    QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
-}
-
 // -Werror=unused-function
 /*
 QColor toColor(QString colorstr) {
@@ -205,6 +187,26 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
+bool MainWindow::isUiThread() const {
+    return qApp->thread() == QThread::currentThread();
+}
+
+void MainWindow::postToUiThread(std::function<void()> callback) {
+    if (isUiThread()) {
+        callback();
+        return;
+    }
+
+    QTimer* timer = new QTimer();
+    timer->moveToThread(qApp->thread());
+    timer->setSingleShot(true);
+    QObject::connect(timer, &QTimer::timeout, [callback = std::move(callback), timer]() {
+        callback();
+        timer->deleteLater();
+    });
+    QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
+}
+
 void MainWindow::switchToMainPage() {
     if (ui->stackedWidget->currentIndex() != 0) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnLinkTab);
@@ -236,15 +238,15 @@ void MainWindow::switchToAboutPage() {
 }
 
 void MainWindow::setLoginStatus(lt::GUI::LoginStatus status) {
-    dispatchToUiThread([this, status]() { setLoginStatusInUIThread(status); });
+    postToUiThread([this, status]() { setLoginStatusInUIThread(status); });
 }
 
 void MainWindow::setServiceStatus(lt::GUI::ServiceStatus status) {
-    dispatchToUiThread([this, status]() { setServiceStatusInUIThread(status); });
+    postToUiThread([this, status]() { setServiceStatusInUIThread(status); });
 }
 
 void MainWindow::setDeviceID(int64_t device_id) {
-    dispatchToUiThread([this, device_id]() {
+    postToUiThread([this, device_id]() {
         device_id_ = device_id;
         std::string id = std::to_string(device_id);
         std::string id2;
@@ -259,7 +261,7 @@ void MainWindow::setDeviceID(int64_t device_id) {
 }
 
 void MainWindow::setAccessToken(const std::string& access_token) {
-    dispatchToUiThread([this, access_token]() {
+    postToUiThread([this, access_token]() {
         access_token_text_ = access_token;
         if (token_showing_) {
             ui->labelMyAccessToken->setText(QString::fromStdString(access_token));
@@ -268,7 +270,7 @@ void MainWindow::setAccessToken(const std::string& access_token) {
 }
 
 void MainWindow::onConfirmConnection(int64_t device_id) {
-    dispatchToUiThread([this, device_id]() {
+    postToUiThread([this, device_id]() {
         QMessageBox msgbox;
         msgbox.setWindowTitle(tr("New Connection"));
         std::string id_str = std::to_string(device_id);
@@ -304,7 +306,7 @@ void MainWindow::onConfirmConnection(int64_t device_id) {
 }
 
 void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    dispatchToUiThread([this, _msg]() {
+    postToUiThread([this, _msg]() {
         auto msg = std::static_pointer_cast<ltproto::service2app::ConnectionStatus>(_msg);
         if (!peer_client_device_id_.has_value()) {
             LOG(WARNING) << "Received ConnectionStatus, but we are not serving any client, "
@@ -333,7 +335,7 @@ void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLit
 }
 
 void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    dispatchToUiThread([this, _msg]() {
+    postToUiThread([this, _msg]() {
         auto msg = std::static_pointer_cast<ltproto::service2app::AcceptedConnection>(_msg);
         if (peer_client_device_id_.has_value()) {
             if (peer_client_device_id_.value() == msg->device_id()) {
@@ -373,7 +375,7 @@ void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLi
 }
 
 void MainWindow::onDisconnectedConnection(int64_t device_id) {
-    dispatchToUiThread([this, device_id]() {
+    postToUiThread([this, device_id]() {
         if (!peer_client_device_id_.has_value()) {
             LOG(ERR) << "Received DisconnectedClient, but no connected client";
             return;
@@ -399,7 +401,7 @@ void MainWindow::onDisconnectedConnection(int64_t device_id) {
 }
 
 void MainWindow::errorMessageBox(const QString& message) {
-    dispatchToUiThread([message]() {
+    postToUiThread([message]() {
         QMessageBox msgbox;
         msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Critical);
@@ -408,7 +410,7 @@ void MainWindow::errorMessageBox(const QString& message) {
 }
 
 void MainWindow::infoMessageBox(const QString& message) {
-    dispatchToUiThread([message]() {
+    postToUiThread([message]() {
         QMessageBox msgbox;
         msgbox.setText(message);
         msgbox.setIcon(QMessageBox::Icon::Information);
@@ -417,13 +419,13 @@ void MainWindow::infoMessageBox(const QString& message) {
 }
 
 void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, int64_t time_s) {
-    dispatchToUiThread([this, device_id, time_s]() {
+    postToUiThread([this, device_id, time_s]() {
         addOrUpdateTrustedDevice(device_id, true, false, false, time_s);
     });
 }
 
 void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _msg) {
-    dispatchToUiThread([this, _msg]() {
+    postToUiThread([this, _msg]() {
         auto msg = std::static_pointer_cast<ltproto::server::NewVersion>(_msg);
         std::ostringstream oss;
         int64_t version = ltlib::combineVersion(msg->major(), msg->minor(), msg->patch());
@@ -485,7 +487,7 @@ void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _ms
 }
 
 void MainWindow::setClipboardText(const std::string& text) {
-    dispatchToUiThread([text]() {
+    postToUiThread([text]() {
         auto clipboard = QApplication::clipboard();
         auto text2 = QString::fromStdString(text);
         if (clipboard->text() == text2) {

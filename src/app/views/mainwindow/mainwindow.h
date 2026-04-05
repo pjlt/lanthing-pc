@@ -92,6 +92,10 @@ protected:
     bool eventFilter(QObject* obj, QEvent* ev) override;
 
 private:
+    bool isUiThread() const;
+
+    void postToUiThread(std::function<void()> callback);
+
     void setupOtherCallbacks();
 
     void setupSettingsPage();
