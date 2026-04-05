@@ -44,6 +44,7 @@
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow;
+class QTableWidget;
 
 QT_END_NAMESPACE
 
@@ -96,6 +97,8 @@ private:
 
     void postToUiThread(std::function<void()> callback);
 
+    void rebuildManagerPageInCode();
+
     void rebuildAboutPageInCode();
 
     void setupOtherCallbacks();
@@ -136,6 +139,8 @@ private:
                                   int64_t last_access_time);
 
     QWidget* makeWidgetHCentered(QWidget* widget);
+
+    int indexOfPageByObjectName(const QString& object_name) const;
 
     void onClipboardPlainTextChanged();
 
@@ -185,6 +190,7 @@ private:
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
     int64_t device_id_ = -1;
+    QTableWidget* trusted_devices_table_ = nullptr;
 
     Ui_MainWindow* ui;
     QRegularExpressionValidator relay_validator_;

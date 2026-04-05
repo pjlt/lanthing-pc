@@ -41,13 +41,15 @@
 
 #include <QMouseEvent>
 #include <QtCore/qtimer.h>
+#include <QtWidgets/QFrame>
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QStackedLayout>
-#include <QtWidgets/QFrame>
-#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QTableWidget>
 #include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/qheaderview.h>
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qscrollarea.h>
 #include <qclipboard.h>
@@ -176,6 +178,9 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     ui->labelControlledInfo->hide();
 #endif // LT_WINDOWS
 
+    // 用纯C++替换Manager页面，作为去.ui迁移样板。
+    rebuildManagerPageInCode();
+
     // 客户端表格
     addOrUpdateTrustedDevices();
 
@@ -213,15 +218,111 @@ void MainWindow::postToUiThread(std::function<void()> callback) {
     QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
 }
 
-void MainWindow::rebuildAboutPageInCode() {
-    QWidget* old_page = ui->pageAbout;
-    if (old_page == nullptr || ui->stackedWidget == nullptr) {
+void MainWindow::rebuildManagerPageInCode() {
+    if (ui->stackedWidget == nullptr) {
         return;
     }
 
-    const int about_index = ui->stackedWidget->indexOf(old_page);
-    if (about_index < 0) {
+    QWidget* old_page = nullptr;
+    int manager_index = -1;
+    for (int i = 0; i < ui->stackedWidget->count(); i++) {
+        QWidget* page = ui->stackedWidget->widget(i);
+        if (page != nullptr && page->objectName() == QStringLiteral("pageMgr")) {
+            old_page = page;
+            manager_index = i;
+            break;
+        }
+    }
+
+    if (manager_index < 0) {
+        manager_index = ui->stackedWidget->count();
+    }
+
+    auto* page_mgr = new QWidget(ui->stackedWidget);
+    page_mgr->setObjectName("pageMgr");
+    auto* layout = new QVBoxLayout(page_mgr);
+
+    auto* title = new QLabel(page_mgr);
+    title->setStyleSheet("font: 16pt \"Microsoft YaHei UI\";");
+    title->setText(tr("Trusted clients:"));
+    layout->addWidget(title);
+
+    auto* table = new QTableWidget(page_mgr);
+    table->setObjectName("tableWidget");
+    table->setStyleSheet("QTableWidget {\n"
+                         "\tbackground-color: transparent;\n"
+                         "\tpadding: 10px;\n"
+                         "\tborder-radius: 5px;\n"
+                         "\tgridline-color: rgb(44, 49, 58);\n"
+                         "\tborder-bottom: 1px solid rgb(44, 49, 60);\n"
+                         "}\n"
+                         "QTableWidget::item{\n"
+                         "\tborder-color: rgb(44, 49, 60);\n"
+                         "\tpadding-left: 5px;\n"
+                         "\tpadding-right: 5px;\n"
+                         "\tgridline-color: rgb(44, 49, 60);\n"
+                         "}\n"
+                         "QTableWidget::item:selected{\n"
+                         "\tbackground-color: rgb(189, 147, 249);\n"
+                         "}\n"
+                         "QHeaderView::section{\n"
+                         "\tbackground-color: rgb(33, 37, 43);\n"
+                         "\tmax-width: 30px;\n"
+                         "\tborder: 1px solid rgb(44, 49, 58);\n"
+                         "\tborder-style: none;\n"
+                         "    border-bottom: 1px solid rgb(44, 49, 60);\n"
+                         "    border-right: 1px solid rgb(44, 49, 60);\n"
+                         "}\n"
+                         "QTableWidget::horizontalHeader {\n"
+                         "\tbackground-color: rgb(33, 37, 43);\n"
+                         "}\n"
+                         "QHeaderView::section:horizontal\n"
+                         "{\n"
+                         "    border: 1px solid rgb(33, 37, 43);\n"
+                         "\tbackground-color: rgb(33, 37, 43);\n"
+                         "\tpadding: 3px;\n"
+                         "\tborder-top-left-radius: 7px;\n"
+                         "    border-top-right-radius: 7px;\n"
+                         "}\n"
+                         "QHeaderView::section:vertical\n"
+                         "{\n"
+                         "    border: 1px solid rgb(44, 49, 60);\n"
+                         "}\n");
+    table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setColumnCount(6);
+    table->horizontalHeader()->setDefaultSectionSize(85);
+    table->setHorizontalHeaderLabels({tr("DeviceID"), tr("Gamepad"), tr("Mouse"), tr("Keyboard"),
+                                      tr("Last Time"), tr("Operate")});
+    layout->addWidget(table);
+
+    trusted_devices_table_ = table;
+
+    if (old_page != nullptr) {
+        ui->stackedWidget->removeWidget(old_page);
+        old_page->deleteLater();
+    }
+    ui->stackedWidget->insertWidget(manager_index, page_mgr);
+}
+
+void MainWindow::rebuildAboutPageInCode() {
+    if (ui->stackedWidget == nullptr) {
         return;
+    }
+
+    QWidget* old_page = nullptr;
+    int about_index = -1;
+    for (int i = 0; i < ui->stackedWidget->count(); i++) {
+        QWidget* page = ui->stackedWidget->widget(i);
+        if (page != nullptr && page->objectName() == QStringLiteral("pageAbout")) {
+            old_page = page;
+            about_index = i;
+            break;
+        }
+    }
+
+    if (about_index < 0) {
+        about_index = ui->stackedWidget->count();
     }
 
     auto* page_about = new QWidget(ui->stackedWidget);
@@ -301,38 +402,60 @@ void MainWindow::rebuildAboutPageInCode() {
     license_layout->addWidget(label_license_content);
     page_layout->addWidget(frame_license);
 
-    ui->stackedWidget->removeWidget(old_page);
-    old_page->deleteLater();
+    if (old_page != nullptr) {
+        ui->stackedWidget->removeWidget(old_page);
+        old_page->deleteLater();
+    }
     ui->stackedWidget->insertWidget(about_index, page_about);
 }
 
 void MainWindow::switchToMainPage() {
-    if (ui->stackedWidget->currentIndex() != 0) {
+    const int main_index = indexOfPageByObjectName(QStringLiteral("pageLink"));
+    if (main_index < 0) {
+        LOG(ERR) << "Main page not found";
+        return;
+    }
+    if (ui->stackedWidget->currentIndex() != main_index) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnLinkTab);
-        ui->stackedWidget->setCurrentIndex(0);
+        ui->stackedWidget->setCurrentIndex(main_index);
     }
 }
 
 void MainWindow::switchToManagerPage() {
-    if (ui->stackedWidget->currentIndex() != 1) {
+    const int manager_index = indexOfPageByObjectName(QStringLiteral("pageMgr"));
+    if (manager_index < 0) {
+        LOG(ERR) << "Manager page not found";
+        return;
+    }
+    if (ui->stackedWidget->currentIndex() != manager_index) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
                              ui->btnManagerTab);
-        ui->stackedWidget->setCurrentIndex(1);
+        ui->stackedWidget->setCurrentIndex(manager_index);
     }
 }
 
 void MainWindow::switchToSettingPage() {
-    if (ui->stackedWidget->currentIndex() != 2) {
+    const int settings_index = indexOfPageByObjectName(QStringLiteral("pageSettings"));
+    if (settings_index < 0) {
+        LOG(ERR) << "Settings page not found";
+        return;
+    }
+    if (ui->stackedWidget->currentIndex() != settings_index) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
                              ui->btnSettingsTab);
-        ui->stackedWidget->setCurrentIndex(2);
+        ui->stackedWidget->setCurrentIndex(settings_index);
     }
 }
 
 void MainWindow::switchToAboutPage() {
-    if (ui->stackedWidget->currentIndex() != 3) {
+    const int about_index = indexOfPageByObjectName(QStringLiteral("pageAbout"));
+    if (about_index < 0) {
+        LOG(ERR) << "About page not found";
+        return;
+    }
+    if (ui->stackedWidget->currentIndex() != about_index) {
         swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnAboutTab);
-        ui->stackedWidget->setCurrentIndex(3);
+        ui->stackedWidget->setCurrentIndex(about_index);
     }
 }
 
@@ -1028,20 +1151,33 @@ void MainWindow::loadPixmap() {
 }
 
 QPushButton* MainWindow::indexToTabButton(int32_t index) {
-    switch (index) {
-    case 0:
-        return ui->btnLinkTab;
-    case 1:
-        return ui->btnManagerTab;
-    case 2:
-        return ui->btnSettingsTab;
-    case 3:
-        return ui->btnAboutTab;
-    default:
-        // maybe fatal
+    if (ui->stackedWidget == nullptr || index < 0 || index >= ui->stackedWidget->count()) {
         LOG(ERR) << "Unknown tab index!";
         return ui->btnLinkTab;
-    };
+    }
+
+    QWidget* page = ui->stackedWidget->widget(index);
+    if (page == nullptr) {
+        LOG(ERR) << "Page is null for tab index " << index;
+        return ui->btnLinkTab;
+    }
+
+    const QString page_name = page->objectName();
+    if (page_name == QStringLiteral("pageLink")) {
+        return ui->btnLinkTab;
+    }
+    if (page_name == QStringLiteral("pageMgr")) {
+        return ui->btnManagerTab;
+    }
+    if (page_name == QStringLiteral("pageSettings")) {
+        return ui->btnSettingsTab;
+    }
+    if (page_name == QStringLiteral("pageAbout")) {
+        return ui->btnAboutTab;
+    }
+
+    LOG(ERR) << "Unknown page name: " << page_name.toStdString();
+    return ui->btnLinkTab;
 }
 
 void MainWindow::swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* new_selected) {
@@ -1158,21 +1294,26 @@ void MainWindow::addOrUpdateTrustedDevices() {
 
 void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool mouse,
                                           bool keyboard, int64_t last_access_time) {
+    if (trusted_devices_table_ == nullptr) {
+        LOG(ERR) << "Trusted devices table is null";
+        return;
+    }
+
     int row = -1;
-    for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
-        if (ui->tableWidget->item(i, 0)->data(Qt::DisplayRole).toLongLong() == device_id) {
+    for (int i = 0; i < trusted_devices_table_->rowCount(); i++) {
+        if (trusted_devices_table_->item(i, 0)->data(Qt::DisplayRole).toLongLong() == device_id) {
             row = i;
             break;
         }
     }
     if (row == -1) {
-        row = ui->tableWidget->rowCount();
-        ui->tableWidget->setRowCount(row + 1);
+        row = trusted_devices_table_->rowCount();
+        trusted_devices_table_->setRowCount(row + 1);
     }
 
     // id
     QTableWidgetItem* id_item = new QTableWidgetItem;
-    ui->tableWidget->setItem(row, 0, id_item);
+    trusted_devices_table_->setItem(row, 0, id_item);
     id_item->setData(Qt::DisplayRole, QVariant::fromValue(device_id));
     // gamepad
     QCheckBox* gamepad_item = new QCheckBox();
@@ -1181,7 +1322,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Gamepad,
                                          gamepad_item->isChecked());
     });
-    ui->tableWidget->setCellWidget(row, 1, makeWidgetHCentered(gamepad_item));
+    trusted_devices_table_->setCellWidget(row, 1, makeWidgetHCentered(gamepad_item));
     // mouse
     QCheckBox* mouse_item = new QCheckBox();
     mouse_item->setChecked(mouse);
@@ -1189,7 +1330,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Mouse,
                                          mouse_item->isChecked());
     });
-    ui->tableWidget->setCellWidget(row, 2, makeWidgetHCentered(mouse_item));
+    trusted_devices_table_->setCellWidget(row, 2, makeWidgetHCentered(mouse_item));
     // keyboard
     QCheckBox* keyboard_item = new QCheckBox();
     keyboard_item->setChecked(keyboard);
@@ -1197,25 +1338,26 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Keyboard,
                                          keyboard_item->isChecked());
     });
-    ui->tableWidget->setCellWidget(row, 3, makeWidgetHCentered(keyboard_item));
+    trusted_devices_table_->setCellWidget(row, 3, makeWidgetHCentered(keyboard_item));
     // time
     QTableWidgetItem* time_item =
         new QTableWidgetItem(QDateTime::fromSecsSinceEpoch(last_access_time)
                                  .toLocalTime()
                                  .toString("yyyy.MM.dd hh:mm:ss"));
-    ui->tableWidget->setItem(row, 4, time_item);
+    trusted_devices_table_->setItem(row, 4, time_item);
     // delete
     QPushButton* delete_item = new QPushButton(tr("delete"));
     connect(delete_item, &QPushButton::clicked, [this, device_id]() {
-        for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
-            if (ui->tableWidget->item(i, 0)->data(Qt::DisplayRole).toLongLong() == device_id) {
-                ui->tableWidget->removeRow(i);
+        for (int i = 0; i < trusted_devices_table_->rowCount(); i++) {
+            if (trusted_devices_table_->item(i, 0)->data(Qt::DisplayRole).toLongLong() ==
+                device_id) {
+                trusted_devices_table_->removeRow(i);
                 break;
             }
         }
         params_.delete_trusted_device(device_id);
     });
-    ui->tableWidget->setCellWidget(row, 5, delete_item);
+    trusted_devices_table_->setCellWidget(row, 5, delete_item);
 }
 
 QWidget* MainWindow::makeWidgetHCentered(QWidget* input_widget) {
@@ -1225,6 +1367,20 @@ QWidget* MainWindow::makeWidgetHCentered(QWidget* input_widget) {
     layout->setAlignment(Qt::AlignCenter);
     layout->setContentsMargins(0, 0, 0, 0);
     return output_widget;
+}
+
+int MainWindow::indexOfPageByObjectName(const QString& object_name) const {
+    if (ui->stackedWidget == nullptr) {
+        return -1;
+    }
+
+    for (int i = 0; i < ui->stackedWidget->count(); i++) {
+        QWidget* page = ui->stackedWidget->widget(i);
+        if (page != nullptr && page->objectName() == object_name) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void MainWindow::onClipboardPlainTextChanged() {
