@@ -47,3 +47,15 @@ if (LT_WINDOWS)
 endif()
 
 set_code_analysis(lt_module_inputs ${LT_ENABLE_CODE_ANALYSIS})
+
+if (LT_ENABLE_TEST AND BUILD_TESTING)
+    add_executable(test_input_event
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/input_event_tests.cpp
+    )
+    target_link_libraries(test_input_event
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_inputs
+    )
+    add_test(NAME test_input_event COMMAND test_input_event)
+endif()
