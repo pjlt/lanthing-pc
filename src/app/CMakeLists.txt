@@ -31,6 +31,11 @@ if (LT_WINDOWS)
     )
 endif()
 
+list(FIND LT_MODULE_APP_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc LT_APP_RESOURCES_INDEX)
+if (LT_APP_RESOURCES_INDEX EQUAL -1)
+    message(FATAL_ERROR "resources.qrc must stay in lt_module_app sources for UI resources")
+endif()
+
 add_library(lt_module_app STATIC
     ${LT_MODULE_APP_SRCS}
 )

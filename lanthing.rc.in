@@ -5,7 +5,7 @@
 
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 
-IDB_PNG1                ICON                     "lanthing.ico"
+IDB_PNG1                ICON                     "@LT_WINDOWS_ICON_PATH@"
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION LT_VERSION

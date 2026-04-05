@@ -7,12 +7,13 @@ set(LT_SRCS
 )
 
 if (LT_WINDOWS)
+    set(LT_WINDOWS_ICON_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.ico)
+    set(LT_LANTHING_RC ${CMAKE_CURRENT_BINARY_DIR}/lanthing.rc)
+
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc.in
-        ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc
+        ${LT_LANTHING_RC}
         @ONLY)
-
-    set(LT_LANTHING_RC ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc)
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/ltlib)

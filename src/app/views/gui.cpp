@@ -39,6 +39,7 @@
 #include <QtWidgets/qsystemtrayicon.h>
 #include <QtWidgets/qwidget.h>
 #include <qapplication.h>
+#include <qdir.h>
 #include <qfile.h>
 #include <qobject.h>
 #include <qtranslator.h>
@@ -141,8 +142,17 @@ private:
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
+
+    // Ensure qrc resources packaged in static libs are force-initialized.
+    Q_INIT_RESOURCE(resources);
+
     setLanguage();
     QIcon icon(":/res/png_icons/pc2.png");
+    if (!QFile::exists(":/res/png_icons/pc2.png") || icon.isNull()) {
+        LOG(ERR) << "App icon resource is unavailable, path=:/res/png_icons/pc2.png";
+        LOG(ERR) << "Available entries under :/res/png_icons: "
+                 << QDir(":/res/png_icons").entryList(QDir::Files).join(",").toStdString();
+    }
     QApplication::setWindowIcon(icon);
     QApplication::setApplicationName("Lanthing");
     QApplication::setQuitOnLastWindowClosed(false);
@@ -188,6 +198,9 @@ void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     sys_tray_icon_->setContextMenu(menu_.get());
     sys_tray_icon_->setIcon(icon);
 
+    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+        LOG(WARNING) << "System tray is not available on current desktop environment";
+    }
     sys_tray_icon_->show();
     main_window_->show();
 
