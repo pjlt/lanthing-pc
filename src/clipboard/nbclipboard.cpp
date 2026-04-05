@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 
+#if defined(LT_WINDOWS)
 #include <Windows.h>
 
 #include <io.h>
@@ -21,6 +22,7 @@
 #include <shlwapi.h>
 #include <strsafe.h>
 #include <wrl/client.h>
+#endif // LT_WINDOWS
 
 #include "nbclipboard.h"
 

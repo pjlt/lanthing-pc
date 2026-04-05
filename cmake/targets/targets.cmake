@@ -9,13 +9,6 @@ set(LT_SRCS
 if (LT_WINDOWS)
     set(LT_WINDOWS_ICON_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.ico)
     set(LT_LANTHING_RC ${CMAKE_CURRENT_BINARY_DIR}/lanthing.rc)
-    set(LT_NBCLIPBOARD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/clipboard/nbclipboard.cpp)
-    list(APPEND LT_SRCS
-        ${LT_NBCLIPBOARD_SRC}
-    )
-    set_source_files_properties(${LT_NBCLIPBOARD_SRC} PROPERTIES
-        COMPILE_DEFINITIONS "UNICODE;_UNICODE"
-    )
 
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc.in
@@ -31,6 +24,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/client)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/service)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/worker)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/video)
+if (LT_WINDOWS)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/clipboard)
+endif()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/app)
 
 add_executable(${PROJECT_NAME}
@@ -113,6 +109,7 @@ target_link_libraries(${PROJECT_NAME}
     lt_module_worker
     lt_module_video
     lt_module_app
+    $<$<BOOL:${LT_WINDOWS}>:lt_module_clipboard>
     Qt6::Widgets
     Qt6::Gui
     g3log
