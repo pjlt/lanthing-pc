@@ -96,6 +96,8 @@ private:
 
     void postToUiThread(std::function<void()> callback);
 
+    void rebuildAboutPageInCode();
+
     void setupOtherCallbacks();
 
     void setupSettingsPage();
