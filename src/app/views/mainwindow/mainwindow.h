@@ -48,6 +48,8 @@ class QTableWidget;
 class QCheckBox;
 class QRadioButton;
 class QLineEdit;
+class QComboBox;
+class QFrame;
 
 QT_END_NAMESPACE
 
@@ -99,6 +101,8 @@ private:
     bool isUiThread() const;
 
     void postToUiThread(std::function<void()> callback);
+
+    void rebuildLinkPageInCode();
 
     void rebuildSettingsPageInCode();
 
@@ -195,6 +199,24 @@ private:
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
     int64_t device_id_ = -1;
+    QComboBox* link_cb_device_id_ = nullptr;
+    QLineEdit* link_ledit_access_token_ = nullptr;
+    QPushButton* link_btn_connect_ = nullptr;
+    QPushButton* link_btn_copy_ = nullptr;
+    QPushButton* link_btn_show_token_ = nullptr;
+    QPushButton* link_btn_refresh_token_ = nullptr;
+    QLabel* link_label_my_device_id_ = nullptr;
+    QLabel* link_label_my_access_token_ = nullptr;
+    QLabel* link_label_copied_ = nullptr;
+    QLabel* link_label_login_info_ = nullptr;
+    QLabel* link_label_controlled_info_ = nullptr;
+    QLabel* link_label_version_ = nullptr;
+    QLabel* link_label_client1_ = nullptr;
+    QLabel* link_label_gamepad1_ = nullptr;
+    QLabel* link_label_mouse1_ = nullptr;
+    QLabel* link_label_keyboard1_ = nullptr;
+    QFrame* link_indicator1_ = nullptr;
+    QFrame* link_indicator2_ = nullptr;
     QCheckBox* settings_checkbox_service_ = nullptr;
     QCheckBox* settings_checkbox_refresh_password_ = nullptr;
     QCheckBox* settings_checkbox_share_clipboard_ = nullptr;

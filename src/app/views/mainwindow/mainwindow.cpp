@@ -41,6 +41,7 @@
 
 #include <QMouseEvent>
 #include <QtCore/qtimer.h>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
@@ -102,6 +103,9 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 
     ui->setupUi(this);
 
+    // 用纯C++替换Link页面，作为去.ui迁移样板。
+    rebuildLinkPageInCode();
+
     qApp->installEventFilter(this);
 
     loadPixmap();
@@ -109,7 +113,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     // 版本号
     std::stringstream oss_ver;
     oss_ver << "v" << LT_VERSION_MAJOR << "." << LT_VERSION_MINOR << "." << LT_VERSION_PATCH;
-    ui->labelVersion->setText(QString::fromStdString(oss_ver.str()));
+    link_label_version_->setText(QString::fromStdString(oss_ver.str()));
 
     // 无边框
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
@@ -123,10 +127,10 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 #endif // !defined(LT_WINDOWS)
 
     // 调整"已复制"标签的SizePolicy，让它在隐藏的时候保持占位
-    QSizePolicy retain = ui->labelCopied->sizePolicy();
+    QSizePolicy retain = link_label_copied_->sizePolicy();
     retain.setRetainSizeWhenHidden(true);
-    ui->labelCopied->setSizePolicy(retain);
-    ui->labelCopied->hide();
+    link_label_copied_->setSizePolicy(retain);
+    link_label_copied_->hide();
 
     // 登录进度条
     // （因为新增显示“service状态”，再用ProgressWidget去显示“登录状态”就不合适，暂时没有想到更好的UI，先屏蔽）
@@ -138,21 +142,21 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     history_device_ids_ = params.get_history_device_ids();
     QIcon pc_icon{":/res/png_icons/pc.png"};
     if (history_device_ids_.empty()) {
-        ui->cbDeviceID->addItem(pc_icon, "");
+        link_cb_device_id_->addItem(pc_icon, "");
     }
     else {
         for (const auto& id : history_device_ids_) {
-            ui->cbDeviceID->addItem(pc_icon, QString::fromStdString(id));
+            link_cb_device_id_->addItem(pc_icon, QString::fromStdString(id));
         }
     }
-    ui->cbDeviceID->setValidator(new QIntValidator(100'000'000, 999'999'999, this));
+    link_cb_device_id_->setValidator(new QIntValidator(100'000'000, 999'999'999, this));
 
     // 验证码
     QAction* lock_position = new QAction();
     lock_position->setIcon(QIcon(":/res/png_icons/lock.png"));
-    ui->leditAccessToken->addAction(lock_position, QLineEdit::LeadingPosition);
-    ui->leditAccessToken->setValidator(new AccesstokenValidator(this));
-    connect(ui->leditAccessToken, &QLineEdit::textChanged, [this](const QString& text) {
+    link_ledit_access_token_->addAction(lock_position, QLineEdit::LeadingPosition);
+    link_ledit_access_token_->setValidator(new AccesstokenValidator(this));
+    connect(link_ledit_access_token_, &QLineEdit::textChanged, [this](const QString& text) {
         if (text.trimmed().isEmpty()) {
             params_.clear_last_access_token();
         }
@@ -161,7 +165,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
         std::string last_device_id = history_device_ids_.front();
         auto [id, token] = params.get_last_access_token();
         if (last_device_id == id) {
-            ui->leditAccessToken->setText(QString::fromStdString(token));
+            link_ledit_access_token_->setText(QString::fromStdString(token));
         }
     }
 
@@ -179,10 +183,10 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
 #if LT_WINDOWS
     setServiceStatusInUIThread(lt::GUI::ServiceStatus::Down);
 #else  // LT_WINDOWS
-    QSizePolicy sp_retain = ui->labelControlledInfo->sizePolicy();
+    QSizePolicy sp_retain = link_label_controlled_info_->sizePolicy();
     sp_retain.setRetainSizeWhenHidden(true);
-    ui->labelControlledInfo->setSizePolicy(sp_retain);
-    ui->labelControlledInfo->hide();
+    link_label_controlled_info_->setSizePolicy(sp_retain);
+    link_label_controlled_info_->hide();
 #endif // LT_WINDOWS
 
     // 用纯C++替换Manager页面，作为去.ui迁移样板。
@@ -223,6 +227,252 @@ void MainWindow::postToUiThread(std::function<void()> callback) {
         timer->deleteLater();
     });
     QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
+}
+
+void MainWindow::rebuildLinkPageInCode() {
+    if (ui->stackedWidget == nullptr) {
+        return;
+    }
+
+    QWidget* old_page = nullptr;
+    int link_index = -1;
+    for (int i = 0; i < ui->stackedWidget->count(); i++) {
+        QWidget* page = ui->stackedWidget->widget(i);
+        if (page != nullptr && page->objectName() == QStringLiteral("pageLink")) {
+            old_page = page;
+            link_index = i;
+            break;
+        }
+    }
+
+    if (link_index < 0) {
+        link_index = 0;
+    }
+
+    auto* page_link = new QWidget(ui->stackedWidget);
+    page_link->setObjectName("pageLink");
+    page_link->setStyleSheet("\n"
+                             "QComboBox#cbDeviceID {\n"
+                             "     background-color: rgb(33, 37, 43);\n"
+                             "     border-radius: 5px;\n"
+                             "     border: 2px solid rgb(33, 37, 43);\n"
+                             "     padding-left: 10px;\n"
+                             "     selection-color: rgb(255, 255, 255);\n"
+                             "     selection-background-color: rgb(255, 121, 198);\n"
+                             "}\n"
+                             "QComboBox#cbDeviceID:hover {\n"
+                             "     border: 2px solid rgb(64, 71, 88);\n"
+                             "}\n"
+                             "QComboBox#cbDeviceID:drop-down {\n"
+                             "     subcontrol-origin: padding;\n"
+                             "     subcontrol-position: top right;\n"
+                             "     width: 25px;\n"
+                             "     border-left-width: 3px;\n"
+                             "     border-left-color: rgba(39, 44, 54, 150);\n"
+                             "     border-left-style: solid;\n"
+                             "     border-top-right-radius: 3px;\n"
+                             "     border-bottom-right-radius: 3px;\n"
+                             "     background-image: url(:/res/icons/cil-arrow-bottom.png);\n"
+                             "     background-position: center;\n"
+                             "     background-repeat: no-repeat;\n"
+                             "}\n"
+                             "QComboBox#cbDeviceID QAbstractItemView {\n"
+                             "     color: rgb(255, 121, 198);\n"
+                             "     background-color: rgb(33, 37, 43);\n"
+                             "     padding: 10px;\n"
+                             "     selection-background-color: rgb(39, 44, 54);\n"
+                             "}\n"
+                             "#leditAccessToken {\n"
+                             "     background-color: rgb(33, 37, 43);\n"
+                             "     border-radius: 5px;\n"
+                             "     border: 2px solid rgb(33, 37, 43);\n"
+                             "     padding-left: 10px;\n"
+                             "     selection-color: rgb(255, 255, 255);\n"
+                             "     selection-background-color: rgb(255, 121, 198);\n"
+                             "}\n"
+                             "#leditAccessToken:hover {\n"
+                             "     border: 2px solid rgb(64, 71, 88);\n"
+                             "}\n"
+                             "#leditAccessToken:focus {\n"
+                             "     border: 2px solid rgb(91, 101, 124);\n"
+                             "}\n"
+                             "QPushButton#btnConnect {\n"
+                             "     border: 2px solid rgb(52, 59, 72);\n"
+                             "     border-radius: 5px;\n"
+                             "     background-color: rgb(52, 59, 72);\n"
+                             "}\n"
+                             "QPushButton#btnConnect:hover {\n"
+                             "     background-color: rgb(57, 65, 80);\n"
+                             "     border: 2px solid rgb(61, 70, 86);\n"
+                             "}\n"
+                             "QPushButton#btnConnect:pressed {\n"
+                             "     background-color: rgb(35, 40, 49);\n"
+                             "     border: 2px solid rgb(43, 50, 61);\n"
+                             "}\n"
+                             "#labelClient1 {\n"
+                             "     border: none;\n"
+                             "     background-color: transparent;\n"
+                             "}\n"
+                             "#labelClient1:hover {\n"
+                             "     background-color: rgb(33, 37, 43);\n"
+                             "     border: 2px solid rgb(64, 71, 88);\n"
+                             "}\n");
+    auto* root_layout = new QVBoxLayout(page_link);
+    root_layout->setSpacing(0);
+    root_layout->setContentsMargins(0, 0, 0, 0);
+    root_layout->setStretch(0, 3);
+    root_layout->setStretch(1, 3);
+    root_layout->setStretch(2, 1);
+    root_layout->setStretch(3, 0);
+
+    auto* frame_identity = new QFrame(page_link);
+    frame_identity->setObjectName("linkRow1");
+    auto* identity_layout = new QVBoxLayout(frame_identity);
+    identity_layout->setSpacing(0);
+    identity_layout->setContentsMargins(30, 0, 30, 0);
+    auto* id_row = new QHBoxLayout();
+    id_row->setSpacing(0);
+    auto* label_device_id = new QLabel(tr("Device ID"), frame_identity);
+    label_device_id->setMinimumSize(QSize(157, 71));
+    label_device_id->setStyleSheet("font: 13pt;");
+    id_row->addWidget(label_device_id);
+    link_label_my_device_id_ = new QLabel(frame_identity);
+    link_label_my_device_id_->setStyleSheet("font: 13pt;");
+    id_row->addWidget(link_label_my_device_id_);
+    link_btn_copy_ = new QPushButton(frame_identity);
+    link_btn_copy_->setObjectName("btnCopy");
+    link_btn_copy_->setMaximumWidth(50);
+    link_btn_copy_->setText(QString());
+    link_btn_copy_->setIcon(QIcon(":/res/icons/cil-clone.png"));
+    id_row->addWidget(link_btn_copy_);
+    link_label_copied_ = new QLabel(tr("Copied"), frame_identity);
+    link_label_copied_->setMinimumWidth(60);
+    link_label_copied_->setMaximumWidth(60);
+    link_label_copied_->setStyleSheet("font: 9pt;");
+    id_row->addWidget(link_label_copied_);
+    id_row->addStretch(1);
+    identity_layout->addLayout(id_row);
+
+    auto* token_row = new QHBoxLayout();
+    token_row->setSpacing(0);
+    auto* label_access_token = new QLabel(tr("Access Token"), frame_identity);
+    label_access_token->setMinimumSize(QSize(157, 71));
+    label_access_token->setStyleSheet("font: 13pt;");
+    token_row->addWidget(label_access_token);
+    link_label_my_access_token_ = new QLabel(QStringLiteral("******"), frame_identity);
+    link_label_my_access_token_->setStyleSheet("font: 13pt;");
+    token_row->addWidget(link_label_my_access_token_);
+    link_btn_show_token_ = new QPushButton(frame_identity);
+    link_btn_show_token_->setObjectName("btnShowToken");
+    link_btn_show_token_->setMaximumWidth(50);
+    link_btn_show_token_->setText(QString());
+    link_btn_show_token_->setIcon(QIcon(":/res/icons/cil-low-vision.png"));
+    token_row->addWidget(link_btn_show_token_);
+    link_btn_refresh_token_ = new QPushButton(frame_identity);
+    link_btn_refresh_token_->setObjectName("btnRefreshToken");
+    link_btn_refresh_token_->setMaximumWidth(60);
+    link_btn_refresh_token_->setText(QString());
+    link_btn_refresh_token_->setIcon(QIcon(":/res/icons/cil-reload.png"));
+    token_row->addWidget(link_btn_refresh_token_);
+    token_row->addStretch(1);
+    identity_layout->addLayout(token_row);
+    root_layout->addWidget(frame_identity);
+
+    auto* frame_connect = new QFrame(page_link);
+    frame_connect->setObjectName("linkRow2");
+    auto* connect_row = new QVBoxLayout(frame_connect);
+    connect_row->setSpacing(0);
+    connect_row->setContentsMargins(30, 0, 30, 0);
+    link_cb_device_id_ = new QComboBox(frame_connect);
+    link_cb_device_id_->setObjectName("cbDeviceID");
+    link_cb_device_id_->setEditable(true);
+    link_cb_device_id_->setMinimumHeight(50);
+    link_ledit_access_token_ = new QLineEdit(frame_connect);
+    link_ledit_access_token_->setObjectName("leditAccessToken");
+    link_ledit_access_token_->setMinimumHeight(45);
+    link_ledit_access_token_->setPlaceholderText(tr("Access token"));
+    link_btn_connect_ = new QPushButton(frame_connect);
+    link_btn_connect_->setObjectName("btnConnect");
+    link_btn_connect_->setMinimumHeight(40);
+    link_btn_connect_->setText(QString());
+    link_btn_connect_->setIcon(QIcon(":/res/icons/cil-link.png"));
+    connect_row->addWidget(link_cb_device_id_);
+    connect_row->addWidget(link_ledit_access_token_);
+    connect_row->addWidget(link_btn_connect_);
+    root_layout->addWidget(frame_connect);
+
+    auto* frame_clients = new QFrame(page_link);
+    frame_clients->setObjectName("linkRow3");
+    frame_clients->setStyleSheet("border:none;");
+    auto* clients_row = new QHBoxLayout(frame_clients);
+    clients_row->setSpacing(0);
+    clients_row->setContentsMargins(30, 0, 30, 0);
+    link_indicator1_ = new QFrame(frame_clients);
+    link_indicator1_->setObjectName("indicator1");
+    link_indicator1_->setStyleSheet("border:none;");
+    auto* indicator_row = new QHBoxLayout(link_indicator1_);
+    indicator_row->setSpacing(0);
+    indicator_row->setContentsMargins(0, 0, 0, 0);
+    link_label_client1_ = new QLabel(link_indicator1_);
+    link_label_client1_->setObjectName("labelClient1");
+    link_label_client1_->setPixmap(QPixmap(":/res/png_icons/pc2.png"));
+    link_label_client1_->setScaledContents(true);
+    link_label_client1_->setFixedSize(70, 70);
+    indicator_row->addWidget(link_label_client1_);
+    auto* indicator_icons_container = new QFrame(link_indicator1_);
+    indicator_icons_container->setStyleSheet("border:none;");
+    auto* indicator_icons = new QVBoxLayout(indicator_icons_container);
+    indicator_icons->setSpacing(0);
+    indicator_icons->setContentsMargins(0, 0, 0, 0);
+    link_label_gamepad1_ = new QLabel(link_indicator1_);
+    link_label_mouse1_ = new QLabel(link_indicator1_);
+    link_label_keyboard1_ = new QLabel(link_indicator1_);
+    link_label_gamepad1_->setPixmap(QPixmap(":/res/png_icons/gamepad_gray.png"));
+    link_label_mouse1_->setPixmap(QPixmap(":/res/png_icons/mouse_gray.png"));
+    link_label_keyboard1_->setPixmap(QPixmap(":/res/png_icons/keyboard_gray.png"));
+    link_label_gamepad1_->setScaledContents(true);
+    link_label_mouse1_->setScaledContents(true);
+    link_label_keyboard1_->setScaledContents(true);
+    link_label_gamepad1_->setFixedSize(20, 20);
+    link_label_mouse1_->setFixedSize(20, 20);
+    link_label_keyboard1_->setFixedSize(20, 20);
+    link_label_gamepad1_->setStyleSheet("border:none;");
+    link_label_mouse1_->setStyleSheet("border:none;");
+    link_label_keyboard1_->setStyleSheet("border:none;");
+    indicator_icons->addWidget(link_label_gamepad1_);
+    indicator_icons->addWidget(link_label_mouse1_);
+    indicator_icons->addWidget(link_label_keyboard1_);
+    indicator_row->addWidget(indicator_icons_container);
+    clients_row->addWidget(link_indicator1_);
+    clients_row->addStretch(1);
+    link_indicator2_ = new QFrame(frame_clients);
+    link_indicator2_->setObjectName("indicator2");
+    link_indicator2_->setStyleSheet("border:none;");
+    clients_row->addWidget(link_indicator2_);
+    root_layout->addWidget(frame_clients);
+
+    auto* frame_status = new QFrame(page_link);
+    frame_status->setObjectName("frame_20");
+    frame_status->setStyleSheet("border: none; background-color: transparent;");
+    auto* status_row = new QHBoxLayout(frame_status);
+    status_row->setContentsMargins(30, 10, 30, 10);
+    link_label_login_info_ = new QLabel(frame_status);
+    link_label_login_info_->setObjectName("labelLoginInfo");
+    link_label_controlled_info_ = new QLabel(frame_status);
+    link_label_controlled_info_->setObjectName("labelControlledInfo");
+    link_label_version_ = new QLabel(frame_status);
+    link_label_version_->setObjectName("labelVersion");
+    status_row->addWidget(link_label_login_info_);
+    status_row->addWidget(link_label_controlled_info_);
+    status_row->addStretch(1);
+    status_row->addWidget(link_label_version_);
+    root_layout->addWidget(frame_status);
+
+    if (old_page != nullptr) {
+        ui->stackedWidget->removeWidget(old_page);
+        old_page->deleteLater();
+    }
+    ui->stackedWidget->insertWidget(link_index, page_link);
 }
 
 void MainWindow::rebuildSettingsPageInCode() {
@@ -672,7 +922,7 @@ void MainWindow::setDeviceID(int64_t device_id) {
                 id2.push_back(' ');
             }
         }
-        ui->labelMyDeviceID->setText(QString::fromStdString(id2));
+        link_label_my_device_id_->setText(QString::fromStdString(id2));
     });
 }
 
@@ -680,7 +930,7 @@ void MainWindow::setAccessToken(const std::string& access_token) {
     postToUiThread([this, access_token]() {
         access_token_text_ = access_token;
         if (token_showing_) {
-            ui->labelMyAccessToken->setText(QString::fromStdString(access_token));
+            link_label_my_access_token_->setText(QString::fromStdString(access_token));
         }
     });
 }
@@ -746,7 +996,7 @@ void MainWindow::onConnectionStatus(std::shared_ptr<google::protobuf::MessageLit
             << std::setprecision(1) << Mbps << "Mbps " << video_codec_ << " "
             << (p2p_ ? "P2P " : "Relay ") << (gpu_decode_ ? "GPU:" : "CPU:")
             << (gpu_encode_ ? "GPU " : "CPU ");
-        ui->labelClient1->setToolTip(QString::fromStdString(oss.str()));
+        link_label_client1_->setToolTip(QString::fromStdString(oss.str()));
     });
 }
 
@@ -784,8 +1034,8 @@ void MainWindow::onAccptedConnection(std::shared_ptr<google::protobuf::MessageLi
         oss << msg->device_id() << " ?ms ?Mbps " << video_codec_ << " "
             << (p2p_ ? "P2P " : "Relay ") << (gpu_encode_ ? "GPU:" : "CPU:")
             << (gpu_decode_ ? "GPU " : "CPU ");
-        ui->labelClient1->setToolTip(QString::fromStdString(oss.str()));
-        ui->indicator1->show();
+        link_label_client1_->setToolTip(QString::fromStdString(oss.str()));
+        link_indicator1_->show();
         QTimer::singleShot(50, this, &MainWindow::onUpdateIndicator);
     });
 }
@@ -803,7 +1053,7 @@ void MainWindow::onDisconnectedConnection(int64_t device_id) {
                  device_id, peer_client_device_id_.value());
             return;
         }
-        ui->indicator1->hide();
+        link_indicator1_->hide();
         peer_client_device_id_ = std::nullopt;
         gpu_encode_ = false;
         gpu_decode_ = false;
@@ -942,10 +1192,10 @@ void MainWindow::setupOtherCallbacks() {
     connect(ui->btnMinimize, &QPushButton::clicked,
             [this]() { setWindowState(Qt::WindowState::WindowMinimized); });
     connect(ui->btnClose, &QPushButton::clicked, [this]() { hide(); });
-    connect(ui->btnCopy, &QPushButton::pressed, this, &MainWindow::onCopyPressed);
-    connect(ui->btnShowToken, &QPushButton::pressed, this, &MainWindow::onShowTokenPressed);
-    connect(ui->btnRefreshToken, &QPushButton::clicked, this, &MainWindow::onRefreshTokenClicked);
-    connect(ui->btnConnect, &QPushButton::clicked, this, &MainWindow::onConnectBtnClicked);
+    connect(link_btn_copy_, &QPushButton::pressed, this, &MainWindow::onCopyPressed);
+    connect(link_btn_show_token_, &QPushButton::pressed, this, &MainWindow::onShowTokenPressed);
+    connect(link_btn_refresh_token_, &QPushButton::clicked, this, &MainWindow::onRefreshTokenClicked);
+    connect(link_btn_connect_, &QPushButton::clicked, this, &MainWindow::onConnectBtnClicked);
     connect(settings_checkbox_service_, &QCheckBox::stateChanged,
             [this](int) { params_.enable_run_as_service(settings_checkbox_service_->isChecked()); });
     connect(settings_checkbox_refresh_password_, &QCheckBox::stateChanged, [this](int) {
@@ -1180,19 +1430,19 @@ void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {
     case lt::GUI::LoginStatus::Connected:
         // ui->statusBarLayout->removeWidget(login_progress_);
         // login_progress_->setVisible(false);
-        ui->labelLoginInfo->setText(tr("🟢Connected to server"));
+        link_label_login_info_->setText(tr("🟢Connected to server"));
         break;
     case lt::GUI::LoginStatus::Connecting:
         // ui->statusBarLayout->addWidget(login_progress_);
         // login_progress_->setVisible(true);
-        //  ui->labelLoginInfo->setStyleSheet("QLabel{}");
-        ui->labelLoginInfo->setText(tr("🟡Connecting..."));
+        //  login label style reserved
+        link_label_login_info_->setText(tr("🟡Connecting..."));
         break;
     case lt::GUI::LoginStatus::Disconnected:
     default:
         // ui->statusBarLayout->removeWidget(login_progress_);
         // login_progress_->setVisible(false);
-        ui->labelLoginInfo->setText(tr("🔴Disconnected from server"));
+        link_label_login_info_->setText(tr("🔴Disconnected from server"));
         if (status != lt::GUI::LoginStatus::Disconnected) {
             LOG(ERR) << "Unknown Login status " << static_cast<int32_t>(status);
         }
@@ -1203,11 +1453,11 @@ void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {
 void MainWindow::setServiceStatusInUIThread(lt::GUI::ServiceStatus status) {
     switch (status) {
     case lt::GUI::ServiceStatus::Up:
-        ui->labelControlledInfo->setText(tr("🟢Controlled module up"));
+        link_label_controlled_info_->setText(tr("🟢Controlled module up"));
         break;
     case lt::GUI::ServiceStatus::Down:
     default:
-        ui->labelControlledInfo->setText(tr("🔴Controlled module down"));
+        link_label_controlled_info_->setText(tr("🔴Controlled module down"));
         if (status != lt::GUI::ServiceStatus::Down) {
             LOG(ERR) << "Unknown ServiceStatus " << static_cast<int32_t>(status);
         }
@@ -1216,14 +1466,14 @@ void MainWindow::setServiceStatusInUIThread(lt::GUI::ServiceStatus status) {
 }
 
 void MainWindow::setupClientIndicators() {
-    QSizePolicy policy = ui->indicator1->sizePolicy();
+    QSizePolicy policy = link_indicator1_->sizePolicy();
     policy.setRetainSizeWhenHidden(true);
-    ui->indicator1->setSizePolicy(policy);
-    ui->indicator1->hide();
-    ui->indicator2->hide();
-    ui->labelClient1->setToolTipDuration(1000 * 10);
-    ui->labelClient1->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-    connect(ui->labelClient1, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
+    link_indicator1_->setSizePolicy(policy);
+    link_indicator1_->hide();
+    link_indicator2_->hide();
+    link_label_client1_->setToolTipDuration(1000 * 10);
+    link_label_client1_->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    connect(link_label_client1_, &QLabel::customContextMenuRequested, [this](const QPoint& pos) {
         QMenu* menu = new QMenu(this);
 
         QAction* gamepad = new QAction(gp_, tr("gamepad"), menu);
@@ -1290,7 +1540,7 @@ void MainWindow::setupClientIndicators() {
         menu->addAction(audio);
         menu->addAction(kick);
 
-        menu->exec(ui->labelClient1->mapToGlobal(pos));
+        menu->exec(link_label_client1_->mapToGlobal(pos));
     });
 }
 
@@ -1380,8 +1630,8 @@ void MainWindow::swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* ne
 }
 
 void MainWindow::onConnectBtnClicked() {
-    auto dev_id = ui->cbDeviceID->currentText();
-    auto token = ui->leditAccessToken->text().trimmed().toStdString();
+    auto dev_id = link_cb_device_id_->currentText();
+    auto token = link_ledit_access_token_->text().trimmed().toStdString();
     int64_t deviceID = dev_id.toLongLong();
     if (deviceID < 100'000'000 || deviceID > 999'999'999 || token.empty()) {
         LOG(ERR) << "DeviceID(" << dev_id.toStdString().c_str() << ") invalid!";
@@ -1398,12 +1648,12 @@ void MainWindow::onConnectBtnClicked() {
 void MainWindow::onShowTokenPressed() {
     if (token_showing_) {
         token_showing_ = false;
-        ui->labelMyAccessToken->setText("******");
+        link_label_my_access_token_->setText("******");
     }
     else {
         token_showing_ = true;
         token_last_show_time_ms_ = ltlib::steady_now_ms();
-        ui->labelMyAccessToken->setText(QString::fromStdString(access_token_text_));
+        link_label_my_access_token_->setText(QString::fromStdString(access_token_text_));
         QTimer::singleShot(5'100, std::bind(&MainWindow::onTimeoutHideToken, this));
     }
 }
@@ -1412,29 +1662,29 @@ void MainWindow::onRefreshTokenClicked() {
     params_.refresh_access_token();
     token_showing_ = true;
     token_last_show_time_ms_ = ltlib::steady_now_ms();
-    ui->labelMyAccessToken->setText(QString::fromStdString(access_token_text_));
+    link_label_my_access_token_->setText(QString::fromStdString(access_token_text_));
     QTimer::singleShot(5'100, std::bind(&MainWindow::onTimeoutHideToken, this));
 }
 
 void MainWindow::onCopyPressed() {
     auto clipboard = QApplication::clipboard();
-    QString device_id = ui->labelMyDeviceID->text();
+    QString device_id = link_label_my_device_id_->text();
     device_id = device_id.simplified();
     device_id.replace(" ", "");
     clipboard->setText(device_id);
-    ui->labelCopied->show();
-    QTimer::singleShot(2'000, [this]() { ui->labelCopied->hide(); });
+    link_label_copied_->show();
+    QTimer::singleShot(2'000, [this]() { link_label_copied_->hide(); });
 }
 
 void MainWindow::onUpdateIndicator() {
     if (!peer_client_device_id_.has_value()) {
         return;
     }
-    setPixmapForIndicator(enable_gamepad_, gamepad_hit_time_, ui->labelGamepad1, gp_white_,
+    setPixmapForIndicator(enable_gamepad_, gamepad_hit_time_, link_label_gamepad1_, gp_white_,
                           gp_gray_, gp_red_, gp_green_);
-    setPixmapForIndicator(enable_mouse_, mouse_hit_time_, ui->labelMouse1, mouse_white_,
+    setPixmapForIndicator(enable_mouse_, mouse_hit_time_, link_label_mouse1_, mouse_white_,
                           mouse_gray_, mouse_red_, mouse_green_);
-    setPixmapForIndicator(enable_keyboard_, keyboard_hit_time_, ui->labelKeyboard1, kb_white_,
+    setPixmapForIndicator(enable_keyboard_, keyboard_hit_time_, link_label_keyboard1_, kb_white_,
                           kb_gray_, kb_red_, kb_green_);
     QTimer::singleShot(50, this, &MainWindow::onUpdateIndicator);
 }
@@ -1446,7 +1696,7 @@ void MainWindow::onTimeoutHideToken() {
     int64_t now_ms = ltlib::steady_now_ms();
     if (token_last_show_time_ms_ + 5'000 <= now_ms) {
         token_showing_ = false;
-        ui->labelMyAccessToken->setText("******");
+        link_label_my_access_token_->setText("******");
     }
     else {
         QTimer::singleShot(token_last_show_time_ms_ + 5'100 - now_ms,
