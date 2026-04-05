@@ -13,3 +13,6 @@
 [submodule "third_party/imgui"]
 	path = third_party/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "src/transport/rtc2"]
+	path = src/transport/rtc2
+	url = https://github.com/numbaa/rtc2.git
