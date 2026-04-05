@@ -6,6 +6,7 @@
 
 #include "main_window_private.h"
 
+#include "main_window_actions_binder.h"
 #include "main_window_navigator.h"
 #include "main_window_status_presenter.h"
 
@@ -13,6 +14,7 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     : QMainWindow(parent)
     , params_(params)
     , ui(new Ui_MainWindow)
+    , actions_binder_(std::make_unique<MainWindowActionsBinder>())
     , navigator_(std::make_unique<MainWindowNavigator>(ui))
     , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)")) {
 

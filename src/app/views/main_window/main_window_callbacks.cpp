@@ -4,184 +4,56 @@
 
 #include "main_window_private.h"
 
+#include "main_window_actions_binder.h"
+
 void MainWindow::setupOtherCallbacks() {
-    // 注意，有些按下就有效，有些要按下再释放
-    connect(ui->btnLinkTab, &QPushButton::pressed, [this]() { switchToMainPage(); });
-    connect(ui->btnSettingsTab, &QPushButton::pressed, [this]() { switchToSettingPage(); });
-    connect(ui->btnManagerTab, &QPushButton::pressed, [this]() { switchToManagerPage(); });
-    connect(ui->btnAboutTab, &QPushButton::pressed, [this]() { switchToAboutPage(); });
-    connect(ui->btnMinimize, &QPushButton::clicked,
-            [this]() { setWindowState(Qt::WindowState::WindowMinimized); });
-    connect(ui->btnClose, &QPushButton::clicked, [this]() { hide(); });
-    connect(link_btn_copy_, &QPushButton::pressed, this, &MainWindow::onCopyPressed);
-    connect(link_btn_show_token_, &QPushButton::pressed, this, &MainWindow::onShowTokenPressed);
-    connect(link_btn_refresh_token_, &QPushButton::clicked, this, &MainWindow::onRefreshTokenClicked);
-    connect(link_btn_connect_, &QPushButton::clicked, this, &MainWindow::onConnectBtnClicked);
-    connect(settings_checkbox_service_, &QCheckBox::stateChanged,
-            [this](int) { params_.enable_run_as_service(settings_checkbox_service_->isChecked()); });
-    connect(settings_checkbox_refresh_password_, &QCheckBox::stateChanged, [this](int) {
-        params_.enable_auto_refresh_access_token(settings_checkbox_refresh_password_->isChecked());
-    });
-    connect(settings_checkbox_share_clipboard_, &QCheckBox::stateChanged, [this](int) {
-        params_.enable_share_clipboard(settings_checkbox_share_clipboard_->isChecked());
-    });
-    connect(settings_radio_windowed_fullscreen_, &QRadioButton::toggled,
-            [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
-    connect(settings_checkbox_tcp_, &QCheckBox::stateChanged,
-            [this](int) { params_.enable_tcp(settings_checkbox_tcp_->isChecked()); });
-    connect(settings_ledit_relay_, &QLineEdit::textChanged, [this](const QString& _text) {
-        if (_text.isEmpty()) {
-            settings_btn_relay_->setEnabled(true);
-            return;
-        }
-        QString text = _text;
-        int pos = text.length(); // -1; ???
-        QValidator::State state = relay_validator_.validate(text, pos);
-        settings_btn_relay_->setEnabled(state == QValidator::State::Acceptable);
-    });
-    connect(settings_btn_relay_, &QPushButton::clicked, [this]() {
-        settings_btn_relay_->setEnabled(false);
-        params_.set_relay_server(settings_ledit_relay_->text().trimmed().toStdString());
-    });
-    connect(settings_ledit_min_port_, &QLineEdit::textChanged, [this](const QString& _text) {
-        if (_text.trimmed().isEmpty() && settings_ledit_max_port_->text().trimmed().isEmpty()) {
-            settings_btn_port_range_->setEnabled(true);
-            return;
-        }
-        if (_text.trimmed().isEmpty() || settings_ledit_max_port_->text().trimmed().isEmpty()) {
-            settings_btn_port_range_->setEnabled(false);
-            return;
-        }
-        int min_port = _text.trimmed().toInt();
-        int max_port = settings_ledit_max_port_->text().trimmed().toInt();
-        if (min_port >= max_port) {
-            settings_btn_port_range_->setEnabled(false);
-        }
-        else {
-            settings_btn_port_range_->setEnabled(true);
-        }
-    });
-    connect(settings_ledit_max_port_, &QLineEdit::textChanged, [this](const QString& _text) {
-        if (_text.trimmed().isEmpty() && settings_ledit_min_port_->text().trimmed().isEmpty()) {
-            settings_btn_port_range_->setEnabled(true);
-            return;
-        }
-        if (_text.trimmed().isEmpty() || settings_ledit_min_port_->text().trimmed().isEmpty()) {
-            settings_btn_port_range_->setEnabled(false);
-            return;
-        }
-        int max_port = _text.trimmed().toInt();
-        int min_port = settings_ledit_min_port_->text().trimmed().toInt();
-        if (min_port >= max_port) {
-            settings_btn_port_range_->setEnabled(false);
-        }
-        else {
-            settings_btn_port_range_->setEnabled(true);
-        }
-    });
-    connect(settings_btn_port_range_, &QPushButton::clicked, [this]() {
-        if (settings_ledit_min_port_->text().trimmed().isEmpty() &&
-            settings_ledit_max_port_->text().trimmed().isEmpty()) {
-            params_.set_port_range(0, 0);
-            settings_btn_port_range_->setEnabled(false);
-            return;
-        }
-        if (settings_ledit_min_port_->text().trimmed().isEmpty() ||
-            settings_ledit_max_port_->text().trimmed().isEmpty()) {
-            return;
-        }
-        int min_port = settings_ledit_min_port_->text().trimmed().toInt();
-        int max_port = settings_ledit_max_port_->text().trimmed().toInt();
-        if (min_port < max_port && min_port > 1024 && min_port < 65536 && max_port > 1025 &&
-            max_port <= 65536) {
-            params_.set_port_range(min_port, max_port);
-            settings_btn_port_range_->setEnabled(false);
-        }
-    });
-    connect(settings_ledit_max_mbps_, &QLineEdit::textChanged, [this](const QString& _text) {
-        if (_text.trimmed().isEmpty()) {
-            settings_btn_max_mbps_->setEnabled(true);
-            return;
-        }
-        int mbps = _text.trimmed().toInt();
-        if (mbps >= 1 && mbps <= 100) {
-            settings_btn_max_mbps_->setEnabled(true);
-        }
-        else {
-            settings_btn_max_mbps_->setEnabled(false);
-        }
-    });
-    connect(settings_btn_max_mbps_, &QPushButton::clicked, [this]() {
-        if (settings_ledit_max_mbps_->text().trimmed().isEmpty()) {
-            params_.set_max_mbps(0);
-            settings_btn_max_mbps_->setEnabled(false);
-        }
-        else {
-            int mbps = settings_ledit_max_mbps_->text().trimmed().toInt();
-            if (mbps >= 1 && mbps <= 100) {
-                params_.set_max_mbps(static_cast<uint32_t>(mbps));
-                settings_btn_max_mbps_->setEnabled(false);
-            }
-        }
-    });
-    connect(settings_ledit_ignored_nic_, &QLineEdit::textChanged,
-            [this](const QString&) { settings_btn_ignored_nic_->setEnabled(true); });
-    connect(settings_btn_ignored_nic_, &QPushButton::clicked, [this]() {
-        settings_btn_ignored_nic_->setEnabled(false);
-        params_.set_ignored_nic(settings_ledit_ignored_nic_->text().trimmed().toStdString());
-    });
-    connect(settings_ledit_red_, &QLineEdit::textChanged,
-            std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(settings_ledit_green_, &QLineEdit::textChanged,
-            std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(settings_ledit_blue_, &QLineEdit::textChanged,
-            std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(settings_checkbox_overlay_, &QCheckBox::stateChanged,
-            [this](int) { params_.set_show_overlay(settings_checkbox_overlay_->isChecked()); });
-    connect(settings_btn_status_color_, &QPushButton::clicked, [this]() {
-        settings_btn_status_color_->setEnabled(false);
-        if (settings_ledit_red_->text().isEmpty() && settings_ledit_green_->text().isEmpty() &&
-            settings_ledit_blue_->text().isEmpty()) {
-            params_.set_status_color(-1);
-        }
-        else {
-            uint32_t red = static_cast<uint32_t>(settings_ledit_red_->text().trimmed().toInt());
-            uint32_t green = static_cast<uint32_t>(settings_ledit_green_->text().trimmed().toInt());
-            uint32_t blue = static_cast<uint32_t>(settings_ledit_blue_->text().trimmed().toInt());
-            params_.set_status_color((red << 24) | (green << 16) | (blue << 8));
-        }
-    });
-    connect(settings_ledit_mouse_accel_, &QLineEdit::textChanged, [this](const QString&) {
-        if (settings_ledit_mouse_accel_->text().isEmpty()) {
-            settings_btn_mouse_accel_->setEnabled(true);
-            return;
-        }
-        double accel = settings_ledit_mouse_accel_->text().trimmed().toDouble();
-        int64_t accel_int = static_cast<int64_t>(accel * 10);
-        if (accel_int >= 1 && accel_int <= 30) {
-            settings_btn_mouse_accel_->setEnabled(true);
-        }
-        else {
-            settings_btn_mouse_accel_->setEnabled(false);
-        }
-    });
-    connect(settings_btn_mouse_accel_, &QPushButton::clicked, [this]() {
-        settings_btn_mouse_accel_->setEnabled(false);
-        if (settings_ledit_mouse_accel_->text().isEmpty()) {
-            params_.set_rel_mouse_accel(0);
-        }
-        else {
-            double accel = settings_ledit_mouse_accel_->text().trimmed().toDouble();
-            int64_t accel_int = static_cast<int64_t>(accel * 10);
-            if (accel_int >= 1 && accel_int <= 30) {
-                params_.set_rel_mouse_accel(accel_int);
-            }
-            else {
-                LOG(ERR) << "Set relative mouse accel '"
-                         << settings_ledit_mouse_accel_->text().toStdString() << "' failed";
-            }
-        }
-    });
+    MainWindowActionsBindingContext context;
+    context.owner = this;
+    context.ui = ui;
+    context.params = &params_;
+    context.relay_validator = &relay_validator_;
+
+    context.link_cb_device_id = link_cb_device_id_;
+    context.link_btn_copy = link_btn_copy_;
+    context.link_btn_show_token = link_btn_show_token_;
+    context.link_btn_refresh_token = link_btn_refresh_token_;
+    context.link_btn_connect = link_btn_connect_;
+
+    context.settings_checkbox_service = settings_checkbox_service_;
+    context.settings_checkbox_refresh_password = settings_checkbox_refresh_password_;
+    context.settings_checkbox_share_clipboard = settings_checkbox_share_clipboard_;
+    context.settings_radio_windowed_fullscreen = settings_radio_windowed_fullscreen_;
+    context.settings_checkbox_tcp = settings_checkbox_tcp_;
+    context.settings_ledit_relay = settings_ledit_relay_;
+    context.settings_btn_relay = settings_btn_relay_;
+    context.settings_ledit_min_port = settings_ledit_min_port_;
+    context.settings_ledit_max_port = settings_ledit_max_port_;
+    context.settings_btn_port_range = settings_btn_port_range_;
+    context.settings_ledit_max_mbps = settings_ledit_max_mbps_;
+    context.settings_btn_max_mbps = settings_btn_max_mbps_;
+    context.settings_ledit_ignored_nic = settings_ledit_ignored_nic_;
+    context.settings_btn_ignored_nic = settings_btn_ignored_nic_;
+    context.settings_ledit_red = settings_ledit_red_;
+    context.settings_ledit_green = settings_ledit_green_;
+    context.settings_ledit_blue = settings_ledit_blue_;
+    context.settings_checkbox_overlay = settings_checkbox_overlay_;
+    context.settings_btn_status_color = settings_btn_status_color_;
+    context.settings_ledit_mouse_accel = settings_ledit_mouse_accel_;
+    context.settings_btn_mouse_accel = settings_btn_mouse_accel_;
+
+    context.switch_to_main_page = [this]() { switchToMainPage(); };
+    context.switch_to_setting_page = [this]() { switchToSettingPage(); };
+    context.switch_to_manager_page = [this]() { switchToManagerPage(); };
+    context.switch_to_about_page = [this]() { switchToAboutPage(); };
+    context.on_copy_pressed = [this]() { onCopyPressed(); };
+    context.on_show_token_pressed = [this]() { onShowTokenPressed(); };
+    context.on_refresh_token_clicked = [this]() { onRefreshTokenClicked(); };
+    context.on_connect_btn_clicked = [this]() { onConnectBtnClicked(); };
+    context.on_status_color_changed = [this](const QString& text) {
+        onLineEditStatusColorChanged(text);
+    };
+
+    actions_binder_->bind(context);
 }
 
 void MainWindow::onConnectBtnClicked() {

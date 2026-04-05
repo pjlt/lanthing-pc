@@ -51,6 +51,7 @@ class QRadioButton;
 class QLineEdit;
 class QComboBox;
 class QFrame;
+class MainWindowActionsBinder;
 class MainWindowNavigator;
 class MainWindowStatusPresenter;
 
@@ -247,6 +248,7 @@ private:
     QTableWidget* trusted_devices_table_ = nullptr;
 
     Ui_MainWindow* ui;
+    std::unique_ptr<MainWindowActionsBinder> actions_binder_;
     std::unique_ptr<MainWindowNavigator> navigator_;
     std::unique_ptr<MainWindowStatusPresenter> status_presenter_;
     QRegularExpressionValidator relay_validator_;

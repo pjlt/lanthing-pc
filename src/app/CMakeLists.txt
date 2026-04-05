@@ -33,6 +33,8 @@ set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_actions_binder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_actions_binder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_manager_page.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_manager_page.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_about_page.h
