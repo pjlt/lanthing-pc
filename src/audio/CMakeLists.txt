@@ -40,3 +40,18 @@ target_link_libraries(lt_module_audio
 )
 
 set_code_analysis(lt_module_audio ${LT_ENABLE_CODE_ANALYSIS})
+
+if (LT_ENABLE_TEST AND BUILD_TESTING)
+    add_executable(test_fake_audio_capturer
+        ${CMAKE_CURRENT_SOURCE_DIR}/capturer/fake_audio_capturer_tests.cpp
+    )
+    target_link_libraries(test_fake_audio_capturer
+        GTest::gtest
+        GTest::gtest_main
+        protobuf::libprotobuf-lite
+        transport_api
+        lt_module_ltlib
+        lt_module_audio
+    )
+    add_test(NAME test_fake_audio_capturer COMMAND test_fake_audio_capturer)
+endif()

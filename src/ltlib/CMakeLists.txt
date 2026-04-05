@@ -123,6 +123,39 @@ if (LT_ENABLE_TEST AND BUILD_TESTING)
         set(LT_MODULE_LTLIB_TEST_PLAT_LIBS)
     endif()
 
+    add_executable(test_reconnect_interval
+        ${CMAKE_CURRENT_SOURCE_DIR}/reconnect_interval_tests.cpp
+    )
+    target_link_libraries(test_reconnect_interval
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_ltlib
+        ${LT_MODULE_LTLIB_TEST_PLAT_LIBS}
+    )
+    add_test(NAME test_reconnect_interval COMMAND test_reconnect_interval)
+
+    add_executable(test_transform
+        ${CMAKE_CURRENT_SOURCE_DIR}/transform_tests.cpp
+    )
+    target_link_libraries(test_transform
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_ltlib
+        ${LT_MODULE_LTLIB_TEST_PLAT_LIBS}
+    )
+    add_test(NAME test_transform COMMAND test_transform)
+
+    add_executable(test_strings
+        ${CMAKE_CURRENT_SOURCE_DIR}/strings_tests.cpp
+    )
+    target_link_libraries(test_strings
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_ltlib
+        ${LT_MODULE_LTLIB_TEST_PLAT_LIBS}
+    )
+    add_test(NAME test_strings COMMAND test_strings)
+
     add_executable(test_settings
         ${CMAKE_CURRENT_SOURCE_DIR}/settings_tests.cpp
     )

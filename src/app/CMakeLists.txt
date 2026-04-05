@@ -93,3 +93,31 @@ if (LT_WINDOWS)
 endif()
 
 set_code_analysis(lt_module_app ${LT_ENABLE_CODE_ANALYSIS})
+
+if (LT_ENABLE_TEST AND BUILD_TESTING)
+    add_executable(test_friendly_error_code
+        ${CMAKE_CURRENT_SOURCE_DIR}/views/friendly_error_code_tests.cpp
+    )
+    target_link_libraries(test_friendly_error_code
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_app
+        ltproto
+        protobuf::libprotobuf-lite
+        Qt6::Widgets
+        Qt6::Gui
+    )
+    add_test(NAME test_friendly_error_code COMMAND test_friendly_error_code)
+
+    add_executable(test_access_token_validator
+        ${CMAKE_CURRENT_SOURCE_DIR}/views/components/access_token_validator_tests.cpp
+    )
+    target_link_libraries(test_access_token_validator
+        GTest::gtest
+        GTest::gtest_main
+        lt_module_app
+        Qt6::Widgets
+        Qt6::Gui
+    )
+    add_test(NAME test_access_token_validator COMMAND test_access_token_validator)
+endif()
