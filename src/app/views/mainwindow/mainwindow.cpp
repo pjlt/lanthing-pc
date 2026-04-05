@@ -329,7 +329,7 @@ void MainWindow::rebuildLinkPageInCode() {
     frame_identity->setObjectName("linkRow1");
     auto* identity_layout = new QVBoxLayout(frame_identity);
     identity_layout->setSpacing(0);
-    identity_layout->setContentsMargins(30, 0, 30, 0);
+    identity_layout->setContentsMargins(30, 9, 30, 9);
     auto* id_row = new QHBoxLayout();
     id_row->setSpacing(0);
     auto* label_device_id = new QLabel(tr("Device ID"), frame_identity);
@@ -350,7 +350,6 @@ void MainWindow::rebuildLinkPageInCode() {
     link_label_copied_->setMaximumWidth(60);
     link_label_copied_->setStyleSheet("font: 9pt;");
     id_row->addWidget(link_label_copied_);
-    id_row->addStretch(1);
     identity_layout->addLayout(id_row);
 
     auto* token_row = new QHBoxLayout();
@@ -374,14 +373,13 @@ void MainWindow::rebuildLinkPageInCode() {
     link_btn_refresh_token_->setText(QString());
     link_btn_refresh_token_->setIcon(QIcon(":/res/icons/cil-reload.png"));
     token_row->addWidget(link_btn_refresh_token_);
-    token_row->addStretch(1);
     identity_layout->addLayout(token_row);
     root_layout->addWidget(frame_identity);
 
     auto* frame_connect = new QFrame(page_link);
     frame_connect->setObjectName("linkRow2");
     auto* connect_row = new QVBoxLayout(frame_connect);
-    connect_row->setSpacing(0);
+    connect_row->setSpacing(6);
     connect_row->setContentsMargins(30, 0, 30, 0);
     link_cb_device_id_ = new QComboBox(frame_connect);
     link_cb_device_id_->setObjectName("cbDeviceID");
@@ -456,17 +454,15 @@ void MainWindow::rebuildLinkPageInCode() {
     frame_status->setStyleSheet("border: none; background-color: transparent;");
     auto* status_row = new QHBoxLayout(frame_status);
     status_row->setContentsMargins(30, 10, 30, 10);
-    link_label_login_info_ = new QLabel(frame_status);
-    link_label_login_info_->setObjectName("labelLoginInfo");
-    link_label_controlled_info_ = new QLabel(frame_status);
-    link_label_controlled_info_->setObjectName("labelControlledInfo");
     link_label_version_ = new QLabel(frame_status);
     link_label_version_->setObjectName("labelVersion");
-    status_row->addWidget(link_label_login_info_);
-    status_row->addWidget(link_label_controlled_info_);
     status_row->addStretch(1);
     status_row->addWidget(link_label_version_);
     root_layout->addWidget(frame_status);
+
+    // 状态文本继续复用原有侧边栏控件，避免页面内重复显示。
+    link_label_login_info_ = ui->labelLoginInfo;
+    link_label_controlled_info_ = ui->labelControlledInfo;
 
     if (old_page != nullptr) {
         ui->stackedWidget->removeWidget(old_page);
