@@ -2,6 +2,13 @@
 #include <ltlib/settings.h>
 #include <ltlib/times.h>
 
+#include <algorithm>
+#include <cstdio>
+#include <fstream>
+#include <string>
+#include <thread>
+#include <vector>
+
 static const char* DBName = "SettingsSqlite.db";
 
 class SettingsSqliteTest : public testing::Test {
@@ -68,4 +75,91 @@ TEST_F(SettingsSqliteTest, UpdateTime) {
     auto updated_at = settings_->getUpdateTime("int_key");
     ASSERT_TRUE(updated_at.has_value());
     EXPECT_TRUE(updated_at.value() >= now - 1 && updated_at.value() <= now + 1);
+}
+
+TEST_F(SettingsSqliteTest, KeysStartWithAndDeleteKey) {
+    settings_->setInteger("pref.alpha", 1);
+    settings_->setInteger("pref.beta", 2);
+    settings_->setInteger("other.gamma", 3);
+
+    auto keys = settings_->getKeysStartWith("pref.");
+    std::sort(keys.begin(), keys.end());
+    ASSERT_EQ(keys.size(), 2U);
+    EXPECT_EQ(keys[0], "pref.alpha");
+    EXPECT_EQ(keys[1], "pref.beta");
+
+    settings_->deleteKey("pref.alpha");
+    EXPECT_EQ(settings_->getInteger("pref.alpha"), std::nullopt);
+    EXPECT_EQ(settings_->getInteger("pref.beta"), 2);
+}
+
+TEST_F(SettingsSqliteTest, EmptyKeyIsIgnored) {
+    settings_->setInteger("", 123);
+    settings_->setBoolean("", true);
+    settings_->setString("", "value");
+
+    EXPECT_EQ(settings_->getInteger(""), std::nullopt);
+    EXPECT_EQ(settings_->getBoolean(""), std::nullopt);
+    EXPECT_EQ(settings_->getString(""), std::nullopt);
+    EXPECT_TRUE(settings_->getKeysStartWith("").empty());
+}
+
+TEST_F(SettingsSqliteTest, MismatchedValueTypeReturnsNullopt) {
+    settings_->setString("mixed", "text");
+    settings_->setInteger("int_only", 42);
+
+    EXPECT_EQ(settings_->getInteger("mixed"), std::nullopt);
+    EXPECT_EQ(settings_->getBoolean("int_only"), std::nullopt);
+}
+
+TEST_F(SettingsSqliteTest, ConcurrentWritesRemainReadable) {
+    constexpr int kThreadCount = 8;
+    constexpr int kLoopCount = 100;
+
+    std::vector<std::thread> workers;
+    workers.reserve(kThreadCount);
+
+    for (int tid = 0; tid < kThreadCount; ++tid) {
+        workers.emplace_back([this, tid]() {
+            const std::string key = "concurrent." + std::to_string(tid);
+            for (int i = 0; i < kLoopCount; ++i) {
+                settings_->setInteger(key, tid * 1000 + i);
+            }
+        });
+    }
+
+    for (auto& worker : workers) {
+        worker.join();
+    }
+
+    for (int tid = 0; tid < kThreadCount; ++tid) {
+        const std::string key = "concurrent." + std::to_string(tid);
+        const auto value = settings_->getInteger(key);
+        ASSERT_TRUE(value.has_value());
+        EXPECT_EQ(value.value(), tid * 1000 + (kLoopCount - 1));
+    }
+}
+
+TEST(SettingsSqliteStandaloneTest, CorruptedFileNeedsRecreateToRecover) {
+    static const char* kCorruptedDbName = "SettingsSqliteCorrupted.db";
+
+    {
+        std::ofstream out(kCorruptedDbName, std::ios::binary | std::ios::trunc);
+        ASSERT_TRUE(out.is_open());
+        out << "not a sqlite database";
+    }
+
+    auto broken = ltlib::Settings::createWithPathForTest(ltlib::Settings::Storage::Sqlite,
+                                                         kCorruptedDbName);
+    EXPECT_EQ(broken, nullptr);
+
+    std::remove(kCorruptedDbName);
+
+    auto recovered = ltlib::Settings::createWithPathForTest(ltlib::Settings::Storage::Sqlite,
+                                                            kCorruptedDbName);
+    ASSERT_NE(recovered, nullptr);
+    recovered->setString("ok", "1");
+    EXPECT_EQ(recovered->getString("ok"), "1");
+
+    std::remove(kCorruptedDbName);
 }
