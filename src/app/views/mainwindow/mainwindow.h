@@ -45,6 +45,9 @@ QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow;
 class QTableWidget;
+class QCheckBox;
+class QRadioButton;
+class QLineEdit;
 
 QT_END_NAMESPACE
 
@@ -96,6 +99,8 @@ private:
     bool isUiThread() const;
 
     void postToUiThread(std::function<void()> callback);
+
+    void rebuildSettingsPageInCode();
 
     void rebuildManagerPageInCode();
 
@@ -190,6 +195,30 @@ private:
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
     int64_t device_id_ = -1;
+    QCheckBox* settings_checkbox_service_ = nullptr;
+    QCheckBox* settings_checkbox_refresh_password_ = nullptr;
+    QCheckBox* settings_checkbox_share_clipboard_ = nullptr;
+    QRadioButton* settings_radio_absolute_mouse_ = nullptr;
+    QRadioButton* settings_radio_relative_mouse_ = nullptr;
+    QLineEdit* settings_ledit_relay_ = nullptr;
+    QPushButton* settings_btn_relay_ = nullptr;
+    QRadioButton* settings_radio_real_fullscreen_ = nullptr;
+    QRadioButton* settings_radio_windowed_fullscreen_ = nullptr;
+    QCheckBox* settings_checkbox_tcp_ = nullptr;
+    QLineEdit* settings_ledit_min_port_ = nullptr;
+    QLineEdit* settings_ledit_max_port_ = nullptr;
+    QPushButton* settings_btn_port_range_ = nullptr;
+    QLineEdit* settings_ledit_ignored_nic_ = nullptr;
+    QPushButton* settings_btn_ignored_nic_ = nullptr;
+    QLineEdit* settings_ledit_max_mbps_ = nullptr;
+    QPushButton* settings_btn_max_mbps_ = nullptr;
+    QCheckBox* settings_checkbox_overlay_ = nullptr;
+    QLineEdit* settings_ledit_red_ = nullptr;
+    QLineEdit* settings_ledit_green_ = nullptr;
+    QLineEdit* settings_ledit_blue_ = nullptr;
+    QPushButton* settings_btn_status_color_ = nullptr;
+    QLineEdit* settings_ledit_mouse_accel_ = nullptr;
+    QPushButton* settings_btn_mouse_accel_ = nullptr;
     QTableWidget* trusted_devices_table_ = nullptr;
 
     Ui_MainWindow* ui;

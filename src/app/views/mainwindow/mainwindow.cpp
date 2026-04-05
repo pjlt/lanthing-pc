@@ -42,10 +42,14 @@
 #include <QMouseEvent>
 #include <QtCore/qtimer.h>
 #include <QtWidgets/QFrame>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLayout>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QRadioButton>
 #include <QtWidgets/QStackedLayout>
 #include <QtWidgets/QTableWidget>
 #include <QtWidgets/QVBoxLayout>
@@ -164,6 +168,9 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     // 客户端指示器
     setupClientIndicators();
 
+    // 用纯C++替换Settings页面，作为去.ui迁移样板。
+    rebuildSettingsPageInCode();
+
     // '设置'页面
     setupSettingsPage();
 
@@ -216,6 +223,193 @@ void MainWindow::postToUiThread(std::function<void()> callback) {
         timer->deleteLater();
     });
     QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
+}
+
+void MainWindow::rebuildSettingsPageInCode() {
+    if (ui->stackedWidget == nullptr) {
+        return;
+    }
+
+    QWidget* old_page = nullptr;
+    int settings_index = -1;
+    for (int i = 0; i < ui->stackedWidget->count(); i++) {
+        QWidget* page = ui->stackedWidget->widget(i);
+        if (page != nullptr && page->objectName() == QStringLiteral("pageSettings")) {
+            old_page = page;
+            settings_index = i;
+            break;
+        }
+    }
+
+    if (settings_index < 0) {
+        settings_index = ui->stackedWidget->count();
+    }
+
+    auto* page_settings = new QWidget(ui->stackedWidget);
+    page_settings->setObjectName("pageSettings");
+    page_settings->setStyleSheet("#pageSettings .QLineEdit {"
+                                 "\n\tbackground-color: rgb(33, 37, 43);"
+                                 "\n\tborder-radius: 5px;"
+                                 "\n\tborder: 2px solid rgb(33, 37, 43);"
+                                 "\n\tpadding-left: 10px;"
+                                 "\n\tselection-color: rgb(255, 255, 255);"
+                                 "\n\tselection-background-color: rgb(255, 121, 198);"
+                                 "\n}"
+                                 "\n#pageSettings .QLineEdit:hover {"
+                                 "\n\tborder: 2px solid rgb(64, 71, 88);"
+                                 "\n}"
+                                 "\n#pageSettings .QLineEdit:focus {"
+                                 "\n\tborder: 2px solid rgb(91, 101, 124);"
+                                 "\n}"
+                                 "\n"
+                                 "\n#pageSettings .QPushButton {"
+                                 "\n\tborder: 2px solid rgb(52, 59, 72);"
+                                 "\n\tborder-radius: 5px;"
+                                 "\n\tbackground-color: rgb(52, 59, 72);"
+                                 "\n}"
+                                 "\n#pageSettings .QPushButton:hover {"
+                                 "\n\tbackground-color: rgb(57, 65, 80);"
+                                 "\n\tborder: 2px solid rgb(61, 70, 86);"
+                                 "\n}"
+                                 "\n#pageSettings .QPushButton:pressed {"
+                                 "\n\tbackground-color: rgb(35, 40, 49);"
+                                 "\n\tborder: 2px solid rgb(43, 50, 61);"
+                                 "\n}");
+
+    auto* page_layout = new QVBoxLayout(page_settings);
+    page_layout->setContentsMargins(30, 9, 9, 9);
+
+    auto* scroll = new QScrollArea(page_settings);
+    scroll->setWidgetResizable(true);
+    auto* scroll_contents = new QWidget(scroll);
+    scroll_contents->setMinimumSize(QSize(0, 850));
+    auto* content_layout = new QVBoxLayout(scroll_contents);
+
+    auto* gb_system = new QGroupBox(tr("System"), scroll_contents);
+    auto* gb_system_layout = new QVBoxLayout(gb_system);
+    gb_system_layout->setContentsMargins(9, 30, 9, 30);
+    settings_checkbox_service_ = new QCheckBox(tr("Run as Service"), gb_system);
+    settings_checkbox_refresh_password_ =
+        new QCheckBox(tr("Auto refresh access token"), gb_system);
+    settings_checkbox_share_clipboard_ = new QCheckBox(tr("Share Clipboard"), gb_system);
+    gb_system_layout->addWidget(settings_checkbox_service_);
+    gb_system_layout->addWidget(settings_checkbox_refresh_password_);
+    gb_system_layout->addWidget(settings_checkbox_share_clipboard_);
+    content_layout->addWidget(gb_system);
+
+    auto* gb_mouse_mode = new QGroupBox(tr("Default Mouse Mode (Win+Shift+X)"), scroll_contents);
+    auto* gb_mouse_mode_layout = new QVBoxLayout(gb_mouse_mode);
+    gb_mouse_mode_layout->setContentsMargins(9, 30, 9, 30);
+    settings_radio_absolute_mouse_ = new QRadioButton(tr("Absolute Mode"), gb_mouse_mode);
+    settings_radio_relative_mouse_ = new QRadioButton(tr("Relative Mode"), gb_mouse_mode);
+    gb_mouse_mode_layout->addWidget(settings_radio_absolute_mouse_);
+    gb_mouse_mode_layout->addWidget(settings_radio_relative_mouse_);
+    content_layout->addWidget(gb_mouse_mode);
+
+    auto* gb_fullscreen = new QGroupBox(tr("Fullscreen Mode"), scroll_contents);
+    auto* gb_fullscreen_layout = new QVBoxLayout(gb_fullscreen);
+    gb_fullscreen_layout->setContentsMargins(9, 30, 9, 30);
+    settings_radio_real_fullscreen_ = new QRadioButton(tr("Real Fullscreen"), gb_fullscreen);
+    settings_radio_windowed_fullscreen_ =
+        new QRadioButton(tr("Windowed Fullscreen"), gb_fullscreen);
+    gb_fullscreen_layout->addWidget(settings_radio_real_fullscreen_);
+    gb_fullscreen_layout->addWidget(settings_radio_windowed_fullscreen_);
+    content_layout->addWidget(gb_fullscreen);
+
+    auto* gb_transport = new QGroupBox(tr("Transport"), scroll_contents);
+    auto* gb_transport_layout = new QVBoxLayout(gb_transport);
+    gb_transport_layout->setContentsMargins(9, 30, 9, 30);
+    settings_checkbox_tcp_ = new QCheckBox(tr("Enable TCP"), gb_transport);
+    gb_transport_layout->addWidget(settings_checkbox_tcp_);
+    auto* row_ports = new QHBoxLayout();
+    settings_ledit_min_port_ = new QLineEdit(gb_transport);
+    settings_ledit_min_port_->setPlaceholderText(tr("Min Port"));
+    settings_ledit_max_port_ = new QLineEdit(gb_transport);
+    settings_ledit_max_port_->setPlaceholderText(tr("Max Port"));
+    settings_btn_port_range_ = new QPushButton(tr("Confirm"), gb_transport);
+    row_ports->addWidget(settings_ledit_min_port_);
+    row_ports->addWidget(settings_ledit_max_port_);
+    row_ports->addWidget(settings_btn_port_range_);
+    gb_transport_layout->addLayout(row_ports);
+    content_layout->addWidget(gb_transport);
+
+    auto* gb_network = new QGroupBox(tr("Network"), scroll_contents);
+    auto* gb_network_layout = new QVBoxLayout(gb_network);
+    gb_network_layout->setContentsMargins(9, 30, 9, 30);
+    auto* row_relay = new QHBoxLayout();
+    settings_ledit_relay_ = new QLineEdit(gb_network);
+    settings_ledit_relay_->setPlaceholderText(tr("relay:host:token:user"));
+    settings_btn_relay_ = new QPushButton(tr("Confirm"), gb_network);
+    row_relay->addWidget(settings_ledit_relay_);
+    row_relay->addWidget(settings_btn_relay_);
+    gb_network_layout->addLayout(row_relay);
+    auto* row_nic = new QHBoxLayout();
+    settings_ledit_ignored_nic_ = new QLineEdit(gb_network);
+    settings_ledit_ignored_nic_->setPlaceholderText(tr("Ignored NIC list"));
+    settings_btn_ignored_nic_ = new QPushButton(tr("Confirm"), gb_network);
+    row_nic->addWidget(settings_ledit_ignored_nic_);
+    row_nic->addWidget(settings_btn_ignored_nic_);
+    gb_network_layout->addLayout(row_nic);
+    content_layout->addWidget(gb_network);
+
+    auto* gb_bandwidth = new QGroupBox(tr("Bandwidth"), scroll_contents);
+    auto* gb_bandwidth_layout = new QVBoxLayout(gb_bandwidth);
+    gb_bandwidth_layout->setContentsMargins(9, 30, 9, 30);
+    auto* row_mbps = new QHBoxLayout();
+    settings_ledit_max_mbps_ = new QLineEdit(gb_bandwidth);
+    settings_ledit_max_mbps_->setPlaceholderText(tr("Max Mbps (1-100)"));
+    settings_btn_max_mbps_ = new QPushButton(tr("Confirm"), gb_bandwidth);
+    row_mbps->addWidget(settings_ledit_max_mbps_);
+    row_mbps->addWidget(settings_btn_max_mbps_);
+    gb_bandwidth_layout->addLayout(row_mbps);
+    content_layout->addWidget(gb_bandwidth);
+
+    auto* gb_overlay = new QGroupBox(tr("Overlay"), scroll_contents);
+    auto* gb_overlay_layout = new QVBoxLayout(gb_overlay);
+    gb_overlay_layout->setContentsMargins(9, 30, 9, 30);
+    settings_checkbox_overlay_ = new QCheckBox(tr("Show overlay"), gb_overlay);
+    gb_overlay_layout->addWidget(settings_checkbox_overlay_);
+    content_layout->addWidget(gb_overlay);
+
+    auto* gb_status_color = new QGroupBox(tr("Status Color"), scroll_contents);
+    auto* gb_status_color_layout = new QVBoxLayout(gb_status_color);
+    gb_status_color_layout->setContentsMargins(9, 30, 9, 30);
+    auto* row_color = new QHBoxLayout();
+    settings_ledit_red_ = new QLineEdit(gb_status_color);
+    settings_ledit_red_->setPlaceholderText(QStringLiteral("R"));
+    settings_ledit_green_ = new QLineEdit(gb_status_color);
+    settings_ledit_green_->setPlaceholderText(QStringLiteral("G"));
+    settings_ledit_blue_ = new QLineEdit(gb_status_color);
+    settings_ledit_blue_->setPlaceholderText(QStringLiteral("B"));
+    settings_btn_status_color_ = new QPushButton(tr("Confirm"), gb_status_color);
+    row_color->addWidget(settings_ledit_red_);
+    row_color->addWidget(settings_ledit_green_);
+    row_color->addWidget(settings_ledit_blue_);
+    row_color->addWidget(settings_btn_status_color_);
+    gb_status_color_layout->addLayout(row_color);
+    content_layout->addWidget(gb_status_color);
+
+    auto* gb_mouse = new QGroupBox(tr("Relative Mouse Accel"), scroll_contents);
+    auto* gb_mouse_layout = new QVBoxLayout(gb_mouse);
+    gb_mouse_layout->setContentsMargins(9, 30, 9, 30);
+    auto* row_accel = new QHBoxLayout();
+    settings_ledit_mouse_accel_ = new QLineEdit(gb_mouse);
+    settings_ledit_mouse_accel_->setPlaceholderText(tr("0.1 - 3.0"));
+    settings_btn_mouse_accel_ = new QPushButton(tr("Confirm"), gb_mouse);
+    row_accel->addWidget(settings_ledit_mouse_accel_);
+    row_accel->addWidget(settings_btn_mouse_accel_);
+    gb_mouse_layout->addLayout(row_accel);
+    content_layout->addWidget(gb_mouse);
+
+    content_layout->addStretch(1);
+    scroll->setWidget(scroll_contents);
+    page_layout->addWidget(scroll);
+
+    if (old_page != nullptr) {
+        ui->stackedWidget->removeWidget(old_page);
+        old_page->deleteLater();
+    }
+    ui->stackedWidget->insertWidget(settings_index, page_settings);
 }
 
 void MainWindow::rebuildManagerPageInCode() {
@@ -752,168 +946,168 @@ void MainWindow::setupOtherCallbacks() {
     connect(ui->btnShowToken, &QPushButton::pressed, this, &MainWindow::onShowTokenPressed);
     connect(ui->btnRefreshToken, &QPushButton::clicked, this, &MainWindow::onRefreshTokenClicked);
     connect(ui->btnConnect, &QPushButton::clicked, this, &MainWindow::onConnectBtnClicked);
-    connect(ui->checkboxService, &QCheckBox::stateChanged,
-            [this](int) { params_.enable_run_as_service(ui->checkboxService->isChecked()); });
-    connect(ui->checkboxRefreshPassword, &QCheckBox::stateChanged, [this](int) {
-        params_.enable_auto_refresh_access_token(ui->checkboxRefreshPassword->isChecked());
+    connect(settings_checkbox_service_, &QCheckBox::stateChanged,
+            [this](int) { params_.enable_run_as_service(settings_checkbox_service_->isChecked()); });
+    connect(settings_checkbox_refresh_password_, &QCheckBox::stateChanged, [this](int) {
+        params_.enable_auto_refresh_access_token(settings_checkbox_refresh_password_->isChecked());
     });
-    connect(ui->checkboxShareClipboard, &QCheckBox::stateChanged, [this](int) {
-        params_.enable_share_clipboard(ui->checkboxShareClipboard->isChecked());
+    connect(settings_checkbox_share_clipboard_, &QCheckBox::stateChanged, [this](int) {
+        params_.enable_share_clipboard(settings_checkbox_share_clipboard_->isChecked());
     });
-    connect(ui->radioWindowedFullscreen, &QRadioButton::toggled,
+    connect(settings_radio_windowed_fullscreen_, &QRadioButton::toggled,
             [this](bool is_windowed) { params_.set_fullscreen_mode(is_windowed); });
-    connect(ui->checkBoxTCP, &QCheckBox::stateChanged,
-            [this](int) { params_.enable_tcp(ui->checkBoxTCP->isChecked()); });
-    connect(ui->leditRelay, &QLineEdit::textChanged, [this](const QString& _text) {
+    connect(settings_checkbox_tcp_, &QCheckBox::stateChanged,
+            [this](int) { params_.enable_tcp(settings_checkbox_tcp_->isChecked()); });
+    connect(settings_ledit_relay_, &QLineEdit::textChanged, [this](const QString& _text) {
         if (_text.isEmpty()) {
-            ui->btnRelay->setEnabled(true);
+            settings_btn_relay_->setEnabled(true);
             return;
         }
         QString text = _text;
         int pos = text.length(); // -1; ???
         QValidator::State state = relay_validator_.validate(text, pos);
-        ui->btnRelay->setEnabled(state == QValidator::State::Acceptable);
+        settings_btn_relay_->setEnabled(state == QValidator::State::Acceptable);
     });
-    connect(ui->btnRelay, &QPushButton::clicked, [this]() {
-        ui->btnRelay->setEnabled(false);
-        params_.set_relay_server(ui->leditRelay->text().trimmed().toStdString());
+    connect(settings_btn_relay_, &QPushButton::clicked, [this]() {
+        settings_btn_relay_->setEnabled(false);
+        params_.set_relay_server(settings_ledit_relay_->text().trimmed().toStdString());
     });
-    connect(ui->leditMinPort, &QLineEdit::textChanged, [this](const QString& _text) {
-        if (_text.trimmed().isEmpty() && ui->leditMaxPort->text().trimmed().isEmpty()) {
-            ui->btnPortRange->setEnabled(true);
+    connect(settings_ledit_min_port_, &QLineEdit::textChanged, [this](const QString& _text) {
+        if (_text.trimmed().isEmpty() && settings_ledit_max_port_->text().trimmed().isEmpty()) {
+            settings_btn_port_range_->setEnabled(true);
             return;
         }
-        if (_text.trimmed().isEmpty() || ui->leditMaxPort->text().trimmed().isEmpty()) {
-            ui->btnPortRange->setEnabled(false);
+        if (_text.trimmed().isEmpty() || settings_ledit_max_port_->text().trimmed().isEmpty()) {
+            settings_btn_port_range_->setEnabled(false);
             return;
         }
         int min_port = _text.trimmed().toInt();
-        int max_port = ui->leditMaxPort->text().trimmed().toInt();
+        int max_port = settings_ledit_max_port_->text().trimmed().toInt();
         if (min_port >= max_port) {
-            ui->btnPortRange->setEnabled(false);
+            settings_btn_port_range_->setEnabled(false);
         }
         else {
-            ui->btnPortRange->setEnabled(true);
+            settings_btn_port_range_->setEnabled(true);
         }
     });
-    connect(ui->leditMaxPort, &QLineEdit::textChanged, [this](const QString& _text) {
-        if (_text.trimmed().isEmpty() && ui->leditMinPort->text().trimmed().isEmpty()) {
-            ui->btnPortRange->setEnabled(true);
+    connect(settings_ledit_max_port_, &QLineEdit::textChanged, [this](const QString& _text) {
+        if (_text.trimmed().isEmpty() && settings_ledit_min_port_->text().trimmed().isEmpty()) {
+            settings_btn_port_range_->setEnabled(true);
             return;
         }
-        if (_text.trimmed().isEmpty() || ui->leditMinPort->text().trimmed().isEmpty()) {
-            ui->btnPortRange->setEnabled(false);
+        if (_text.trimmed().isEmpty() || settings_ledit_min_port_->text().trimmed().isEmpty()) {
+            settings_btn_port_range_->setEnabled(false);
             return;
         }
         int max_port = _text.trimmed().toInt();
-        int min_port = ui->leditMinPort->text().trimmed().toInt();
+        int min_port = settings_ledit_min_port_->text().trimmed().toInt();
         if (min_port >= max_port) {
-            ui->btnPortRange->setEnabled(false);
+            settings_btn_port_range_->setEnabled(false);
         }
         else {
-            ui->btnPortRange->setEnabled(true);
+            settings_btn_port_range_->setEnabled(true);
         }
     });
-    connect(ui->btnPortRange, &QPushButton::clicked, [this]() {
-        if (ui->leditMinPort->text().trimmed().isEmpty() &&
-            ui->leditMaxPort->text().trimmed().isEmpty()) {
+    connect(settings_btn_port_range_, &QPushButton::clicked, [this]() {
+        if (settings_ledit_min_port_->text().trimmed().isEmpty() &&
+            settings_ledit_max_port_->text().trimmed().isEmpty()) {
             params_.set_port_range(0, 0);
-            ui->btnPortRange->setEnabled(false);
+            settings_btn_port_range_->setEnabled(false);
             return;
         }
-        if (ui->leditMinPort->text().trimmed().isEmpty() ||
-            ui->leditMaxPort->text().trimmed().isEmpty()) {
+        if (settings_ledit_min_port_->text().trimmed().isEmpty() ||
+            settings_ledit_max_port_->text().trimmed().isEmpty()) {
             return;
         }
-        int min_port = ui->leditMinPort->text().trimmed().toInt();
-        int max_port = ui->leditMaxPort->text().trimmed().toInt();
+        int min_port = settings_ledit_min_port_->text().trimmed().toInt();
+        int max_port = settings_ledit_max_port_->text().trimmed().toInt();
         if (min_port < max_port && min_port > 1024 && min_port < 65536 && max_port > 1025 &&
             max_port <= 65536) {
             params_.set_port_range(min_port, max_port);
-            ui->btnPortRange->setEnabled(false);
+            settings_btn_port_range_->setEnabled(false);
         }
     });
-    connect(ui->leditMaxMbps, &QLineEdit::textChanged, [this](const QString& _text) {
+    connect(settings_ledit_max_mbps_, &QLineEdit::textChanged, [this](const QString& _text) {
         if (_text.trimmed().isEmpty()) {
-            ui->btnMaxMbps->setEnabled(true);
+            settings_btn_max_mbps_->setEnabled(true);
             return;
         }
         int mbps = _text.trimmed().toInt();
         if (mbps >= 1 && mbps <= 100) {
-            ui->btnMaxMbps->setEnabled(true);
+            settings_btn_max_mbps_->setEnabled(true);
         }
         else {
-            ui->btnMaxMbps->setEnabled(false);
+            settings_btn_max_mbps_->setEnabled(false);
         }
     });
-    connect(ui->btnMaxMbps, &QPushButton::clicked, [this]() {
-        if (ui->leditMaxMbps->text().trimmed().isEmpty()) {
+    connect(settings_btn_max_mbps_, &QPushButton::clicked, [this]() {
+        if (settings_ledit_max_mbps_->text().trimmed().isEmpty()) {
             params_.set_max_mbps(0);
-            ui->btnMaxMbps->setEnabled(false);
+            settings_btn_max_mbps_->setEnabled(false);
         }
         else {
-            int mbps = ui->leditMaxMbps->text().trimmed().toInt();
+            int mbps = settings_ledit_max_mbps_->text().trimmed().toInt();
             if (mbps >= 1 && mbps <= 100) {
                 params_.set_max_mbps(static_cast<uint32_t>(mbps));
-                ui->btnMaxMbps->setEnabled(false);
+                settings_btn_max_mbps_->setEnabled(false);
             }
         }
     });
-    connect(ui->leditIgnoredNIC, &QLineEdit::textChanged,
-            [this](const QString&) { ui->btnIgnoredNIC->setEnabled(true); });
-    connect(ui->btnIgnoredNIC, &QPushButton::clicked, [this]() {
-        ui->btnIgnoredNIC->setEnabled(false);
-        params_.set_ignored_nic(ui->leditIgnoredNIC->text().trimmed().toStdString());
+    connect(settings_ledit_ignored_nic_, &QLineEdit::textChanged,
+            [this](const QString&) { settings_btn_ignored_nic_->setEnabled(true); });
+    connect(settings_btn_ignored_nic_, &QPushButton::clicked, [this]() {
+        settings_btn_ignored_nic_->setEnabled(false);
+        params_.set_ignored_nic(settings_ledit_ignored_nic_->text().trimmed().toStdString());
     });
-    connect(ui->leditRed, &QLineEdit::textChanged,
+    connect(settings_ledit_red_, &QLineEdit::textChanged,
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(ui->leditGreen, &QLineEdit::textChanged,
+    connect(settings_ledit_green_, &QLineEdit::textChanged,
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(ui->leditBlue, &QLineEdit::textChanged,
+    connect(settings_ledit_blue_, &QLineEdit::textChanged,
             std::bind(&MainWindow::onLineEditStatusColorChanged, this, std::placeholders::_1));
-    connect(ui->checkBoxOverlay, &QCheckBox::stateChanged,
-            [this](int) { params_.set_show_overlay(ui->checkBoxOverlay->isChecked()); });
-    connect(ui->btnStatusColor, &QPushButton::clicked, [this]() {
-        ui->btnStatusColor->setEnabled(false);
-        if (ui->leditRed->text().isEmpty() && ui->leditGreen->text().isEmpty() &&
-            ui->leditBlue->text().isEmpty()) {
+    connect(settings_checkbox_overlay_, &QCheckBox::stateChanged,
+            [this](int) { params_.set_show_overlay(settings_checkbox_overlay_->isChecked()); });
+    connect(settings_btn_status_color_, &QPushButton::clicked, [this]() {
+        settings_btn_status_color_->setEnabled(false);
+        if (settings_ledit_red_->text().isEmpty() && settings_ledit_green_->text().isEmpty() &&
+            settings_ledit_blue_->text().isEmpty()) {
             params_.set_status_color(-1);
         }
         else {
-            uint32_t red = static_cast<uint32_t>(ui->leditRed->text().trimmed().toInt());
-            uint32_t green = static_cast<uint32_t>(ui->leditGreen->text().trimmed().toInt());
-            uint32_t blue = static_cast<uint32_t>(ui->leditBlue->text().trimmed().toInt());
+            uint32_t red = static_cast<uint32_t>(settings_ledit_red_->text().trimmed().toInt());
+            uint32_t green = static_cast<uint32_t>(settings_ledit_green_->text().trimmed().toInt());
+            uint32_t blue = static_cast<uint32_t>(settings_ledit_blue_->text().trimmed().toInt());
             params_.set_status_color((red << 24) | (green << 16) | (blue << 8));
         }
     });
-    connect(ui->leditMouseAccel, &QLineEdit::textChanged, [this](const QString&) {
-        if (ui->leditMouseAccel->text().isEmpty()) {
-            ui->btnMouseAccel->setEnabled(true);
+    connect(settings_ledit_mouse_accel_, &QLineEdit::textChanged, [this](const QString&) {
+        if (settings_ledit_mouse_accel_->text().isEmpty()) {
+            settings_btn_mouse_accel_->setEnabled(true);
             return;
         }
-        double accel = ui->leditMouseAccel->text().trimmed().toDouble();
+        double accel = settings_ledit_mouse_accel_->text().trimmed().toDouble();
         int64_t accel_int = static_cast<int64_t>(accel * 10);
         if (accel_int >= 1 && accel_int <= 30) {
-            ui->btnMouseAccel->setEnabled(true);
+            settings_btn_mouse_accel_->setEnabled(true);
         }
         else {
-            ui->btnMouseAccel->setEnabled(false);
+            settings_btn_mouse_accel_->setEnabled(false);
         }
     });
-    connect(ui->btnMouseAccel, &QPushButton::clicked, [this]() {
-        ui->btnMouseAccel->setEnabled(false);
-        if (ui->leditMouseAccel->text().isEmpty()) {
+    connect(settings_btn_mouse_accel_, &QPushButton::clicked, [this]() {
+        settings_btn_mouse_accel_->setEnabled(false);
+        if (settings_ledit_mouse_accel_->text().isEmpty()) {
             params_.set_rel_mouse_accel(0);
         }
         else {
-            double accel = ui->leditMouseAccel->text().trimmed().toDouble();
+            double accel = settings_ledit_mouse_accel_->text().trimmed().toDouble();
             int64_t accel_int = static_cast<int64_t>(accel * 10);
             if (accel_int >= 1 && accel_int <= 30) {
                 params_.set_rel_mouse_accel(accel_int);
             }
             else {
                 LOG(ERR) << "Set relative mouse accel '"
-                         << ui->leditMouseAccel->text().toStdString() << "' failed";
+                         << settings_ledit_mouse_accel_->text().toStdString() << "' failed";
             }
         }
     });
@@ -921,64 +1115,63 @@ void MainWindow::setupOtherCallbacks() {
 
 void MainWindow::setupSettingsPage() {
     auto settings = params_.get_settings();
-    // ui->checkboxService->setChecked(settings.run_as_daemon);
-    ui->checkboxService->hide();
-    ui->checkboxRefreshPassword->setChecked(settings.auto_refresh_access_token);
+    settings_checkbox_service_->hide();
+    settings_checkbox_refresh_password_->setChecked(settings.auto_refresh_access_token);
 #if defined(LT_WINDOWS)
-    ui->checkboxShareClipboard->setChecked(settings.share_clipboard);
+    settings_checkbox_share_clipboard_->setChecked(settings.share_clipboard);
 #else  // LT_WINDOWS
-    ui->checkboxShareClipboard->hide();
+    settings_checkbox_share_clipboard_->hide();
 #endif // LT_WINDOWS
-    ui->radioAbsoluteMouse->setChecked(settings.absolute_mouse);
-    ui->radioRelativeMouse->setChecked(!settings.absolute_mouse);
-    connect(ui->radioAbsoluteMouse, &QRadioButton::toggled,
+    settings_radio_absolute_mouse_->setChecked(settings.absolute_mouse);
+    settings_radio_relative_mouse_->setChecked(!settings.absolute_mouse);
+    connect(settings_radio_absolute_mouse_, &QRadioButton::toggled,
             [this](bool is_absolute) { params_.set_absolute_mouse(is_absolute); });
-    ui->leditRelay->setText(QString::fromStdString(settings.relay_server));
-    ui->btnRelay->setEnabled(false);
+    settings_ledit_relay_->setText(QString::fromStdString(settings.relay_server));
+    settings_btn_relay_->setEnabled(false);
     if (settings.windowed_fullscreen.has_value()) {
-        ui->radioRealFullscreen->setChecked(!settings.windowed_fullscreen.value());
-        ui->radioWindowedFullscreen->setChecked(settings.windowed_fullscreen.value());
+        settings_radio_real_fullscreen_->setChecked(!settings.windowed_fullscreen.value());
+        settings_radio_windowed_fullscreen_->setChecked(settings.windowed_fullscreen.value());
     }
     else {
-        ui->radioRealFullscreen->setChecked(false);
-        ui->radioWindowedFullscreen->setChecked(false);
+        settings_radio_real_fullscreen_->setChecked(false);
+        settings_radio_windowed_fullscreen_->setChecked(false);
     }
-    ui->checkBoxTCP->setChecked(settings.tcp);
-    ui->btnPortRange->setEnabled(false);
-    ui->leditMinPort->setValidator(new QIntValidator(1025, 65536, this));
-    ui->leditMaxPort->setValidator(new QIntValidator(1025, 65536, this));
+    settings_checkbox_tcp_->setChecked(settings.tcp);
+    settings_btn_port_range_->setEnabled(false);
+    settings_ledit_min_port_->setValidator(new QIntValidator(1025, 65536, this));
+    settings_ledit_max_port_->setValidator(new QIntValidator(1025, 65536, this));
     if (settings.min_port != 0 && settings.max_port != 0) {
-        ui->leditMinPort->setText(QString::number(settings.min_port));
-        ui->leditMaxPort->setText(QString::number(settings.max_port));
+        settings_ledit_min_port_->setText(QString::number(settings.min_port));
+        settings_ledit_max_port_->setText(QString::number(settings.max_port));
     }
-    ui->btnIgnoredNIC->setEnabled(false);
+    settings_btn_ignored_nic_->setEnabled(false);
     if (!settings.ignored_nic.empty()) {
-        ui->leditIgnoredNIC->setText(QString::fromStdString(settings.ignored_nic));
+        settings_ledit_ignored_nic_->setText(QString::fromStdString(settings.ignored_nic));
     }
-    ui->btnMaxMbps->setEnabled(false);
-    ui->leditMaxMbps->setValidator(new QIntValidator(1, 100, this));
+    settings_btn_max_mbps_->setEnabled(false);
+    settings_ledit_max_mbps_->setValidator(new QIntValidator(1, 100, this));
     if (settings.max_mbps != 0) {
-        ui->leditMaxMbps->setText(QString::number(settings.max_mbps));
+        settings_ledit_max_mbps_->setText(QString::number(settings.max_mbps));
     }
-    ui->checkBoxOverlay->setChecked(settings.show_overlay);
-    ui->btnStatusColor->setEnabled(false);
-    ui->leditRed->setValidator(new QIntValidator(0, 255, this));
-    ui->leditGreen->setValidator(new QIntValidator(0, 255, this));
-    ui->leditBlue->setValidator(new QIntValidator(0, 255, this));
+    settings_checkbox_overlay_->setChecked(settings.show_overlay);
+    settings_btn_status_color_->setEnabled(false);
+    settings_ledit_red_->setValidator(new QIntValidator(0, 255, this));
+    settings_ledit_green_->setValidator(new QIntValidator(0, 255, this));
+    settings_ledit_blue_->setValidator(new QIntValidator(0, 255, this));
     if (settings.status_color.has_value()) {
         uint32_t color = settings.status_color.value();
         uint32_t red = (color & 0xff000000) >> 24;
         uint32_t green = (color & 0x00ff0000) >> 16;
         uint32_t blue = (color & 0x0000ff00) >> 8;
-        ui->leditRed->setText(QString::number(red));
-        ui->leditGreen->setText(QString::number(green));
-        ui->leditBlue->setText(QString::number(blue));
+        settings_ledit_red_->setText(QString::number(red));
+        settings_ledit_green_->setText(QString::number(green));
+        settings_ledit_blue_->setText(QString::number(blue));
     }
-    ui->btnMouseAccel->setEnabled(false);
-    ui->leditMouseAccel->setValidator(new QDoubleValidator(0.1, 3.0, 1, this));
+    settings_btn_mouse_accel_->setEnabled(false);
+    settings_ledit_mouse_accel_->setValidator(new QDoubleValidator(0.1, 3.0, 1, this));
     if (settings.rel_mouse_accel > 0 && settings.rel_mouse_accel <= 30) {
         double accel = settings.rel_mouse_accel / 10.0;
-        ui->leditMouseAccel->setText(QString::number(accel, 'f', 1));
+        settings_ledit_mouse_accel_->setText(QString::number(accel, 'f', 1));
     }
 }
 
@@ -1262,24 +1455,24 @@ void MainWindow::onTimeoutHideToken() {
 }
 
 void MainWindow::onLineEditStatusColorChanged(const QString&) {
-    if (ui->leditRed->text().isEmpty() && ui->leditGreen->text().isEmpty() &&
-        ui->leditBlue->text().isEmpty()) {
-        ui->btnStatusColor->setEnabled(true);
+    if (settings_ledit_red_->text().isEmpty() && settings_ledit_green_->text().isEmpty() &&
+        settings_ledit_blue_->text().isEmpty()) {
+        settings_btn_status_color_->setEnabled(true);
         return;
     }
-    if (ui->leditRed->text().isEmpty() || ui->leditGreen->text().isEmpty() ||
-        ui->leditBlue->text().isEmpty()) {
-        ui->btnStatusColor->setEnabled(false);
+    if (settings_ledit_red_->text().isEmpty() || settings_ledit_green_->text().isEmpty() ||
+        settings_ledit_blue_->text().isEmpty()) {
+        settings_btn_status_color_->setEnabled(false);
         return;
     }
-    uint32_t red = static_cast<uint32_t>(ui->leditRed->text().trimmed().toInt());
-    uint32_t green = static_cast<uint32_t>(ui->leditGreen->text().trimmed().toInt());
-    uint32_t blue = static_cast<uint32_t>(ui->leditBlue->text().trimmed().toInt());
+    uint32_t red = static_cast<uint32_t>(settings_ledit_red_->text().trimmed().toInt());
+    uint32_t green = static_cast<uint32_t>(settings_ledit_green_->text().trimmed().toInt());
+    uint32_t blue = static_cast<uint32_t>(settings_ledit_blue_->text().trimmed().toInt());
     if (red > 255 || green > 255 || blue > 255) {
-        ui->btnStatusColor->setEnabled(false);
+        settings_btn_status_color_->setEnabled(false);
         return;
     }
-    ui->btnStatusColor->setEnabled(true);
+    settings_btn_status_color_->setEnabled(true);
 }
 
 void MainWindow::addOrUpdateTrustedDevices() {
