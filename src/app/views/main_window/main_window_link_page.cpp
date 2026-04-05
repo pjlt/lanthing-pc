@@ -4,6 +4,7 @@
 
 #include "main_window_link_page.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtGui/QIcon>
 #include <QtGui/QPixmap>
 #include <QtWidgets/QComboBox>
@@ -13,6 +14,12 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
+
+namespace {
+QString trMainWindow(const char* text) {
+    return QCoreApplication::translate("MainWindow", text);
+}
+} // namespace
 
 MainWindowLinkPageView MainWindowLinkPage::createPage(QWidget* parent) const {
     auto* page_link = new QWidget(parent);
@@ -98,7 +105,7 @@ MainWindowLinkPageView MainWindowLinkPage::createPage(QWidget* parent) const {
     identity_layout->setContentsMargins(30, 9, 30, 9);
     auto* id_row = new QHBoxLayout();
     id_row->setSpacing(0);
-    auto* label_device_id = new QLabel(QObject::tr("Device ID"), frame_identity);
+    auto* label_device_id = new QLabel(trMainWindow("Device ID"), frame_identity);
     label_device_id->setMinimumSize(QSize(157, 71));
     label_device_id->setStyleSheet("font: 13pt;");
     id_row->addWidget(label_device_id);
@@ -114,7 +121,7 @@ MainWindowLinkPageView MainWindowLinkPage::createPage(QWidget* parent) const {
     btn_copy->setIcon(QIcon(":/res/icons/cil-clone.png"));
     id_row->addWidget(btn_copy);
 
-    auto* label_copied = new QLabel(QObject::tr("Copied"), frame_identity);
+    auto* label_copied = new QLabel(trMainWindow("Copied"), frame_identity);
     label_copied->setMinimumWidth(60);
     label_copied->setMaximumWidth(60);
     label_copied->setStyleSheet("font: 9pt;");
@@ -123,7 +130,7 @@ MainWindowLinkPageView MainWindowLinkPage::createPage(QWidget* parent) const {
 
     auto* token_row = new QHBoxLayout();
     token_row->setSpacing(0);
-    auto* label_access_token = new QLabel(QObject::tr("Access Token"), frame_identity);
+    auto* label_access_token = new QLabel(trMainWindow("Access Token"), frame_identity);
     label_access_token->setMinimumSize(QSize(157, 71));
     label_access_token->setStyleSheet("font: 13pt;");
     token_row->addWidget(label_access_token);
@@ -162,7 +169,7 @@ MainWindowLinkPageView MainWindowLinkPage::createPage(QWidget* parent) const {
     auto* ledit_access_token = new QLineEdit(frame_connect);
     ledit_access_token->setObjectName("leditAccessToken");
     ledit_access_token->setMinimumHeight(45);
-    ledit_access_token->setPlaceholderText(QObject::tr("Access token"));
+    ledit_access_token->setPlaceholderText(trMainWindow("Access token"));
 
     auto* btn_connect = new QPushButton(frame_connect);
     btn_connect->setObjectName("btnConnect");

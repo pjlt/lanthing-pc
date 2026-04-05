@@ -4,6 +4,7 @@
 
 #include "main_window_settings_page.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
@@ -13,6 +14,12 @@
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
+
+namespace {
+QString trMainWindow(const char* text) {
+    return QCoreApplication::translate("MainWindow", text);
+}
+} // namespace
 
 MainWindowSettingsPageView MainWindowSettingsPage::createPage(QWidget* parent) const {
     auto* page_settings = new QWidget(parent);
@@ -55,95 +62,95 @@ MainWindowSettingsPageView MainWindowSettingsPage::createPage(QWidget* parent) c
     scroll_contents->setMinimumSize(QSize(0, 850));
     auto* content_layout = new QVBoxLayout(scroll_contents);
 
-    auto* gb_system = new QGroupBox(QObject::tr("System"), scroll_contents);
+    auto* gb_system = new QGroupBox(trMainWindow("System"), scroll_contents);
     auto* gb_system_layout = new QVBoxLayout(gb_system);
     gb_system_layout->setContentsMargins(9, 30, 9, 30);
-    auto* checkbox_service = new QCheckBox(QObject::tr("Run as Service"), gb_system);
+    auto* checkbox_service = new QCheckBox(trMainWindow("Run as Service"), gb_system);
     auto* checkbox_refresh_password =
-        new QCheckBox(QObject::tr("Auto refresh access token"), gb_system);
-    auto* checkbox_share_clipboard = new QCheckBox(QObject::tr("Share Clipboard"), gb_system);
+        new QCheckBox(trMainWindow("Auto refresh access token"), gb_system);
+    auto* checkbox_share_clipboard = new QCheckBox(trMainWindow("Share Clipboard"), gb_system);
     gb_system_layout->addWidget(checkbox_service);
     gb_system_layout->addWidget(checkbox_refresh_password);
     gb_system_layout->addWidget(checkbox_share_clipboard);
     content_layout->addWidget(gb_system);
 
     auto* gb_mouse_mode =
-        new QGroupBox(QObject::tr("Default Mouse Mode (Win+Shift+X)"), scroll_contents);
+        new QGroupBox(trMainWindow("Default Mouse Mode (Win+Shift+X)"), scroll_contents);
     auto* gb_mouse_mode_layout = new QVBoxLayout(gb_mouse_mode);
     gb_mouse_mode_layout->setContentsMargins(9, 30, 9, 30);
-    auto* radio_absolute_mouse = new QRadioButton(QObject::tr("Absolute Mode"), gb_mouse_mode);
-    auto* radio_relative_mouse = new QRadioButton(QObject::tr("Relative Mode"), gb_mouse_mode);
+    auto* radio_absolute_mouse = new QRadioButton(trMainWindow("Absolute Mode"), gb_mouse_mode);
+    auto* radio_relative_mouse = new QRadioButton(trMainWindow("Relative Mode"), gb_mouse_mode);
     gb_mouse_mode_layout->addWidget(radio_absolute_mouse);
     gb_mouse_mode_layout->addWidget(radio_relative_mouse);
     content_layout->addWidget(gb_mouse_mode);
 
-    auto* gb_fullscreen = new QGroupBox(QObject::tr("Fullscreen Mode"), scroll_contents);
+    auto* gb_fullscreen = new QGroupBox(trMainWindow("Fullscreen Mode"), scroll_contents);
     auto* gb_fullscreen_layout = new QVBoxLayout(gb_fullscreen);
     gb_fullscreen_layout->setContentsMargins(9, 30, 9, 30);
     auto* radio_real_fullscreen =
-        new QRadioButton(QObject::tr("Real Fullscreen"), gb_fullscreen);
+        new QRadioButton(trMainWindow("Real Fullscreen"), gb_fullscreen);
     auto* radio_windowed_fullscreen =
-        new QRadioButton(QObject::tr("Windowed Fullscreen"), gb_fullscreen);
+        new QRadioButton(trMainWindow("Windowed Fullscreen"), gb_fullscreen);
     gb_fullscreen_layout->addWidget(radio_real_fullscreen);
     gb_fullscreen_layout->addWidget(radio_windowed_fullscreen);
     content_layout->addWidget(gb_fullscreen);
 
-    auto* gb_transport = new QGroupBox(QObject::tr("Transport"), scroll_contents);
+    auto* gb_transport = new QGroupBox(trMainWindow("Transport"), scroll_contents);
     auto* gb_transport_layout = new QVBoxLayout(gb_transport);
     gb_transport_layout->setContentsMargins(9, 30, 9, 30);
-    auto* checkbox_tcp = new QCheckBox(QObject::tr("Enable TCP"), gb_transport);
+    auto* checkbox_tcp = new QCheckBox(trMainWindow("Enable TCP"), gb_transport);
     gb_transport_layout->addWidget(checkbox_tcp);
     auto* row_ports = new QHBoxLayout();
     auto* ledit_min_port = new QLineEdit(gb_transport);
-    ledit_min_port->setPlaceholderText(QObject::tr("Min Port"));
+    ledit_min_port->setPlaceholderText(trMainWindow("Min Port"));
     auto* ledit_max_port = new QLineEdit(gb_transport);
-    ledit_max_port->setPlaceholderText(QObject::tr("Max Port"));
-    auto* btn_port_range = new QPushButton(QObject::tr("Confirm"), gb_transport);
+    ledit_max_port->setPlaceholderText(trMainWindow("Max Port"));
+    auto* btn_port_range = new QPushButton(trMainWindow("Confirm"), gb_transport);
     row_ports->addWidget(ledit_min_port);
     row_ports->addWidget(ledit_max_port);
     row_ports->addWidget(btn_port_range);
     gb_transport_layout->addLayout(row_ports);
     content_layout->addWidget(gb_transport);
 
-    auto* gb_network = new QGroupBox(QObject::tr("Network"), scroll_contents);
+    auto* gb_network = new QGroupBox(trMainWindow("Network"), scroll_contents);
     auto* gb_network_layout = new QVBoxLayout(gb_network);
     gb_network_layout->setContentsMargins(9, 30, 9, 30);
     auto* row_relay = new QHBoxLayout();
     auto* ledit_relay = new QLineEdit(gb_network);
-    ledit_relay->setPlaceholderText(QObject::tr("relay:host:token:user"));
-    auto* btn_relay = new QPushButton(QObject::tr("Confirm"), gb_network);
+    ledit_relay->setPlaceholderText(trMainWindow("relay:host:token:user"));
+    auto* btn_relay = new QPushButton(trMainWindow("Confirm"), gb_network);
     row_relay->addWidget(ledit_relay);
     row_relay->addWidget(btn_relay);
     gb_network_layout->addLayout(row_relay);
     auto* row_nic = new QHBoxLayout();
     auto* ledit_ignored_nic = new QLineEdit(gb_network);
-    ledit_ignored_nic->setPlaceholderText(QObject::tr("Ignored NIC list"));
-    auto* btn_ignored_nic = new QPushButton(QObject::tr("Confirm"), gb_network);
+    ledit_ignored_nic->setPlaceholderText(trMainWindow("Ignored NIC list"));
+    auto* btn_ignored_nic = new QPushButton(trMainWindow("Confirm"), gb_network);
     row_nic->addWidget(ledit_ignored_nic);
     row_nic->addWidget(btn_ignored_nic);
     gb_network_layout->addLayout(row_nic);
     content_layout->addWidget(gb_network);
 
-    auto* gb_bandwidth = new QGroupBox(QObject::tr("Bandwidth"), scroll_contents);
+    auto* gb_bandwidth = new QGroupBox(trMainWindow("Bandwidth"), scroll_contents);
     auto* gb_bandwidth_layout = new QVBoxLayout(gb_bandwidth);
     gb_bandwidth_layout->setContentsMargins(9, 30, 9, 30);
     auto* row_mbps = new QHBoxLayout();
     auto* ledit_max_mbps = new QLineEdit(gb_bandwidth);
-    ledit_max_mbps->setPlaceholderText(QObject::tr("Max Mbps (1-100)"));
-    auto* btn_max_mbps = new QPushButton(QObject::tr("Confirm"), gb_bandwidth);
+    ledit_max_mbps->setPlaceholderText(trMainWindow("Max Mbps (1-100)"));
+    auto* btn_max_mbps = new QPushButton(trMainWindow("Confirm"), gb_bandwidth);
     row_mbps->addWidget(ledit_max_mbps);
     row_mbps->addWidget(btn_max_mbps);
     gb_bandwidth_layout->addLayout(row_mbps);
     content_layout->addWidget(gb_bandwidth);
 
-    auto* gb_overlay = new QGroupBox(QObject::tr("Overlay"), scroll_contents);
+    auto* gb_overlay = new QGroupBox(trMainWindow("Overlay"), scroll_contents);
     auto* gb_overlay_layout = new QVBoxLayout(gb_overlay);
     gb_overlay_layout->setContentsMargins(9, 30, 9, 30);
-    auto* checkbox_overlay = new QCheckBox(QObject::tr("Show overlay"), gb_overlay);
+    auto* checkbox_overlay = new QCheckBox(trMainWindow("Show overlay"), gb_overlay);
     gb_overlay_layout->addWidget(checkbox_overlay);
     content_layout->addWidget(gb_overlay);
 
-    auto* gb_status_color = new QGroupBox(QObject::tr("Status Color"), scroll_contents);
+    auto* gb_status_color = new QGroupBox(trMainWindow("Status Color"), scroll_contents);
     auto* gb_status_color_layout = new QVBoxLayout(gb_status_color);
     gb_status_color_layout->setContentsMargins(9, 30, 9, 30);
     auto* row_color = new QHBoxLayout();
@@ -153,7 +160,7 @@ MainWindowSettingsPageView MainWindowSettingsPage::createPage(QWidget* parent) c
     ledit_green->setPlaceholderText(QStringLiteral("G"));
     auto* ledit_blue = new QLineEdit(gb_status_color);
     ledit_blue->setPlaceholderText(QStringLiteral("B"));
-    auto* btn_status_color = new QPushButton(QObject::tr("Confirm"), gb_status_color);
+    auto* btn_status_color = new QPushButton(trMainWindow("Confirm"), gb_status_color);
     row_color->addWidget(ledit_red);
     row_color->addWidget(ledit_green);
     row_color->addWidget(ledit_blue);
@@ -161,13 +168,13 @@ MainWindowSettingsPageView MainWindowSettingsPage::createPage(QWidget* parent) c
     gb_status_color_layout->addLayout(row_color);
     content_layout->addWidget(gb_status_color);
 
-    auto* gb_mouse = new QGroupBox(QObject::tr("Relative Mouse Accel"), scroll_contents);
+    auto* gb_mouse = new QGroupBox(trMainWindow("Relative Mouse Accel"), scroll_contents);
     auto* gb_mouse_layout = new QVBoxLayout(gb_mouse);
     gb_mouse_layout->setContentsMargins(9, 30, 9, 30);
     auto* row_accel = new QHBoxLayout();
     auto* ledit_mouse_accel = new QLineEdit(gb_mouse);
-    ledit_mouse_accel->setPlaceholderText(QObject::tr("0.1 - 3.0"));
-    auto* btn_mouse_accel = new QPushButton(QObject::tr("Confirm"), gb_mouse);
+    ledit_mouse_accel->setPlaceholderText(trMainWindow("0.1 - 3.0"));
+    auto* btn_mouse_accel = new QPushButton(trMainWindow("Confirm"), gb_mouse);
     row_accel->addWidget(ledit_mouse_accel);
     row_accel->addWidget(btn_mouse_accel);
     gb_mouse_layout->addLayout(row_accel);

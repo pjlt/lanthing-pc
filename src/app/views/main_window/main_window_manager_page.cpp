@@ -4,12 +4,19 @@
 
 #include "main_window_manager_page.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtWidgets/qabstractitemview.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qheaderview.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qtablewidget.h>
 #include <QtWidgets/qwidget.h>
+
+namespace {
+QString trMainWindow(const char* text) {
+    return QCoreApplication::translate("MainWindow", text);
+}
+} // namespace
 
 MainWindowManagerPageView MainWindowManagerPage::createPage(QWidget* parent) const {
     auto* page_mgr = new QWidget(parent);
@@ -18,7 +25,7 @@ MainWindowManagerPageView MainWindowManagerPage::createPage(QWidget* parent) con
 
     auto* title = new QLabel(page_mgr);
     title->setStyleSheet("font: 16pt \"Microsoft YaHei UI\";");
-    title->setText(QObject::tr("Trusted clients:"));
+    title->setText(trMainWindow("Trusted clients:"));
     layout->addWidget(title);
 
     auto* table = new QTableWidget(page_mgr);
@@ -66,9 +73,9 @@ MainWindowManagerPageView MainWindowManagerPage::createPage(QWidget* parent) con
     table->setSelectionMode(QAbstractItemView::SingleSelection);
     table->setColumnCount(6);
     table->horizontalHeader()->setDefaultSectionSize(85);
-    table->setHorizontalHeaderLabels({QObject::tr("DeviceID"), QObject::tr("Gamepad"),
-                                      QObject::tr("Mouse"), QObject::tr("Keyboard"),
-                                      QObject::tr("Last Time"), QObject::tr("Operate")});
+    table->setHorizontalHeaderLabels({trMainWindow("DeviceID"), trMainWindow("Gamepad"),
+                                      trMainWindow("Mouse"), trMainWindow("Keyboard"),
+                                      trMainWindow("Last Time"), trMainWindow("Operate")});
     layout->addWidget(table);
 
     MainWindowManagerPageView view;

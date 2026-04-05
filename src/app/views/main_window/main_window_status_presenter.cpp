@@ -4,9 +4,16 @@
 
 #include "main_window_status_presenter.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtWidgets/qlabel.h>
 
 #include <ltlib/logging.h>
+
+namespace {
+QString trMainWindow(const char* text) {
+    return QCoreApplication::translate("MainWindow", text);
+}
+} // namespace
 
 MainWindowStatusPresenter::MainWindowStatusPresenter(QLabel* login_label, QLabel* service_label)
     : login_label_(login_label)
@@ -21,16 +28,16 @@ void MainWindowStatusPresenter::setLoginStatus(lt::GUI::LoginStatus status) cons
 
     switch (status) {
     case lt::GUI::LoginStatus::Connected:
-        login_label_->setText(QObject::tr("🟢Connected to server"));
+        login_label_->setText(trMainWindow("🟢Connected to server"));
         break;
     case lt::GUI::LoginStatus::Connecting:
-        login_label_->setText(QObject::tr("🟡Connecting..."));
+        login_label_->setText(trMainWindow("🟡Connecting..."));
         break;
     case lt::GUI::LoginStatus::Disconnected:
-        login_label_->setText(QObject::tr("🔴Disconnected from server"));
+        login_label_->setText(trMainWindow("🔴Disconnected from server"));
         break;
     default:
-        login_label_->setText(QObject::tr("🔴Disconnected from server"));
+        login_label_->setText(trMainWindow("🔴Disconnected from server"));
         LOG(ERR) << "Unknown Login status " << static_cast<int32_t>(status);
         break;
     }
@@ -44,13 +51,13 @@ void MainWindowStatusPresenter::setServiceStatus(lt::GUI::ServiceStatus status) 
 
     switch (status) {
     case lt::GUI::ServiceStatus::Up:
-        service_label_->setText(QObject::tr("🟢Controlled module up"));
+        service_label_->setText(trMainWindow("🟢Controlled module up"));
         break;
     case lt::GUI::ServiceStatus::Down:
-        service_label_->setText(QObject::tr("🔴Controlled module down"));
+        service_label_->setText(trMainWindow("🔴Controlled module down"));
         break;
     default:
-        service_label_->setText(QObject::tr("🔴Controlled module down"));
+        service_label_->setText(trMainWindow("🔴Controlled module down"));
         LOG(ERR) << "Unknown ServiceStatus " << static_cast<int32_t>(status);
         break;
     }
