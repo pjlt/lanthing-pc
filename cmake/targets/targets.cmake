@@ -9,6 +9,13 @@ set(LT_SRCS
 if (LT_WINDOWS)
     set(LT_WINDOWS_ICON_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.ico)
     set(LT_LANTHING_RC ${CMAKE_CURRENT_BINARY_DIR}/lanthing.rc)
+    set(LT_NBCLIPBOARD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/clipboard/nbclipboard.cpp)
+    list(APPEND LT_SRCS
+        ${LT_NBCLIPBOARD_SRC}
+    )
+    set_source_files_properties(${LT_NBCLIPBOARD_SRC} PROPERTIES
+        COMPILE_DEFINITIONS "UNICODE;_UNICODE"
+    )
 
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lanthing.rc.in
@@ -63,7 +70,7 @@ if(LT_WINDOWS)
             dxgi.lib Msdmo.lib Dxva2.lib winmm.lib wmcodecdspuuid.lib
             Dwmapi.lib Mfplat.lib Bcrypt.lib Mfuuid.lib Strmiids.lib
             ViGEmClient::ViGEmClientShared
-            VPL::dispatcher nvcodec wintoastlib nbclipboard
+                VPL::dispatcher nvcodec wintoastlib
     )
 elseif(LT_LINUX)
     set(PLATFORM_LIBS

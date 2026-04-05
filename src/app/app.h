@@ -49,7 +49,7 @@
 #include <app/service/service_manager.h>
 #include <app/views/gui.h>
 #if defined(LT_WINDOWS)
-#include <nbclipboard.h>
+#include <clipboard/nbclipboard.h>
 #endif // LT_WINDOWS
 
 namespace lt {

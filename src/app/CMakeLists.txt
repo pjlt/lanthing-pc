@@ -88,7 +88,6 @@ if (LT_WINDOWS)
     target_link_libraries(lt_module_app
         PRIVATE
             wintoastlib
-            nbclipboard
     )
 endif()
 
