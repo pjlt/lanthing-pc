@@ -5,7 +5,9 @@
 #include "main_window_private.h"
 
 #include "main_window_about_page.h"
+#include "main_window_link_page.h"
 #include "main_window_manager_page.h"
+#include "main_window_settings_page.h"
 
 void MainWindow::rebuildLinkPageInCode() {
     if (ui->stackedWidget == nullptr) {
@@ -27,216 +29,25 @@ void MainWindow::rebuildLinkPageInCode() {
         link_index = 0;
     }
 
-    auto* page_link = new QWidget(ui->stackedWidget);
-    page_link->setObjectName("pageLink");
-    page_link->setStyleSheet("\n"
-                             "QComboBox#cbDeviceID {\n"
-                             "     background-color: rgb(33, 37, 43);\n"
-                             "     border-radius: 5px;\n"
-                             "     border: 2px solid rgb(33, 37, 43);\n"
-                             "     padding-left: 10px;\n"
-                             "     selection-color: rgb(255, 255, 255);\n"
-                             "     selection-background-color: rgb(255, 121, 198);\n"
-                             "}\n"
-                             "QComboBox#cbDeviceID:hover {\n"
-                             "     border: 2px solid rgb(64, 71, 88);\n"
-                             "}\n"
-                             "QComboBox#cbDeviceID:drop-down {\n"
-                             "     subcontrol-origin: padding;\n"
-                             "     subcontrol-position: top right;\n"
-                             "     width: 25px;\n"
-                             "     border-left-width: 3px;\n"
-                             "     border-left-color: rgba(39, 44, 54, 150);\n"
-                             "     border-left-style: solid;\n"
-                             "     border-top-right-radius: 3px;\n"
-                             "     border-bottom-right-radius: 3px;\n"
-                             "     background-image: url(:/res/icons/cil-arrow-bottom.png);\n"
-                             "     background-position: center;\n"
-                             "     background-repeat: no-repeat;\n"
-                             "}\n"
-                             "QComboBox#cbDeviceID QAbstractItemView {\n"
-                             "     color: rgb(255, 121, 198);\n"
-                             "     background-color: rgb(33, 37, 43);\n"
-                             "     padding: 10px;\n"
-                             "     selection-background-color: rgb(39, 44, 54);\n"
-                             "}\n"
-                             "#leditAccessToken {\n"
-                             "     background-color: rgb(33, 37, 43);\n"
-                             "     border-radius: 5px;\n"
-                             "     border: 2px solid rgb(33, 37, 43);\n"
-                             "     padding-left: 10px;\n"
-                             "     selection-color: rgb(255, 255, 255);\n"
-                             "     selection-background-color: rgb(255, 121, 198);\n"
-                             "}\n"
-                             "#leditAccessToken:hover {\n"
-                             "     border: 2px solid rgb(64, 71, 88);\n"
-                             "}\n"
-                             "#leditAccessToken:focus {\n"
-                             "     border: 2px solid rgb(91, 101, 124);\n"
-                             "}\n"
-                             "QPushButton#btnConnect {\n"
-                             "     border: 2px solid rgb(52, 59, 72);\n"
-                             "     border-radius: 5px;\n"
-                             "     background-color: rgb(52, 59, 72);\n"
-                             "}\n"
-                             "QPushButton#btnConnect:hover {\n"
-                             "     background-color: rgb(57, 65, 80);\n"
-                             "     border: 2px solid rgb(61, 70, 86);\n"
-                             "}\n"
-                             "QPushButton#btnConnect:pressed {\n"
-                             "     background-color: rgb(35, 40, 49);\n"
-                             "     border: 2px solid rgb(43, 50, 61);\n"
-                             "}\n"
-                             "#labelClient1 {\n"
-                             "     border: none;\n"
-                             "     background-color: transparent;\n"
-                             "}\n"
-                             "#labelClient1:hover {\n"
-                             "     background-color: rgb(33, 37, 43);\n"
-                             "     border: 2px solid rgb(64, 71, 88);\n"
-                             "}\n");
-    auto* root_layout = new QVBoxLayout(page_link);
-    root_layout->setSpacing(0);
-    root_layout->setContentsMargins(0, 0, 0, 0);
-    root_layout->setStretch(0, 3);
-    root_layout->setStretch(1, 3);
-    root_layout->setStretch(2, 1);
-    root_layout->setStretch(3, 0);
-
-    auto* frame_identity = new QFrame(page_link);
-    frame_identity->setObjectName("linkRow1");
-    auto* identity_layout = new QVBoxLayout(frame_identity);
-    identity_layout->setSpacing(0);
-    identity_layout->setContentsMargins(30, 9, 30, 9);
-    auto* id_row = new QHBoxLayout();
-    id_row->setSpacing(0);
-    auto* label_device_id = new QLabel(tr("Device ID"), frame_identity);
-    label_device_id->setMinimumSize(QSize(157, 71));
-    label_device_id->setStyleSheet("font: 13pt;");
-    id_row->addWidget(label_device_id);
-    link_label_my_device_id_ = new QLabel(frame_identity);
-    link_label_my_device_id_->setStyleSheet("font: 13pt;");
-    id_row->addWidget(link_label_my_device_id_);
-    link_btn_copy_ = new QPushButton(frame_identity);
-    link_btn_copy_->setObjectName("btnCopy");
-    link_btn_copy_->setMaximumWidth(50);
-    link_btn_copy_->setText(QString());
-    link_btn_copy_->setIcon(QIcon(":/res/icons/cil-clone.png"));
-    id_row->addWidget(link_btn_copy_);
-    link_label_copied_ = new QLabel(tr("Copied"), frame_identity);
-    link_label_copied_->setMinimumWidth(60);
-    link_label_copied_->setMaximumWidth(60);
-    link_label_copied_->setStyleSheet("font: 9pt;");
-    id_row->addWidget(link_label_copied_);
-    identity_layout->addLayout(id_row);
-
-    auto* token_row = new QHBoxLayout();
-    token_row->setSpacing(0);
-    auto* label_access_token = new QLabel(tr("Access Token"), frame_identity);
-    label_access_token->setMinimumSize(QSize(157, 71));
-    label_access_token->setStyleSheet("font: 13pt;");
-    token_row->addWidget(label_access_token);
-    link_label_my_access_token_ = new QLabel(QStringLiteral("******"), frame_identity);
-    link_label_my_access_token_->setStyleSheet("font: 13pt;");
-    token_row->addWidget(link_label_my_access_token_);
-    link_btn_show_token_ = new QPushButton(frame_identity);
-    link_btn_show_token_->setObjectName("btnShowToken");
-    link_btn_show_token_->setMaximumWidth(50);
-    link_btn_show_token_->setText(QString());
-    link_btn_show_token_->setIcon(QIcon(":/res/icons/cil-low-vision.png"));
-    token_row->addWidget(link_btn_show_token_);
-    link_btn_refresh_token_ = new QPushButton(frame_identity);
-    link_btn_refresh_token_->setObjectName("btnRefreshToken");
-    link_btn_refresh_token_->setMaximumWidth(60);
-    link_btn_refresh_token_->setText(QString());
-    link_btn_refresh_token_->setIcon(QIcon(":/res/icons/cil-reload.png"));
-    token_row->addWidget(link_btn_refresh_token_);
-    identity_layout->addLayout(token_row);
-    root_layout->addWidget(frame_identity);
-
-    auto* frame_connect = new QFrame(page_link);
-    frame_connect->setObjectName("linkRow2");
-    auto* connect_row = new QVBoxLayout(frame_connect);
-    connect_row->setSpacing(6);
-    connect_row->setContentsMargins(30, 0, 30, 0);
-    link_cb_device_id_ = new QComboBox(frame_connect);
-    link_cb_device_id_->setObjectName("cbDeviceID");
-    link_cb_device_id_->setEditable(true);
-    link_cb_device_id_->setMinimumHeight(50);
-    link_ledit_access_token_ = new QLineEdit(frame_connect);
-    link_ledit_access_token_->setObjectName("leditAccessToken");
-    link_ledit_access_token_->setMinimumHeight(45);
-    link_ledit_access_token_->setPlaceholderText(tr("Access token"));
-    link_btn_connect_ = new QPushButton(frame_connect);
-    link_btn_connect_->setObjectName("btnConnect");
-    link_btn_connect_->setMinimumHeight(40);
-    link_btn_connect_->setText(QString());
-    link_btn_connect_->setIcon(QIcon(":/res/icons/cil-link.png"));
-    connect_row->addWidget(link_cb_device_id_);
-    connect_row->addWidget(link_ledit_access_token_);
-    connect_row->addWidget(link_btn_connect_);
-    root_layout->addWidget(frame_connect);
-
-    auto* frame_clients = new QFrame(page_link);
-    frame_clients->setObjectName("linkRow3");
-    frame_clients->setStyleSheet("border:none;");
-    auto* clients_row = new QHBoxLayout(frame_clients);
-    clients_row->setSpacing(0);
-    clients_row->setContentsMargins(30, 0, 30, 0);
-    link_indicator1_ = new QFrame(frame_clients);
-    link_indicator1_->setObjectName("indicator1");
-    link_indicator1_->setStyleSheet("border:none;");
-    auto* indicator_row = new QHBoxLayout(link_indicator1_);
-    indicator_row->setSpacing(0);
-    indicator_row->setContentsMargins(0, 0, 0, 0);
-    link_label_client1_ = new QLabel(link_indicator1_);
-    link_label_client1_->setObjectName("labelClient1");
-    link_label_client1_->setPixmap(QPixmap(":/res/png_icons/pc2.png"));
-    link_label_client1_->setScaledContents(true);
-    link_label_client1_->setFixedSize(70, 70);
-    indicator_row->addWidget(link_label_client1_);
-    auto* indicator_icons_container = new QFrame(link_indicator1_);
-    indicator_icons_container->setStyleSheet("border:none;");
-    auto* indicator_icons = new QVBoxLayout(indicator_icons_container);
-    indicator_icons->setSpacing(0);
-    indicator_icons->setContentsMargins(0, 0, 0, 0);
-    link_label_gamepad1_ = new QLabel(link_indicator1_);
-    link_label_mouse1_ = new QLabel(link_indicator1_);
-    link_label_keyboard1_ = new QLabel(link_indicator1_);
-    link_label_gamepad1_->setPixmap(QPixmap(":/res/png_icons/gamepad_gray.png"));
-    link_label_mouse1_->setPixmap(QPixmap(":/res/png_icons/mouse_gray.png"));
-    link_label_keyboard1_->setPixmap(QPixmap(":/res/png_icons/keyboard_gray.png"));
-    link_label_gamepad1_->setScaledContents(true);
-    link_label_mouse1_->setScaledContents(true);
-    link_label_keyboard1_->setScaledContents(true);
-    link_label_gamepad1_->setFixedSize(20, 20);
-    link_label_mouse1_->setFixedSize(20, 20);
-    link_label_keyboard1_->setFixedSize(20, 20);
-    link_label_gamepad1_->setStyleSheet("border:none;");
-    link_label_mouse1_->setStyleSheet("border:none;");
-    link_label_keyboard1_->setStyleSheet("border:none;");
-    indicator_icons->addWidget(link_label_gamepad1_);
-    indicator_icons->addWidget(link_label_mouse1_);
-    indicator_icons->addWidget(link_label_keyboard1_);
-    indicator_row->addWidget(indicator_icons_container);
-    clients_row->addWidget(link_indicator1_);
-    clients_row->addStretch(1);
-    link_indicator2_ = new QFrame(frame_clients);
-    link_indicator2_->setObjectName("indicator2");
-    link_indicator2_->setStyleSheet("border:none;");
-    clients_row->addWidget(link_indicator2_);
-    root_layout->addWidget(frame_clients);
-
-    auto* frame_status = new QFrame(page_link);
-    frame_status->setObjectName("frame_20");
-    frame_status->setStyleSheet("border: none; background-color: transparent;");
-    auto* status_row = new QHBoxLayout(frame_status);
-    status_row->setContentsMargins(30, 10, 30, 10);
-    link_label_version_ = new QLabel(frame_status);
-    link_label_version_->setObjectName("labelVersion");
-    status_row->addStretch(1);
-    status_row->addWidget(link_label_version_);
-    root_layout->addWidget(frame_status);
+    MainWindowLinkPage page_builder;
+    MainWindowLinkPageView page_view = page_builder.createPage(ui->stackedWidget);
+    QWidget* page_link = page_view.page;
+    link_cb_device_id_ = page_view.cb_device_id;
+    link_ledit_access_token_ = page_view.ledit_access_token;
+    link_btn_connect_ = page_view.btn_connect;
+    link_btn_copy_ = page_view.btn_copy;
+    link_btn_show_token_ = page_view.btn_show_token;
+    link_btn_refresh_token_ = page_view.btn_refresh_token;
+    link_label_my_device_id_ = page_view.label_my_device_id;
+    link_label_my_access_token_ = page_view.label_my_access_token;
+    link_label_copied_ = page_view.label_copied;
+    link_label_version_ = page_view.label_version;
+    link_label_client1_ = page_view.label_client1;
+    link_label_gamepad1_ = page_view.label_gamepad1;
+    link_label_mouse1_ = page_view.label_mouse1;
+    link_label_keyboard1_ = page_view.label_keyboard1;
+    link_indicator1_ = page_view.indicator1;
+    link_indicator2_ = page_view.indicator2;
 
     // 状态文本继续复用原有侧边栏控件，避免页面内重复显示。
     link_label_login_info_ = ui->labelLoginInfo;
@@ -269,165 +80,33 @@ void MainWindow::rebuildSettingsPageInCode() {
         settings_index = ui->stackedWidget->count();
     }
 
-    auto* page_settings = new QWidget(ui->stackedWidget);
-    page_settings->setObjectName("pageSettings");
-    page_settings->setStyleSheet("#pageSettings .QLineEdit {"
-                                 "\n\tbackground-color: rgb(33, 37, 43);"
-                                 "\n\tborder-radius: 5px;"
-                                 "\n\tborder: 2px solid rgb(33, 37, 43);"
-                                 "\n\tpadding-left: 10px;"
-                                 "\n\tselection-color: rgb(255, 255, 255);"
-                                 "\n\tselection-background-color: rgb(255, 121, 198);"
-                                 "\n}"
-                                 "\n#pageSettings .QLineEdit:hover {"
-                                 "\n\tborder: 2px solid rgb(64, 71, 88);"
-                                 "\n}"
-                                 "\n#pageSettings .QLineEdit:focus {"
-                                 "\n\tborder: 2px solid rgb(91, 101, 124);"
-                                 "\n}"
-                                 "\n"
-                                 "\n#pageSettings .QPushButton {"
-                                 "\n\tborder: 2px solid rgb(52, 59, 72);"
-                                 "\n\tborder-radius: 5px;"
-                                 "\n\tbackground-color: rgb(52, 59, 72);"
-                                 "\n}"
-                                 "\n#pageSettings .QPushButton:hover {"
-                                 "\n\tbackground-color: rgb(57, 65, 80);"
-                                 "\n\tborder: 2px solid rgb(61, 70, 86);"
-                                 "\n}"
-                                 "\n#pageSettings .QPushButton:pressed {"
-                                 "\n\tbackground-color: rgb(35, 40, 49);"
-                                 "\n\tborder: 2px solid rgb(43, 50, 61);"
-                                 "\n}");
-
-    auto* page_layout = new QVBoxLayout(page_settings);
-    page_layout->setContentsMargins(30, 9, 9, 9);
-
-    auto* scroll = new QScrollArea(page_settings);
-    scroll->setWidgetResizable(true);
-    auto* scroll_contents = new QWidget(scroll);
-    scroll_contents->setMinimumSize(QSize(0, 850));
-    auto* content_layout = new QVBoxLayout(scroll_contents);
-
-    auto* gb_system = new QGroupBox(tr("System"), scroll_contents);
-    auto* gb_system_layout = new QVBoxLayout(gb_system);
-    gb_system_layout->setContentsMargins(9, 30, 9, 30);
-    settings_checkbox_service_ = new QCheckBox(tr("Run as Service"), gb_system);
-    settings_checkbox_refresh_password_ =
-        new QCheckBox(tr("Auto refresh access token"), gb_system);
-    settings_checkbox_share_clipboard_ = new QCheckBox(tr("Share Clipboard"), gb_system);
-    gb_system_layout->addWidget(settings_checkbox_service_);
-    gb_system_layout->addWidget(settings_checkbox_refresh_password_);
-    gb_system_layout->addWidget(settings_checkbox_share_clipboard_);
-    content_layout->addWidget(gb_system);
-
-    auto* gb_mouse_mode = new QGroupBox(tr("Default Mouse Mode (Win+Shift+X)"), scroll_contents);
-    auto* gb_mouse_mode_layout = new QVBoxLayout(gb_mouse_mode);
-    gb_mouse_mode_layout->setContentsMargins(9, 30, 9, 30);
-    settings_radio_absolute_mouse_ = new QRadioButton(tr("Absolute Mode"), gb_mouse_mode);
-    settings_radio_relative_mouse_ = new QRadioButton(tr("Relative Mode"), gb_mouse_mode);
-    gb_mouse_mode_layout->addWidget(settings_radio_absolute_mouse_);
-    gb_mouse_mode_layout->addWidget(settings_radio_relative_mouse_);
-    content_layout->addWidget(gb_mouse_mode);
-
-    auto* gb_fullscreen = new QGroupBox(tr("Fullscreen Mode"), scroll_contents);
-    auto* gb_fullscreen_layout = new QVBoxLayout(gb_fullscreen);
-    gb_fullscreen_layout->setContentsMargins(9, 30, 9, 30);
-    settings_radio_real_fullscreen_ = new QRadioButton(tr("Real Fullscreen"), gb_fullscreen);
-    settings_radio_windowed_fullscreen_ =
-        new QRadioButton(tr("Windowed Fullscreen"), gb_fullscreen);
-    gb_fullscreen_layout->addWidget(settings_radio_real_fullscreen_);
-    gb_fullscreen_layout->addWidget(settings_radio_windowed_fullscreen_);
-    content_layout->addWidget(gb_fullscreen);
-
-    auto* gb_transport = new QGroupBox(tr("Transport"), scroll_contents);
-    auto* gb_transport_layout = new QVBoxLayout(gb_transport);
-    gb_transport_layout->setContentsMargins(9, 30, 9, 30);
-    settings_checkbox_tcp_ = new QCheckBox(tr("Enable TCP"), gb_transport);
-    gb_transport_layout->addWidget(settings_checkbox_tcp_);
-    auto* row_ports = new QHBoxLayout();
-    settings_ledit_min_port_ = new QLineEdit(gb_transport);
-    settings_ledit_min_port_->setPlaceholderText(tr("Min Port"));
-    settings_ledit_max_port_ = new QLineEdit(gb_transport);
-    settings_ledit_max_port_->setPlaceholderText(tr("Max Port"));
-    settings_btn_port_range_ = new QPushButton(tr("Confirm"), gb_transport);
-    row_ports->addWidget(settings_ledit_min_port_);
-    row_ports->addWidget(settings_ledit_max_port_);
-    row_ports->addWidget(settings_btn_port_range_);
-    gb_transport_layout->addLayout(row_ports);
-    content_layout->addWidget(gb_transport);
-
-    auto* gb_network = new QGroupBox(tr("Network"), scroll_contents);
-    auto* gb_network_layout = new QVBoxLayout(gb_network);
-    gb_network_layout->setContentsMargins(9, 30, 9, 30);
-    auto* row_relay = new QHBoxLayout();
-    settings_ledit_relay_ = new QLineEdit(gb_network);
-    settings_ledit_relay_->setPlaceholderText(tr("relay:host:token:user"));
-    settings_btn_relay_ = new QPushButton(tr("Confirm"), gb_network);
-    row_relay->addWidget(settings_ledit_relay_);
-    row_relay->addWidget(settings_btn_relay_);
-    gb_network_layout->addLayout(row_relay);
-    auto* row_nic = new QHBoxLayout();
-    settings_ledit_ignored_nic_ = new QLineEdit(gb_network);
-    settings_ledit_ignored_nic_->setPlaceholderText(tr("Ignored NIC list"));
-    settings_btn_ignored_nic_ = new QPushButton(tr("Confirm"), gb_network);
-    row_nic->addWidget(settings_ledit_ignored_nic_);
-    row_nic->addWidget(settings_btn_ignored_nic_);
-    gb_network_layout->addLayout(row_nic);
-    content_layout->addWidget(gb_network);
-
-    auto* gb_bandwidth = new QGroupBox(tr("Bandwidth"), scroll_contents);
-    auto* gb_bandwidth_layout = new QVBoxLayout(gb_bandwidth);
-    gb_bandwidth_layout->setContentsMargins(9, 30, 9, 30);
-    auto* row_mbps = new QHBoxLayout();
-    settings_ledit_max_mbps_ = new QLineEdit(gb_bandwidth);
-    settings_ledit_max_mbps_->setPlaceholderText(tr("Max Mbps (1-100)"));
-    settings_btn_max_mbps_ = new QPushButton(tr("Confirm"), gb_bandwidth);
-    row_mbps->addWidget(settings_ledit_max_mbps_);
-    row_mbps->addWidget(settings_btn_max_mbps_);
-    gb_bandwidth_layout->addLayout(row_mbps);
-    content_layout->addWidget(gb_bandwidth);
-
-    auto* gb_overlay = new QGroupBox(tr("Overlay"), scroll_contents);
-    auto* gb_overlay_layout = new QVBoxLayout(gb_overlay);
-    gb_overlay_layout->setContentsMargins(9, 30, 9, 30);
-    settings_checkbox_overlay_ = new QCheckBox(tr("Show overlay"), gb_overlay);
-    gb_overlay_layout->addWidget(settings_checkbox_overlay_);
-    content_layout->addWidget(gb_overlay);
-
-    auto* gb_status_color = new QGroupBox(tr("Status Color"), scroll_contents);
-    auto* gb_status_color_layout = new QVBoxLayout(gb_status_color);
-    gb_status_color_layout->setContentsMargins(9, 30, 9, 30);
-    auto* row_color = new QHBoxLayout();
-    settings_ledit_red_ = new QLineEdit(gb_status_color);
-    settings_ledit_red_->setPlaceholderText(QStringLiteral("R"));
-    settings_ledit_green_ = new QLineEdit(gb_status_color);
-    settings_ledit_green_->setPlaceholderText(QStringLiteral("G"));
-    settings_ledit_blue_ = new QLineEdit(gb_status_color);
-    settings_ledit_blue_->setPlaceholderText(QStringLiteral("B"));
-    settings_btn_status_color_ = new QPushButton(tr("Confirm"), gb_status_color);
-    row_color->addWidget(settings_ledit_red_);
-    row_color->addWidget(settings_ledit_green_);
-    row_color->addWidget(settings_ledit_blue_);
-    row_color->addWidget(settings_btn_status_color_);
-    gb_status_color_layout->addLayout(row_color);
-    content_layout->addWidget(gb_status_color);
-
-    auto* gb_mouse = new QGroupBox(tr("Relative Mouse Accel"), scroll_contents);
-    auto* gb_mouse_layout = new QVBoxLayout(gb_mouse);
-    gb_mouse_layout->setContentsMargins(9, 30, 9, 30);
-    auto* row_accel = new QHBoxLayout();
-    settings_ledit_mouse_accel_ = new QLineEdit(gb_mouse);
-    settings_ledit_mouse_accel_->setPlaceholderText(tr("0.1 - 3.0"));
-    settings_btn_mouse_accel_ = new QPushButton(tr("Confirm"), gb_mouse);
-    row_accel->addWidget(settings_ledit_mouse_accel_);
-    row_accel->addWidget(settings_btn_mouse_accel_);
-    gb_mouse_layout->addLayout(row_accel);
-    content_layout->addWidget(gb_mouse);
-
-    content_layout->addStretch(1);
-    scroll->setWidget(scroll_contents);
-    page_layout->addWidget(scroll);
+    MainWindowSettingsPage page_builder;
+    MainWindowSettingsPageView page_view = page_builder.createPage(ui->stackedWidget);
+    QWidget* page_settings = page_view.page;
+    settings_checkbox_service_ = page_view.checkbox_service;
+    settings_checkbox_refresh_password_ = page_view.checkbox_refresh_password;
+    settings_checkbox_share_clipboard_ = page_view.checkbox_share_clipboard;
+    settings_radio_absolute_mouse_ = page_view.radio_absolute_mouse;
+    settings_radio_relative_mouse_ = page_view.radio_relative_mouse;
+    settings_ledit_relay_ = page_view.ledit_relay;
+    settings_btn_relay_ = page_view.btn_relay;
+    settings_radio_real_fullscreen_ = page_view.radio_real_fullscreen;
+    settings_radio_windowed_fullscreen_ = page_view.radio_windowed_fullscreen;
+    settings_checkbox_tcp_ = page_view.checkbox_tcp;
+    settings_ledit_min_port_ = page_view.ledit_min_port;
+    settings_ledit_max_port_ = page_view.ledit_max_port;
+    settings_btn_port_range_ = page_view.btn_port_range;
+    settings_ledit_ignored_nic_ = page_view.ledit_ignored_nic;
+    settings_btn_ignored_nic_ = page_view.btn_ignored_nic;
+    settings_ledit_max_mbps_ = page_view.ledit_max_mbps;
+    settings_btn_max_mbps_ = page_view.btn_max_mbps;
+    settings_checkbox_overlay_ = page_view.checkbox_overlay;
+    settings_ledit_red_ = page_view.ledit_red;
+    settings_ledit_green_ = page_view.ledit_green;
+    settings_ledit_blue_ = page_view.ledit_blue;
+    settings_btn_status_color_ = page_view.btn_status_color;
+    settings_ledit_mouse_accel_ = page_view.ledit_mouse_accel;
+    settings_btn_mouse_accel_ = page_view.btn_mouse_accel;
 
     if (old_page != nullptr) {
         ui->stackedWidget->removeWidget(old_page);
