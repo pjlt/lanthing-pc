@@ -29,6 +29,14 @@ set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_pages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_manager_page.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_manager_page.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_about_page.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_about_page.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_callbacks.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_clipboard.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_trusted_devices.cpp

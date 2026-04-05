@@ -6,10 +6,14 @@
 
 #include "main_window_private.h"
 
+#include "main_window_navigator.h"
+#include "main_window_status_presenter.h"
+
 MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     : QMainWindow(parent)
     , params_(params)
     , ui(new Ui_MainWindow)
+    , navigator_(std::make_unique<MainWindowNavigator>(ui))
     , relay_validator_(QRegularExpression("relay:(.+?:[0-9]+?):(.+?):(.+?)")) {
 
     ui->setupUi(this);
@@ -84,6 +88,8 @@ MainWindow::MainWindow(const lt::GUI::Params& params, QWidget* parent)
     setupSettingsPage();
 
     // 左下角状态栏
+    status_presenter_ =
+        std::make_unique<MainWindowStatusPresenter>(link_label_login_info_, link_label_controlled_info_);
     setLoginStatusInUIThread(lt::GUI::LoginStatus::Connecting);
 #if LT_WINDOWS
     setServiceStatusInUIThread(lt::GUI::ServiceStatus::Down);

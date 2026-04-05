@@ -4,6 +4,9 @@
 
 #include "main_window_private.h"
 
+#include "main_window_about_page.h"
+#include "main_window_manager_page.h"
+
 void MainWindow::rebuildLinkPageInCode() {
     if (ui->stackedWidget == nullptr) {
         return;
@@ -453,65 +456,10 @@ void MainWindow::rebuildManagerPageInCode() {
         manager_index = ui->stackedWidget->count();
     }
 
-    auto* page_mgr = new QWidget(ui->stackedWidget);
-    page_mgr->setObjectName("pageMgr");
-    auto* layout = new QVBoxLayout(page_mgr);
-
-    auto* title = new QLabel(page_mgr);
-    title->setStyleSheet("font: 16pt \"Microsoft YaHei UI\";");
-    title->setText(tr("Trusted clients:"));
-    layout->addWidget(title);
-
-    auto* table = new QTableWidget(page_mgr);
-    table->setObjectName("tableWidget");
-    table->setStyleSheet("QTableWidget {\n"
-                         "\tbackground-color: transparent;\n"
-                         "\tpadding: 10px;\n"
-                         "\tborder-radius: 5px;\n"
-                         "\tgridline-color: rgb(44, 49, 58);\n"
-                         "\tborder-bottom: 1px solid rgb(44, 49, 60);\n"
-                         "}\n"
-                         "QTableWidget::item{\n"
-                         "\tborder-color: rgb(44, 49, 60);\n"
-                         "\tpadding-left: 5px;\n"
-                         "\tpadding-right: 5px;\n"
-                         "\tgridline-color: rgb(44, 49, 60);\n"
-                         "}\n"
-                         "QTableWidget::item:selected{\n"
-                         "\tbackground-color: rgb(189, 147, 249);\n"
-                         "}\n"
-                         "QHeaderView::section{\n"
-                         "\tbackground-color: rgb(33, 37, 43);\n"
-                         "\tmax-width: 30px;\n"
-                         "\tborder: 1px solid rgb(44, 49, 58);\n"
-                         "\tborder-style: none;\n"
-                         "    border-bottom: 1px solid rgb(44, 49, 60);\n"
-                         "    border-right: 1px solid rgb(44, 49, 60);\n"
-                         "}\n"
-                         "QTableWidget::horizontalHeader {\n"
-                         "\tbackground-color: rgb(33, 37, 43);\n"
-                         "}\n"
-                         "QHeaderView::section:horizontal\n"
-                         "{\n"
-                         "    border: 1px solid rgb(33, 37, 43);\n"
-                         "\tbackground-color: rgb(33, 37, 43);\n"
-                         "\tpadding: 3px;\n"
-                         "\tborder-top-left-radius: 7px;\n"
-                         "    border-top-right-radius: 7px;\n"
-                         "}\n"
-                         "QHeaderView::section:vertical\n"
-                         "{\n"
-                         "    border: 1px solid rgb(44, 49, 60);\n"
-                         "}\n");
-    table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    table->setSelectionMode(QAbstractItemView::SingleSelection);
-    table->setColumnCount(6);
-    table->horizontalHeader()->setDefaultSectionSize(85);
-    table->setHorizontalHeaderLabels({tr("DeviceID"), tr("Gamepad"), tr("Mouse"), tr("Keyboard"),
-                                      tr("Last Time"), tr("Operate")});
-    layout->addWidget(table);
-
-    trusted_devices_table_ = table;
+    MainWindowManagerPage page_builder;
+    MainWindowManagerPageView page_view = page_builder.createPage(ui->stackedWidget);
+    QWidget* page_mgr = page_view.page;
+    trusted_devices_table_ = page_view.trusted_devices_table;
 
     if (old_page != nullptr) {
         ui->stackedWidget->removeWidget(old_page);
@@ -540,82 +488,8 @@ void MainWindow::rebuildAboutPageInCode() {
         about_index = ui->stackedWidget->count();
     }
 
-    auto* page_about = new QWidget(ui->stackedWidget);
-    page_about->setObjectName("pageAbout");
-    auto* page_layout = new QVBoxLayout(page_about);
-
-    auto* frame_shortcut = new QFrame(page_about);
-    frame_shortcut->setFrameShape(QFrame::StyledPanel);
-    frame_shortcut->setFrameShadow(QFrame::Raised);
-    auto* shortcut_layout = new QVBoxLayout(frame_shortcut);
-
-    auto* label_shortcut = new QLabel(frame_shortcut);
-    label_shortcut->setStyleSheet("font: 16pt \"Microsoft YaHei UI\";");
-    label_shortcut->setText(tr("Shotcut key"));
-    shortcut_layout->addWidget(label_shortcut);
-
-    auto* fullscreen_row = new QHBoxLayout();
-    auto* label_fullscreen_name = new QLabel(frame_shortcut);
-    label_fullscreen_name->setText(tr("Switch Fullscreen"));
-    auto* label_fullscreen_keys = new QLabel(frame_shortcut);
-    label_fullscreen_keys->setText(QStringLiteral("Win+Shift+Z"));
-    fullscreen_row->addWidget(label_fullscreen_name);
-    fullscreen_row->addWidget(label_fullscreen_keys);
-    shortcut_layout->addLayout(fullscreen_row);
-
-    auto* mouse_mode_row = new QHBoxLayout();
-    auto* label_mouse_mode_name = new QLabel(frame_shortcut);
-    label_mouse_mode_name->setText(tr("Mouse mode"));
-    auto* label_mouse_mode_keys = new QLabel(frame_shortcut);
-    label_mouse_mode_keys->setText(QStringLiteral("Win+Shift+X"));
-    mouse_mode_row->addWidget(label_mouse_mode_name);
-    mouse_mode_row->addWidget(label_mouse_mode_keys);
-    shortcut_layout->addLayout(mouse_mode_row);
-    page_layout->addWidget(frame_shortcut);
-
-    auto* frame_about = new QFrame(page_about);
-    frame_about->setFrameShape(QFrame::StyledPanel);
-    frame_about->setFrameShadow(QFrame::Raised);
-    auto* about_layout = new QVBoxLayout(frame_about);
-
-    auto* label_about = new QLabel(frame_about);
-    label_about->setStyleSheet("font: 16pt \"Microsoft YaHei UI\";");
-    label_about->setText(tr("Lanthing"));
-    about_layout->addWidget(label_about);
-
-    auto* label_about_content = new QLabel(frame_about);
-    label_about_content->setText(
-        tr("<html><head/><body><p>Lanthing is a remote control tool created by "
-           "<a href=\"https://github.com/pjlt\"><span style=\" text-decoration: "
-           "underline; color:#007af4;\">Project Lanthing</span></a>."
-           "</p></body></html>"));
-    label_about_content->setOpenExternalLinks(true);
-    about_layout->addWidget(label_about_content);
-    page_layout->addWidget(frame_about);
-
-    auto* frame_license = new QFrame(page_about);
-    frame_license->setFrameShape(QFrame::StyledPanel);
-    frame_license->setFrameShadow(QFrame::Raised);
-    auto* license_layout = new QVBoxLayout(frame_license);
-
-    auto* label_license = new QLabel(frame_license);
-    label_license->setStyleSheet("font: 16pt \"Microsoft YaHei UI\";");
-    label_license->setText(tr("License"));
-    license_layout->addWidget(label_license);
-
-    auto* label_license_content = new QLabel(frame_license);
-    label_license_content->setText(
-        tr("<html><head/><body><p>Lanthing release under <a "
-           "href=\"https://github.com/pjlt/lanthing-pc/blob/master/LICENSE\"><span "
-           "style=\" text-decoration: underline; color:#007af4;\">BSD-3-Clause "
-           "license</span></a>.</p><p>Thirdparty software licenses are listed in</p><p><a "
-           "href=\"https://github.com/pjlt/lanthing-pc/blob/master/third-party-licenses."
-           "txt\"><span style=\" text-decoration: underline; color:#007af4;\">https://"
-           "github.com/pjlt/lanthing-pc/blob/master/third-party-licenses.txt</span></a>"
-           "</p></body></html>"));
-    label_license_content->setOpenExternalLinks(true);
-    license_layout->addWidget(label_license_content);
-    page_layout->addWidget(frame_license);
+    MainWindowAboutPage page_builder;
+    QWidget* page_about = page_builder.createPage(ui->stackedWidget);
 
     if (old_page != nullptr) {
         ui->stackedWidget->removeWidget(old_page);

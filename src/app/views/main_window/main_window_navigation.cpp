@@ -4,54 +4,22 @@
 
 #include "main_window_private.h"
 
+#include "main_window_navigator.h"
+
 void MainWindow::switchToMainPage() {
-    const int main_index = indexOfPageByObjectName(QStringLiteral("pageLink"));
-    if (main_index < 0) {
-        LOG(ERR) << "Main page not found";
-        return;
-    }
-    if (ui->stackedWidget->currentIndex() != main_index) {
-        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnLinkTab);
-        ui->stackedWidget->setCurrentIndex(main_index);
-    }
+    navigator_->switchToMainPage();
 }
 
 void MainWindow::switchToManagerPage() {
-    const int manager_index = indexOfPageByObjectName(QStringLiteral("pageMgr"));
-    if (manager_index < 0) {
-        LOG(ERR) << "Manager page not found";
-        return;
-    }
-    if (ui->stackedWidget->currentIndex() != manager_index) {
-        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
-                             ui->btnManagerTab);
-        ui->stackedWidget->setCurrentIndex(manager_index);
-    }
+    navigator_->switchToManagerPage();
 }
 
 void MainWindow::switchToSettingPage() {
-    const int settings_index = indexOfPageByObjectName(QStringLiteral("pageSettings"));
-    if (settings_index < 0) {
-        LOG(ERR) << "Settings page not found";
-        return;
-    }
-    if (ui->stackedWidget->currentIndex() != settings_index) {
-        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()),
-                             ui->btnSettingsTab);
-        ui->stackedWidget->setCurrentIndex(settings_index);
-    }
+    navigator_->switchToSettingPage();
 }
 
 void MainWindow::switchToAboutPage() {
-    const int about_index = indexOfPageByObjectName(QStringLiteral("pageAbout"));
-    if (about_index < 0) {
-        LOG(ERR) << "About page not found";
-        return;
-    }
-    if (ui->stackedWidget->currentIndex() != about_index) {
-        swapTabBtnStyleSheet(indexToTabButton(ui->stackedWidget->currentIndex()), ui->btnAboutTab);
-        ui->stackedWidget->setCurrentIndex(about_index);
-    }
+    navigator_->switchToAboutPage();
 }
 
 void MainWindow::setupClientIndicators() {
@@ -134,39 +102,11 @@ void MainWindow::setupClientIndicators() {
 }
 
 QPushButton* MainWindow::indexToTabButton(int32_t index) {
-    if (ui->stackedWidget == nullptr || index < 0 || index >= ui->stackedWidget->count()) {
-        LOG(ERR) << "Unknown tab index!";
-        return ui->btnLinkTab;
-    }
-
-    QWidget* page = ui->stackedWidget->widget(index);
-    if (page == nullptr) {
-        LOG(ERR) << "Page is null for tab index " << index;
-        return ui->btnLinkTab;
-    }
-
-    const QString page_name = page->objectName();
-    if (page_name == QStringLiteral("pageLink")) {
-        return ui->btnLinkTab;
-    }
-    if (page_name == QStringLiteral("pageMgr")) {
-        return ui->btnManagerTab;
-    }
-    if (page_name == QStringLiteral("pageSettings")) {
-        return ui->btnSettingsTab;
-    }
-    if (page_name == QStringLiteral("pageAbout")) {
-        return ui->btnAboutTab;
-    }
-
-    LOG(ERR) << "Unknown page name: " << page_name.toStdString();
-    return ui->btnLinkTab;
+    return navigator_->indexToTabButton(index);
 }
 
 void MainWindow::swapTabBtnStyleSheet(QPushButton* old_selected, QPushButton* new_selected) {
-    QString stylesheet = new_selected->styleSheet();
-    new_selected->setStyleSheet(old_selected->styleSheet());
-    old_selected->setStyleSheet(stylesheet);
+    MainWindowNavigator::swapTabBtnStyleSheet(old_selected, new_selected);
 }
 
 void MainWindow::onUpdateIndicator() {
@@ -183,17 +123,7 @@ void MainWindow::onUpdateIndicator() {
 }
 
 int MainWindow::indexOfPageByObjectName(const QString& object_name) const {
-    if (ui->stackedWidget == nullptr) {
-        return -1;
-    }
-
-    for (int i = 0; i < ui->stackedWidget->count(); i++) {
-        QWidget* page = ui->stackedWidget->widget(i);
-        if (page != nullptr && page->objectName() == object_name) {
-            return i;
-        }
-    }
-    return -1;
+    return navigator_->indexOfPageByObjectName(object_name);
 }
 
 void MainWindow::setPixmapForIndicator(bool enable, int64_t last_time, QLabel* label,

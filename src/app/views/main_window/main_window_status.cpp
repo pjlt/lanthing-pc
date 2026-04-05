@@ -4,6 +4,8 @@
 
 #include "main_window_private.h"
 
+#include "main_window_status_presenter.h"
+
 void MainWindow::setLoginStatus(lt::GUI::LoginStatus status) {
     postToUiThread([this, status]() { setLoginStatusInUIThread(status); });
 }
@@ -248,41 +250,17 @@ void MainWindow::onNewVersion(std::shared_ptr<google::protobuf::MessageLite> _ms
 }
 
 void MainWindow::setLoginStatusInUIThread(lt::GUI::LoginStatus status) {
-    switch (status) {
-    case lt::GUI::LoginStatus::Connected:
-        // ui->statusBarLayout->removeWidget(login_progress_);
-        // login_progress_->setVisible(false);
-        link_label_login_info_->setText(tr("🟢Connected to server"));
-        break;
-    case lt::GUI::LoginStatus::Connecting:
-        // ui->statusBarLayout->addWidget(login_progress_);
-        // login_progress_->setVisible(true);
-        //  login label style reserved
-        link_label_login_info_->setText(tr("🟡Connecting..."));
-        break;
-    case lt::GUI::LoginStatus::Disconnected:
-    default:
-        // ui->statusBarLayout->removeWidget(login_progress_);
-        // login_progress_->setVisible(false);
-        link_label_login_info_->setText(tr("🔴Disconnected from server"));
-        if (status != lt::GUI::LoginStatus::Disconnected) {
-            LOG(ERR) << "Unknown Login status " << static_cast<int32_t>(status);
-        }
-        break;
+    if (status_presenter_ == nullptr) {
+        LOG(ERR) << "Status presenter is null";
+        return;
     }
+    status_presenter_->setLoginStatus(status);
 }
 
 void MainWindow::setServiceStatusInUIThread(lt::GUI::ServiceStatus status) {
-    switch (status) {
-    case lt::GUI::ServiceStatus::Up:
-        link_label_controlled_info_->setText(tr("🟢Controlled module up"));
-        break;
-    case lt::GUI::ServiceStatus::Down:
-    default:
-        link_label_controlled_info_->setText(tr("🔴Controlled module down"));
-        if (status != lt::GUI::ServiceStatus::Down) {
-            LOG(ERR) << "Unknown ServiceStatus " << static_cast<int32_t>(status);
-        }
-        break;
+    if (status_presenter_ == nullptr) {
+        LOG(ERR) << "Status presenter is null";
+        return;
     }
+    status_presenter_->setServiceStatus(status);
 }

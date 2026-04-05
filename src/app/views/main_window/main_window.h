@@ -32,6 +32,7 @@
 
 #include <functional>
 #include <iomanip>
+#include <memory>
 
 #include <QValidator>
 #include <QtWidgets/QMainWindow>
@@ -50,6 +51,8 @@ class QRadioButton;
 class QLineEdit;
 class QComboBox;
 class QFrame;
+class MainWindowNavigator;
+class MainWindowStatusPresenter;
 
 QT_END_NAMESPACE
 
@@ -244,6 +247,8 @@ private:
     QTableWidget* trusted_devices_table_ = nullptr;
 
     Ui_MainWindow* ui;
+    std::unique_ptr<MainWindowNavigator> navigator_;
+    std::unique_ptr<MainWindowStatusPresenter> status_presenter_;
     QRegularExpressionValidator relay_validator_;
     QPointF old_pos_{};
     qt_componets::ProgressWidget* login_progress_ = nullptr;
