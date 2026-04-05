@@ -26,9 +26,6 @@ set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/friendly_error_code.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_pages.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.h
@@ -43,9 +40,6 @@ set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_link_page.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_settings_page.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_settings_page.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_callbacks.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_clipboard.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_trusted_devices.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_private.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/progress_widget.h
