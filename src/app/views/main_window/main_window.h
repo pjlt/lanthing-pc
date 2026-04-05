@@ -32,6 +32,7 @@
 
 #include <functional>
 #include <iomanip>
+#include <memory>
 
 #include <QValidator>
 #include <QtWidgets/QMainWindow>
@@ -44,6 +45,15 @@
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow;
+class QTableWidget;
+class QCheckBox;
+class QRadioButton;
+class QLineEdit;
+class QComboBox;
+class QFrame;
+class MainWindowActionsBinder;
+class MainWindowNavigator;
+class MainWindowStatusPresenter;
 
 QT_END_NAMESPACE
 
@@ -92,6 +102,18 @@ protected:
     bool eventFilter(QObject* obj, QEvent* ev) override;
 
 private:
+    bool isUiThread() const;
+
+    void postToUiThread(std::function<void()> callback);
+
+    void rebuildLinkPageInCode();
+
+    void rebuildSettingsPageInCode();
+
+    void rebuildManagerPageInCode();
+
+    void rebuildAboutPageInCode();
+
     void setupOtherCallbacks();
 
     void setupSettingsPage();
@@ -130,6 +152,8 @@ private:
                                   int64_t last_access_time);
 
     QWidget* makeWidgetHCentered(QWidget* widget);
+
+    int indexOfPageByObjectName(const QString& object_name) const;
 
     void onClipboardPlainTextChanged();
 
@@ -179,8 +203,54 @@ private:
     bool p2p_ = false;
     bool bandwidth_bps_ = 0;
     int64_t device_id_ = -1;
+    QComboBox* link_cb_device_id_ = nullptr;
+    QLineEdit* link_ledit_access_token_ = nullptr;
+    QPushButton* link_btn_connect_ = nullptr;
+    QPushButton* link_btn_copy_ = nullptr;
+    QPushButton* link_btn_show_token_ = nullptr;
+    QPushButton* link_btn_refresh_token_ = nullptr;
+    QLabel* link_label_my_device_id_ = nullptr;
+    QLabel* link_label_my_access_token_ = nullptr;
+    QLabel* link_label_copied_ = nullptr;
+    QLabel* link_label_login_info_ = nullptr;
+    QLabel* link_label_controlled_info_ = nullptr;
+    QLabel* link_label_version_ = nullptr;
+    QLabel* link_label_client1_ = nullptr;
+    QLabel* link_label_gamepad1_ = nullptr;
+    QLabel* link_label_mouse1_ = nullptr;
+    QLabel* link_label_keyboard1_ = nullptr;
+    QFrame* link_indicator1_ = nullptr;
+    QFrame* link_indicator2_ = nullptr;
+    QCheckBox* settings_checkbox_service_ = nullptr;
+    QCheckBox* settings_checkbox_refresh_password_ = nullptr;
+    QCheckBox* settings_checkbox_share_clipboard_ = nullptr;
+    QRadioButton* settings_radio_absolute_mouse_ = nullptr;
+    QRadioButton* settings_radio_relative_mouse_ = nullptr;
+    QLineEdit* settings_ledit_relay_ = nullptr;
+    QPushButton* settings_btn_relay_ = nullptr;
+    QRadioButton* settings_radio_real_fullscreen_ = nullptr;
+    QRadioButton* settings_radio_windowed_fullscreen_ = nullptr;
+    QCheckBox* settings_checkbox_tcp_ = nullptr;
+    QLineEdit* settings_ledit_min_port_ = nullptr;
+    QLineEdit* settings_ledit_max_port_ = nullptr;
+    QPushButton* settings_btn_port_range_ = nullptr;
+    QLineEdit* settings_ledit_ignored_nic_ = nullptr;
+    QPushButton* settings_btn_ignored_nic_ = nullptr;
+    QLineEdit* settings_ledit_max_mbps_ = nullptr;
+    QPushButton* settings_btn_max_mbps_ = nullptr;
+    QCheckBox* settings_checkbox_overlay_ = nullptr;
+    QLineEdit* settings_ledit_red_ = nullptr;
+    QLineEdit* settings_ledit_green_ = nullptr;
+    QLineEdit* settings_ledit_blue_ = nullptr;
+    QPushButton* settings_btn_status_color_ = nullptr;
+    QLineEdit* settings_ledit_mouse_accel_ = nullptr;
+    QPushButton* settings_btn_mouse_accel_ = nullptr;
+    QTableWidget* trusted_devices_table_ = nullptr;
 
     Ui_MainWindow* ui;
+    std::unique_ptr<MainWindowActionsBinder> actions_binder_;
+    std::unique_ptr<MainWindowNavigator> navigator_;
+    std::unique_ptr<MainWindowStatusPresenter> status_presenter_;
     QRegularExpressionValidator relay_validator_;
     QPointF old_pos_{};
     qt_componets::ProgressWidget* login_progress_ = nullptr;

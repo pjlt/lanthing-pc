@@ -200,34 +200,80 @@ std::string getConfigPath(bool is_service) {
         return appdata_path;
     }
 
-    auto get_path = [&](HANDLE) -> bool {
-        wchar_t m_lpszDefaultDir[MAX_PATH] = {0};
-        wchar_t szDocument[MAX_PATH] = {0};
+    auto append_lanthing = [](const std::string& base) -> std::string {
+        std::filesystem::path fs = base;
+        fs /= "lanthing";
+        return fs.string();
+    };
 
-        LPITEMIDLIST pidl = NULL;
-        auto hr = SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &pidl);
-        if (hr != S_OK) {
+    auto known_folder_path = [](REFKNOWNFOLDERID folder_id, HANDLE token,
+                                std::string* out_path) -> bool {
+        if (out_path == nullptr) {
             return false;
         }
-        if (!pidl || !SHGetPathFromIDListW(pidl, szDocument)) {
+
+        PWSTR w_path = nullptr;
+        const HRESULT hr = SHGetKnownFolderPath(folder_id, KF_FLAG_DEFAULT, token, &w_path);
+        if (FAILED(hr) || w_path == nullptr) {
+            if (w_path != nullptr) {
+                CoTaskMemFree(w_path);
+            }
             return false;
         }
-        CoTaskMemFree(pidl);
-        GetShortPathNameW(szDocument, m_lpszDefaultDir, _MAX_PATH);
-        appdata_path = utf16To8(std::wstring(m_lpszDefaultDir));
-        std::filesystem::path fs = appdata_path;
-        fs = fs / "lanthing";
-        appdata_path = fs.string();
+
+        *out_path = utf16To8(std::wstring(w_path));
+        CoTaskMemFree(w_path);
+        return !out_path->empty();
+    };
+
+    auto get_path = [&](HANDLE) -> bool {
+        std::string base_path;
+        if (!known_folder_path(FOLDERID_RoamingAppData, nullptr, &base_path)) {
+            return false;
+        }
+        appdata_path = append_lanthing(base_path);
         return true;
     };
 
-    if (is_service) {
-        if (!executeAsUser(get_path)) {
-            return "";
+    auto get_service_path = [&](HANDLE token) -> bool {
+        std::string base_path;
+
+        // Prefer the interactive user's roaming profile when available.
+        if (known_folder_path(FOLDERID_RoamingAppData, token, &base_path)) {
+            appdata_path = append_lanthing(base_path);
+            return true;
         }
-        return appdata_path;
+
+        // Fallback for Session 0 / no logged-in user services.
+        if (known_folder_path(FOLDERID_ProgramData, nullptr, &base_path)) {
+            appdata_path = append_lanthing(base_path);
+            return true;
+        }
+
+        std::string program_dir = getProgramPath();
+        if (!program_dir.empty()) {
+            appdata_path = append_lanthing(program_dir);
+            return true;
+        }
+
+        return false;
+    };
+
+    if (is_service) {
+        if (executeAsUser(get_service_path)) {
+            return appdata_path;
+        }
+        if (get_service_path(nullptr)) {
+            return appdata_path;
+        }
+        return "";
     }
     if (!get_path(NULL)) {
+        std::string base_path;
+        if (known_folder_path(FOLDERID_ProgramData, nullptr, &base_path)) {
+            appdata_path = append_lanthing(base_path);
+            return appdata_path;
+        }
         return "";
     }
     return appdata_path;

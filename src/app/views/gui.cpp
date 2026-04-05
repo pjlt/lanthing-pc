@@ -49,7 +49,7 @@
 #include <ltproto/service2app/accepted_connection.pb.h>
 
 #include "friendly_error_code.h"
-#include "mainwindow/mainwindow.h"
+#include "main_window/main_window.h"
 
 namespace {
 
@@ -142,9 +142,6 @@ private:
 void GUIImpl::init(const GUI::Params& params, int argc, char** argv) {
     qInstallMessageHandler(ltQtOutput);
     qapp_ = std::make_unique<QApplication>(argc, argv);
-
-    // Ensure qrc resources packaged in static libs are force-initialized.
-    Q_INIT_RESOURCE(resources);
 
     setLanguage();
     QIcon icon(":/res/png_icons/pc2.png");

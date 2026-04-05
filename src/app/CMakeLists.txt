@@ -1,3 +1,13 @@
+file(GLOB_RECURSE LT_APP_UI_FILES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/*.ui
+)
+list(REMOVE_ITEM LT_APP_UI_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.ui
+)
+if (LT_APP_UI_FILES)
+    message(FATAL_ERROR "New Qt .ui files are forbidden. Build UI in C++ code instead.")
+endif()
+
 set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/app.h
     ${CMAKE_CURRENT_SOURCE_DIR}/app.cpp
@@ -14,9 +24,24 @@ set(LT_MODULE_APP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/views/gui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/friendly_error_code.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/friendly_error_code.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/views/mainwindow/mainwindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_navigator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_status_presenter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_actions_binder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_actions_binder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_manager_page.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_manager_page.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_about_page.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_about_page.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_link_page.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_link_page.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_settings_page.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_settings_page.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/views/main_window/main_window_private.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/progress_widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/progress_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/views/components/clickable_label.h

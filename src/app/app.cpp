@@ -30,6 +30,7 @@
 
 #include "app.h"
 
+#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -202,43 +203,66 @@ bool App::initSettings() {
 
 int App::exec(int argc, char** argv) {
     GUI::Params params{};
-    params.connect = std::bind(&App::connect, this, std::placeholders ::_1, std::placeholders::_2);
+    params.connect = [this](int64_t peer_device_id, const std::string& access_token) {
+        postTask([this, peer_device_id, access_token]() { connect(peer_device_id, access_token); });
+    };
     params.enable_auto_refresh_access_token =
-        std::bind(&App::enableRefreshAccessToken, this, std::placeholders::_1);
+        [this](bool enable) { postTask([this, enable]() { enableRefreshAccessToken(enable); }); };
     params.enable_share_clipboard =
-        std::bind(&App::enableShareClipboard, this, std::placeholders::_1);
-    params.enable_run_as_service = std::bind(&App::enableRunAsDaemon, this, std::placeholders::_1);
+        [this](bool enable) { postTask([this, enable]() { enableShareClipboard(enable); }); };
+    params.enable_run_as_service =
+        [this](bool enable) { postTask([this, enable]() { enableRunAsDaemon(enable); }); };
     params.get_history_device_ids = std::bind(&App::getHistoryDeviceIDs, this);
     params.get_last_access_token = std::bind(&App::getLastAccessToken, this);
-    params.refresh_access_token = std::bind(&App::refreshAccessToken, this);
-    params.clear_last_access_token = std::bind(&App::clearLastAccessToken, this);
+    params.refresh_access_token = [this]() { postTask([this]() { refreshAccessToken(); }); };
+    params.clear_last_access_token = [this]() { postTask([this]() { clearLastAccessToken(); }); };
     params.get_settings = std::bind(&App::getSettings, this);
-    params.on_user_confirmed_connection = std::bind(&App::onUserConfirmedConnection, this,
-                                                    std::placeholders::_1, std::placeholders::_2);
-    params.on_operate_connection =
-        std::bind(&App::onOperateConnection, this, std::placeholders::_1);
-    params.set_relay_server = std::bind(&App::setRelayServer, this, std::placeholders::_1);
+    params.on_user_confirmed_connection = [this](int64_t device_id, GUI::ConfirmResult result) {
+        postTask([this, device_id, result]() { onUserConfirmedConnection(device_id, result); });
+    };
+    params.on_operate_connection = [this](std::shared_ptr<google::protobuf::MessageLite> msg) {
+        postTask([this, msg]() { onOperateConnection(msg); });
+    };
+    params.set_relay_server =
+        [this](const std::string& relay_server) { postTask([this, relay_server]() { setRelayServer(relay_server); }); };
     params.set_fullscreen_mode =
-        std::bind(&App::onFullscreenModeChanged, this, std::placeholders::_1);
-    params.enable_device_permission =
-        std::bind(&App::enableDevicePermission, this, std::placeholders::_1, std::placeholders ::_2,
-                  std::placeholders::_3);
-    params.delete_trusted_device =
-        std::bind(&App::deleteTrustedDevice, this, std::placeholders::_1);
+        [this](bool is_windowed) { postTask([this, is_windowed]() { onFullscreenModeChanged(is_windowed); }); };
+    params.enable_device_permission = [this](int64_t device_id, GUI::DeviceType type, bool enable) {
+        postTask([this, device_id, type, enable]() {
+            enableDevicePermission(device_id, type, enable);
+        });
+    };
+    params.delete_trusted_device = [this](int64_t device_id) {
+        postTask([this, device_id]() { deleteTrustedDevice(device_id); });
+    };
     params.get_trusted_devices = std::bind(&App::getTrustedDevices, this);
-    params.ignore_version = std::bind(&App::ignoreVersion, this, std::placeholders::_1);
-    params.set_port_range =
-        std::bind(&App::setPortRange, this, std::placeholders::_1, std::placeholders::_2);
-    params.set_status_color = std::bind(&App::setStatusColor, this, std::placeholders::_1);
-    params.set_rel_mouse_accel = std::bind(&App::setRelMouseAccel, this, std::placeholders::_1);
-    params.set_ignored_nic = std::bind(&App::setIgnoredNIC, this, std::placeholders::_1);
-    params.enable_tcp = std::bind(&App::enableTCP, this, std::placeholders::_1);
-    params.on_clipboard_text = std::bind(&App::syncClipboardText, this, std::placeholders::_1);
-    params.on_clipboard_file =
-        std::bind(&App::syncClipboardFile, this, std::placeholders::_1, std::placeholders::_2);
-    params.set_max_mbps = std::bind(&App::setMaxMbps, this, std::placeholders::_1);
-    params.set_absolute_mouse = std::bind(&App::setDefaultMouseMode, this, std::placeholders::_1);
-    params.set_show_overlay = std::bind(&App::setShowOverlay, this, std::placeholders ::_1);
+    params.ignore_version =
+        [this](int64_t version) { postTask([this, version]() { ignoreVersion(version); }); };
+    params.set_port_range = [this](uint16_t min_port, uint16_t max_port) {
+        postTask([this, min_port, max_port]() { setPortRange(min_port, max_port); });
+    };
+    params.set_status_color =
+        [this](int64_t color) { postTask([this, color]() { setStatusColor(color); }); };
+    params.set_rel_mouse_accel =
+        [this](int64_t accel) { postTask([this, accel]() { setRelMouseAccel(accel); }); };
+    params.set_ignored_nic = [this](const std::string& nic_list) {
+        postTask([this, nic_list]() { setIgnoredNIC(nic_list); });
+    };
+    params.enable_tcp =
+        [this](bool enable) { postTask([this, enable]() { enableTCP(enable); }); };
+    params.on_clipboard_text = [this](const std::string& text) {
+        postTask([this, text]() { syncClipboardText(text); });
+    };
+    params.on_clipboard_file = [this](const std::string& fullpath, uint64_t file_size) {
+        postTask([this, fullpath, file_size]() { syncClipboardFile(fullpath, file_size); });
+    };
+    params.set_max_mbps =
+        [this](uint32_t mbps) { postTask([this, mbps]() { setMaxMbps(mbps); }); };
+    params.set_absolute_mouse = [this](bool absolute) {
+        postTask([this, absolute]() { setDefaultMouseMode(absolute); });
+    };
+    params.set_show_overlay =
+        [this](bool show) { postTask([this, show]() { setShowOverlay(show); }); };
 
     gui_.init(params, argc, argv);
     thread_ = ltlib::BlockingThread::create(
@@ -246,8 +270,9 @@ int App::exec(int argc, char** argv) {
     return gui_.exec();
 }
 
-// 跑在UI线程
+// 跑在App线程（由UI线程投递过来）
 void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
+    assertAppThread();
     if (decode_abilities_ == 0) {
         gui_.errorCode(ltproto::ErrorCode::NoDecodeAbility);
         return;
@@ -265,15 +290,13 @@ void App::connect(int64_t peerDeviceID, const std::string& accessToken) {
     }
     WARNING_ENABLE(4127)
     WARNING_ENABLE(6239)
-    postTask([peerDeviceID, accessToken, this]() {
-        std::string cookie_name = "to_" + std::to_string(peerDeviceID);
-        auto cookie = settings_->getString(cookie_name);
-        if (!cookie.has_value()) {
-            cookie = ltlib::randomStr(24);
-            settings_->setString(cookie_name, cookie.value());
-        }
-        client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""), enable_tcp_);
-    });
+    std::string cookie_name = "to_" + std::to_string(peerDeviceID);
+    auto cookie = settings_->getString(cookie_name);
+    if (!cookie.has_value()) {
+        cookie = ltlib::randomStr(24);
+        settings_->setString(cookie_name, cookie.value());
+    }
+    client_manager_->connect(peerDeviceID, accessToken, cookie.value_or(""), enable_tcp_);
     saveLastAccessToken(std::to_string(peerDeviceID), accessToken);
 }
 
@@ -336,17 +359,18 @@ void App::setDefaultMouseMode(bool absolute) {
 }
 
 void App::onUserConfirmedConnection(int64_t device_id, GUI::ConfirmResult result) {
-    postTask([this, device_id, result]() {
-        service_manager_->onUserConfirmedConnection(device_id, result);
-    });
+    assertAppThread();
+    service_manager_->onUserConfirmedConnection(device_id, result);
 }
 
 void App::onOperateConnection(std::shared_ptr<google::protobuf::MessageLite> msg) {
-    postTask([this, msg]() { service_manager_->onOperateConnection(msg); });
+    assertAppThread();
+    service_manager_->onOperateConnection(msg);
 }
 
 void App::onFullscreenModeChanged(bool is_windowed) {
-    postTask([this, is_windowed]() { settings_->setBoolean("windowed_fullscreen", is_windowed); });
+    assertAppThread();
+    settings_->setBoolean("windowed_fullscreen", is_windowed);
 }
 
 void App::enableDevicePermission(int64_t device_id, GUI::DeviceType type, bool enable) {
@@ -460,52 +484,50 @@ void App::enableTCP(bool enable) {
 }
 
 void App::syncClipboardText(const std::string& text) {
+    assertAppThread();
     if (!enable_share_clipboard_) {
         return;
     }
-    postTask([this, text]() {
-        client_manager_->syncClipboardText(text);
+    client_manager_->syncClipboardText(text);
 #if LT_WINDOWS
-        service_manager_->syncClipboardText(text);
+    service_manager_->syncClipboardText(text);
 #endif
-    });
 }
 
 void App::syncClipboardFile(const std::string& fullpath, uint64_t file_size) {
+    assertAppThread();
     (void)fullpath;
     (void)file_size;
     if (!enable_share_clipboard_) {
         return;
     }
 #if defined(LT_WINDOWS)
-    postTask([this, fullpath, file_size]() {
-        if (nb_clipboard_ == nullptr) {
-            return;
-        }
-        auto pos = fullpath.rfind('\\');
+    if (nb_clipboard_ == nullptr) {
+        return;
+    }
+    auto pos = fullpath.rfind('\\');
+    if (pos == std::string::npos) {
+        pos = fullpath.rfind('/');
         if (pos == std::string::npos) {
-            pos = fullpath.rfind('/');
-            if (pos == std::string::npos) {
-                LOG(ERR) << "syncClipboardFile: fullpath.rfind('\\') and fullpath.rfind('/') "
-                            "return npos";
-                return;
-            }
-        }
-        std::string filename = fullpath.substr(pos + 1);
-        if (filename.empty()) {
-            LOG(ERR) << "syncClipboardFile: filename is empty";
+            LOG(ERR) << "syncClipboardFile: fullpath.rfind('\\') and fullpath.rfind('/') "
+                        "return npos";
             return;
         }
-        std::wstring wfullpath = ltlib::utf8To16(fullpath);
-        uint32_t file_seq = nb_clipboard_->update_local_file_info(nb_clipboard_, fullpath.c_str(),
-                                                                  wfullpath.c_str(), file_size);
-        if (file_seq == 0) {
-            LOG(WARNING) << "Update local clipboard file info failed";
-            return;
-        }
-        client_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
-        service_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
-    });
+    }
+    std::string filename = fullpath.substr(pos + 1);
+    if (filename.empty()) {
+        LOG(ERR) << "syncClipboardFile: filename is empty";
+        return;
+    }
+    std::wstring wfullpath = ltlib::utf8To16(fullpath);
+    uint32_t file_seq = nb_clipboard_->update_local_file_info(nb_clipboard_, fullpath.c_str(),
+                                                              wfullpath.c_str(), file_size);
+    if (file_seq == 0) {
+        LOG(WARNING) << "Update local clipboard file info failed";
+        return;
+    }
+    client_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
+    service_manager_->syncClipboardFile(device_id_, file_seq, filename, file_size);
 #endif // LT_WINDOWS
 }
 
@@ -514,7 +536,16 @@ void App::setMaxMbps(uint32_t mbps) {
     settings_->setInteger("max_mbps", mbps);
 }
 
+bool App::isAppThread() const {
+    return app_thread_id_ == std::this_thread::get_id();
+}
+
+void App::assertAppThread() const {
+    assert(isAppThread());
+}
+
 void App::ioLoop(const std::function<void()>& i_am_alive) {
+    app_thread_id_ = std::this_thread::get_id();
     LOG(INFO) << "App enter io loop";
     ioloop_->run(i_am_alive);
     LOG(INFO) << "App exit io loop";

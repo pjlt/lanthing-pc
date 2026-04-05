@@ -35,6 +35,8 @@
 #include <string>
 #include <vector>
 
+#include <QtCore/qglobal.h>
+
 #include <g3log/logworker.hpp>
 #include <lt_minidump_generator.h>
 
@@ -65,6 +67,10 @@
 #endif
 
 int getLtFlushLogLines();
+
+void initQtResourcesForApp() {
+    Q_INIT_RESOURCE(resources);
+}
 
 namespace {
 
@@ -314,6 +320,10 @@ int runAsWorker(std::map<std::string, std::string> options) {
 
 int runAsApp(std::map<std::string, std::string> options, int argc, char* argv[]) {
     (void)options;
+
+    // Trigger registration of resources.qrc from lt_module_app before Qt app startup.
+    initQtResourcesForApp();
+
     if (ltlib::selfElevateAndNeedExit()) {
         return 0;
     }
