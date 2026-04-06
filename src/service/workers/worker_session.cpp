@@ -476,7 +476,7 @@ tp::Server* WorkerSession::createRtc2Server() {
     params.on_keyframe_request = &WorkerSession::onTpRequestKeyframe;
     params.on_video_bitrate_update = &WorkerSession::onTpEesimatedVideoBitreateUpdate;
     params.on_loss_rate_update = &WorkerSession::onTpLossRateUpdate;
-    params.remote_digest;
+    // params.remote_digest;
     params.key_and_cert = rtc2::KeyAndCert::create();
     if (params.key_and_cert == nullptr) {
         return nullptr;
