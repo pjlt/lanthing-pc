@@ -45,19 +45,25 @@ void MainWindowActionsBinder::bind(const MainWindowActionsBindingContext& c) con
     QObject::connect(c.link_btn_connect, &QPushButton::clicked, c.owner,
             [c]() { c.on_connect_btn_clicked(); });
 
-    QObject::connect(c.settings_checkbox_service, &QCheckBox::stateChanged, c.owner, [c](int) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    const auto check_state_changed_signal = &QCheckBox::checkStateChanged;
+#else
+    const auto check_state_changed_signal = &QCheckBox::stateChanged;
+#endif
+
+    QObject::connect(c.settings_checkbox_service, check_state_changed_signal, c.owner, [c]() {
         c.params->enable_run_as_service(c.settings_checkbox_service->isChecked());
     });
-    QObject::connect(c.settings_checkbox_refresh_password, &QCheckBox::stateChanged, c.owner, [c](int) {
+    QObject::connect(c.settings_checkbox_refresh_password, check_state_changed_signal, c.owner, [c]() {
         c.params->enable_auto_refresh_access_token(c.settings_checkbox_refresh_password->isChecked());
     });
-    QObject::connect(c.settings_checkbox_share_clipboard, &QCheckBox::stateChanged, c.owner, [c](int) {
+    QObject::connect(c.settings_checkbox_share_clipboard, check_state_changed_signal, c.owner, [c]() {
         c.params->enable_share_clipboard(c.settings_checkbox_share_clipboard->isChecked());
     });
     QObject::connect(c.settings_radio_windowed_fullscreen, &QRadioButton::toggled, c.owner,
             [c](bool is_windowed) { c.params->set_fullscreen_mode(is_windowed); });
-    QObject::connect(c.settings_checkbox_tcp, &QCheckBox::stateChanged, c.owner,
-            [c](int) { c.params->enable_tcp(c.settings_checkbox_tcp->isChecked()); });
+    QObject::connect(c.settings_checkbox_tcp, check_state_changed_signal, c.owner,
+            [c]() { c.params->enable_tcp(c.settings_checkbox_tcp->isChecked()); });
     QObject::connect(c.settings_ledit_relay, &QLineEdit::textChanged, c.owner, [c](const QString& _text) {
         if (_text.isEmpty()) {
             c.settings_btn_relay->setEnabled(true);
@@ -150,8 +156,8 @@ void MainWindowActionsBinder::bind(const MainWindowActionsBindingContext& c) con
             [c](const QString& text) { c.on_status_color_changed(text); });
     QObject::connect(c.settings_ledit_blue, &QLineEdit::textChanged, c.owner,
             [c](const QString& text) { c.on_status_color_changed(text); });
-    QObject::connect(c.settings_checkbox_overlay, &QCheckBox::stateChanged, c.owner,
-            [c](int) { c.params->set_show_overlay(c.settings_checkbox_overlay->isChecked()); });
+    QObject::connect(c.settings_checkbox_overlay, check_state_changed_signal, c.owner,
+            [c]() { c.params->set_show_overlay(c.settings_checkbox_overlay->isChecked()); });
     QObject::connect(c.settings_btn_status_color, &QPushButton::clicked, c.owner, [c]() {
         c.settings_btn_status_color->setEnabled(false);
         if (c.settings_ledit_red->text().isEmpty() && c.settings_ledit_green->text().isEmpty() &&

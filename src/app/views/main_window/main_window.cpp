@@ -1080,10 +1080,17 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     QTableWidgetItem* id_item = new QTableWidgetItem;
     trusted_devices_table_->setItem(row, 0, id_item);
     id_item->setData(Qt::DisplayRole, QVariant::fromValue(device_id));
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    const auto check_state_changed_signal = &QCheckBox::checkStateChanged;
+#else
+    const auto check_state_changed_signal = &QCheckBox::stateChanged;
+#endif
+
     // gamepad
     QCheckBox* gamepad_item = new QCheckBox();
     gamepad_item->setChecked(gamepad);
-    connect(gamepad_item, &QCheckBox::stateChanged, [this, gamepad_item, device_id](int) {
+    connect(gamepad_item, check_state_changed_signal, [this, gamepad_item, device_id]() {
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Gamepad,
                                          gamepad_item->isChecked());
     });
@@ -1091,7 +1098,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // mouse
     QCheckBox* mouse_item = new QCheckBox();
     mouse_item->setChecked(mouse);
-    connect(mouse_item, &QCheckBox::stateChanged, [this, mouse_item, device_id](int) {
+    connect(mouse_item, check_state_changed_signal, [this, mouse_item, device_id]() {
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Mouse,
                                          mouse_item->isChecked());
     });
@@ -1099,7 +1106,7 @@ void MainWindow::addOrUpdateTrustedDevice(int64_t device_id, bool gamepad, bool 
     // keyboard
     QCheckBox* keyboard_item = new QCheckBox();
     keyboard_item->setChecked(keyboard);
-    connect(keyboard_item, &QCheckBox::stateChanged, [this, keyboard_item, device_id](int) {
+    connect(keyboard_item, check_state_changed_signal, [this, keyboard_item, device_id]() {
         params_.enable_device_permission(device_id, lt::GUI::DeviceType::Keyboard,
                                          keyboard_item->isChecked());
     });

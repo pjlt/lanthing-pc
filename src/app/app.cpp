@@ -69,10 +69,11 @@ using namespace ltlib::time;
 
 namespace {
 
+#if defined(LT_WINDOWS)
+
 const std::string kServiceName = "Lanthing";
 const std::string kDisplayName = "Lanthing Service";
 
-#if defined(LT_WINDOWS)
 void logFunc(NbClipLogLevel level, const char* format, ...) {
     constexpr int kMaxMessageSize = 2048;
     char buff[kMaxMessageSize];
