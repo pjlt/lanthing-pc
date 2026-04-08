@@ -53,12 +53,17 @@ private:
     void stop();
 
 private:
+    void cleanup_on_loop_thread();
+
+private:
     uv_loop_t uvloop_{};
     uv_async_t close_handle_{};
     uv_async_t task_handle_{};
     uv_timer_t alive_handle_{};
     std::mutex mutex_;
     std::condition_variable cv_;
+    bool inited_ = false;
+    bool closed_ = false;
     bool stoped_ = true;
     std::vector<std::function<void()>> tasks_;
     std::thread::id tid_;
@@ -108,16 +113,28 @@ bool IOLoopImpl::init() {
         LOG(ERR) << "uv_loop_init failed: " << ret;
         return false;
     }
-    uv_async_init(&uvloop_, &task_handle_, &IOLoopImpl::consume_tasks);
+    ret = uv_async_init(&uvloop_, &task_handle_, &IOLoopImpl::consume_tasks);
+    if (ret != 0) {
+        LOG(ERR) << "uv_async_init(task_handle_) failed: " << ret;
+        uv_loop_close(&uvloop_);
+        return false;
+    }
     task_handle_.data = this;
-    uv_async_init(&uvloop_, &close_handle_, [](uv_async_t* handle) { uv_stop(handle->loop); });
+    ret = uv_async_init(&uvloop_, &close_handle_, [](uv_async_t* handle) { uv_stop(handle->loop); });
+    if (ret != 0) {
+        LOG(ERR) << "uv_async_init(close_handle_) failed: " << ret;
+        uv_close((uv_handle_t*)&task_handle_, nullptr);
+        uv_run(&uvloop_, UV_RUN_DEFAULT);
+        uv_loop_close(&uvloop_);
+        return false;
+    }
+    inited_ = true;
     return true;
 }
 
 void IOLoopImpl::run(const std::function<void()>& i_am_alive) {
     constexpr uint32_t k700ms = 700;
     uv_timer_init(&uvloop_, &alive_handle_);
-    // NOTE: 这个copy内存泄露了，但是不用管
     auto copy_i_am_alive = new std::function<void()>;
     *copy_i_am_alive = i_am_alive;
     alive_handle_.data = copy_i_am_alive;
@@ -138,18 +155,61 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive) {
         stoped_ = true;
     }
     cv_.notify_one();
+
+    // libuv 的 handle 关闭必须在 loop 线程做，否则可能触发未定义行为。
+    cleanup_on_loop_thread();
 }
 
 void IOLoopImpl::stop() {
+    if (!inited_) {
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (closed_) {
+            return;
+        }
+    }
+
+    if (stoped_) {
+        // run() 还未执行时，当前线程是唯一访问者，可直接清理。
+        cleanup_on_loop_thread();
+        return;
+    }
+
     // 1. 向main_loop线程发送stop信号
     uv_async_send(&close_handle_);
     // 2. 等待main_loop发送信号
     std::unique_lock<std::mutex> lock{mutex_};
     cv_.wait(lock, [this]() { return stoped_; });
-    uv_close((uv_handle_t*)&close_handle_, [](uv_handle_t*) {});
-    uv_close((uv_handle_t*)&task_handle_, [](uv_handle_t*) {});
-    // FIXME: 有栈溢出bug，没有dump生成，但是进程返回3221226505，现在让它内存泄漏，不处理
-    return;
+}
+
+void IOLoopImpl::cleanup_on_loop_thread() {
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (closed_) {
+            return;
+        }
+        closed_ = true;
+    }
+
+    if (alive_handle_.data != nullptr && !uv_is_closing((uv_handle_t*)&alive_handle_)) {
+        uv_timer_stop(&alive_handle_);
+        uv_close((uv_handle_t*)&alive_handle_, [](uv_handle_t* handle) {
+            auto i_am_alive = reinterpret_cast<std::function<void()>*>(handle->data);
+            delete i_am_alive;
+            handle->data = nullptr;
+        });
+    }
+
+    if (!uv_is_closing((uv_handle_t*)&close_handle_)) {
+        uv_close((uv_handle_t*)&close_handle_, nullptr);
+    }
+    if (!uv_is_closing((uv_handle_t*)&task_handle_)) {
+        uv_close((uv_handle_t*)&task_handle_, nullptr);
+    }
+
     // 3. 遍历所有未关闭的handle，关闭它们
     uv_walk(
         &uvloop_,
