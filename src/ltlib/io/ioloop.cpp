@@ -63,6 +63,7 @@ private:
     std::mutex mutex_;
     std::condition_variable cv_;
     bool inited_ = false;
+    bool closing_ = false;
     bool closed_ = false;
     bool stoped_ = true;
     std::vector<std::function<void()>> tasks_;
@@ -146,7 +147,10 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive) {
         },
         k700ms, k700ms);
 
-    stoped_ = false;
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        stoped_ = false;
+    }
     tid_ = std::this_thread::get_id();
     uv_run(&uvloop_, UV_RUN_DEFAULT);
     // 发送信号，表示已经退出循环
@@ -154,7 +158,7 @@ void IOLoopImpl::run(const std::function<void()>& i_am_alive) {
         std::lock_guard<std::mutex> lock{mutex_};
         stoped_ = true;
     }
-    cv_.notify_one();
+    cv_.notify_all();
 
     // libuv 的 handle 关闭必须在 loop 线程做，否则可能触发未定义行为。
     cleanup_on_loop_thread();
@@ -165,24 +169,40 @@ void IOLoopImpl::stop() {
         return;
     }
 
+    bool need_send_stop = false;
+    bool need_direct_cleanup = false;
     {
         std::lock_guard<std::mutex> lock{mutex_};
         if (closed_) {
             return;
         }
+        if (stoped_) {
+            // run() 还未执行时，当前线程是唯一访问者，可直接清理。
+            if (!closing_) {
+                closing_ = true;
+                need_direct_cleanup = true;
+            }
+        }
+        else {
+            if (!closing_) {
+                closing_ = true;
+                need_send_stop = true;
+            }
+        }
     }
 
-    if (stoped_) {
-        // run() 还未执行时，当前线程是唯一访问者，可直接清理。
+    if (need_send_stop) {
+        // 1. 向main_loop线程发送stop信号
+        uv_async_send(&close_handle_);
+    }
+
+    if (need_direct_cleanup) {
         cleanup_on_loop_thread();
-        return;
     }
 
-    // 1. 向main_loop线程发送stop信号
-    uv_async_send(&close_handle_);
-    // 2. 等待main_loop发送信号
+    // 2. 等待main_loop完成清理
     std::unique_lock<std::mutex> lock{mutex_};
-    cv_.wait(lock, [this]() { return stoped_; });
+    cv_.wait(lock, [this]() { return closed_; });
 }
 
 void IOLoopImpl::cleanup_on_loop_thread() {
@@ -191,7 +211,7 @@ void IOLoopImpl::cleanup_on_loop_thread() {
         if (closed_) {
             return;
         }
-        closed_ = true;
+        closing_ = true;
     }
 
     if (alive_handle_.data != nullptr && !uv_is_closing((uv_handle_t*)&alive_handle_)) {
@@ -223,10 +243,19 @@ void IOLoopImpl::cleanup_on_loop_thread() {
     uv_run(&uvloop_, UV_RUN_DEFAULT);
     // 5. 回收uvloop_内部资源
     uv_loop_close(&uvloop_);
+
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        closed_ = true;
+    }
+    cv_.notify_all();
 }
 
 void IOLoopImpl::post(const std::function<void()>& task) {
     std::lock_guard<std::mutex> lock{mutex_};
+    if (closing_ || closed_) {
+        return;
+    }
     tasks_.push_back(task);
     if (!stoped_) {
         // 对同一个uv_async_t多次调用uv_async_send是冇问题哒！
@@ -236,6 +265,12 @@ void IOLoopImpl::post(const std::function<void()>& task) {
 
 void IOLoopImpl::post_delay(int64_t delay_ms, const std::function<void()>& task) {
     // 整个libuv只有uv_async_send()是线程安全的，所以我们要再包一层，把uv_timer_init()、uv_timer_start()扔到libuv的线程去跑
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (closing_ || closed_) {
+            return;
+        }
+    }
     auto user_task_copied = new std::function<void()>{task};
     auto delayed_task = [delay_ms, user_task_copied, this]() {
         auto timer = new uv_timer_t;
