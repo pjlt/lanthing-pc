@@ -187,145 +187,82 @@
 
 ### P0（立即处理）
 
-1. 修复 `VideoSendStream::network_channel_` 与 `VideoReceiveStream::thread_` 初始化问题。
-2. 修复 MessageChannel 参数透传，确保 KCP 配置确定可控。
-3. 恢复证书 digest 校验，阻断 MITM 风险。
-4. 明确并验证 pacer 发送循环启动路径。
+1. 已完成: T1/T2/T3/T5/T6。
+2. 暂不处理: T4（恢复证书 digest 校验，MITM 风险接受，后续单独排期）。
 
-### P0 函数级修复任务清单（可直接排期）
+#### P0 保留项：T4. 恢复证书指纹校验（MITM 风险）
 
-以下任务按“先防崩溃 -> 再保链路 -> 再保安全”的顺序执行。
-
-#### T1. 修复 VideoSendStream 未初始化 `network_channel_`（崩溃风险）
-
-- 目标文件:
-  - `src/transport/rtc2/src/stream/video_send_stream.h`
-  - `src/transport/rtc2/src/stream/video_send_stream.cpp`
-  - `src/transport/rtc2/src/connection/connection_impl.cpp`
-- 涉及函数:
-  - `VideoSendStream::VideoSendStream`
-  - `VideoSendStream::onPcedPacket`
-  - `VideoSendStream::protectAndSendPacket`
-  - `ConnectionImpl::init`
-- 修改要点:
-  1. 在 `VideoSendStream::Params` 中显式增加 `NetworkChannel* network_channel`（或等效依赖注入）。
-  2. 在 `ConnectionImpl::init` 创建 `VideoSendStream` 时传入 `network_channel_.get()`。
-  3. 在 `VideoSendStream::VideoSendStream` 中初始化 `network_channel_`。
-  4. 在 `onPcedPacket/protectAndSendPacket` 添加空指针保护与错误日志（避免静默崩溃）。
-- 验收标准:
-  1. 视频发送路径不再触发野指针/空指针崩溃。
-  2. 发送失败时有明确日志并可定位。
-
-#### T2. 修复 VideoReceiveStream 未初始化 `thread_`（崩溃风险）
-
-- 目标文件:
-  - `src/transport/rtc2/src/stream/video_receive_stream.h`
-  - `src/transport/rtc2/src/stream/video_receive_stream.cpp`
-  - `src/transport/rtc2/src/connection/connection_impl.cpp`
-- 涉及函数:
-  - `VideoReceiveStream::VideoReceiveStream`
-  - `VideoReceiveStream::onRtpPacket`
-  - `ConnectionImpl::init`
-- 修改要点:
-  1. 在 `VideoReceiveStream::Params` 中增加 `ltlib::TaskThread* callback_thread`（或在构造函数内自建并托管线程）。
-  2. 在 `ConnectionImpl::init` 为每个 `VideoReceiveStream` 注入 `recv_thread_.get()`。
-  3. `onRtpPacket` 增加线程指针有效性检查。
-- 验收标准:
-  1. 接收 RTP 后调用 `thread_->post` 不崩溃。
-  2. 视频回调路径在压力收包下稳定运行。
-
-#### T3. 打通 KCP 参数透传（未定义行为风险）
-
-- 目标文件:
-  - `src/transport/rtc2/src/stream/message_channel.cpp`
-  - `src/transport/rtc2/src/modules/message/reliable_message_channel.h`
-  - `src/transport/rtc2/src/modules/message/reliable_message_channel.cpp`
-  - `src/transport/rtc2/src/connection/connection_impl.cpp`
-- 涉及函数:
-  - `MessageChannel::MessageChannel`
-  - `ReliableMessageChannel::ReliableMessageChannel`
-  - `ConnectionImpl::init`
-- 修改要点:
-  1. 在 `MessageChannel::MessageChannel` 中将 `params.mtu/sndwnd/rcvwnd` 完整赋值到 `reliable_params`。
-  2. 在 `ReliableMessageChannel::ReliableMessageChannel` 增加参数合法性兜底（例如 `mtu` 下界、窗口下界）。
-  3. 对 `ikcp_setmtu/ikcp_wndsize` 返回值做失败处理和日志。
-- 验收标准:
-  1. KCP 初始化参数全部可追踪、可配置。
-  2. 非法参数不会导致未定义行为，且有错误日志。
-
-#### T4. 恢复证书指纹校验（MITM 风险）
-
+- 状态: 暂不处理（风险已知，需在上线前重新评估）。
 - 目标文件:
   - `src/transport/rtc2/src/modules/dtls/mbed_dtls.cpp`
   - `src/transport/rtc2/src/modules/dtls/mbed_dtls.h`
 - 涉及函数:
   - `MbedDtls::verify_cert`
-- 修改要点:
-  1. 计算对端证书 SHA-256 后与 `peer_digest_` 严格比对。
-  2. 比对成功时设置通过标志，比对失败时设置失败标志并记录安全日志。
-  3. 保留对空 `peer_digest_` 的策略开关（建议默认拒绝，或仅在明确开发模式下放行）。
-- 验收标准:
-  1. 错误证书无法完成握手。
-  2. 正确证书可正常握手。
-  3. 日志可明确区分“证书不匹配”与“其他握手失败”。
-
-#### T5. 明确并启动 Pacer 处理循环（发送停滞风险）
-
-- 目标文件:
-  - `src/transport/rtc2/src/modules/cc/pacer.h`
-  - `src/transport/rtc2/src/modules/cc/pacer.cpp`
-  - `src/transport/rtc2/src/connection/connection_impl.cpp`
-- 涉及函数:
-  - `Pacer::process`
-  - （新增）`Pacer::start` / `Pacer::stop`（建议）
-  - `ConnectionImpl::init`
-- 修改要点:
-  1. 为 `Pacer` 增加显式启动入口，确保 `process` 首次调度发生。
-  2. 在 `ConnectionImpl::init` 完成组件装配后启动 pacer。
-  3. 进程退出或连接销毁时停止调度（避免悬挂回调）。
-- 验收标准:
-  1. `enqueuePackets` 后可稳定触发 `send_func`。
-  2. 空队列时不出现忙等或高 CPU 占用。
-
-#### T6. 完善断链回调与错误上报最小闭环（可观测性缺口）
-
-- 目标文件:
-  - `src/transport/rtc2/src/connection/connection_impl.cpp`
-  - `src/transport/rtc2/src/rtc2.cpp`
-- 涉及函数:
-  - `ConnectionImpl::onDtlsDisconnected`
-  - `ConnectionImpl::onNetError`
-  - `Client::close`
-  - `Server::close`
-- 修改要点:
-  1. `onDtlsDisconnected` 按状态机触发 `params_.on_disconnected`（避免只记日志不通知）。
-  2. `onNetError` 记录错误码并映射到上层失败/断链回调。
-  3. `Client::close` / `Server::close` 至少完成幂等化收尾（停止发送、释放连接引用）。
-- 验收标准:
-  1. 断链时上层必收到一次且仅一次状态通知。
-  2. 主动 close 不残留悬挂任务。
-
-### P0 建议执行顺序
-
-1. T1 + T2（先消除崩溃点）
-2. T5（打通视频发送主链路）
-3. T3（稳定消息链路参数）
-4. T4（恢复安全基线）
-5. T6（补齐最小状态闭环）
-
-### P0 最小回归用例
-
-1. 视频单帧发送: 调用发送接口后应看到 `send_func` 被触发且无崩溃。
-2. 视频接收入队: 构造 RTP 包触发 `VideoReceiveStream::onRtpPacket`，应可安全投递到线程。
-3. KCP 参数生效: 配置 `mtu/sndwnd/rcvwnd` 后日志能打印实际生效值。
-4. 证书校验: 正确 digest 握手成功，错误 digest 握手失败。
-5. 断链通知: 模拟网络中断后，上层收到断链回调且无重复通知。
+- 最小改造点:
+  1. 计算并比对对端证书 SHA-256 与 `peer_digest_`。
+  2. 比对失败显式拒绝握手，并输出安全日志。
+  3. 对空 `peer_digest_` 明确策略（默认拒绝或仅开发模式放行）。
 
 ### P1（功能补齐）
 
-1. 完成 AudioSend/AudioReceive 的 RTP 收发逻辑。
-2. 实现 half-reliable 通道并恢复接口语义。
-3. 完成 WAN/Relay Endpoint 逻辑，保证公网可用。
+目标: 补齐媒体与传输核心缺口，形成“音频可用 + 通道语义一致 + 公网可连通”的功能闭环。
+
+#### P1 计划拆解
+
+#### P1-T1. 音频流 RTP 收发闭环
+
+- 目标文件:
+  - `src/transport/rtc2/src/stream/audio_send_stream.cpp`
+  - `src/transport/rtc2/src/stream/audio_receive_stream.cpp`
+  - `src/transport/rtc2/src/connection/connection_impl.cpp`
+- 实施要点:
+  1. 实现 `AudioSendStream::send` 的 RTP 打包与发包路径（复用现有网络/DTLS 发送链路）。
+  2. 实现 `AudioReceiveStream::onRtpPacket` 解包、时序处理与上抛回调。
+  3. 修复 `AudioReceiveStream::ssrc()` 返回固定 0 的问题，保证与会话一致。
+- 验收标准:
+  1. 单向与双向音频均可稳定收发。
+  2. 连续 10 分钟通话无崩溃、无明显卡顿。
+
+#### P1-T2. half-reliable 通道落地
+
+- 目标文件:
+  - `src/transport/rtc2/src/modules/message/half_reliable_message_channel.cpp`
+  - `src/transport/rtc2/src/stream/message_channel.cpp`
+  - `src/transport/rtc2/src/modules/message/*`（必要时新增实现文件）
+- 实施要点:
+  1. 实现 `HalfReliableMessageChannel` 的发送、接收、重传/过期策略。
+  2. 移除 `MessageChannel::sendMessage` 对 `reliable=true` 的强制覆盖。
+  3. 补齐可靠与半可靠路由分流、统计与日志字段。
+- 验收标准:
+  1. 业务可按消息类型选择可靠/半可靠，并按预期生效。
+  2. 半可靠消息在弱网下体现“可丢弃、低时延”特征。
+
+#### P1-T3. WAN/Relay 连通能力补齐
+
+- 目标文件:
+  - `src/transport/rtc2/src/modules/p2p/p2p.cpp`
+  - `src/transport/rtc2/src/modules/p2p/wan_endpoint.cpp`
+  - `src/transport/rtc2/src/modules/p2p/relay_endpoint.cpp`
+- 实施要点:
+  1. 完成 `create_wan_endpoint` 与 `create_relay_endpoint` 核心逻辑。
+  2. 打通 `add_remote_info` 中 WAN/Relay 分支，接入候选优先级与回退。
+  3. 完善直连失败自动回落到 Relay 的状态机与日志。
+- 验收标准:
+  1. 公网 NAT 场景可建立连接。
+  2. 直连失败时可自动回落 Relay，且上层状态一致。
+
+#### P1 建议执行顺序
+
+1. P1-T1（先补齐音频基础能力）。
+2. P1-T2（统一消息语义，避免接口行为偏差）。
+3. P1-T3（最后补公网连通，便于联调验证）。
+
+#### P1 最小回归用例
+
+1. 音频回环: 发送端持续推送音频帧，接收端稳定回调，音频时长与丢帧率可观测。
+2. 通道语义: 同时发送 reliable 与 half-reliable 消息，验证可靠必达与半可靠可丢行为。
+3. 公网联通: 模拟双 NAT 与高延迟环境，验证直连优先与 Relay 回退。
+4. 长稳测试: 持续运行 30 分钟，观察线程、内存、句柄与连接状态无异常增长。
 
 ### P2（工程化提升）
 
