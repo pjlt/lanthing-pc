@@ -205,72 +205,88 @@
 
 ### P1（功能补齐）
 
-目标: 补齐媒体与传输核心缺口，形成“音频可用 + 通道语义一致 + 公网可连通”的功能闭环。
-
-#### P1 计划拆解
-
-#### P1-T1. 音频流 RTP 收发闭环
-
-- 目标文件:
-  - `src/transport/rtc2/src/stream/audio_send_stream.cpp`
-  - `src/transport/rtc2/src/stream/audio_receive_stream.cpp`
-  - `src/transport/rtc2/src/connection/connection_impl.cpp`
-- 实施要点:
-  1. 实现 `AudioSendStream::send` 的 RTP 打包与发包路径（复用现有网络/DTLS 发送链路）。
-  2. 实现 `AudioReceiveStream::onRtpPacket` 解包、时序处理与上抛回调。
-  3. 修复 `AudioReceiveStream::ssrc()` 返回固定 0 的问题，保证与会话一致。
-- 验收标准:
-  1. 单向与双向音频均可稳定收发。
-  2. 连续 10 分钟通话无崩溃、无明显卡顿。
-
-#### P1-T2. half-reliable 通道落地
-
-- 目标文件:
-  - `src/transport/rtc2/src/modules/message/half_reliable_message_channel.cpp`
-  - `src/transport/rtc2/src/stream/message_channel.cpp`
-  - `src/transport/rtc2/src/modules/message/*`（必要时新增实现文件）
-- 实施要点:
-  1. 实现 `HalfReliableMessageChannel` 的发送、接收、重传/过期策略。
-  2. 移除 `MessageChannel::sendMessage` 对 `reliable=true` 的强制覆盖。
-  3. 补齐可靠与半可靠路由分流、统计与日志字段。
-- 验收标准:
-  1. 业务可按消息类型选择可靠/半可靠，并按预期生效。
-  2. 半可靠消息在弱网下体现“可丢弃、低时延”特征。
-
-#### P1-T3. WAN/Relay 连通能力补齐
-
-- 目标文件:
-  - `src/transport/rtc2/src/modules/p2p/p2p.cpp`
-  - `src/transport/rtc2/src/modules/p2p/wan_endpoint.cpp`
-  - `src/transport/rtc2/src/modules/p2p/relay_endpoint.cpp`
-- 实施要点:
-  1. 完成 `create_wan_endpoint` 与 `create_relay_endpoint` 核心逻辑。
-  2. 打通 `add_remote_info` 中 WAN/Relay 分支，接入候选优先级与回退。
-  3. 完善直连失败自动回落到 Relay 的状态机与日志。
-- 验收标准:
-  1. 公网 NAT 场景可建立连接。
-  2. 直连失败时可自动回落 Relay，且上层状态一致。
-
-#### P1 建议执行顺序
-
-1. P1-T1（先补齐音频基础能力）。
-2. P1-T2（统一消息语义，避免接口行为偏差）。
-3. P1-T3（最后补公网连通，便于联调验证）。
-
-#### P1 最小回归用例
-
-1. 音频回环: 发送端持续推送音频帧，接收端稳定回调，音频时长与丢帧率可观测。
-2. 通道语义: 同时发送 reliable 与 half-reliable 消息，验证可靠必达与半可靠可丢行为。
-3. 公网联通: 模拟双 NAT 与高延迟环境，验证直连优先与 Relay 回退。
-4. 长稳测试: 持续运行 30 分钟，观察线程、内存、句柄与连接状态无异常增长。
+状态: 已完成。
 
 ### P2（工程化提升）
 
-1. 用可恢复错误处理替代生产路径中的 FATAL/assert。
-2. 结构化 signaling 协议（建议 JSON 或 protobuf）。
-3. 增加可观测性指标（RTT、丢包、码率、重传、握手耗时）。
-4. 建立弱网与并发回归测试基线。
+目标: 提升稳定性、可维护性与可观测性，形成“可恢复 + 可演进 + 可回归”的工程化基线。
+
+#### P2 计划拆解
+
+#### P2-T1. 生产路径可恢复错误处理改造
+
+- 目标文件:
+  - `src/transport/rtc2/src/connection/connection_impl.cpp`
+  - `src/transport/rtc2/src/modules/network/network_channel.cpp`
+  - `src/transport/rtc2/src/modules/p2p/p2p.cpp`
+  - `src/transport/rtc2/src/modules/video/frame_assembler.cpp`
+- 实施要点:
+  1. 梳理并替换生产路径上的 `assert(false)`/`LOG(FATAL)`，改为错误码、状态回调或软失败分支。
+  2. 统一不可恢复错误与可恢复错误分级，避免把可恢复场景升级为进程终止。
+  3. 补齐关键失败路径日志字段（连接 ID、通道类型、远端地址、错误码）。
+- 验收标准:
+  1. 异常输入与弱网抖动场景下，进程不因断言/FATAL 直接退出。
+  2. 上层可收到一致的失败回调，且日志可定位根因。
+
+#### P2-T2. signaling 协议结构化改造
+
+- 目标文件:
+  - `src/transport/rtc2/src/connection/connection_impl.cpp`
+  - `src/transport/rtc2/src/rtc2.cpp`
+  - `src/transport/rtc2/include/rtc2/connection.h`
+  - `docs/connection-flow.mmd`（按需更新）
+- 实施要点:
+  1. 将当前“文本拼接 + 空格分割”信令格式替换为结构化协议（优先 JSON，或按需求使用 protobuf）。
+  2. 为信令消息定义版本字段与兼容策略，确保新旧格式可平滑过渡。
+  3. 统一编解码与校验入口，明确字段缺失、格式错误、版本不兼容时的处理策略。
+- 验收标准:
+  1. 新格式信令在主流程（建连、候选交换、状态同步）稳定可用。
+  2. 异常信令可被识别并降级处理，不触发未定义行为。
+
+#### P2-T3. 可观测性指标与日志体系补齐
+
+- 目标文件:
+  - `src/transport/rtc2/src/connection/connection_impl.cpp`
+  - `src/transport/rtc2/src/modules/cc/pacer.cpp`
+  - `src/transport/rtc2/src/modules/message/reliable_message_channel.cpp`
+  - `src/transport/rtc2/src/modules/dtls/mbed_dtls.cpp`
+- 实施要点:
+  1. 增加关键指标采集: RTT、丢包率、重传次数、发送/接收码率、DTLS 握手耗时。
+  2. 打通周期性统计上报或日志输出，统一维度与采样周期。
+  3. 定义连接生命周期内的观测点（建连、稳定传输、断连、重连）。
+- 验收标准:
+  1. 单连接与多连接场景均可持续输出核心指标，字段定义稳定。
+  2. 问题复盘可基于日志还原主要链路状态变化。
+
+#### P2-T4. 弱网与并发回归测试基线建设
+
+- 目标文件:
+  - `src/transport/rtc2/CMakeLists.txt`
+  - `src/transport/rtc2/src/modules/rtp/rtp_packet_tests.cpp`
+  - `src/transport/rtc2/src/modules/buffer_tests.cpp`
+  - `docs/test-plan-roadmap.md`
+- 实施要点:
+  1. 补齐连接、消息、媒体的弱网测试用例（乱序、丢包、抖动、高 RTT、突发拥塞）。
+  2. 增加并发与压力回归（多连接并发、长时运行、频繁断连重连）。
+  3. 在 CTest 中分层组织 smoke/standard/stress 测试集，明确执行时长与准入门槛。
+- 验收标准:
+  1. 基础回归在 CI 可稳定运行并输出可追踪报告。
+  2. 核心场景具备明确通过阈值与失败判据，支持发布前门禁。
+
+#### P2 建议执行顺序
+
+1. P2-T1（先消除生产路径不可恢复崩溃点）。
+2. P2-T2（再统一 signaling 语义与兼容策略）。
+3. P2-T3（随后补齐指标与日志，增强诊断能力）。
+4. P2-T4（最后固化回归基线，形成持续质量门禁）。
+
+#### P2 最小回归用例
+
+1. 错误恢复: 注入非法包与异常状态，验证无进程级崩溃且状态回调一致。
+2. 协议兼容: 新旧 signaling 格式混跑，验证建连成功率与错误处理分支正确。
+3. 可观测性: 建连到断连全流程产出完整指标，字段无缺失、无突变。
+4. 压测回归: 多连接弱网运行 30 分钟，观察线程、内存、句柄、重传率与回调稳定性。
 
 ## 8. 结论
 
-rtc2 模块已经具备基础分层和主流程骨架，但仍存在关键实现缺口与高风险缺陷。建议按 P0 -> P1 -> P2 分阶段推进，先确保“不会崩 + 能连通 + 有基本安全保证”，再补全功能与质量体系。
+rtc2 模块已经具备基础分层和主流程骨架。当前 P0 与 P1 已完成，下一阶段建议聚焦 P2 工程化建设，持续提升稳定性、可维护性与可回归能力。
