@@ -1,5 +1,6 @@
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/tomlplusplus)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/utfcpp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/nlohmann/json)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/amf)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/prebuilt/ffmpeg/${LT_PLAT})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/breakpad_builder)

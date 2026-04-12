@@ -16,3 +16,6 @@
 [submodule "src/transport/rtc2"]
 	path = src/transport/rtc2
 	url = https://github.com/numbaa/rtc2.git
+[submodule "third_party/nlohmann/json"]
+	path = third_party/nlohmann/json
+	url = https://github.com/nlohmann/json.git
